@@ -1,12 +1,12 @@
 # ParaTool — Ancient Mega Pack Integrator
 
-Standalone desktop app that integrates items from third-party BG3 mods into [Ancient Mega Pack](https://www.nexusmods.com/baldursgate3/mods/2285) loot tables. Patches treasure tables in-place so modded items appear in AMP's randomized loot pools alongside vanilla AMP gear — no manual editing, no broken distributions.
+Standalone desktop app that integrates items from third-party BG3 mods into [Ancient Mega Pack](https://www.nexusmods.com/baldursgate3/mods/2285) loot lists. Patches loot lists in-place so modded items appear in AMP's randomized loot pools alongside vanilla AMP gear — no manual editing, no broken distributions.
 
 ## Why
 
 AMP uses `subtable "-1"` for pool-based random loot. Adding items via CanMerge creates a separate subtable, which means the game rolls twice — once from AMP's pool, once from your patch. This breaks the balance. Manual patching of TreasureTable.txt works but is tedious and breaks every AMP update.
 
-ParaTool does it automatically: scans your mods, resolves stats through inheritance chains, and injects items directly into the correct pool positions inside AMP's existing treasure tables.
+ParaTool does it automatically: scans your mods, resolves stats through inheritance chains, and injects items directly into the correct pool positions inside AMP's existing loot lists.
 
 ## Features
 
@@ -16,8 +16,8 @@ ParaTool does it automatically: scans your mods, resolves stats through inherita
   - Type pool (`REL_[Rarity]_[Slot]`) — random pool by slot + rarity
   - All-rarity pool (`REL_All_[Rarity]`) — global rarity pool
   - Theme pool (`REL_[Rarity]_[Theme]`) — thematic synergy pools
-  - Paragon tables (`AMP_Para_[N]`) — guaranteed drops by type/theme
-- **In-place insertion** — items are injected INTO existing treasure tables at correct positions, not appended
+  - Debug pools (`AMP_Para_[N]`) — guaranteed drops by type/theme (for cheat ring testing)
+- **In-place insertion** — items are injected INTO existing loot lists at correct positions, not appended
 - **Stats overrides** — generates `ParaTool_Overrides.txt` with correct ValueOverride pricing and Unique flags
 - **Dependency management** — patches AMP's `meta.lsx` to add integrated mods as dependencies
 - **13 languages** — auto-detected from system locale (RU, EN, DE, FR, ES, PT, IT, PL, ZH, JA, KO, TR, UK)
@@ -76,15 +76,15 @@ ParaTool.Tests/         — xUnit tests (stats parsing, resolution, patching, pr
 ### Patching Pipeline
 
 1. Extract AMP .pak to temp directory
-2. Parse TreasureTable.txt → build table index (name → line range)
-3. For each enabled item: insert `object category` lines into correct pool tables (subtable "-1"), append `new subtable "1,1"` blocks to paragon tables
+2. Parse TreasureTable.txt — build loot list index (name — line range)
+3. For each enabled item: insert `object category` lines into correct pool lists (subtable "-1"), append `new subtable "1,1"` blocks to debug pools
 4. Generate `ParaTool_Overrides.txt` with ValueOverride pricing per slot/rarity
 5. Patch `meta.lsx` — add ModuleShortDesc for each integrated mod as dependency
 6. Repack into .pak via PakWriter
 
 ### Slot Detection
 
-Stats → Slot mapping via resolved `Slot` + `ArmorType` + `Shield` properties:
+Stats — Slot mapping via resolved `Slot` + `ArmorType` + `Shield` properties:
 
 | Resolved Slot | Condition | Pool |
 |---|---|---|
