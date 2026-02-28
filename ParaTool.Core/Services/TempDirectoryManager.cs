@@ -7,8 +7,25 @@ public sealed class TempDirectoryManager : IDisposable
 
     public TempDirectoryManager()
     {
+        CleanupStale();
         _basePath = Path.Combine(Path.GetTempPath(), "ParaTool_" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_basePath);
+    }
+
+    /// <summary>
+    /// Deletes any leftover ParaTool_* temp folders from previous interrupted runs.
+    /// </summary>
+    private static void CleanupStale()
+    {
+        try
+        {
+            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), "ParaTool_*"))
+            {
+                try { Directory.Delete(dir, recursive: true); }
+                catch { /* in use or no access — skip */ }
+            }
+        }
+        catch { /* temp folder inaccessible — ignore */ }
     }
 
     public string BasePath => _basePath;
