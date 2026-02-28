@@ -30,6 +30,10 @@ bld/
 .DS_Store
 Thumbs.db
 
+## Publish output
+publish/
+*.tar.gz
+
 ## Reference / internal files
 *.md
 !README.md

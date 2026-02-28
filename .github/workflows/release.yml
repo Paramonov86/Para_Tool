@@ -1,0 +1,84 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            artifact: ParaTool-win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: ParaTool-linux-x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore ParaTool.sln
+
+      - name: Test
+        run: dotnet test ParaTool.Tests/ParaTool.Tests.csproj --no-restore
+
+      - name: Publish
+        run: >
+          dotnet publish ParaTool.App/ParaTool.App.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishTrimmed=false
+          -o publish/${{ matrix.artifact }}
+
+      - name: Archive (Windows)
+        if: matrix.os == 'windows-latest'
+        run: Compress-Archive -Path publish/${{ matrix.artifact }}/* -DestinationPath ${{ matrix.artifact }}.zip
+        shell: pwsh
+
+      - name: Archive (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: tar -czf ${{ matrix.artifact }}.tar.gz -C publish/${{ matrix.artifact }} .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.artifact }}.zip
+            ${{ matrix.artifact }}.tar.gz
+          if-no-files-found: ignore
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz
