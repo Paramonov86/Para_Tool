@@ -1,85 +1,143 @@
 using System.Globalization;
+using System.Reflection;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ParaTool.App.Localization;
+
+public class LangInfo
+{
+    public required string Code { get; init; }
+    public required string Name { get; init; }
+    public override string ToString() => Name;
+}
 
 public partial class Loc : ObservableObject
 {
     public static Loc Instance { get; } = new();
 
-    [ObservableProperty] private string _lang = "ru";
+    private Dictionary<string, string> _strings = new();
+    private const string ResourcePrefix = "ParaTool.App.Localization.langs.";
 
-    public bool IsRussian => Lang == "ru";
+    [ObservableProperty] private string _lang = "en";
 
-    public void SetLanguage(string lang)
+    public LangInfo[] AvailableLanguages { get; private set; } = [];
+
+    private Loc()
     {
-        Lang = lang;
-        OnPropertyChanged(string.Empty); // Refresh all bindings
+        DiscoverLanguages();
+        var sysLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        var defaultCode = AvailableLanguages.Any(l => l.Code == sysLang) ? sysLang : "en";
+        LoadStrings(defaultCode);
+        _lang = defaultCode;
     }
 
-    // Startup
-    public string AppTitle => "ParaTool";
-    public string ErrorModsNotFound => IsRussian
-        ? "Папка Mods в AppData не найдена! Укажите путь вручную"
-        : "Mods folder not found in AppData! Select path manually";
-    public string SelectFolder => IsRussian ? "Выбрать папку" : "Select folder";
+    private void DiscoverLanguages()
+    {
+        var assembly = typeof(Loc).Assembly;
+        var names = assembly.GetManifestResourceNames()
+            .Where(n => n.StartsWith(ResourcePrefix) && n.EndsWith(".json"))
+            .ToList();
 
-    // Scanning
-    public string PleaseWait => IsRussian ? "Подождите..." : "Please wait...";
-    public string ScanningMods => IsRussian
-        ? "Идёт анализ модов с предметами."
-        : "Scanning mods with items.";
-    public string MayTakeTime => IsRussian
-        ? "Это может занять некоторое время..."
-        : "This may take some time...";
-    public string ModsScanned => IsRussian ? "Модов просканировано:" : "Mods scanned:";
-    public string ModsSelected => IsRussian ? "Модов выбрано:" : "Mods selected:";
+        var langs = new List<LangInfo>();
+        foreach (var name in names)
+        {
+            try
+            {
+                var code = name[ResourcePrefix.Length..^".json".Length];
+                using var stream = assembly.GetManifestResourceStream(name);
+                if (stream == null) continue;
+                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(stream);
+                if (dict == null) continue;
+                var displayName = dict.TryGetValue("_name", out var n) ? n : code;
+                langs.Add(new LangInfo { Code = code, Name = displayName });
+            }
+            catch { /* skip malformed language file */ }
+        }
 
-    // Editor
-    public string EditorTitle => IsRussian
-        ? "Уточните предметы для интеграции"
-        : "Review items for integration";
-    public string AllMods => IsRussian ? "Все моды" : "All mods";
-    public string Instructions => IsRussian ? "Инструкция" : "Instructions";
-    public string InstructionStep1 => IsRussian
-        ? "1. Выберите, какие предметы вы хотите интегрировать в лут-листы Ancient Mega Pack."
-        : "1. Select which items you want to integrate into Ancient Mega Pack loot tables.";
-    public string InstructionStep2 => IsRussian
-        ? "2. Поменяйте по желанию их редкость и слот"
-        : "2. Optionally change their rarity and slot";
-    public string InstructionStep3 => IsRussian
-        ? "3. Выберите тематики"
-        : "3. Select themes";
-    public string InstructionStep4 => IsRussian
-        ? "4. Подождите, пока приложение сделает свою работу"
-        : "4. Wait for the app to finish";
-    public string PatchButton => IsRussian ? "ПРОПАТЧИТЬ" : "PATCH";
-    public string ModsFoundInfo(int count) => IsRussian
-        ? $"В папке Mods найдено {count} модов, содержащих предметы."
-        : $"Found {count} mods with items in Mods folder.";
-    public string Russian => "Русский";
-    public string English => "English";
+        AvailableLanguages = langs.OrderBy(l => l.Name, StringComparer.CurrentCulture).ToArray();
+    }
 
-    // Patching
-    public string PatchingInProgress => IsRussian ? "Идёт патч..." : "Patching...";
-    public string PatchSuccess => IsRussian ? "Успешно!" : "Success!";
-    public string PatchError => IsRussian ? "Ошибка:" : "Error:";
+    public void SetLanguage(string code)
+    {
+        Lang = code;
+        LoadStrings(code);
+        OnPropertyChanged(string.Empty);
+    }
 
-    // Themes
-    public string ThemeSwamp => IsRussian ? "Болото" : "Swamp";
-    public string ThemeAquatic => IsRussian ? "Вода" : "Aquatic";
-    public string ThemeShadowfell => IsRussian ? "Тень" : "Shadowfell";
-    public string ThemeArcane => IsRussian ? "Магия" : "Arcane";
-    public string ThemeCelestial => IsRussian ? "Свет" : "Celestial";
-    public string ThemeNature => IsRussian ? "Природа" : "Nature";
-    public string ThemeDestructive => IsRussian ? "Разрушение" : "Destructive";
-    public string ThemeWar => IsRussian ? "Война" : "War";
-    public string ThemePsionic => IsRussian ? "Псионика" : "Psionic";
-    public string ThemePrimal => IsRussian ? "Первобытное" : "Primal";
+    private void LoadStrings(string code)
+    {
+        var assembly = typeof(Loc).Assembly;
+        var resourceName = $"{ResourcePrefix}{code}.json";
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        if (stream != null)
+        {
+            _strings = JsonSerializer.Deserialize<Dictionary<string, string>>(stream) ?? new();
+            return;
+        }
 
-    // Rarity display
-    public string RarityUncommon => IsRussian ? "Необыч." : "Uncommon";
-    public string RarityRare => IsRussian ? "Редк." : "Rare";
-    public string RarityVeryRare => IsRussian ? "Оч.редк." : "Very Rare";
-    public string RarityLegendary => IsRussian ? "Легендарн." : "Legendary";
+        // Fallback to English
+        var enResource = $"{ResourcePrefix}en.json";
+        using var enStream = assembly.GetManifestResourceStream(enResource);
+        if (enStream != null)
+            _strings = JsonSerializer.Deserialize<Dictionary<string, string>>(enStream) ?? new();
+    }
+
+    /// <summary>
+    /// Get a localized string by key. Returns the key itself if not found.
+    /// </summary>
+    public string this[string key] => _strings.TryGetValue(key, out var val) ? val : key;
+
+    // === XAML binding properties ===
+
+    public string AppTitle => this["AppTitle"];
+    public string ErrorModsNotFound => this["ErrorModsNotFound"];
+    public string SelectFolder => this["SelectFolder"];
+
+    public string PleaseWait => this["PleaseWait"];
+    public string ScanningMods => this["ScanningMods"];
+    public string MayTakeTime => this["MayTakeTime"];
+    public string ModsScanned => this["ModsScanned"];
+    public string ModsSelected => this["ModsSelected"];
+
+    public string EditorTitle => this["EditorTitle"];
+    public string AllMods => this["AllMods"];
+    public string Instructions => this["Instructions"];
+    public string InstructionStep1 => this["InstructionStep1"];
+    public string InstructionStep2 => this["InstructionStep2"];
+    public string InstructionStep3 => this["InstructionStep3"];
+    public string InstructionStep4 => this["InstructionStep4"];
+    public string PatchButton => this["PatchButton"];
+    public string ThemesLabel => this["ThemesLabel"];
+    public string ModThemes => this["ModThemes"];
+
+    public string ModsFoundInfo(int count) => string.Format(this["ModsFoundInfo"], count);
+
+    public string IntegratorTitle => this["IntegratorTitle"];
+
+    public string PatchingInProgress => this["PatchingInProgress"];
+    public string PatchSuccessLabel => this["PatchSuccess"];
+    public string PatchErrorLabel => this["PatchError"];
+
+    public string PatchSuccessMessage(int count) => string.Format(this["PatchSuccessMessage"], count);
+
+    // === Dynamic lookups ===
+
+    public string PoolName(string pool)
+    {
+        var key = $"Slot.{pool}";
+        return _strings.TryGetValue(key, out var val) ? val : pool;
+    }
+
+    public string RarityName(string rarity)
+    {
+        var key = $"Rarity.{rarity}";
+        return _strings.TryGetValue(key, out var val) ? val : rarity;
+    }
+
+    public string ThemeName(string theme)
+    {
+        var key = $"Theme.{theme}";
+        return _strings.TryGetValue(key, out var val) ? val : theme;
+    }
 }

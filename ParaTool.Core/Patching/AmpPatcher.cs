@@ -13,7 +13,6 @@ public sealed class PatchResult
 {
     public bool Success { get; init; }
     public string? Error { get; init; }
-    public string? BackupPath { get; init; }
     public int ItemsPatched { get; init; }
 }
 
@@ -46,8 +45,8 @@ public sealed class AmpPatcher
             progress?.Report(new PatchProgress { Stage = "Extracting AMP pak...", Percent = 10 });
             await Task.Run(() => PakReader.ExtractAll(ampPakPath, extractDir), ct);
 
-            // Step 2: Find and patch TreasureTable.txt
-            progress?.Report(new PatchProgress { Stage = "Patching loot tables...", Percent = 30 });
+            // Step 2: Find and patch TreasureTable.txt (in-place insertion)
+            progress?.Report(new PatchProgress { Stage = "Patching loot lists...", Percent = 30 });
             var ttPath = FindFile(extractDir, "TreasureTable.txt");
             if (ttPath == null)
                 return new PatchResult { Success = false, Error = "TreasureTable.txt not found in AMP pak." };
@@ -60,11 +59,9 @@ public sealed class AmpPatcher
             progress?.Report(new PatchProgress { Stage = "Generating stat overrides...", Percent = 50 });
             var overridesContent = StatsOverrideGenerator.Generate(enabledItems);
 
-            // Find the Stats/Generated/Data directory
             var statsDir = FindDirectory(extractDir, Path.Combine("Stats", "Generated", "Data"));
             if (statsDir == null)
             {
-                // Create it relative to the Public/[folder] structure
                 var publicDirs = Directory.GetDirectories(extractDir, "Public", SearchOption.TopDirectoryOnly);
                 if (publicDirs.Length > 0)
                 {
@@ -83,7 +80,7 @@ public sealed class AmpPatcher
                 await File.WriteAllTextAsync(overridesPath, overridesContent, ct);
             }
 
-            // Step 4: Patch meta.lsx with dependencies
+            // Step 4: Patch meta.lsx with mod dependencies
             progress?.Report(new PatchProgress { Stage = "Updating dependencies...", Percent = 65 });
             var metaPath = FindFile(extractDir, "meta.lsx");
             if (metaPath != null)
@@ -93,14 +90,8 @@ public sealed class AmpPatcher
                 await File.WriteAllTextAsync(metaPath, patchedMeta, ct);
             }
 
-            // Step 5: Backup original
-            progress?.Report(new PatchProgress { Stage = "Creating backup...", Percent = 80 });
-            var backupPath = ampPakPath + ".backup";
-            if (!File.Exists(backupPath))
-                File.Copy(ampPakPath, backupPath);
-
-            // Step 6: Repack
-            progress?.Report(new PatchProgress { Stage = "Repacking AMP pak...", Percent = 85 });
+            // Step 5: Repack
+            progress?.Report(new PatchProgress { Stage = "Repacking AMP pak...", Percent = 80 });
             var tempPakPath = ampPakPath + ".tmp";
             await Task.Run(() => PakWriter.CreatePak(extractDir, tempPakPath), ct);
 
@@ -113,7 +104,6 @@ public sealed class AmpPatcher
             return new PatchResult
             {
                 Success = true,
-                BackupPath = backupPath,
                 ItemsPatched = enabledItems.Count
             };
         }
@@ -130,7 +120,6 @@ public sealed class AmpPatcher
 
     private static string? FindDirectory(string dir, string relativePath)
     {
-        // Search for the directory path pattern
         foreach (var d in Directory.GetDirectories(dir, "*", SearchOption.AllDirectories))
         {
             if (d.Replace('\\', '/').EndsWith(relativePath.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase))

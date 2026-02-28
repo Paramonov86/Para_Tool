@@ -1,19 +1,28 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ParaTool.App.ViewModels"
-             xmlns:v="using:ParaTool.App.Views"
+             xmlns:loc="using:ParaTool.App.Localization"
+             xmlns:conv="using:ParaTool.App.Converters"
              x:Class="ParaTool.App.Views.ItemEditorView"
              x:DataType="vm:ItemEditorViewModel">
+
+    <UserControl.Resources>
+        <conv:ExpandArrowConverter x:Key="ExpandConv" />
+    </UserControl.Resources>
 
     <Grid RowDefinitions="Auto,*,Auto" Margin="16">
 
         <!-- Header -->
-        <TextBlock Grid.Row="0"
-                   Text="Уточните предметы для интеграции"
-                   FontSize="18" FontWeight="SemiBold"
-                   Foreground="{StaticResource TextPrimaryBrush}"
-                   HorizontalAlignment="Center"
-                   Margin="0,0,0,12" />
+        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,12" Spacing="2">
+            <TextBlock Text="{Binding IntegratorTitle, Source={x:Static loc:Loc.Instance}}"
+                       FontSize="24" FontWeight="Bold"
+                       Foreground="#C8A96E"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding EditorTitle, Source={x:Static loc:Loc.Instance}}"
+                       FontSize="14"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+        </StackPanel>
 
         <!-- Main content -->
         <Grid Grid.Row="1" ColumnDefinitions="*,300">
@@ -32,7 +41,7 @@
                                       IsChecked="{Binding AllEnabled}"
                                       Margin="0,0,8,0" />
                             <TextBlock Grid.Column="1"
-                                       Text="Все моды"
+                                       Text="{Binding AllMods, Source={x:Static loc:Loc.Instance}}"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}"
                                        VerticalAlignment="Center" />
@@ -43,7 +52,7 @@
                         </Grid>
                     </Border>
 
-                    <!-- Mod list -->
+                    <!-- Mod list with scroll -->
                     <ScrollViewer Grid.Row="1">
                         <ItemsControl ItemsSource="{Binding Mods}">
                             <ItemsControl.ItemTemplate>
@@ -54,17 +63,20 @@
                                             Margin="0,2">
                                         <StackPanel>
                                             <!-- Mod header row -->
-                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
                                                 <CheckBox Grid.Column="0"
                                                           IsChecked="{Binding Enabled}"
                                                           Margin="0,0,8,0" />
+                                                <!-- Expand arrow -->
                                                 <Button Grid.Column="1"
-                                                        Content=">"
+                                                        Content="{Binding IsExpanded, Converter={StaticResource ExpandConv}}"
                                                         Background="Transparent"
-                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        Foreground="{StaticResource AccentLightBrush}"
                                                         BorderThickness="0"
-                                                        Padding="4,0"
-                                                        FontSize="10"
+                                                        Padding="6,2"
+                                                        FontSize="16"
+                                                        FontWeight="Bold"
+                                                        MinWidth="28"
                                                         Name="ExpandBtn"
                                                         Tag="{Binding}" />
                                                 <TextBlock Grid.Column="2"
@@ -72,11 +84,24 @@
                                                            Foreground="{StaticResource TextPrimaryBrush}"
                                                            VerticalAlignment="Center"
                                                            TextTrimming="CharacterEllipsis"
-                                                           Margin="8,0" />
-                                                <TextBlock Grid.Column="3"
+                                                           Margin="4,0" />
+                                                <!-- Mod-level theme button -->
+                                                <Button Grid.Column="3"
+                                                        Content="{Binding ThemesLabel, Source={x:Static loc:Loc.Instance}}"
+                                                        FontSize="10"
+                                                        Padding="6,2"
+                                                        Margin="4,0"
+                                                        Background="{StaticResource HoverBgBrush}"
+                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        BorderThickness="0"
+                                                        CornerRadius="4"
+                                                        Name="ModThemeBtn"
+                                                        Tag="{Binding}" />
+                                                <TextBlock Grid.Column="4"
                                                            Text="{Binding CountDisplay}"
                                                            Foreground="{StaticResource TextMutedBrush}"
-                                                           VerticalAlignment="Center" />
+                                                           VerticalAlignment="Center"
+                                                           Margin="8,0,0,0" />
                                             </Grid>
 
                                             <!-- Expanded items -->
@@ -85,11 +110,13 @@
                                                           Margin="28,4,0,0">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate DataType="vm:ItemVM">
-                                                        <Border Background="{StaticResource CardBgBrush}"
-                                                                CornerRadius="4"
+                                                        <Border CornerRadius="4"
                                                                 Padding="8,4"
-                                                                Margin="0,1">
-                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                                Margin="0,1"
+                                                                Background="{StaticResource CardBgBrush}"
+                                                                BorderBrush="{Binding RarityColor}"
+                                                                BorderThickness="0,0,3,0">
+                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                                                 <CheckBox Grid.Column="0"
                                                                           IsChecked="{Binding Enabled}"
                                                                           Margin="0,0,6,0" />
@@ -99,18 +126,51 @@
                                                                            VerticalAlignment="Center"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            FontSize="12" />
+                                                                <!-- Pool selector -->
                                                                 <ComboBox Grid.Column="2"
-                                                                          ItemsSource="{x:Static vm:ItemVM.AvailablePools}"
+                                                                          ItemsSource="{x:Static vm:ItemVM.PoolOptions}"
                                                                           SelectedItem="{Binding SelectedPool}"
                                                                           FontSize="11"
-                                                                          MinWidth="100"
-                                                                          Margin="4,0" />
+                                                                          MinWidth="110"
+                                                                          Margin="4,0"
+                                                                          Padding="6,3">
+                                                                    <ComboBox.ItemTemplate>
+                                                                        <DataTemplate x:DataType="vm:LabeledOption">
+                                                                            <TextBlock Text="{Binding Display}" />
+                                                                        </DataTemplate>
+                                                                    </ComboBox.ItemTemplate>
+                                                                </ComboBox>
+                                                                <!-- Rarity selector -->
                                                                 <ComboBox Grid.Column="3"
-                                                                          ItemsSource="{x:Static vm:ItemVM.AvailableRarities}"
+                                                                          ItemsSource="{x:Static vm:ItemVM.RarityOptions}"
                                                                           SelectedItem="{Binding SelectedRarity}"
+                                                                          Foreground="{Binding RarityColor}"
                                                                           FontSize="11"
-                                                                          MinWidth="90"
-                                                                          Margin="4,0" />
+                                                                          FontWeight="SemiBold"
+                                                                          MinWidth="110"
+                                                                          Margin="4,0"
+                                                                          Padding="6,3"
+                                                                          BorderBrush="{Binding RarityColor}"
+                                                                          BorderThickness="1.5">
+                                                                    <ComboBox.ItemTemplate>
+                                                                        <DataTemplate x:DataType="vm:LabeledOption">
+                                                                            <TextBlock Text="{Binding Display}" />
+                                                                        </DataTemplate>
+                                                                    </ComboBox.ItemTemplate>
+                                                                </ComboBox>
+                                                                <!-- Theme selector button -->
+                                                                <Button Grid.Column="4"
+                                                                        Content="{Binding ThemesDisplay}"
+                                                                        FontSize="10"
+                                                                        MinWidth="80"
+                                                                        Padding="6,3"
+                                                                        Margin="4,0"
+                                                                        Background="{StaticResource HoverBgBrush}"
+                                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                                        BorderThickness="0"
+                                                                        CornerRadius="4"
+                                                                        Name="ThemeBtn"
+                                                                        Tag="{Binding}" />
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
@@ -125,49 +185,65 @@
                 </Grid>
             </Border>
 
-            <!-- Right: Info panel -->
-            <StackPanel Grid.Column="1" Spacing="12">
-                <!-- Info badge -->
-                <Border Background="{StaticResource AccentBrush}"
-                        CornerRadius="6"
-                        Padding="12,8">
-                    <TextBlock Text="{Binding Mods.Count, StringFormat='Найдено {0} модов с предметами'}"
-                               Foreground="White"
-                               FontSize="12"
-                               TextWrapping="Wrap" />
-                </Border>
+            <!-- Right: Info panel (scrollable) -->
+            <ScrollViewer Grid.Column="1">
+                <StackPanel Spacing="12">
+                    <!-- Info badge -->
+                    <Border Background="{StaticResource AccentBrush}"
+                            CornerRadius="6"
+                            Padding="12,8">
+                        <TextBlock Text="{Binding ModsCountText}"
+                                   Foreground="White"
+                                   FontSize="12"
+                                   TextWrapping="Wrap" />
+                    </Border>
 
-                <!-- Instructions -->
-                <Border Background="{StaticResource PanelBgBrush}"
-                        CornerRadius="6"
-                        Padding="16,12">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Инструкция"
-                                   FontSize="16" FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimaryBrush}" />
-                        <TextBlock Text="1. Выберите, какие предметы вы хотите интегрировать в лут-листы Ancient Mega Pack."
-                                   TextWrapping="Wrap" FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
-                        <TextBlock Text="2. Поменяйте по желанию их редкость и слот"
-                                   TextWrapping="Wrap" FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
-                        <TextBlock Text="3. Выберите тематики"
-                                   TextWrapping="Wrap" FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
-                        <TextBlock Text="4. Подождите, пока приложение сделает свою работу"
-                                   TextWrapping="Wrap" FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+                    <!-- Instructions -->
+                    <Border Background="{StaticResource PanelBgBrush}"
+                            CornerRadius="6"
+                            Padding="16,12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{Binding Instructions, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding InstructionStep1, Source={x:Static loc:Loc.Instance}}"
+                                       TextWrapping="Wrap" FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding InstructionStep2, Source={x:Static loc:Loc.Instance}}"
+                                       TextWrapping="Wrap" FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding InstructionStep3, Source={x:Static loc:Loc.Instance}}"
+                                       TextWrapping="Wrap" FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding InstructionStep4, Source={x:Static loc:Loc.Instance}}"
+                                       TextWrapping="Wrap" FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Theme selector popup (shown when ThemeBtn/ModThemeBtn clicked) -->
+                    <Border Name="ThemePopup"
+                            Background="{StaticResource PanelBgBrush}"
+                            CornerRadius="6"
+                            Padding="12,8"
+                            IsVisible="False">
+                        <StackPanel Spacing="4">
+                            <TextBlock Name="ThemePopupTitle"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4" />
+                            <ItemsControl Name="ThemeCheckboxes" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
 
-        <!-- Bottom: Patch button / Progress -->
+        <!-- Bottom: Patch button / Progress + Discord -->
         <Grid Grid.Row="2" Margin="0,12,0,0" ColumnDefinitions="*,Auto">
             <Panel Grid.Column="0" HorizontalAlignment="Right">
                 <!-- Patch button -->
-                <Button Content="ПРОПАТЧИТЬ"
-                        IsVisible="{Binding !IsPatching}"
+                <Button Content="{Binding PatchButton, Source={x:Static loc:Loc.Instance}}"
+                        IsVisible="{Binding ShowPatchButton}"
                         Command="{Binding PatchCommand}"
                         Background="{StaticResource AccentBrush}"
                         Foreground="White"
@@ -197,20 +273,55 @@
                                    Margin="0,4,0,0" />
                     </Grid>
                 </Border>
+
+                <!-- Success indicator -->
+                <Border IsVisible="{Binding PatchSuccess}"
+                        Background="#1A2ECC71"
+                        BorderBrush="#2ECC71"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20,12"
+                        HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="&#x2705;"
+                                   FontSize="18"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding PatchSuccessMessage}"
+                                   Foreground="#2ECC71"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Error indicator -->
+                <Border IsVisible="{Binding PatchError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="#1AE74C3C"
+                        BorderBrush="#E74C3C"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="20,12"
+                        HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding PatchStatus}"
+                               Foreground="#E74C3C"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               MaxWidth="400" />
+                </Border>
             </Panel>
 
-            <!-- Discord icon area -->
-            <Border Grid.Column="1" Margin="12,0,0,0"
-                    Width="40" Height="40"
-                    CornerRadius="20"
-                    Background="{StaticResource CardBgBrush}"
+            <!-- Discord icon -->
+            <Button Grid.Column="1" Margin="12,0,0,0"
+                    Name="DiscordBtn"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    Cursor="Hand"
                     VerticalAlignment="Center">
-                <TextBlock Text="DC"
-                           FontSize="11"
-                           Foreground="{StaticResource TextMutedBrush}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
-            </Border>
+                <Image Source="/Assets/discord_icon.png"
+                       Width="80" Height="80" />
+            </Button>
         </Grid>
     </Grid>
 

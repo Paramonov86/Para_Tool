@@ -16,6 +16,9 @@ jobs:
           - os: windows-latest
             rid: win-x64
             artifact: ParaTool-win-x64
+          - os: windows-latest
+            rid: win-x86
+            artifact: ParaTool-win-x86
           - os: ubuntu-latest
             rid: linux-x64
             artifact: ParaTool-linux-x64

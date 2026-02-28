@@ -9,35 +9,43 @@ public static class MetaLsxPatcher
     {
         var doc = XDocument.Parse(metaXml);
 
-        // Find Dependencies node (or ModuleInfo node to create it)
-        var moduleInfo = doc.Descendants("node")
-            .FirstOrDefault(n => n.Attribute("id")?.Value == "ModuleInfo");
+        // Structure: save > region > node(root) > children > node(Dependencies) > children
+        // Dependencies is a SIBLING of ModuleInfo, both under node(root)/children
+        var rootNode = doc.Descendants("node")
+            .FirstOrDefault(n => n.Attribute("id")?.Value == "root");
 
-        if (moduleInfo == null)
+        if (rootNode == null)
             return metaXml;
 
-        var depsNode = moduleInfo.Elements("children").FirstOrDefault()
-            ?.Elements("node").FirstOrDefault(n => n.Attribute("id")?.Value == "Dependencies")
-            ?.Elements("children").FirstOrDefault();
+        var rootChildren = rootNode.Element("children");
+        if (rootChildren == null)
+            return metaXml;
 
-        if (depsNode == null)
+        var depsParent = rootChildren
+            .Elements("node")
+            .FirstOrDefault(n => n.Attribute("id")?.Value == "Dependencies");
+
+        XElement depsChildren;
+
+        if (depsParent == null)
         {
-            // Create Dependencies structure
-            var children = moduleInfo.Element("children");
-            if (children == null)
+            // Create Dependencies node
+            depsChildren = new XElement("children");
+            depsParent = new XElement("node", new XAttribute("id", "Dependencies"), depsChildren);
+            rootChildren.Add(depsParent);
+        }
+        else
+        {
+            depsChildren = depsParent.Element("children")!;
+            if (depsChildren == null)
             {
-                children = new XElement("children");
-                moduleInfo.Add(children);
+                depsChildren = new XElement("children");
+                depsParent.Add(depsChildren);
             }
-
-            var depsParent = new XElement("node", new XAttribute("id", "Dependencies"),
-                new XElement("children"));
-            children.Add(depsParent);
-            depsNode = depsParent.Element("children")!;
         }
 
         // Get existing UUIDs to avoid duplicates
-        var existingUuids = depsNode.Elements("node")
+        var existingUuids = depsChildren.Elements("node")
             .Where(n => n.Attribute("id")?.Value == "ModuleShortDesc")
             .Select(n => n.Elements("attribute")
                 .FirstOrDefault(a => a.Attribute("id")?.Value == "UUID")
@@ -55,12 +63,20 @@ public static class MetaLsxPatcher
                     new XAttribute("type", "LSString"),
                     new XAttribute("value", mod.Folder)),
                 new XElement("attribute",
+                    new XAttribute("id", "MD5"),
+                    new XAttribute("type", "LSString"),
+                    new XAttribute("value", "")),
+                new XElement("attribute",
                     new XAttribute("id", "Name"),
                     new XAttribute("type", "LSString"),
                     new XAttribute("value", mod.Name)),
                 new XElement("attribute",
+                    new XAttribute("id", "PublishHandle"),
+                    new XAttribute("type", "uint64"),
+                    new XAttribute("value", "0")),
+                new XElement("attribute",
                     new XAttribute("id", "UUID"),
-                    new XAttribute("type", "FixedString"),
+                    new XAttribute("type", "guid"),
                     new XAttribute("value", mod.UUID)),
                 new XElement("attribute",
                     new XAttribute("id", "Version64"),
@@ -68,11 +84,11 @@ public static class MetaLsxPatcher
                     new XAttribute("value", "36028797018963968"))
             );
 
-            depsNode.Add(shortDesc);
+            depsChildren.Add(shortDesc);
         }
 
         return doc.Declaration != null
             ? doc.Declaration.ToString() + "\n" + doc.ToString()
-            : doc.ToString();
+            : "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + doc.ToString();
     }
 }

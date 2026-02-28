@@ -2,33 +2,34 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ParaTool.App.ViewModels"
         xmlns:v="using:ParaTool.App.Views"
-        xmlns:ctrl="using:ParaTool.App.Controls"
+        xmlns:loc="using:ParaTool.App.Localization"
         x:Class="ParaTool.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/app_icon.png"
         Title="ParaTool"
-        Width="1100" Height="700"
-        MinWidth="900" MinHeight="600"
+        Width="1400" Height="850"
+        MinWidth="1000" MinHeight="650"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource AppBgBrush}"
-        ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="NoChrome"
-        ExtendClientAreaTitleBarHeightHint="32">
+        Background="{StaticResource AppBgBrush}">
 
-    <Grid RowDefinitions="32,Auto,*">
-        <!-- Custom title bar -->
-        <ctrl:CustomTitleBar Grid.Row="0" />
-
+    <Grid RowDefinitions="Auto,*">
         <!-- Language selector -->
-        <ComboBox Grid.Row="1"
+        <ComboBox Grid.Row="0"
                   ItemsSource="{Binding Languages}"
                   SelectedItem="{Binding SelectedLanguage}"
                   HorizontalAlignment="Right"
-                  Margin="0,4,16,4"
+                  Margin="0,8,16,4"
                   FontSize="12"
-                  MinWidth="100" />
+                  MinWidth="100">
+            <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="loc:LangInfo">
+                    <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
 
         <!-- View content -->
-        <ContentControl Grid.Row="2" Content="{Binding CurrentView}">
+        <ContentControl Grid.Row="1" Content="{Binding CurrentView}">
             <ContentControl.DataTemplates>
                 <DataTemplate DataType="vm:StartupViewModel">
                     <v:StartupView />
@@ -41,5 +42,15 @@
                 </DataTemplate>
             </ContentControl.DataTemplates>
         </ContentControl>
+
+        <!-- Version overlay -->
+        <TextBlock Grid.Row="1"
+                   Text="{Binding AppVersion}"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Left"
+                   Margin="8,0,0,4"
+                   FontSize="10"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   Opacity="0.5"
+                   IsHitTestVisible="False" />
     </Grid>
 </Window>

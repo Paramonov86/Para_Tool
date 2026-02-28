@@ -1,6 +1,6 @@
 using System.Globalization;
+using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using ParaTool.App.Localization;
 using ParaTool.Core.Services;
 
@@ -9,26 +9,31 @@ namespace ParaTool.App.ViewModels;
 public partial class MainWindowViewModel : ObservableObject
 {
     [ObservableProperty] private ViewModelBase? _currentView;
-    [ObservableProperty] private string _selectedLanguage;
+    [ObservableProperty] private LangInfo? _selectedLanguage;
 
-    public Loc Loc => Loc.Instance;
+    public LangInfo[] Languages => Loc.Instance.AvailableLanguages;
 
-    public string[] Languages => new[] { "Русский", "English" };
+    public string AppVersion
+    {
+        get
+        {
+            var ver = typeof(MainWindowViewModel).Assembly.GetName().Version;
+            return ver != null ? $"v{ver.ToString(3)}" : "v0.1.0";
+        }
+    }
 
     public MainWindowViewModel()
     {
-        // Auto-detect language
-        var culture = CultureInfo.CurrentUICulture;
-        _selectedLanguage = culture.TwoLetterISOLanguageName == "ru" ? "Русский" : "English";
-        Loc.SetLanguage(_selectedLanguage == "Русский" ? "ru" : "en");
+        var defaultCode = Loc.Instance.Lang;
+        _selectedLanguage = Languages.FirstOrDefault(l => l.Code == defaultCode) ?? Languages.First();
 
         Initialize();
     }
 
-    partial void OnSelectedLanguageChanged(string value)
+    partial void OnSelectedLanguageChanged(LangInfo? value)
     {
-        Loc.SetLanguage(value == "Русский" ? "ru" : "en");
-        OnPropertyChanged(nameof(Loc));
+        if (value != null)
+            Loc.Instance.SetLanguage(value.Code);
     }
 
     private void Initialize()
@@ -37,7 +42,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (modsPath == null)
         {
             var startup = new StartupViewModel();
-            startup.SetError(Loc.ErrorModsNotFound);
+            startup.SetError(Loc.Instance.ErrorModsNotFound);
             startup.FolderSelected += path => OnModsFolderSelected(path);
             CurrentView = startup;
         }
@@ -69,7 +74,12 @@ public partial class MainWindowViewModel : ObservableObject
             scanVm.ModsFound = p.ModsFound;
         });
 
-        var result = await scanner.ScanAsync(modsPath, progress);
+        // Run scan + minimum display time in parallel
+        var scanTask = scanner.ScanAsync(modsPath, progress);
+        var minDisplayTask = Task.Delay(1500);
+        await Task.WhenAll(scanTask, minDisplayTask);
+
+        var result = scanTask.Result;
 
         if (result.Error != null)
         {

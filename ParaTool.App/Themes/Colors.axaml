@@ -25,6 +25,12 @@
     <Color x:Key="Error">#E74C5B</Color>
     <Color x:Key="Info">#3498DB</Color>
 
+    <!-- Rarity -->
+    <Color x:Key="RarityUncommon">#2ECC71</Color>
+    <Color x:Key="RarityRare">#3498DB</Color>
+    <Color x:Key="RarityVeryRare">#9B59B6</Color>
+    <Color x:Key="RarityLegendary">#C8A96E</Color>
+
     <!-- Borders -->
     <Color x:Key="BorderSubtle">#3D3A4D</Color>
 
@@ -50,5 +56,10 @@
     <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource Info}" />
 
     <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}" />
+
+    <SolidColorBrush x:Key="RarityUncommonBrush" Color="{StaticResource RarityUncommon}" />
+    <SolidColorBrush x:Key="RarityRareBrush" Color="{StaticResource RarityRare}" />
+    <SolidColorBrush x:Key="RarityVeryRareBrush" Color="{StaticResource RarityVeryRare}" />
+    <SolidColorBrush x:Key="RarityLegendaryBrush" Color="{StaticResource RarityLegendary}" />
 
 </ResourceDictionary>
