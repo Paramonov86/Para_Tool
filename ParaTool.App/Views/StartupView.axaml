@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ParaTool.App.ViewModels"
+             x:Class="ParaTool.App.Views.StartupView"
+             x:DataType="vm:StartupViewModel">
+
+    <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+        <!-- Error banner -->
+        <Border Background="{StaticResource ErrorBrush}"
+                CornerRadius="8"
+                Padding="20,12"
+                IsVisible="{Binding HasError}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="White"
+                           FontSize="14"
+                           VerticalAlignment="Center" />
+                <Button Name="SelectFolderBtn"
+                        Background="#CC0000"
+                        Foreground="White"
+                        CornerRadius="4"
+                        Padding="8,4"
+                        FontSize="20"
+                        Content="&#x1F4C1;"
+                        BorderThickness="0" />
+            </StackPanel>
+        </Border>
+    </Grid>
+
+</UserControl>

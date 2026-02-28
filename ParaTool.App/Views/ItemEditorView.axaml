@@ -1,0 +1,217 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ParaTool.App.ViewModels"
+             xmlns:v="using:ParaTool.App.Views"
+             x:Class="ParaTool.App.Views.ItemEditorView"
+             x:DataType="vm:ItemEditorViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="Уточните предметы для интеграции"
+                   FontSize="18" FontWeight="SemiBold"
+                   Foreground="{StaticResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,12" />
+
+        <!-- Main content -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,300">
+
+            <!-- Left: Mod list -->
+            <Border Grid.Column="0" Margin="0,0,12,0">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- All mods row -->
+                    <Border Grid.Row="0"
+                            Background="{StaticResource CardBgBrush}"
+                            CornerRadius="6"
+                            Padding="12,8"
+                            Margin="0,0,0,4">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <CheckBox Grid.Column="0"
+                                      IsChecked="{Binding AllEnabled}"
+                                      Margin="0,0,8,0" />
+                            <TextBlock Grid.Column="1"
+                                       Text="Все моды"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding AllModsCount}"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Mod list -->
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding Mods}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:ModVM">
+                                    <Border Background="{StaticResource PanelBgBrush}"
+                                            CornerRadius="4"
+                                            Padding="12,6"
+                                            Margin="0,2">
+                                        <StackPanel>
+                                            <!-- Mod header row -->
+                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                                <CheckBox Grid.Column="0"
+                                                          IsChecked="{Binding Enabled}"
+                                                          Margin="0,0,8,0" />
+                                                <Button Grid.Column="1"
+                                                        Content=">"
+                                                        Background="Transparent"
+                                                        Foreground="{StaticResource TextMutedBrush}"
+                                                        BorderThickness="0"
+                                                        Padding="4,0"
+                                                        FontSize="10"
+                                                        Name="ExpandBtn"
+                                                        Tag="{Binding}" />
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding Name}"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Margin="8,0" />
+                                                <TextBlock Grid.Column="3"
+                                                           Text="{Binding CountDisplay}"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           VerticalAlignment="Center" />
+                                            </Grid>
+
+                                            <!-- Expanded items -->
+                                            <ItemsControl ItemsSource="{Binding Items}"
+                                                          IsVisible="{Binding IsExpanded}"
+                                                          Margin="28,4,0,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="vm:ItemVM">
+                                                        <Border Background="{StaticResource CardBgBrush}"
+                                                                CornerRadius="4"
+                                                                Padding="8,4"
+                                                                Margin="0,1">
+                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                                <CheckBox Grid.Column="0"
+                                                                          IsChecked="{Binding Enabled}"
+                                                                          Margin="0,0,6,0" />
+                                                                <TextBlock Grid.Column="1"
+                                                                           Text="{Binding StatId}"
+                                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                                           VerticalAlignment="Center"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           FontSize="12" />
+                                                                <ComboBox Grid.Column="2"
+                                                                          ItemsSource="{x:Static vm:ItemVM.AvailablePools}"
+                                                                          SelectedItem="{Binding SelectedPool}"
+                                                                          FontSize="11"
+                                                                          MinWidth="100"
+                                                                          Margin="4,0" />
+                                                                <ComboBox Grid.Column="3"
+                                                                          ItemsSource="{x:Static vm:ItemVM.AvailableRarities}"
+                                                                          SelectedItem="{Binding SelectedRarity}"
+                                                                          FontSize="11"
+                                                                          MinWidth="90"
+                                                                          Margin="4,0" />
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- Right: Info panel -->
+            <StackPanel Grid.Column="1" Spacing="12">
+                <!-- Info badge -->
+                <Border Background="{StaticResource AccentBrush}"
+                        CornerRadius="6"
+                        Padding="12,8">
+                    <TextBlock Text="{Binding Mods.Count, StringFormat='Найдено {0} модов с предметами'}"
+                               Foreground="White"
+                               FontSize="12"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <!-- Instructions -->
+                <Border Background="{StaticResource PanelBgBrush}"
+                        CornerRadius="6"
+                        Padding="16,12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Инструкция"
+                                   FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="1. Выберите, какие предметы вы хотите интегрировать в лут-листы Ancient Mega Pack."
+                                   TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="2. Поменяйте по желанию их редкость и слот"
+                                   TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="3. Выберите тематики"
+                                   TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="4. Подождите, пока приложение сделает свою работу"
+                                   TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- Bottom: Patch button / Progress -->
+        <Grid Grid.Row="2" Margin="0,12,0,0" ColumnDefinitions="*,Auto">
+            <Panel Grid.Column="0" HorizontalAlignment="Right">
+                <!-- Patch button -->
+                <Button Content="ПРОПАТЧИТЬ"
+                        IsVisible="{Binding !IsPatching}"
+                        Command="{Binding PatchCommand}"
+                        Background="{StaticResource AccentBrush}"
+                        Foreground="White"
+                        FontSize="18" FontWeight="Bold"
+                        Padding="40,12"
+                        CornerRadius="8"
+                        HorizontalAlignment="Right" />
+
+                <!-- Progress bar -->
+                <Border IsVisible="{Binding IsPatching}"
+                        Background="{StaticResource CardBgBrush}"
+                        CornerRadius="8"
+                        Padding="20,12"
+                        MinWidth="300"
+                        HorizontalAlignment="Right">
+                    <Grid RowDefinitions="Auto,Auto">
+                        <ProgressBar Value="{Binding PatchPercent}"
+                                     Minimum="0" Maximum="100"
+                                     Height="24"
+                                     CornerRadius="4"
+                                     Foreground="{StaticResource AccentBrush}" />
+                        <TextBlock Grid.Row="1"
+                                   Text="{Binding PatchStatus}"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="11"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,4,0,0" />
+                    </Grid>
+                </Border>
+            </Panel>
+
+            <!-- Discord icon area -->
+            <Border Grid.Column="1" Margin="12,0,0,0"
+                    Width="40" Height="40"
+                    CornerRadius="20"
+                    Background="{StaticResource CardBgBrush}"
+                    VerticalAlignment="Center">
+                <TextBlock Text="DC"
+                           FontSize="11"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+            </Border>
+        </Grid>
+    </Grid>
+
+</UserControl>

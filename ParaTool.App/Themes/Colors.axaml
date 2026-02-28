@@ -1,0 +1,54 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Backgrounds -->
+    <Color x:Key="AppBg">#1A1820</Color>
+    <Color x:Key="PanelBg">#2F2C3A</Color>
+    <Color x:Key="CardBg">#3D3A4D</Color>
+    <Color x:Key="HoverBg">#4A3F6B</Color>
+    <Color x:Key="InputBg">#252330</Color>
+
+    <!-- Text -->
+    <Color x:Key="TextPrimary">#E0DDE6</Color>
+    <Color x:Key="TextSecondary">#C8B8DB</Color>
+    <Color x:Key="TextMuted">#8A8494</Color>
+    <Color x:Key="TextDisabled">#5A5465</Color>
+
+    <!-- Accent -->
+    <Color x:Key="Accent">#6C5CE7</Color>
+    <Color x:Key="AccentLight">#8A7FC1</Color>
+    <Color x:Key="Gold">#C8A96E</Color>
+
+    <!-- Semantic -->
+    <Color x:Key="Success">#2ECC71</Color>
+    <Color x:Key="Warning">#F39C12</Color>
+    <Color x:Key="Error">#E74C5B</Color>
+    <Color x:Key="Info">#3498DB</Color>
+
+    <!-- Borders -->
+    <Color x:Key="BorderSubtle">#3D3A4D</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="AppBgBrush" Color="{StaticResource AppBg}" />
+    <SolidColorBrush x:Key="PanelBgBrush" Color="{StaticResource PanelBg}" />
+    <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBg}" />
+    <SolidColorBrush x:Key="HoverBgBrush" Color="{StaticResource HoverBg}" />
+    <SolidColorBrush x:Key="InputBgBrush" Color="{StaticResource InputBg}" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}" />
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="{StaticResource TextDisabled}" />
+
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource Accent}" />
+    <SolidColorBrush x:Key="AccentLightBrush" Color="{StaticResource AccentLight}" />
+    <SolidColorBrush x:Key="GoldBrush" Color="{StaticResource Gold}" />
+
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Success}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource Warning}" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource Error}" />
+    <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource Info}" />
+
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}" />
+
+</ResourceDictionary>

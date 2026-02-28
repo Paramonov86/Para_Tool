@@ -1,0 +1,42 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+.vs/
+
+## NuGet
+*.nupkg
+**/packages/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Bb]uild/
+bld/
+
+## IDE
+.idea/
+*.swp
+*~
+.vscode/
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Reference / internal files
+*.md
+!README.md
+*.jpg
+*.html
+/Armor.txt
+/Armor_2.txt
+/Weapon.txt
+discord_icon.*.png
+.claude/

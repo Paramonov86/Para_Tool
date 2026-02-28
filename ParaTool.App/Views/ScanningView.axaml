@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ParaTool.App.ViewModels"
+             x:Class="ParaTool.App.Views.ScanningView"
+             x:DataType="vm:ScanningViewModel">
+
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
+        <TextBlock Text="Подождите..."
+                   FontSize="22" FontWeight="SemiBold"
+                   Foreground="{StaticResource GoldBrush}"
+                   HorizontalAlignment="Center" />
+
+        <TextBlock Text="Идёт анализ модов с предметами."
+                   FontSize="14"
+                   Foreground="{StaticResource TextSecondaryBrush}"
+                   HorizontalAlignment="Center" />
+
+        <TextBlock Text="Это может занять некоторое время..."
+                   FontSize="12"
+                   Foreground="{StaticResource WarningBrush}"
+                   HorizontalAlignment="Center"
+                   Margin="0,8,0,0" />
+
+        <StackPanel Spacing="4" HorizontalAlignment="Center" Margin="0,20,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                <TextBlock Text="Модов просканировано:"
+                           Foreground="{StaticResource TextMutedBrush}" FontSize="14" />
+                <TextBlock Text="{Binding ScannedPaks}"
+                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="14" FontWeight="Bold" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+                <TextBlock Text="Модов выбрано:"
+                           Foreground="{StaticResource SuccessBrush}" FontSize="14" />
+                <TextBlock Text="{Binding ModsFound}"
+                           Foreground="{StaticResource SuccessBrush}" FontSize="14" FontWeight="Bold" />
+            </StackPanel>
+        </StackPanel>
+    </StackPanel>
+
+</UserControl>
