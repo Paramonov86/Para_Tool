@@ -56,5 +56,15 @@
   "Theme.Destructive": "Yıkım",
   "Theme.War": "Savaş",
   "Theme.Psionic": "Psiyonik",
-  "Theme.Primal": "İlkel"
+  "Theme.Primal": "İlkel",
+
+  "ProfileLabel": "Profil",
+  "ProfileSave": "Kaydet",
+  "ProfileSaveAs": "Farklı kaydet",
+  "ProfileLoad": "Yükle",
+  "ProfileDelete": "Sil",
+  "ProfileNewName": "Profil adı",
+  "ProfileSaved": "Profil kaydedildi!",
+  "MissingItemsWarning": "Daha önce yamalanan eşyalar bulunamadı:",
+  "MissingItemsDismiss": "Kapat"
 }

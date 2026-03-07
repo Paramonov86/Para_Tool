@@ -56,5 +56,15 @@
   "Theme.Destructive": "Руйнування",
   "Theme.War": "Війна",
   "Theme.Psionic": "Псіоніка",
-  "Theme.Primal": "Первісне"
+  "Theme.Primal": "Первісне",
+
+  "ProfileLabel": "Профіль",
+  "ProfileSave": "Зберегти",
+  "ProfileSaveAs": "Зберегти як",
+  "ProfileLoad": "Завантажити",
+  "ProfileDelete": "Видалити",
+  "ProfileNewName": "Назва профілю",
+  "ProfileSaved": "Профіль збережено!",
+  "MissingItemsWarning": "Раніше пропатчені предмети не знайдені:",
+  "MissingItemsDismiss": "Закрити"
 }

@@ -81,7 +81,7 @@ public static class MetaLsxPatcher
                 new XElement("attribute",
                     new XAttribute("id", "Version64"),
                     new XAttribute("type", "int64"),
-                    new XAttribute("value", "36028797018963968"))
+                    new XAttribute("value", mod.Version64))
             );
 
             depsChildren.Add(shortDesc);

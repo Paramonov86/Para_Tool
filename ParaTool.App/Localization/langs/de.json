@@ -56,5 +56,15 @@
   "Theme.Destructive": "Zerstörung",
   "Theme.War": "Krieg",
   "Theme.Psionic": "Psionisch",
-  "Theme.Primal": "Urtümlich"
+  "Theme.Primal": "Urtümlich",
+
+  "ProfileLabel": "Profil",
+  "ProfileSave": "Speichern",
+  "ProfileSaveAs": "Speichern als",
+  "ProfileLoad": "Laden",
+  "ProfileDelete": "Löschen",
+  "ProfileNewName": "Profilname",
+  "ProfileSaved": "Profil gespeichert!",
+  "MissingItemsWarning": "Zuvor gepatchte Gegenstände nicht gefunden:",
+  "MissingItemsDismiss": "Schließen"
 }

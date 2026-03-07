@@ -56,5 +56,15 @@
   "Theme.Destructive": "毁灭",
   "Theme.War": "战争",
   "Theme.Psionic": "灵能",
-  "Theme.Primal": "原始"
+  "Theme.Primal": "原始",
+
+  "ProfileLabel": "配置",
+  "ProfileSave": "保存",
+  "ProfileSaveAs": "另存为",
+  "ProfileLoad": "加载",
+  "ProfileDelete": "删除",
+  "ProfileNewName": "配置名称",
+  "ProfileSaved": "配置已保存！",
+  "MissingItemsWarning": "未找到之前修补的物品：",
+  "MissingItemsDismiss": "关闭"
 }

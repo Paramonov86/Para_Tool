@@ -24,6 +24,7 @@ public static class MetaLsxParser
         var name = GetAttrValue("Name");
         var uuid = GetAttrValue("UUID");
         var folder = GetAttrValue("Folder");
+        var version64 = GetAttrValue("Version64") ?? "36028797018963968";
 
         if (name == null || uuid == null || folder == null)
             return null;
@@ -33,7 +34,8 @@ public static class MetaLsxParser
             Name = name,
             UUID = uuid,
             Folder = folder,
-            PakPath = pakPath
+            PakPath = pakPath,
+            Version64 = version64
         };
     }
 }

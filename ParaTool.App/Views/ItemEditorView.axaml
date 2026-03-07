@@ -188,6 +188,75 @@
             <!-- Right: Info panel (scrollable) -->
             <ScrollViewer Grid.Column="1">
                 <StackPanel Spacing="12">
+                    <!-- Profile bar -->
+                    <Border Background="{StaticResource PanelBgBrush}"
+                            CornerRadius="6"
+                            Padding="12,8">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{Binding ProfileLabel, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                            <!-- Existing profiles dropdown -->
+                            <ComboBox ItemsSource="{Binding ProfileNames}"
+                                      SelectedItem="{Binding SelectedProfile}"
+                                      FontSize="12"
+                                      HorizontalAlignment="Stretch" />
+                            <!-- New profile name input -->
+                            <TextBox Text="{Binding NewProfileName}"
+                                     Watermark="{Binding ProfileNewName, Source={x:Static loc:Loc.Instance}}"
+                                     FontSize="12"
+                                     HorizontalAlignment="Stretch" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Button Content="{Binding ProfileSave, Source={x:Static loc:Loc.Instance}}"
+                                        Command="{Binding SaveProfileCommand}"
+                                        FontSize="11" Padding="10,4"
+                                        Background="{StaticResource AccentBrush}"
+                                        Foreground="White"
+                                        CornerRadius="4" />
+                                <Button Content="{Binding ProfileDelete, Source={x:Static loc:Loc.Instance}}"
+                                        Command="{Binding DeleteProfileCommand}"
+                                        FontSize="11" Padding="10,4"
+                                        Background="#33E74C3C"
+                                        Foreground="#E74C3C"
+                                        CornerRadius="4" />
+                            </StackPanel>
+                            <!-- Toast notification -->
+                            <Border IsVisible="{Binding ShowProfileToast}"
+                                    Background="#1A2ECC71"
+                                    BorderBrush="#2ECC71"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8,4">
+                                <TextBlock Text="{Binding ProfileToastText}"
+                                           Foreground="#2ECC71"
+                                           FontSize="11" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Missing items warning -->
+                    <Border IsVisible="{Binding HasMissingItems}"
+                            Background="#33E67E22"
+                            BorderBrush="#E67E22"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding MissingItemsText}"
+                                       Foreground="#E67E22"
+                                       FontSize="11"
+                                       TextWrapping="Wrap" />
+                            <Button Grid.Column="1"
+                                    Content="{Binding MissingItemsDismiss, Source={x:Static loc:Loc.Instance}}"
+                                    Command="{Binding DismissMissingItemsCommand}"
+                                    FontSize="10" Padding="6,2"
+                                    Background="Transparent"
+                                    Foreground="#E67E22"
+                                    BorderThickness="0"
+                                    VerticalAlignment="Top" />
+                        </Grid>
+                    </Border>
+
                     <!-- Info badge -->
                     <Border Background="{StaticResource AccentBrush}"
                             CornerRadius="6"

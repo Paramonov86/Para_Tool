@@ -56,5 +56,15 @@
   "Theme.Destructive": "Destructive",
   "Theme.War": "War",
   "Theme.Psionic": "Psionic",
-  "Theme.Primal": "Primal"
+  "Theme.Primal": "Primal",
+
+  "ProfileLabel": "Profile",
+  "ProfileSave": "Save",
+  "ProfileSaveAs": "Save As",
+  "ProfileLoad": "Load",
+  "ProfileDelete": "Delete",
+  "ProfileNewName": "Profile name",
+  "ProfileSaved": "Profile saved!",
+  "MissingItemsWarning": "Previously patched items not found:",
+  "MissingItemsDismiss": "Dismiss"
 }

@@ -56,5 +56,15 @@
   "Theme.Destructive": "Destrucción",
   "Theme.War": "Guerra",
   "Theme.Psionic": "Psiónico",
-  "Theme.Primal": "Primigenio"
+  "Theme.Primal": "Primigenio",
+
+  "ProfileLabel": "Perfil",
+  "ProfileSave": "Guardar",
+  "ProfileSaveAs": "Guardar como",
+  "ProfileLoad": "Cargar",
+  "ProfileDelete": "Eliminar",
+  "ProfileNewName": "Nombre del perfil",
+  "ProfileSaved": "Perfil guardado!",
+  "MissingItemsWarning": "Objetos previamente parcheados no encontrados:",
+  "MissingItemsDismiss": "Cerrar"
 }

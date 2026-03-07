@@ -56,5 +56,15 @@
   "Theme.Destructive": "Destruction",
   "Theme.War": "Guerre",
   "Theme.Psionic": "Psionique",
-  "Theme.Primal": "Primitif"
+  "Theme.Primal": "Primitif",
+
+  "ProfileLabel": "Profil",
+  "ProfileSave": "Enregistrer",
+  "ProfileSaveAs": "Enregistrer sous",
+  "ProfileLoad": "Charger",
+  "ProfileDelete": "Supprimer",
+  "ProfileNewName": "Nom du profil",
+  "ProfileSaved": "Profil enregistré !",
+  "MissingItemsWarning": "Objets précédemment patchés introuvables :",
+  "MissingItemsDismiss": "Fermer"
 }

@@ -56,5 +56,15 @@
   "Theme.Destructive": "파괴",
   "Theme.War": "전쟁",
   "Theme.Psionic": "초능력",
-  "Theme.Primal": "원시"
+  "Theme.Primal": "원시",
+
+  "ProfileLabel": "프로필",
+  "ProfileSave": "저장",
+  "ProfileSaveAs": "다른 이름으로 저장",
+  "ProfileLoad": "불러오기",
+  "ProfileDelete": "삭제",
+  "ProfileNewName": "프로필 이름",
+  "ProfileSaved": "프로필 저장됨!",
+  "MissingItemsWarning": "이전에 패치된 아이템을 찾을 수 없습니다:",
+  "MissingItemsDismiss": "닫기"
 }

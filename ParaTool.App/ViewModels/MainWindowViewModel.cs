@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ParaTool.App.Localization;
+using ParaTool.Core.Models;
 using ParaTool.Core.Services;
 
 namespace ParaTool.App.ViewModels;
@@ -98,6 +99,15 @@ public partial class MainWindowViewModel : ObservableObject
         foreach (var mod in result.Mods)
             editor.Mods.Add(new ModVM(mod));
         editor.RefreshCounts();
+
+        // Restore last session selections
+        try
+        {
+            var lastSession = ProfileService.LoadLastSession();
+            if (lastSession != null)
+                editor.ApplyProfileData(lastSession);
+        }
+        catch { /* ignore corrupted session file */ }
 
         CurrentView = editor;
     }

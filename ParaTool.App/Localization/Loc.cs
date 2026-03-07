@@ -115,6 +115,16 @@ public partial class Loc : ObservableObject
 
     public string IntegratorTitle => this["IntegratorTitle"];
 
+    public string ProfileLabel => this["ProfileLabel"];
+    public string ProfileSave => this["ProfileSave"];
+    public string ProfileSaveAs => this["ProfileSaveAs"];
+    public string ProfileLoad => this["ProfileLoad"];
+    public string ProfileDelete => this["ProfileDelete"];
+    public string ProfileNewName => this["ProfileNewName"];
+    public string ProfileSaved => this["ProfileSaved"];
+    public string MissingItemsWarning => this["MissingItemsWarning"];
+    public string MissingItemsDismiss => this["MissingItemsDismiss"];
+
     public string PatchingInProgress => this["PatchingInProgress"];
     public string PatchSuccessLabel => this["PatchSuccess"];
     public string PatchErrorLabel => this["PatchError"];

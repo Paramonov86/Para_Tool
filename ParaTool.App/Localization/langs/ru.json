@@ -56,5 +56,15 @@
   "Theme.Destructive": "Разрушение",
   "Theme.War": "Война",
   "Theme.Psionic": "Псионика",
-  "Theme.Primal": "Первобытное"
+  "Theme.Primal": "Первобытное",
+
+  "ProfileLabel": "Профиль",
+  "ProfileSave": "Сохранить",
+  "ProfileSaveAs": "Сохранить как",
+  "ProfileLoad": "Загрузить",
+  "ProfileDelete": "Удалить",
+  "ProfileNewName": "Имя профиля",
+  "ProfileSaved": "Профиль сохранён!",
+  "MissingItemsWarning": "Ранее патченные предметы не найдены:",
+  "MissingItemsDismiss": "Закрыть"
 }

@@ -102,6 +102,20 @@ public partial class ItemVM : ObservableObject
         NotifyThemesChanged();
     }
 
+    /// <summary>
+    /// Sync VM state from the underlying ItemEntry (after profile apply).
+    /// </summary>
+    public void SyncFromEntry()
+    {
+        Enabled = _entry.Enabled;
+        SelectedPool = PoolOptions.FirstOrDefault(o => o.Value == _entry.EffectivePool)
+                       ?? PoolOptions[0];
+        SelectedRarity = RarityOptions.FirstOrDefault(o => o.Value == _entry.EffectiveRarity)
+                         ?? RarityOptions[0];
+        SelectedThemes = new ObservableCollection<string>(_entry.UserThemes);
+        NotifyThemesChanged();
+    }
+
     // === Option lists (shared across all instances) ===
 
     private static readonly string[] _poolKeys =

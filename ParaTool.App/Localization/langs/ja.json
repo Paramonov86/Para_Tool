@@ -56,5 +56,15 @@
   "Theme.Destructive": "破壊",
   "Theme.War": "戦争",
   "Theme.Psionic": "サイオニック",
-  "Theme.Primal": "原始"
+  "Theme.Primal": "原始",
+
+  "ProfileLabel": "プロファイル",
+  "ProfileSave": "保存",
+  "ProfileSaveAs": "名前を付けて保存",
+  "ProfileLoad": "読み込み",
+  "ProfileDelete": "削除",
+  "ProfileNewName": "プロファイル名",
+  "ProfileSaved": "プロファイルを保存しました！",
+  "MissingItemsWarning": "以前パッチしたアイテムが見つかりません：",
+  "MissingItemsDismiss": "閉じる"
 }

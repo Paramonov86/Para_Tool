@@ -39,4 +39,25 @@ public partial class ModVM : ObservableObject
         OnPropertyChanged(nameof(EnabledItems));
         OnPropertyChanged(nameof(CountDisplay));
     }
+
+    /// <summary>
+    /// Set Enabled without triggering OnEnabledChanged cascade to items.
+    /// </summary>
+    public void SetEnabledSilent(bool value)
+    {
+        if (_enabled != value)
+        {
+            _enabled = value;
+            OnPropertyChanged(nameof(Enabled));
+        }
+        RefreshCounts();
+    }
+
+    /// <summary>
+    /// Set Enabled from item states without triggering OnEnabledChanged cascade.
+    /// </summary>
+    public void SyncEnabledFromItems()
+    {
+        SetEnabledSilent(Items.Any(i => i.Enabled));
+    }
 }
