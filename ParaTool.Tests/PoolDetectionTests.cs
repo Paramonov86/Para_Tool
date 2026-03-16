@@ -35,7 +35,14 @@ public class PoolDetectionTests
     }
 
     [Theory]
-    [InlineData("Armor", "MusicalInstrument", null, "No", null)]
+    [InlineData("Armor", "MusicalInstrument", null, "No", null, "Rings")]
+    public void DetectPool_MusicalInstrument_ReturnsRings(
+        string statType, string? slot, string? armorType, string? shield, string? weaponProps, string expected)
+    {
+        Assert.Equal(expected, ModScanner.DetectPool(statType, slot, armorType, shield, weaponProps));
+    }
+
+    [Theory]
     [InlineData("Armor", "Underwear", null, "No", null)]
     [InlineData("Armor", "VanityBody", null, "No", null)]
     public void DetectPool_SkippedSlots_ReturnsNull(
