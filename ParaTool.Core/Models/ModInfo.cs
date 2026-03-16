@@ -7,5 +7,6 @@ public sealed class ModInfo
     public required string Folder { get; init; }
     public required string PakPath { get; init; }
     public string Version64 { get; init; } = "36028797018963968";
+    public bool IsAmp { get; init; }
     public List<ItemEntry> Items { get; set; } = new();
 }

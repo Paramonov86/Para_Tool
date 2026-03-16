@@ -96,6 +96,10 @@ public partial class MainWindowViewModel : ObservableObject
             AmpPakPath = result.AmpPakPath
         };
 
+        // Add AMP mod first if it has items
+        if (result.AmpMod != null)
+            editor.Mods.Add(new ModVM(result.AmpMod));
+
         foreach (var mod in result.Mods)
             editor.Mods.Add(new ModVM(mod));
         editor.RefreshCounts();

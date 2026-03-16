@@ -6,6 +6,7 @@ namespace ParaTool.Core.Services;
 public sealed class ScanResult
 {
     public List<ModInfo> Mods { get; init; } = new();
+    public ModInfo? AmpMod { get; init; }
     public string? AmpPakPath { get; init; }
     public string? Error { get; init; }
 }
@@ -72,11 +73,220 @@ public sealed class ModScanner
 
         mods.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
 
+        // Scan AMP pak itself for editable items
+        var ampMod = ScanAmpPak(ampPakPath);
+
         return new ScanResult
         {
             Mods = mods,
+            AmpMod = ampMod,
             AmpPakPath = ampPakPath
         };
+    }
+
+    private static readonly HashSet<string> KnownThemes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Swamp", "Aquatic", "Shadowfell", "Arcane", "Celestial",
+        "Nature", "Destructive", "War", "Psionic", "Primal"
+    };
+
+    private static readonly Dictionary<string, string> TableRarityMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Uncommon"] = "Uncommon", ["Rare"] = "Rare",
+        ["Epic"] = "VeryRare", ["Legendary"] = "Legendary"
+    };
+
+    private ModInfo? ScanAmpPak(string ampPakPath)
+    {
+        try
+        {
+            using var fs = File.OpenRead(ampPakPath);
+            var header = PakReader.ReadHeader(fs);
+            var entries = PakReader.ReadFileList(fs, header);
+
+            var metaEntry = entries.FirstOrDefault(e =>
+                e.Path.EndsWith("meta.lsx", StringComparison.OrdinalIgnoreCase));
+            if (metaEntry.Path == null) return null;
+
+            var metaData = PakReader.ExtractFileData(fs, metaEntry);
+            var modInfo = MetaLsxParser.Parse(metaData, ampPakPath);
+            if (modInfo == null) return null;
+
+            // Parse TreasureTable → whitelist (REL_All items) + themes per item
+            var ttEntry = entries.FirstOrDefault(e =>
+                e.Path.EndsWith("TreasureTable.txt", StringComparison.OrdinalIgnoreCase));
+            if (ttEntry.Path == null) return null;
+
+            var ttData = PakReader.ExtractFileData(fs, ttEntry);
+            var (whitelist, themeMap) = ParseTreasureTableInfo(ttData);
+            if (whitelist.Count == 0) return null;
+
+            // Build merged resolver: vanilla + AMP stats
+            var resolver = new StatsResolver();
+            foreach (var kvp in _vanillaDb.Resolver.AllEntries)
+                resolver.AddEntries(new[] { kvp.Value });
+
+            var statFiles = entries.Where(e =>
+                e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
+                e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            foreach (var statFile in statFiles)
+            {
+                var data = PakReader.ExtractFileData(fs, statFile);
+                var text = System.Text.Encoding.UTF8.GetString(data);
+                var parsed = StatsParser.Parse(text);
+
+                foreach (var modEntry in parsed)
+                {
+                    // Don't let StatusData overwrite Armor/Weapon entries (same name, case-insensitive)
+                    var existing = resolver.Get(modEntry.Name);
+                    if (existing != null && modEntry.Type != "Armor" && modEntry.Type != "Weapon"
+                        && (existing.Type == "Armor" || existing.Type == "Weapon"))
+                        continue;
+
+                    var vanilla = _vanillaDb.Resolver.Get(modEntry.Name);
+                    if (vanilla != null)
+                    {
+                        var mergedData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
+                        foreach (var kvp in modEntry.Data)
+                            mergedData[kvp.Key] = kvp.Value;
+
+                        var mergedUsing = modEntry.Using;
+                        if (mergedUsing != null && mergedUsing.Equals(modEntry.Name, StringComparison.OrdinalIgnoreCase))
+                            mergedUsing = vanilla.Using;
+
+                        resolver.AddEntries(new[] { new StatsEntry
+                        {
+                            Name = modEntry.Name,
+                            Type = modEntry.Type,
+                            Using = mergedUsing ?? vanilla.Using,
+                            Data = mergedData
+                        }});
+                    }
+                    else
+                    {
+                        resolver.AddEntries(new[] { modEntry });
+                    }
+                }
+            }
+
+            // Resolve only items that exist in REL_All tables
+            var items = new List<ItemEntry>();
+            foreach (var statId in whitelist)
+            {
+                var entry = resolver.Get(statId);
+                if (entry == null) continue;
+                if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
+
+                var item = ResolveItem(entry, resolver);
+                if (item == null) continue;
+
+                item.IsAmpItem = true;
+                if (themeMap.TryGetValue(statId, out var themes))
+                    item.DetectedThemes = themes;
+
+                items.Add(item);
+            }
+
+            if (items.Count == 0) return null;
+
+            return new ModInfo
+            {
+                Name = modInfo.Name,
+                UUID = modInfo.UUID,
+                Folder = modInfo.Folder,
+                PakPath = modInfo.PakPath,
+                Version64 = modInfo.Version64,
+                IsAmp = true,
+                Items = items
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Parses TreasureTable.txt → whitelist of StatIds in REL_All_* tables + theme map.
+    /// </summary>
+    private static (HashSet<string> whitelist, Dictionary<string, List<string>> themes)
+        ParseTreasureTableInfo(byte[] ttData)
+    {
+        var text = System.Text.Encoding.UTF8.GetString(ttData);
+        var whitelist = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var themes = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        bool inRelTable = false;
+        bool isAllTable = false;
+        string? currentTheme = null;
+
+        foreach (var rawLine in text.Split('\n'))
+        {
+            var line = rawLine.TrimStart();
+
+            if (line.StartsWith("new treasuretable \""))
+            {
+                inRelTable = false;
+                isAllTable = false;
+                currentTheme = null;
+
+                var name = ExtractQuoted(line);
+                if (!name.StartsWith("REL_", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                inRelTable = true;
+                var rest = name[4..];
+
+                if (rest.StartsWith("All_", StringComparison.OrdinalIgnoreCase))
+                {
+                    isAllTable = true;
+                }
+                else
+                {
+                    var idx = rest.IndexOf('_');
+                    if (idx > 0)
+                    {
+                        var suffix = rest[(idx + 1)..];
+                        if (KnownThemes.Contains(suffix))
+                            currentTheme = suffix;
+                    }
+                }
+                continue;
+            }
+
+            if (!inRelTable) continue;
+            if (!line.StartsWith("object category \"I_")) continue;
+
+            int start = line.IndexOf("\"I_") + 3;
+            int end = line.IndexOf('"', start);
+            if (end <= start) continue;
+            var statId = line[start..end];
+
+            if (isAllTable)
+                whitelist.Add(statId);
+
+            if (currentTheme != null)
+            {
+                if (!themes.TryGetValue(statId, out var list))
+                {
+                    list = new List<string>();
+                    themes[statId] = list;
+                }
+                if (!list.Contains(currentTheme))
+                    list.Add(currentTheme);
+            }
+        }
+
+        return (whitelist, themes);
+    }
+
+    private static string ExtractQuoted(string line)
+    {
+        int first = line.IndexOf('"');
+        if (first < 0) return "";
+        int second = line.IndexOf('"', first + 1);
+        return second < 0 ? "" : line[(first + 1)..second];
     }
 
     private ModInfo? ScanPak(string pakPath)
@@ -119,13 +329,42 @@ public sealed class ModScanner
                 modEntries.AddRange(parsed);
             }
 
-            resolver.AddEntries(modEntries);
+            // Merge mod entries with vanilla: mod data overrides, but vanilla data fills gaps.
+            // This preserves vanilla Slot/ArmorType in skeleton entries that mods redefine.
+            foreach (var modEntry in modEntries)
+            {
+                var vanilla = _vanillaDb.Resolver.Get(modEntry.Name);
+                if (vanilla != null)
+                {
+                    var mergedData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
+                    foreach (var kvp in modEntry.Data)
+                        mergedData[kvp.Key] = kvp.Value;
 
-            // Filter: keep only Armor/Weapon entries from this mod
+                    // Keep vanilla's using chain if mod self-references (broken skeleton pattern)
+                    var mergedUsing = modEntry.Using;
+                    if (mergedUsing != null && mergedUsing.Equals(modEntry.Name, StringComparison.OrdinalIgnoreCase))
+                        mergedUsing = vanilla.Using;
+
+                    resolver.AddEntries(new[] { new StatsEntry
+                    {
+                        Name = modEntry.Name,
+                        Type = modEntry.Type,
+                        Using = mergedUsing ?? vanilla.Using,
+                        Data = mergedData
+                    }});
+                }
+                else
+                {
+                    resolver.AddEntries(new[] { modEntry });
+                }
+            }
+
+            // Filter: keep only Armor/Weapon entries from this mod that are NOT vanilla rebals
             var items = new List<ItemEntry>();
             foreach (var entry in modEntries)
             {
                 if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
+                if (_vanillaDb.Resolver.AllEntries.ContainsKey(entry.Name)) continue;
 
                 var item = ResolveItem(entry, resolver);
                 if (item == null) continue;
@@ -205,8 +444,9 @@ public sealed class ModScanner
             "Boots" => "Boots",
             "Amulet" => "Amulets",
             "Ring" => "Rings",
+            "MusicalInstrument" => "Rings",
             // Skip these
-            "MusicalInstrument" or "Underwear" => null,
+            "Underwear" => null,
             _ when slot?.StartsWith("Vanity") == true => null,
             _ => null
         };
@@ -232,6 +472,7 @@ public sealed class ModScanner
     {
         return rarity switch
         {
+            "Common" => "Common",
             "Uncommon" => "Uncommon",
             "Rare" => "Rare",
             "VeryRare" => "VeryRare",

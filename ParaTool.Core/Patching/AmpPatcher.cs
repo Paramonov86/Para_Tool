@@ -21,19 +21,43 @@ public sealed class AmpPatcher
     public async Task<PatchResult> PatchAsync(
         string ampPakPath,
         IReadOnlyList<ModInfo> mods,
+        ModInfo? ampMod = null,
         IProgress<PatchProgress>? progress = null,
         CancellationToken ct = default)
     {
-        var enabledItems = mods
+        // Combine mod items + AMP items for TT patching
+        var allItems = mods.SelectMany(m => m.Items).ToList();
+        if (ampMod != null)
+            allItems.AddRange(ampMod.Items);
+
+        var enabledModItems = mods
             .SelectMany(m => m.Items)
             .Where(i => i.Enabled)
             .ToList();
 
-        if (enabledItems.Count == 0)
-            return new PatchResult { Success = false, Error = "No items selected." };
+        var modifiedAmpItems = ampMod?.Items
+            .Where(i => i.IsModified && i.Enabled)
+            .ToList() ?? new List<ItemEntry>();
+
+        var enabledItems = enabledModItems.Concat(modifiedAmpItems).ToList();
+
+        // For TT patching: pass all items (including unmodified AMP for removal logic)
+        var allItemsForTt = mods.SelectMany(m => m.Items).ToList();
+        if (ampMod != null)
+            allItemsForTt.AddRange(ampMod.Items);
+
+        if (enabledModItems.Count == 0 && modifiedAmpItems.Count == 0)
+        {
+            // Check if any AMP items were disabled (need re-patch to remove them)
+            var disabledAmpItems = ampMod?.Items.Where(i => !i.Enabled && i.IsModified).ToList()
+                ?? new List<ItemEntry>();
+            if (disabledAmpItems.Count == 0)
+                return new PatchResult { Success = false, Error = "No items selected." };
+        }
 
         var modsWithEnabledItems = mods
             .Where(m => m.Items.Any(i => i.Enabled))
+            .Where(m => !m.IsAmp) // Exclude AMP from dependencies
             .ToList();
 
         using var tempDir = new TempDirectoryManager();
@@ -51,11 +75,22 @@ public sealed class AmpPatcher
             if (ttPath == null)
                 return new PatchResult { Success = false, Error = "TreasureTable.txt not found in AMP pak." };
 
-            var ttText = await File.ReadAllTextAsync(ttPath, ct);
-            var patchedTt = TreasureTablePatcher.Patch(ttText, enabledItems);
+            // Use stored original TT if available, otherwise store current as original
+            string ttText;
+            if (OriginalTtStore.HasValidOriginal(ampPakPath))
+            {
+                ttText = OriginalTtStore.Load()!;
+            }
+            else
+            {
+                ttText = await File.ReadAllTextAsync(ttPath, ct);
+                OriginalTtStore.Store(ampPakPath, ttText);
+            }
+
+            var patchedTt = TreasureTablePatcher.Patch(ttText, allItemsForTt);
             await File.WriteAllTextAsync(ttPath, patchedTt, ct);
 
-            // Step 3: Generate ParaTool_Overrides.txt
+            // Step 3: Generate ParaTool_Overrides.txt (mod items + modified AMP items only)
             progress?.Report(new PatchProgress { Stage = "Generating stat overrides...", Percent = 50 });
             var overridesContent = StatsOverrideGenerator.Generate(enabledItems);
 
@@ -104,7 +139,7 @@ public sealed class AmpPatcher
             return new PatchResult
             {
                 Success = true,
-                ItemsPatched = enabledItems.Count
+                ItemsPatched = enabledModItems.Count + modifiedAmpItems.Count
             };
         }
         catch (Exception ex)

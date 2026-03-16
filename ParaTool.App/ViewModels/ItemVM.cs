@@ -37,7 +37,7 @@ public partial class ItemVM : ObservableObject
         _enabled = entry.Enabled;
         _selectedPool = PoolOptions.First(o => o.Value == entry.EffectivePool);
         _selectedRarity = RarityOptions.First(o => o.Value == entry.EffectiveRarity);
-        _selectedThemes = new ObservableCollection<string>(entry.UserThemes);
+        _selectedThemes = new ObservableCollection<string>(entry.EffectiveThemes);
 
         Loc.Instance.PropertyChanged += (_, _) => OnLanguageChanged();
     }
@@ -76,6 +76,7 @@ public partial class ItemVM : ObservableObject
 
     public IBrush RarityColor => SelectedRarity.Value switch
     {
+        "Common" => new SolidColorBrush(Color.Parse("#8A8494")),
         "Uncommon" => new SolidColorBrush(Color.Parse("#2ECC71")),
         "Rare" => new SolidColorBrush(Color.Parse("#3498DB")),
         "VeryRare" => new SolidColorBrush(Color.Parse("#9B59B6")),
@@ -112,7 +113,7 @@ public partial class ItemVM : ObservableObject
                        ?? PoolOptions[0];
         SelectedRarity = RarityOptions.FirstOrDefault(o => o.Value == _entry.EffectiveRarity)
                          ?? RarityOptions[0];
-        SelectedThemes = new ObservableCollection<string>(_entry.UserThemes);
+        SelectedThemes = new ObservableCollection<string>(_entry.EffectiveThemes);
         NotifyThemesChanged();
     }
 
@@ -127,7 +128,7 @@ public partial class ItemVM : ObservableObject
 
     private static readonly string[] _rarityKeys =
     [
-        "Uncommon", "Rare", "VeryRare", "Legendary"
+        "Common", "Uncommon", "Rare", "VeryRare", "Legendary"
     ];
 
     public static LabeledOption[] PoolOptions { get; } =

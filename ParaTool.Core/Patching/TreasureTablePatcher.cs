@@ -39,6 +39,8 @@ public static class TreasureTablePatcher
         foreach (var item in items)
         {
             if (!item.Enabled) continue;
+            if (item.EffectiveRarity == "Common") continue; // No REL_Common_* tables in AMP
+            if (item.IsAmpItem && !item.IsModified) continue; // Unmodified AMP items stay in place
 
             var pool = item.EffectivePool;
             var rarity = item.EffectiveRarity;
@@ -59,7 +61,7 @@ public static class TreasureTablePatcher
             }
 
             // Layer 3: Theme pools
-            foreach (var theme in item.UserThemes)
+            foreach (var theme in item.EffectiveThemes)
             {
                 AddUnique(poolAdditions, $"REL_{rt}_{theme}", objLine);
                 if (ThemeToParaNum.TryGetValue(theme, out var themeNum))
@@ -73,6 +75,13 @@ public static class TreasureTablePatcher
 
         // Step 2: Parse file into lines
         var lines = originalText.Split('\n').ToList();
+
+        // Step 2.5: Remove modified/disabled AMP items from original TT
+        var modifiedAmpItems = items
+            .Where(i => i.IsAmpItem && i.IsModified)
+            .ToList();
+        if (modifiedAmpItems.Count > 0)
+            RemoveAmpItems(lines, modifiedAmpItems);
 
         // Step 3: Build table position index
         var tableRanges = BuildTableIndex(lines);
@@ -126,6 +135,45 @@ public static class TreasureTablePatcher
         }
 
         return string.Join('\n', lines);
+    }
+
+    /// <summary>
+    /// Removes modified/disabled AMP items from the TT lines.
+    /// For paragon tables, also removes the preceding "new subtable" line.
+    /// </summary>
+    private static void RemoveAmpItems(List<string> lines, IReadOnlyList<ItemEntry> modifiedAmpItems)
+    {
+        var statIds = new HashSet<string>(modifiedAmpItems.Select(i => $"\"I_{i.StatId}\""));
+
+        for (int i = lines.Count - 1; i >= 0; i--)
+        {
+            var trimmed = lines[i].TrimStart();
+            if (!trimmed.StartsWith("object category ")) continue;
+
+            // Check if this line references any modified AMP item
+            bool match = false;
+            foreach (var id in statIds)
+            {
+                if (trimmed.Contains(id))
+                {
+                    match = true;
+                    break;
+                }
+            }
+            if (!match) continue;
+
+            // Check if preceding line is "new subtable" (paragon table pattern)
+            if (i > 0 && lines[i - 1].TrimStart().StartsWith("new subtable \"1,1\""))
+            {
+                lines.RemoveAt(i);
+                lines.RemoveAt(i - 1);
+                i--; // adjust for removed preceding line
+            }
+            else
+            {
+                lines.RemoveAt(i);
+            }
+        }
     }
 
     /// <summary>

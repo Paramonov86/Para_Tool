@@ -96,7 +96,8 @@ public partial class ItemEditorViewModel : ViewModelBase
             foreach (var item in mod.Items)
                 item.SyncThemesToEntry();
 
-        var modInfos = Mods.Select(m => m.ModInfo).ToList();
+        var modInfos = Mods.Where(m => !m.IsAmp).Select(m => m.ModInfo).ToList();
+        var ampModInfo = Mods.FirstOrDefault(m => m.IsAmp)?.ModInfo;
         var patcher = new AmpPatcher();
 
         var progress = new Progress<PatchProgress>(p =>
@@ -105,7 +106,7 @@ public partial class ItemEditorViewModel : ViewModelBase
             PatchStatus = p.Stage;
         });
 
-        var result = await patcher.PatchAsync(AmpPakPath, modInfos, progress);
+        var result = await patcher.PatchAsync(AmpPakPath, modInfos, ampModInfo, progress);
 
         if (result.Success)
         {
@@ -115,7 +116,8 @@ public partial class ItemEditorViewModel : ViewModelBase
             // Auto-save last session (with mod-level enabled)
             try
             {
-                var sessionData = ProfileService.CaptureState(modInfos);
+                var allModInfos = Mods.Select(m => m.ModInfo).ToList();
+                var sessionData = ProfileService.CaptureState(allModInfos);
                 foreach (var mod in Mods)
                     if (sessionData.Mods.TryGetValue(mod.ModInfo.UUID, out var sel))
                         sel.Enabled = mod.Enabled;

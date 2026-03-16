@@ -17,6 +17,10 @@ public sealed class ItemEntry
     // Auto-detected from resolution
     public string? DetectedPool { get; set; }
     public string? DetectedRarity { get; set; }
+    public List<string> DetectedThemes { get; set; } = new();
+
+    // AMP item flag
+    public bool IsAmpItem { get; set; }
 
     // User-editable
     public bool Enabled { get; set; } = true;
@@ -26,4 +30,8 @@ public sealed class ItemEntry
 
     public string EffectivePool => UserPool ?? DetectedPool ?? "UNKNOWN";
     public string EffectiveRarity => UserRarity ?? DetectedRarity ?? "Uncommon";
+    public List<string> EffectiveThemes => UserThemes.Count > 0 ? UserThemes : DetectedThemes;
+
+    public bool IsModified =>
+        UserPool != null || UserRarity != null || UserThemes.Count > 0 || !Enabled;
 }

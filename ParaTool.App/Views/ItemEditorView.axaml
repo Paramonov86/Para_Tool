@@ -16,7 +16,7 @@
         <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,12" Spacing="2">
             <TextBlock Text="{Binding IntegratorTitle, Source={x:Static loc:Loc.Instance}}"
                        FontSize="24" FontWeight="Bold"
-                       Foreground="#C8A96E"
+                       Foreground="#B8B5C4"
                        HorizontalAlignment="Center" />
             <TextBlock Text="{Binding EditorTitle, Source={x:Static loc:Loc.Instance}}"
                        FontSize="14"
@@ -57,7 +57,7 @@
                         <ItemsControl ItemsSource="{Binding Mods}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="vm:ModVM">
-                                    <Border Background="{StaticResource PanelBgBrush}"
+                                    <Border Background="{Binding ModBackground}"
                                             CornerRadius="4"
                                             Padding="12,6"
                                             Margin="0,2">

@@ -14,6 +14,7 @@ public static class StatsOverrideGenerator
         foreach (var item in items)
         {
             if (!item.Enabled) continue;
+            if (item.EffectiveRarity == "Common") continue;
 
             var pool = item.EffectivePool;
             var rarity = item.EffectiveRarity;

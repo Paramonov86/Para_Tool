@@ -19,7 +19,8 @@ public sealed class VanillaDatabase
         {
             "ParaTool.Core.Resources.Vanilla.Armor.txt",
             "ParaTool.Core.Resources.Vanilla.Armor_2.txt",
-            "ParaTool.Core.Resources.Vanilla.Weapon.txt"
+            "ParaTool.Core.Resources.Vanilla.Weapon.txt",
+            "ParaTool.Core.Resources.Vanilla.Weapon_2.txt"
         };
 
         foreach (var resourceName in resourceNames)
