@@ -211,6 +211,7 @@ public static class TreasureTablePatcher
     private static int FindLastObjectInSubtable(List<string> lines, int start, int end, string subtableSpec)
     {
         int lastObj = -1;
+        int subtableLine = -1;
         bool inTargetSubtable = false;
 
         for (int i = start; i <= end; i++)
@@ -220,13 +221,16 @@ public static class TreasureTablePatcher
             {
                 var spec = ExtractQuoted(trimmed);
                 inTargetSubtable = spec == subtableSpec;
+                if (inTargetSubtable)
+                    subtableLine = i;
             }
 
             if (inTargetSubtable && trimmed.StartsWith("object category "))
                 lastObj = i;
         }
 
-        return lastObj;
+        // Fall back to the subtable line itself when subtable is empty
+        return lastObj >= 0 ? lastObj : subtableLine;
     }
 
     /// <summary>

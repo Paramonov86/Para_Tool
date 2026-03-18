@@ -3,6 +3,7 @@
         xmlns:vm="using:ParaTool.App.ViewModels"
         xmlns:v="using:ParaTool.App.Views"
         xmlns:loc="using:ParaTool.App.Localization"
+        xmlns:ctrl="using:ParaTool.App.Controls"
         x:Class="ParaTool.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/app_icon.png"
@@ -13,20 +14,29 @@
         Background="{StaticResource AppBgBrush}">
 
     <Grid RowDefinitions="Auto,*">
-        <!-- Language selector -->
-        <ComboBox Grid.Row="0"
-                  ItemsSource="{Binding Languages}"
-                  SelectedItem="{Binding SelectedLanguage}"
-                  HorizontalAlignment="Right"
-                  Margin="0,8,16,4"
-                  FontSize="12"
-                  MinWidth="100">
-            <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="loc:LangInfo">
-                    <TextBlock Text="{Binding Name}" />
-                </DataTemplate>
-            </ComboBox.ItemTemplate>
-        </ComboBox>
+        <!-- Top bar: update button + language selector -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="8,8,16,4">
+            <!-- Update button (left) -->
+            <ctrl:UpdateButton Grid.Column="0"
+                               State="{Binding UpdateState}"
+                               UpdateVersion="{Binding UpdateVersion}"
+                               Progress="{Binding UpdateProgress}"
+                               ErrorMessage="{Binding UpdateError}"
+                               Tapped="OnUpdateButtonTapped" />
+
+            <!-- Language selector (right) -->
+            <ComboBox Grid.Column="2"
+                      ItemsSource="{Binding Languages}"
+                      SelectedItem="{Binding SelectedLanguage}"
+                      FontSize="12"
+                      MinWidth="100">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="loc:LangInfo">
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </Grid>
 
         <!-- View content -->
         <ContentControl Grid.Row="1" Content="{Binding CurrentView}">

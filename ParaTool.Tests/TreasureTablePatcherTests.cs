@@ -249,6 +249,101 @@ public class TreasureTablePatcherTests
     }
 
     [Fact]
+    public void Patch_ModifiedAmpItems_RemovedAndReinserted()
+    {
+        // Simulate: table has only AMP items, all are "modified" (user changed pool/rarity)
+        var original = string.Join("\n",
+            MakePoolTable("REL_Rare_Gloves", "I_AMP_Gloves_A"),
+            MakePoolTable("REL_All_Rare", "I_AMP_Gloves_A"),
+            MakeParagonTable("AMP_Para_6", "I_AMP_Gloves_A"));
+
+        // Add a second item to the pool table
+        original = original.Replace(
+            "object category \"I_AMP_Gloves_A\",1,0,0,0,0,0,0,0\n            new treasuretable \"REL_All_Rare\"",
+            "object category \"I_AMP_Gloves_A\",1,0,0,0,0,0,0,0\nobject category \"I_AMP_Gloves_B\",1,0,0,0,0,0,0,0\n            new treasuretable \"REL_All_Rare\"");
+
+        var items = new List<ItemEntry>
+        {
+            new()
+            {
+                StatId = "AMP_Gloves_A",
+                StatType = "Armor",
+                DetectedPool = "Gloves",
+                DetectedRarity = "Rare",
+                IsAmpItem = true,
+                UserRarity = "Rare" // UserRarity set → IsModified = true
+            },
+            new()
+            {
+                StatId = "AMP_Gloves_B",
+                StatType = "Armor",
+                DetectedPool = "Gloves",
+                DetectedRarity = "Rare",
+                IsAmpItem = true,
+                UserRarity = "Rare" // UserRarity set → IsModified = true
+            }
+        };
+
+        var result = TreasureTablePatcher.Patch(original, items);
+
+        // Both items should be present (removed then re-inserted)
+        Assert.Contains("I_AMP_Gloves_A", result);
+        Assert.Contains("I_AMP_Gloves_B", result);
+
+        // Tables should not be empty
+        var lines = result.Split('\n');
+        bool inGloves = false;
+        int objCount = 0;
+        foreach (var line in lines)
+        {
+            var t = line.TrimStart();
+            if (t.StartsWith("new treasuretable \"REL_Rare_Gloves\"")) { inGloves = true; objCount = 0; }
+            else if (t.StartsWith("new treasuretable ")) inGloves = false;
+            if (inGloves && t.StartsWith("object category ")) objCount++;
+        }
+        Assert.True(objCount >= 2, $"REL_Rare_Gloves should have at least 2 items, found {objCount}");
+    }
+
+    [Fact]
+    public void Patch_EmptySubtable_ItemsStillInserted()
+    {
+        // Table exists but subtable "-1" has no items
+        var original = string.Join("\n",
+            "new treasuretable \"REL_Rare_Boots\"",
+            "new subtable \"-1\"",
+            "",
+            MakePoolTable("REL_All_Rare"),
+            MakeParagonTable("AMP_Para_7"));
+
+        var items = new List<ItemEntry>
+        {
+            new()
+            {
+                StatId = "MAG_NewBoots",
+                StatType = "Armor",
+                DetectedPool = "Boots",
+                DetectedRarity = "Rare",
+                Enabled = true
+            }
+        };
+
+        var result = TreasureTablePatcher.Patch(original, items);
+
+        // Item should be inserted into the previously empty table
+        var lines = result.Split('\n');
+        bool inBoots = false;
+        bool foundItem = false;
+        foreach (var line in lines)
+        {
+            var t = line.TrimStart();
+            if (t.StartsWith("new treasuretable \"REL_Rare_Boots\"")) inBoots = true;
+            else if (t.StartsWith("new treasuretable ")) inBoots = false;
+            if (inBoots && t.Contains("I_MAG_NewBoots")) foundItem = true;
+        }
+        Assert.True(foundItem, "Item should be inserted into previously empty REL_Rare_Boots");
+    }
+
+    [Fact]
     public void Patch_PreservesOriginalContent()
     {
         var original = string.Join("\n",

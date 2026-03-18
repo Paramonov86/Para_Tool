@@ -5,6 +5,8 @@ namespace ParaTool.Core.Services;
 
 public static class OriginalTtStore
 {
+    private const int CurrentVersion = 2;
+
     private static string TtPath => Path.Combine(ProfileService.GetStorageDir(), "original_tt.txt");
     private static string MetaPath => Path.Combine(ProfileService.GetStorageDir(), "original_tt_meta.json");
 
@@ -19,8 +21,13 @@ public static class OriginalTtStore
             var meta = JsonSerializer.Deserialize<OriginalTtMeta>(json);
             if (meta == null) return false;
 
+            // Invalidate stores from older versions (may contain corrupted TT)
+            if (meta.Version < CurrentVersion)
+                return false;
+
+            // Match by filename only — size changes after repacking
             var fi = new FileInfo(ampPakPath);
-            return meta.PakFileName == fi.Name && meta.PakFileSize == fi.Length;
+            return meta.PakFileName == fi.Name;
         }
         catch
         {
@@ -38,6 +45,7 @@ public static class OriginalTtStore
         var fi = new FileInfo(ampPakPath);
         var meta = new OriginalTtMeta
         {
+            Version = CurrentVersion,
             PakFileName = fi.Name,
             PakFileSize = fi.Length
         };

@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using ParaTool.App.Controls;
 using ParaTool.App.Localization;
 using ParaTool.Core.Models;
 using ParaTool.Core.Services;
@@ -11,6 +13,15 @@ public partial class MainWindowViewModel : ObservableObject
 {
     [ObservableProperty] private ViewModelBase? _currentView;
     [ObservableProperty] private LangInfo? _selectedLanguage;
+
+    // Update state
+    [ObservableProperty] private UpdateState _updateState = UpdateState.Idle;
+    [ObservableProperty] private string? _updateVersion;
+    [ObservableProperty] private int _updateProgress;
+    [ObservableProperty] private string? _updateError;
+
+    private readonly UpdateService _updateService = new();
+    private UpdateService.UpdateInfo? _pendingUpdate;
 
     public LangInfo[] Languages => Loc.Instance.AvailableLanguages;
 
@@ -29,6 +40,9 @@ public partial class MainWindowViewModel : ObservableObject
         _selectedLanguage = Languages.FirstOrDefault(l => l.Code == defaultCode) ?? Languages.First();
 
         Initialize();
+
+        // Check for updates in background (don't block UI)
+        _ = CheckForUpdateAsync();
     }
 
     partial void OnSelectedLanguageChanged(LangInfo? value)
@@ -114,5 +128,72 @@ public partial class MainWindowViewModel : ObservableObject
         catch { /* ignore corrupted session file */ }
 
         CurrentView = editor;
+    }
+
+    [RelayCommand]
+    private async Task UpdateButtonClickAsync()
+    {
+        switch (UpdateState)
+        {
+            case UpdateState.Idle:
+            case UpdateState.UpToDate:
+            case UpdateState.Error:
+                await CheckForUpdateAsync();
+                break;
+            case UpdateState.Available:
+                await DownloadAndApplyAsync();
+                break;
+        }
+    }
+
+    private async Task CheckForUpdateAsync()
+    {
+        try
+        {
+            UpdateState = UpdateState.Checking;
+            UpdateError = null;
+
+            var info = await _updateService.CheckAsync(AppVersion);
+            if (info != null)
+            {
+                _pendingUpdate = info;
+                UpdateVersion = info.Version;
+                UpdateState = UpdateState.Available;
+            }
+            else
+            {
+                UpdateState = UpdateState.UpToDate;
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateError = ex.Message;
+            UpdateState = UpdateState.Error;
+        }
+    }
+
+    private async Task DownloadAndApplyAsync()
+    {
+        if (_pendingUpdate == null) return;
+
+        try
+        {
+            UpdateState = UpdateState.Downloading;
+            UpdateProgress = 0;
+
+            var progress = new Progress<int>(p => UpdateProgress = p);
+            var extractedDir = await _updateService.DownloadAndExtractAsync(
+                _pendingUpdate.DownloadUrl, progress);
+
+            var currentAppDir = AppContext.BaseDirectory.TrimEnd(
+                Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            _updateService.ApplyAndRestart(extractedDir, currentAppDir);
+        }
+        catch (Exception ex)
+        {
+            UpdateError = ex.Message;
+            UpdateState = UpdateState.Error;
+        }
     }
 }
