@@ -67,5 +67,26 @@
   "ProfileNewName": "Имя профиля",
   "ProfileSaved": "Профиль сохранён!",
   "MissingItemsWarning": "Ранее патченные предметы не найдены:",
-  "MissingItemsDismiss": "Закрыть"
+  "MissingItemsDismiss": "Закрыть",
+
+  "ScanStageMods": "Сканирование модов...",
+  "ScanStageAMP": "Сканирование предметов AMP...",
+  "ScanStageResolver": "Построение базы предметов...",
+  "ScanStageNames": "Определение названий...",
+  "ScanStageTemplates": "Чтение шаблонов...",
+  "ScanStageLoca": "Загрузка локализации...",
+  "ScanStageDone": "Готово!",
+
+  "SortByName": "Имя",
+  "SortByRarity": "Редкость",
+  "SortByTheme": "Тематика",
+  "SortBySlot": "Слот",
+
+  "FolderPickerTitle": "Выберите папку Mods BG3",
+  "UpdateCheckTooltip": "Проверить обновления",
+  "UpdateCheckingTooltip": "Проверка обновлений\u2026",
+  "UpdateAvailableTooltip": "v{0} доступна \u2014 нажмите для обновления",
+  "UpdateDownloadingTooltip": "Загрузка\u2026 {0}%",
+  "UpdateUpToDateTooltip": "Актуальная версия",
+  "UpdateFailedTooltip": "Ошибка проверки обновлений"
 }

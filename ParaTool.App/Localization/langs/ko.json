@@ -67,5 +67,26 @@
   "ProfileNewName": "프로필 이름",
   "ProfileSaved": "프로필 저장됨!",
   "MissingItemsWarning": "이전에 패치된 아이템을 찾을 수 없습니다:",
-  "MissingItemsDismiss": "닫기"
+  "MissingItemsDismiss": "닫기",
+
+  "ScanStageMods": "Scanning mods...",
+  "ScanStageAMP": "Scanning AMP items...",
+  "ScanStageResolver": "Building item database...",
+  "ScanStageNames": "Resolving item names...",
+  "ScanStageTemplates": "Reading templates...",
+  "ScanStageLoca": "Loading localization...",
+  "ScanStageDone": "Done!",
+
+  "SortByName": "이름",
+  "SortByRarity": "희귀도",
+  "SortByTheme": "테마",
+  "SortBySlot": "슬롯",
+
+  "FolderPickerTitle": "BG3 Mods 폴더 선택",
+  "UpdateCheckTooltip": "업데이트 확인",
+  "UpdateCheckingTooltip": "업데이트 확인 중\u2026",
+  "UpdateAvailableTooltip": "v{0} 사용 가능 \u2014 클릭하여 업데이트",
+  "UpdateDownloadingTooltip": "다운로드 중\u2026 {0}%",
+  "UpdateUpToDateTooltip": "최신 버전입니다",
+  "UpdateFailedTooltip": "업데이트 확인 실패"
 }

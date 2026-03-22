@@ -67,5 +67,26 @@
   "ProfileNewName": "Nombre del perfil",
   "ProfileSaved": "Perfil guardado!",
   "MissingItemsWarning": "Objetos previamente parcheados no encontrados:",
-  "MissingItemsDismiss": "Cerrar"
+  "MissingItemsDismiss": "Cerrar",
+
+  "ScanStageMods": "Scanning mods...",
+  "ScanStageAMP": "Scanning AMP items...",
+  "ScanStageResolver": "Building item database...",
+  "ScanStageNames": "Resolving item names...",
+  "ScanStageTemplates": "Reading templates...",
+  "ScanStageLoca": "Loading localization...",
+  "ScanStageDone": "Done!",
+
+  "SortByName": "Nombre",
+  "SortByRarity": "Rareza",
+  "SortByTheme": "Tema",
+  "SortBySlot": "Ranura",
+
+  "FolderPickerTitle": "Seleccionar carpeta Mods de BG3",
+  "UpdateCheckTooltip": "Buscar actualizaciones",
+  "UpdateCheckingTooltip": "Buscando actualizaciones\u2026",
+  "UpdateAvailableTooltip": "v{0} disponible \u2014 haz clic para actualizar",
+  "UpdateDownloadingTooltip": "Descargando\u2026 {0}%",
+  "UpdateUpToDateTooltip": "Actualizado",
+  "UpdateFailedTooltip": "Error al buscar actualizaciones"
 }

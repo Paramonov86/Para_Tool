@@ -27,7 +27,7 @@ public partial class StartupView : UserControl
 
         var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Select BG3 Mods folder",
+            Title = Localization.Loc.Instance.FolderPickerTitle,
             AllowMultiple = false
         });
 

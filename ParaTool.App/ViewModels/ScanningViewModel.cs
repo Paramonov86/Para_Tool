@@ -7,4 +7,6 @@ public partial class ScanningViewModel : ViewModelBase
     [ObservableProperty] private int _totalPaks;
     [ObservableProperty] private int _scannedPaks;
     [ObservableProperty] private int _modsFound;
+    [ObservableProperty] private int _percent;
+    [ObservableProperty] private string _stageText = "";
 }

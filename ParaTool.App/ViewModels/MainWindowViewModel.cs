@@ -87,10 +87,22 @@ public partial class MainWindowViewModel : ObservableObject
             scanVm.TotalPaks = p.TotalPaks;
             scanVm.ScannedPaks = p.ScannedPaks;
             scanVm.ModsFound = p.ModsFound;
+            scanVm.Percent = p.Percent;
+            scanVm.StageText = p.Stage switch
+            {
+                "ScanMods" => Localization.Loc.Instance.ScanStageMods,
+                "ScanAMP" => Localization.Loc.Instance.ScanStageAMP,
+                "BuildResolver" => Localization.Loc.Instance.ScanStageResolver,
+                "ResolveNames" or "ResolveTemplates" => Localization.Loc.Instance.ScanStageNames,
+                "ScanTemplates" => Localization.Loc.Instance.ScanStageTemplates,
+                "ResolveLoca" => Localization.Loc.Instance.ScanStageLoca,
+                "Done" => Localization.Loc.Instance.ScanStageDone,
+                _ => p.Stage ?? ""
+            };
         });
 
         // Run scan + minimum display time in parallel
-        var scanTask = scanner.ScanAsync(modsPath, progress);
+        var scanTask = scanner.ScanAsync(modsPath, Localization.Loc.Instance.Lang, progress);
         var minDisplayTask = Task.Delay(1500);
         await Task.WhenAll(scanTask, minDisplayTask);
 

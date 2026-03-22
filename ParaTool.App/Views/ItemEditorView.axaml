@@ -29,7 +29,7 @@
 
             <!-- Left: Mod list -->
             <Border Grid.Column="0" Margin="0,0,12,0">
-                <Grid RowDefinitions="Auto,*">
+                <Grid RowDefinitions="Auto,Auto,*">
                     <!-- All mods row -->
                     <Border Grid.Row="0"
                             Background="{StaticResource CardBgBrush}"
@@ -52,8 +52,44 @@
                         </Grid>
                     </Border>
 
+                    <!-- Sort bar -->
+                    <Border Grid.Row="1"
+                            Background="{StaticResource PanelBgBrush}"
+                            CornerRadius="6"
+                            Padding="8,4"
+                            Margin="0,0,0,4">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Button Content="{Binding SortByName, Source={x:Static loc:Loc.Instance}}"
+                                    Command="{Binding SetSortCommand}" CommandParameter="Name"
+                                    FontSize="11" Padding="8,3" CornerRadius="4"
+                                    BorderThickness="0"
+                                    Name="SortNameBtn" />
+                            <Button Content="{Binding SortByRarity, Source={x:Static loc:Loc.Instance}}"
+                                    Command="{Binding SetSortCommand}" CommandParameter="Rarity"
+                                    FontSize="11" Padding="8,3" CornerRadius="4"
+                                    BorderThickness="0"
+                                    Name="SortRarityBtn" />
+                            <Button Content="{Binding SortByTheme, Source={x:Static loc:Loc.Instance}}"
+                                    Command="{Binding SetSortCommand}" CommandParameter="Theme"
+                                    FontSize="11" Padding="8,3" CornerRadius="4"
+                                    BorderThickness="0"
+                                    Name="SortThemeBtn" />
+                            <Button Content="{Binding SortBySlot, Source={x:Static loc:Loc.Instance}}"
+                                    Command="{Binding SetSortCommand}" CommandParameter="Slot"
+                                    FontSize="11" Padding="8,3" CornerRadius="4"
+                                    BorderThickness="0"
+                                    Name="SortSlotBtn" />
+                            <Button Command="{Binding ToggleSortDirectionCommand}"
+                                    FontSize="13" Padding="6,2" CornerRadius="4"
+                                    Background="{StaticResource CardBgBrush}"
+                                    Foreground="{StaticResource TextSecondaryBrush}"
+                                    BorderThickness="0"
+                                    Name="SortDirBtn" />
+                        </StackPanel>
+                    </Border>
+
                     <!-- Mod list with scroll -->
-                    <ScrollViewer Grid.Row="1">
+                    <ScrollViewer Grid.Row="2" Name="ModListScroll">
                         <ItemsControl ItemsSource="{Binding Mods}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="vm:ModVM">
@@ -121,11 +157,13 @@
                                                                           IsChecked="{Binding Enabled}"
                                                                           Margin="0,0,6,0" />
                                                                 <TextBlock Grid.Column="1"
-                                                                           Text="{Binding StatId}"
+                                                                           Text="{Binding ItemLabel}"
                                                                            Foreground="{StaticResource TextSecondaryBrush}"
+                                                                           FontWeight="{Binding HasDisplayName, Converter={x:Static conv:BoolToFontWeightConverter.Instance}}"
                                                                            VerticalAlignment="Center"
                                                                            TextTrimming="CharacterEllipsis"
-                                                                           FontSize="12" />
+                                                                           FontSize="12"
+                                                                           ToolTip.Tip="{Binding StatId}" />
                                                                 <!-- Pool selector -->
                                                                 <ComboBox Grid.Column="2"
                                                                           ItemsSource="{x:Static vm:ItemVM.PoolOptions}"

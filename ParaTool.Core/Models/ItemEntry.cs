@@ -19,6 +19,9 @@ public sealed class ItemEntry
     public string? DetectedRarity { get; set; }
     public List<string> DetectedThemes { get; set; } = new();
 
+    // Localized display name (from RootTemplates + Localization)
+    public string? DisplayName { get; set; }
+
     // AMP item flag
     public bool IsAmpItem { get; set; }
 

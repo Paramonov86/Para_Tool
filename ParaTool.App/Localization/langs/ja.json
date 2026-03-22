@@ -67,5 +67,26 @@
   "ProfileNewName": "プロファイル名",
   "ProfileSaved": "プロファイルを保存しました！",
   "MissingItemsWarning": "以前パッチしたアイテムが見つかりません：",
-  "MissingItemsDismiss": "閉じる"
+  "MissingItemsDismiss": "閉じる",
+
+  "ScanStageMods": "Scanning mods...",
+  "ScanStageAMP": "Scanning AMP items...",
+  "ScanStageResolver": "Building item database...",
+  "ScanStageNames": "Resolving item names...",
+  "ScanStageTemplates": "Reading templates...",
+  "ScanStageLoca": "Loading localization...",
+  "ScanStageDone": "Done!",
+
+  "SortByName": "名前",
+  "SortByRarity": "レアリティ",
+  "SortByTheme": "テーマ",
+  "SortBySlot": "スロット",
+
+  "FolderPickerTitle": "BG3のModsフォルダを選択",
+  "UpdateCheckTooltip": "更新を確認",
+  "UpdateCheckingTooltip": "更新を確認中\u2026",
+  "UpdateAvailableTooltip": "v{0}が利用可能 \u2014 クリックで更新",
+  "UpdateDownloadingTooltip": "ダウンロード中\u2026 {0}%",
+  "UpdateUpToDateTooltip": "最新です",
+  "UpdateFailedTooltip": "更新の確認に失敗しました"
 }

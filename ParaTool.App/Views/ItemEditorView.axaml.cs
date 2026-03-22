@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using ParaTool.App.Localization;
 using ParaTool.App.ViewModels;
 
@@ -10,11 +12,60 @@ public partial class ItemEditorView : UserControl
 {
     private ItemVM? _currentThemeItem;
     private ModVM? _currentThemeMod;
+    private double _savedScrollOffset;
 
     public ItemEditorView()
     {
         InitializeComponent();
         AddHandler(Button.ClickEvent, OnButtonClick);
+
+        // Preserve scroll position on focus loss / visibility change
+        var scroll = this.FindControl<ScrollViewer>("ModListScroll");
+        if (scroll != null)
+        {
+            scroll.ScrollChanged += (_, _) => _savedScrollOffset = scroll.Offset.Y;
+            scroll.AttachedToVisualTree += (_, _) => scroll.Offset = new Vector(0, _savedScrollOffset);
+        }
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (DataContext is ItemEditorViewModel vm)
+        {
+            vm.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName is nameof(vm.CurrentSort) or nameof(vm.SortDescending))
+                    UpdateSortButtons(vm);
+            };
+            UpdateSortButtons(vm);
+        }
+    }
+
+    private void UpdateSortButtons(ItemEditorViewModel vm)
+    {
+        var active = Application.Current!.FindResource("AccentBrush") as IBrush ?? Brushes.Purple;
+        var inactive = Application.Current!.FindResource("CardBgBrush") as IBrush ?? Brushes.Gray;
+        var activeFg = Brushes.White;
+        var inactiveFg = Application.Current!.FindResource("TextMutedBrush") as IBrush ?? Brushes.Gray;
+
+        var nameBtn = this.FindControl<Button>("SortNameBtn");
+        var rarityBtn = this.FindControl<Button>("SortRarityBtn");
+        var themeBtn = this.FindControl<Button>("SortThemeBtn");
+        var slotBtn = this.FindControl<Button>("SortSlotBtn");
+        var dirBtn = this.FindControl<Button>("SortDirBtn");
+
+        foreach (var (btn, mode) in new[] {
+            (nameBtn, SortMode.Name), (rarityBtn, SortMode.Rarity),
+            (themeBtn, SortMode.Theme), (slotBtn, SortMode.Slot) })
+        {
+            if (btn == null) continue;
+            btn.Background = vm.CurrentSort == mode ? active : inactive;
+            btn.Foreground = vm.CurrentSort == mode ? activeFg : inactiveFg;
+        }
+
+        if (dirBtn != null)
+            dirBtn.Content = vm.SortDescending ? "\u25B2" : "\u25BC"; // ▲ / ▼
     }
 
     private void OnButtonClick(object? sender, RoutedEventArgs e)

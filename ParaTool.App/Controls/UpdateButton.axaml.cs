@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using ParaTool.App.Localization;
 
 namespace ParaTool.App.Controls;
 
@@ -85,20 +86,20 @@ public partial class UpdateButton : UserControl
         {
             case UpdateState.Idle:
                 icon.Fill = IdleBrush;
-                ToolTip.SetTip(btn, "Check for updates");
+                ToolTip.SetTip(btn, Loc.Instance.UpdateCheckTooltip);
                 break;
 
             case UpdateState.Checking:
                 icon.Fill = SpinningBrush;
                 icon.Classes.Add("spinning");
-                ToolTip.SetTip(btn, "Checking for updates…");
+                ToolTip.SetTip(btn, Loc.Instance.UpdateCheckingTooltip);
                 break;
 
             case UpdateState.Available:
                 icon.Fill = AvailableBrush;
                 badge.IsVisible = true;
                 versionText.Text = $"v{UpdateVersion}";
-                ToolTip.SetTip(btn, $"v{UpdateVersion} available — click to update");
+                ToolTip.SetTip(btn, Loc.Instance.UpdateAvailableTooltip(UpdateVersion ?? "?"));
                 break;
 
             case UpdateState.Downloading:
@@ -106,17 +107,17 @@ public partial class UpdateButton : UserControl
                 icon.Classes.Add("spinning");
                 progressText.IsVisible = true;
                 progressText.Text = $"{Progress}%";
-                ToolTip.SetTip(btn, $"Downloading… {Progress}%");
+                ToolTip.SetTip(btn, Loc.Instance.UpdateDownloadingTooltip(Progress));
                 break;
 
             case UpdateState.UpToDate:
                 icon.Fill = IdleBrush;
-                ToolTip.SetTip(btn, "Up to date");
+                ToolTip.SetTip(btn, Loc.Instance.UpdateUpToDateTooltip);
                 break;
 
             case UpdateState.Error:
                 icon.Fill = ErrorBrush;
-                ToolTip.SetTip(btn, ErrorMessage ?? "Update check failed");
+                ToolTip.SetTip(btn, ErrorMessage ?? Loc.Instance.UpdateFailedTooltip);
                 break;
         }
     }

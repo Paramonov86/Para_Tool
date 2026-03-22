@@ -9,9 +9,13 @@ using ParaTool.Core.Services;
 
 namespace ParaTool.App.ViewModels;
 
+public enum SortMode { Name, Rarity, Theme, Slot }
+
 public partial class ItemEditorViewModel : ViewModelBase
 {
     [ObservableProperty] private ObservableCollection<ModVM> _mods = new();
+    [ObservableProperty] private SortMode _currentSort = SortMode.Name;
+    [ObservableProperty] private bool _sortDescending;
     [ObservableProperty] private bool _isPatching;
     [ObservableProperty] private int _patchPercent;
     [ObservableProperty] private string? _patchStatus;
@@ -53,6 +57,62 @@ public partial class ItemEditorViewModel : ViewModelBase
     partial void OnIsPatchingChanged(bool value) => OnPropertyChanged(nameof(ShowPatchButton));
     partial void OnPatchSuccessChanged(bool value) => OnPropertyChanged(nameof(ShowPatchButton));
     partial void OnPatchErrorChanged(string? value) => OnPropertyChanged(nameof(ShowPatchButton));
+    partial void OnCurrentSortChanged(SortMode value) => ApplySort();
+    partial void OnSortDescendingChanged(bool value) => ApplySort();
+
+    [RelayCommand]
+    private void SetSort(string mode)
+    {
+        CurrentSort = Enum.Parse<SortMode>(mode);
+    }
+
+    [RelayCommand]
+    private void ToggleSortDirection()
+    {
+        SortDescending = !SortDescending;
+    }
+
+    private static readonly Dictionary<string, int> RarityOrder = new()
+    {
+        ["Common"] = 0, ["Uncommon"] = 1, ["Rare"] = 2, ["VeryRare"] = 3, ["Legendary"] = 4
+    };
+
+    private static readonly Dictionary<string, int> SlotOrder = new()
+    {
+        ["Clothes"] = 0, ["Armor"] = 1, ["Shields"] = 2, ["Hats"] = 3,
+        ["Cloaks"] = 4, ["Gloves"] = 5, ["Boots"] = 6,
+        ["Amulets"] = 7, ["Rings"] = 8,
+        ["Weapons"] = 9, ["Weapons_1H"] = 10, ["Weapons_2H"] = 11
+    };
+
+    public void ApplySort()
+    {
+        foreach (var mod in Mods)
+        {
+            IEnumerable<ItemVM> sorted = CurrentSort switch
+            {
+                SortMode.Rarity => mod.Items.OrderBy(i =>
+                    RarityOrder.GetValueOrDefault(i.Entry.EffectiveRarity, 99)),
+                SortMode.Theme => mod.Items.OrderBy(i =>
+                    i.Entry.EffectiveThemes.Count == 0 ? 1 : 0)
+                    .ThenBy(i => i.Entry.EffectiveThemes.FirstOrDefault() ?? ""),
+                SortMode.Slot => mod.Items.OrderBy(i =>
+                    SlotOrder.GetValueOrDefault(i.Entry.EffectivePool, 99)),
+                _ => mod.Items.OrderBy(i => i.DisplayName ?? i.StatId, StringComparer.OrdinalIgnoreCase)
+            };
+
+            if (SortDescending)
+                sorted = sorted.Reverse();
+
+            var list = sorted.ToList();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int oldIdx = mod.Items.IndexOf(list[i]);
+                if (oldIdx != i)
+                    mod.Items.Move(oldIdx, i);
+            }
+        }
+    }
 
     partial void OnSelectedProfileChanged(string? value)
     {

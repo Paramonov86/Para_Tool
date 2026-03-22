@@ -67,5 +67,26 @@
   "ProfileNewName": "Nom du profil",
   "ProfileSaved": "Profil enregistré !",
   "MissingItemsWarning": "Objets précédemment patchés introuvables :",
-  "MissingItemsDismiss": "Fermer"
+  "MissingItemsDismiss": "Fermer",
+
+  "ScanStageMods": "Scanning mods...",
+  "ScanStageAMP": "Scanning AMP items...",
+  "ScanStageResolver": "Building item database...",
+  "ScanStageNames": "Resolving item names...",
+  "ScanStageTemplates": "Reading templates...",
+  "ScanStageLoca": "Loading localization...",
+  "ScanStageDone": "Done!",
+
+  "SortByName": "Nom",
+  "SortByRarity": "Rareté",
+  "SortByTheme": "Thème",
+  "SortBySlot": "Emplacement",
+
+  "FolderPickerTitle": "Sélectionner le dossier Mods de BG3",
+  "UpdateCheckTooltip": "Vérifier les mises à jour",
+  "UpdateCheckingTooltip": "Vérification des mises à jour\u2026",
+  "UpdateAvailableTooltip": "v{0} disponible \u2014 cliquez pour mettre à jour",
+  "UpdateDownloadingTooltip": "Téléchargement\u2026 {0}%",
+  "UpdateUpToDateTooltip": "À jour",
+  "UpdateFailedTooltip": "Échec de la vérification"
 }

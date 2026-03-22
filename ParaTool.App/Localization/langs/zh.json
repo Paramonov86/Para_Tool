@@ -67,5 +67,26 @@
   "ProfileNewName": "配置名称",
   "ProfileSaved": "配置已保存！",
   "MissingItemsWarning": "未找到之前修补的物品：",
-  "MissingItemsDismiss": "关闭"
+  "MissingItemsDismiss": "关闭",
+
+  "ScanStageMods": "Scanning mods...",
+  "ScanStageAMP": "Scanning AMP items...",
+  "ScanStageResolver": "Building item database...",
+  "ScanStageNames": "Resolving item names...",
+  "ScanStageTemplates": "Reading templates...",
+  "ScanStageLoca": "Loading localization...",
+  "ScanStageDone": "Done!",
+
+  "SortByName": "名称",
+  "SortByRarity": "稀有度",
+  "SortByTheme": "主题",
+  "SortBySlot": "栏位",
+
+  "FolderPickerTitle": "选择BG3 Mods文件夹",
+  "UpdateCheckTooltip": "检查更新",
+  "UpdateCheckingTooltip": "正在检查更新\u2026",
+  "UpdateAvailableTooltip": "v{0}可用 \u2014 点击更新",
+  "UpdateDownloadingTooltip": "下载中\u2026 {0}%",
+  "UpdateUpToDateTooltip": "已是最新版本",
+  "UpdateFailedTooltip": "检查更新失败"
 }

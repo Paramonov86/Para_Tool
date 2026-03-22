@@ -1,0 +1,504 @@
+using System.Text;
+using System.Text.RegularExpressions;
+using K4os.Compression.LZ4;
+
+namespace ParaTool.Core.Parsing;
+
+/// <summary>
+/// Minimal LSF scanner for BG3 RootTemplate files.
+/// Extracts Stats→DisplayName handle mappings without full format parsing.
+/// Works across LSOF v5/v6/v7 by scanning raw bytes for known patterns.
+/// </summary>
+public static partial class LsfScanner
+{
+    /// <summary>
+    /// Scans an LSF file for GameObjects entries and extracts Stats → DisplayName handle mappings.
+    /// </summary>
+    public static Dictionary<string, string> ScanForDisplayNames(byte[] data)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Find all TranslatedString handles in the file
+        // Pattern: h + 7-8 hex + g + 4 hex + g + 4 hex + g + 4 hex + g + 12 hex
+        var handles = new List<(int offset, string handle)>();
+        foreach (Match m in HandleRegex().Matches(Encoding.Latin1.GetString(data)))
+        {
+            handles.Add((m.Index, m.Value));
+        }
+
+        // Find all length-prefixed strings that could be Stats values
+        // Stats values are FixedStrings stored as int32 length + UTF-8 data
+        var strings = FindPrefixedStrings(data);
+
+        // For single-template files (one GameObjects per .lsf):
+        // First handle is typically DisplayName, second is Description
+        if (handles.Count >= 1 && strings.Count >= 1)
+        {
+            // Each string could be a Stats value. The DisplayName handle is the closest
+            // preceding TranslatedString handle.
+            // In practice for individual RootTemplate files: one Stats + one DisplayName
+            foreach (var (strOff, strVal) in strings)
+            {
+                // Find the nearest handle BEFORE this string offset (DisplayName comes before Stats in LSX order)
+                string? nearestHandle = null;
+                int nearestDist = int.MaxValue;
+                foreach (var (hOff, hVal) in handles)
+                {
+                    int dist = Math.Abs(hOff - strOff);
+                    if (dist < nearestDist)
+                    {
+                        nearestDist = dist;
+                        nearestHandle = hVal;
+                    }
+                }
+
+                if (nearestHandle != null)
+                    result[strVal] = nearestHandle;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Scans an LSF file for ALL Stats attribute values (returns a set of StatIds found).
+    /// Useful for quick membership check without full parsing.
+    /// </summary>
+    public static HashSet<string> ScanForStatIds(byte[] data, IReadOnlySet<string> knownStatIds)
+    {
+        var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var text = Encoding.Latin1.GetString(data);
+
+        foreach (var statId in knownStatIds)
+        {
+            if (text.Contains(statId, StringComparison.Ordinal))
+                found.Add(statId);
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// Scans raw bytes for GameObjects templates, extracting (Stats, DisplayNameHandle) pairs.
+    /// Optimized for batch scanning: only looks for StatIds in the provided set.
+    /// </summary>
+    public static Dictionary<string, string> ScanForKnownStats(byte[] data, IReadOnlySet<string> statIds)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // First pass: find which statIds exist in this file
+        var text = Encoding.Latin1.GetString(data);
+        var presentStats = new List<(int offset, string statId)>();
+
+        foreach (var statId in statIds)
+        {
+            int idx = text.IndexOf(statId, StringComparison.Ordinal);
+            if (idx >= 0)
+                presentStats.Add((idx, statId));
+        }
+
+        if (presentStats.Count == 0) return result;
+
+        // Second pass: find all TranslatedString handles
+        var handles = new List<(int offset, string handle)>();
+        foreach (Match m in HandleRegex().Matches(text))
+        {
+            handles.Add((m.Index, m.Value));
+        }
+
+        if (handles.Count == 0) return result;
+
+        // For single-template files: first handle = DisplayName
+        if (presentStats.Count == 1 && handles.Count >= 1)
+        {
+            result[presentStats[0].statId] = handles[0].handle;
+            return result;
+        }
+
+        // For multi-template files: match by proximity
+        foreach (var (statOff, statId) in presentStats)
+        {
+            string? bestHandle = null;
+            int bestDist = int.MaxValue;
+            foreach (var (hOff, hVal) in handles)
+            {
+                int dist = Math.Abs(hOff - statOff);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    bestHandle = hVal;
+                }
+            }
+            if (bestHandle != null)
+                result[statId] = bestHandle;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Finds the nearest TranslatedString handle to a given UUID in the binary data.
+    /// Used to find DisplayName for a GameObjects template identified by its MapKey UUID.
+    /// </summary>
+    public static string? FindHandleNearUuid(byte[] data, string uuid)
+    {
+        var text = Encoding.Latin1.GetString(data);
+
+        // Find UUID position — try as string first, then as binary GUID
+        int uuidPos = text.IndexOf(uuid, StringComparison.OrdinalIgnoreCase);
+        if (uuidPos < 0)
+        {
+            if (Guid.TryParse(uuid, out var guid))
+            {
+                var guidBytes = guid.ToByteArray();
+                uuidPos = FindBytes(data, guidBytes);
+            }
+        }
+
+        // If this is a compressed LSF, decompress sections and search in raw bytes
+        if (IsLsf(data))
+        {
+            var decompressed = TryDecompressLsf(data);
+            if (decompressed != null && decompressed.Length > data.Length)
+            {
+                // Search for UUID as text in decompressed binary
+                var uuidBytes = Encoding.UTF8.GetBytes(uuid);
+                int decUuidPos = FindBytes(decompressed, uuidBytes);
+
+                // Also try binary GUID
+                if (decUuidPos < 0 && Guid.TryParse(uuid, out var guid2))
+                    decUuidPos = FindBytes(decompressed, guid2.ToByteArray());
+
+                if (decUuidPos >= 0)
+                {
+                    // Search for handle pattern as raw ASCII bytes in decompressed data
+                    var decText = Encoding.Latin1.GetString(decompressed);
+                    return FindHandleNearUuidInText(decText, decUuidPos);
+                }
+            }
+        }
+
+        if (uuidPos < 0) return null;
+
+        // Find all handles in raw data
+        var handles = new List<(int offset, string handle)>();
+        foreach (Match m in HandleRegex().Matches(text))
+            handles.Add((m.Index, m.Value));
+
+        if (handles.Count == 0) return null;
+
+        // For individual template files (1 GameObjects): first handle = DisplayName
+        if (handles.Count <= 2)
+            return handles[0].handle;
+
+        // For merged files: find the handle closest AFTER the UUID (DisplayName follows MapKey)
+        // but within a reasonable distance (same GameObjects node, ~2KB window)
+        string? best = null;
+        int bestDist = int.MaxValue;
+
+        foreach (var (hOff, hVal) in handles)
+        {
+            int dist = hOff - uuidPos;
+            // Prefer handles AFTER the UUID (DisplayName comes after MapKey in GameObjects)
+            // but also consider handles before (within 500 bytes) in case ordering varies
+            if (dist >= 0 && dist < bestDist && dist < 2000)
+            {
+                bestDist = dist;
+                best = hVal;
+            }
+            else if (dist < 0 && dist > -500 && bestDist == int.MaxValue)
+            {
+                bestDist = -dist + 10000; // Lower priority
+                best = hVal;
+            }
+        }
+
+        return best;
+    }
+
+    private static List<(int offset, string value)> FindPrefixedStrings(byte[] data)
+    {
+        var result = new List<(int, string)>();
+
+        // Scan for potential FixedString values: int32 length + ASCII string
+        for (int i = 0; i < data.Length - 8; i++)
+        {
+            int len = data[i] | (data[i + 1] << 8) | (data[i + 2] << 16) | (data[i + 3] << 24);
+            if (len < 3 || len > 200 || i + 4 + len > data.Length) continue;
+
+            // Check if all bytes are valid identifier characters (Stats IDs are alphanumeric + underscore)
+            bool valid = true;
+            for (int j = 0; j < len; j++)
+            {
+                byte b = data[i + 4 + j];
+                if (!((b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') ||
+                      (b >= '0' && b <= '9') || b == '_'))
+                {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (valid)
+            {
+                var str = Encoding.UTF8.GetString(data, i + 4, len);
+                // Stats IDs typically start with a letter and contain underscore
+                if (str.Contains('_') && char.IsLetter(str[0]))
+                    result.Add((i + 4, str));
+                i += 3 + len; // skip ahead
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Batch version: decompress once, find handles for all UUIDs.
+    /// </summary>
+    public static Dictionary<string, string> FindHandlesForUuids(byte[] data, IReadOnlySet<string> uuids)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Get raw bytes — decompress if LSF
+        byte[] raw;
+        if (IsLsf(data))
+        {
+            var decompressed = TryDecompressLsf(data);
+            if (decompressed == null) return result;
+            raw = decompressed;
+        }
+        else
+        {
+            raw = data;
+        }
+
+        // Find all handles as ASCII text in the raw bytes
+        var text = Encoding.Latin1.GetString(raw);
+        var handles = new List<(int offset, string handle)>();
+        foreach (Match m in HandleRegex().Matches(text))
+            handles.Add((m.Index, m.Value));
+
+        if (handles.Count == 0) return result;
+
+        // For each UUID: find as text string OR as binary .NET Guid, then find nearest handle
+        foreach (var uuid in uuids)
+        {
+            // Try text match first
+            int uuidPos = text.IndexOf(uuid, StringComparison.OrdinalIgnoreCase);
+
+            // Try binary GUID match
+            if (uuidPos < 0 && Guid.TryParse(uuid, out var guid))
+            {
+                var guidBytes = guid.ToByteArray();
+                uuidPos = FindBytes(raw, guidBytes);
+            }
+
+            if (uuidPos < 0) continue;
+
+            // Find node boundaries: previous UUID and next UUID
+            int nodeEnd = FindNextUuidBoundary(raw, text, uuidPos + 36);
+            int nodeStart = FindPrevUuidBoundary(text, uuidPos);
+
+            // Find FIRST handle within node boundaries (DisplayName is always the first TranslatedString)
+            string? best = null;
+            int bestOff = int.MaxValue;
+            foreach (var (hOff, hVal) in handles)
+            {
+                if (hOff < nodeStart || hOff >= nodeEnd) continue;
+                if (hOff < bestOff)
+                {
+                    bestOff = hOff;
+                    best = hVal;
+                }
+            }
+
+            if (best != null)
+                result[uuid] = best;
+        }
+
+        return result;
+    }
+
+    private static int FindNextUuidBoundary(byte[] raw, string text, int startPos)
+    {
+        var textMatch = GuidRegex().Match(text, Math.Min(startPos, text.Length));
+        return textMatch.Success ? textMatch.Index : int.MaxValue;
+    }
+
+    private static int FindPrevUuidBoundary(string text, int beforePos)
+    {
+        // Find the last UUID that ends before our position
+        int prev = 0;
+        foreach (Match m in GuidRegex().Matches(text))
+        {
+            int end = m.Index + m.Length;
+            if (end <= beforePos - 1)
+                prev = end;
+            else
+                break;
+        }
+        return prev;
+    }
+
+    private static string? FindHandleNearUuidInText(string text, int uuidPos)
+    {
+        var handles = new List<(int offset, string handle)>();
+        foreach (Match m in HandleRegex().Matches(text))
+            handles.Add((m.Index, m.Value));
+
+        if (handles.Count == 0) return null;
+        if (handles.Count <= 2) return handles[0].handle;
+
+        // Collect ALL UUID positions to detect node boundaries
+        var allUuids = new List<int>();
+        foreach (Match m in GuidRegex().Matches(text))
+            allUuids.Add(m.Index);
+
+        // Find the NEXT UUID after our target — that marks the end of our node's data
+        int nodeEndBound = int.MaxValue;
+        foreach (var uid in allUuids)
+        {
+            if (uid > uuidPos + 36) // skip ourselves (36 = UUID length)
+            {
+                nodeEndBound = uid;
+                break;
+            }
+        }
+
+        // Find the PREVIOUS UUID — that marks the start boundary
+        int nodeStartBound = 0;
+        for (int i = allUuids.Count - 1; i >= 0; i--)
+        {
+            if (allUuids[i] < uuidPos - 36)
+            {
+                nodeStartBound = allUuids[i] + 36;
+                break;
+            }
+        }
+
+        // Find handle within node boundaries (between prev UUID and next UUID)
+        string? best = null;
+        int bestDist = int.MaxValue;
+        foreach (var (hOff, hVal) in handles)
+        {
+            if (hOff < nodeStartBound || hOff > nodeEndBound) continue;
+            int dist = Math.Abs(hOff - uuidPos);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = hVal;
+            }
+        }
+        return best;
+    }
+
+    [GeneratedRegex(@"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOptions.Compiled)]
+    private static partial Regex GuidRegex();
+
+    private static bool IsLsf(byte[] data)
+    {
+        return data.Length >= 4 && data[0] == 'L' && data[1] == 'S' && data[2] == 'O' && data[3] == 'F';
+    }
+
+    /// <summary>
+    /// Decompresses all LSF internal sections into a single byte array for text searching.
+    /// Supports LZ4 (compression methods 2, 3, 4). Returns null on failure.
+    /// </summary>
+    private static byte[]? TryDecompressLsf(byte[] data)
+    {
+        try
+        {
+            if (!IsLsf(data) || data.Length < 56) return null;
+
+            int version = data[4] | (data[5] << 8) | (data[6] << 16) | (data[7] << 24);
+            int comprMethod = data[12];
+
+            if (comprMethod == 0) return data; // Already uncompressed
+
+            // Parse section sizes
+            int numSections = version >= 6 ? 5 : 4;
+            int headerSize = 16 + numSections * 8;
+            if (version >= 6) headerSize += 8; // extended fields
+
+            int off = 16;
+            var sections = new List<(int uncompressed, int compressed)>();
+            for (int i = 0; i < numSections; i++)
+            {
+                int u = data[off] | (data[off + 1] << 8) | (data[off + 2] << 16) | (data[off + 3] << 24);
+                off += 4;
+                int c = data[off] | (data[off + 1] << 8) | (data[off + 2] << 16) | (data[off + 3] << 24);
+                off += 4;
+                sections.Add((u, c));
+            }
+
+            // Skip extended header
+            int dataStart = headerSize;
+
+            // Decompress all sections
+            using var result = new MemoryStream();
+            int dataOff = dataStart;
+            foreach (var (u, c) in sections)
+            {
+                if (c == 0 || u == 0)
+                {
+                    result.Write(new byte[u]);
+                    continue;
+                }
+
+                if (dataOff + c > data.Length) break;
+
+                var compressed = data.AsSpan(dataOff, c);
+                var decompressed = new byte[u];
+                DecompressLz4Block(compressed, decompressed);
+                result.Write(decompressed);
+                dataOff += c;
+            }
+
+            return result.ToArray();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static void DecompressLz4Block(ReadOnlySpan<byte> src, Span<byte> dst)
+    {
+        // Check for LZ4 Frame magic (0x184D2204)
+        if (src.Length >= 4 && src[0] == 0x04 && src[1] == 0x22 && src[2] == 0x4D && src[3] == 0x18)
+        {
+            // LZ4 Frame format — use LZ4Stream
+            using var input = new MemoryStream(src.ToArray());
+            using var decoder = K4os.Compression.LZ4.Streams.LZ4Stream.Decode(input);
+            int totalRead = 0;
+            while (totalRead < dst.Length)
+            {
+                int read = decoder.Read(dst[totalRead..]);
+                if (read == 0) break;
+                totalRead += read;
+            }
+        }
+        else
+        {
+            // LZ4 Block format
+            LZ4Codec.Decode(src, dst);
+        }
+    }
+
+    private static int FindBytes(byte[] haystack, byte[] needle)
+    {
+        for (int i = 0; i <= haystack.Length - needle.Length; i++)
+        {
+            bool match = true;
+            for (int j = 0; j < needle.Length; j++)
+            {
+                if (haystack[i + j] != needle[j]) { match = false; break; }
+            }
+            if (match) return i;
+        }
+        return -1;
+    }
+
+    [GeneratedRegex(@"h[0-9a-f]{7,8}g[0-9a-f]{4}g[0-9a-f]{4}g[0-9a-f]{4}g[0-9a-f]{10,12}", RegexOptions.Compiled)]
+    private static partial Regex HandleRegex();
+}

@@ -67,5 +67,26 @@
   "ProfileNewName": "Profil adı",
   "ProfileSaved": "Profil kaydedildi!",
   "MissingItemsWarning": "Daha önce yamalanan eşyalar bulunamadı:",
-  "MissingItemsDismiss": "Kapat"
+  "MissingItemsDismiss": "Kapat",
+
+  "ScanStageMods": "Scanning mods...",
+  "ScanStageAMP": "Scanning AMP items...",
+  "ScanStageResolver": "Building item database...",
+  "ScanStageNames": "Resolving item names...",
+  "ScanStageTemplates": "Reading templates...",
+  "ScanStageLoca": "Loading localization...",
+  "ScanStageDone": "Done!",
+
+  "SortByName": "Ad",
+  "SortByRarity": "Nadirlik",
+  "SortByTheme": "Tema",
+  "SortBySlot": "Yuva",
+
+  "FolderPickerTitle": "BG3 Mods klasörünü seçin",
+  "UpdateCheckTooltip": "Güncellemeleri kontrol et",
+  "UpdateCheckingTooltip": "Güncellemeler kontrol ediliyor\u2026",
+  "UpdateAvailableTooltip": "v{0} mevcut \u2014 güncellemek için tıklayın",
+  "UpdateDownloadingTooltip": "İndiriliyor\u2026 {0}%",
+  "UpdateUpToDateTooltip": "Güncel",
+  "UpdateFailedTooltip": "Güncelleme kontrolü başarısız"
 }

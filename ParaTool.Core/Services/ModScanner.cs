@@ -16,6 +16,8 @@ public sealed class ScanProgress
     public int TotalPaks { get; init; }
     public int ScannedPaks { get; init; }
     public int ModsFound { get; init; }
+    public string? Stage { get; init; }
+    public int Percent { get; init; }
 }
 
 public sealed class ModScanner
@@ -27,8 +29,8 @@ public sealed class ModScanner
         _vanillaDb = vanillaDb;
     }
 
-    public async Task<ScanResult> ScanAsync(string modsFolder, IProgress<ScanProgress>? progress = null,
-        CancellationToken ct = default)
+    public async Task<ScanResult> ScanAsync(string modsFolder, string langCode = "en",
+        IProgress<ScanProgress>? progress = null, CancellationToken ct = default)
     {
         var pakFiles = Directory.GetFiles(modsFolder, "*.pak");
         if (pakFiles.Length == 0)
@@ -46,8 +48,14 @@ public sealed class ModScanner
         var ampPakPath = ampPaks[0];
         var nonAmpPaks = pakFiles.Where(p => p != ampPakPath).ToArray();
 
+        // Extract AMP whitelist first — items already in AMP should not be shown from mods
+        progress?.Report(new ScanProgress { Stage = "ScanAMP", Percent = 0 });
+        var ampWhitelist = ExtractAmpWhitelist(ampPakPath);
+
         var mods = new List<ModInfo>();
         int scanned = 0;
+
+        progress?.Report(new ScanProgress { Stage = "ScanMods", Percent = 5 });
 
         await Parallel.ForEachAsync(nonAmpPaks, new ParallelOptions
         {
@@ -55,7 +63,7 @@ public sealed class ModScanner
             CancellationToken = ct
         }, async (pakPath, innerCt) =>
         {
-            var mod = await Task.Run(() => ScanPak(pakPath), innerCt);
+            var mod = await Task.Run(() => ScanPak(pakPath, ampWhitelist), innerCt);
             var count = Interlocked.Increment(ref scanned);
 
             if (mod != null)
@@ -67,14 +75,23 @@ public sealed class ModScanner
             {
                 TotalPaks = nonAmpPaks.Length,
                 ScannedPaks = count,
-                ModsFound = mods.Count
+                ModsFound = mods.Count,
+                Stage = "ScanMods",
+                Percent = nonAmpPaks.Length > 0 ? 5 + count * 35 / nonAmpPaks.Length : 40
             });
         });
 
         mods.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
 
         // Scan AMP pak itself for editable items
+        progress?.Report(new ScanProgress { Stage = "ScanAMP", Percent = 42 });
         var ampMod = ScanAmpPak(ampPakPath);
+
+        // Resolve display names from PAK localization files
+        progress?.Report(new ScanProgress { Stage = "ResolveNames", Percent = 55 });
+        await Task.Run(() => ResolveDisplayNames(ampPakPath, ampMod, mods, nonAmpPaks, langCode, _vanillaDb.Resolver, progress), ct);
+
+        progress?.Report(new ScanProgress { Stage = "Done", Percent = 100 });
 
         return new ScanResult
         {
@@ -95,6 +112,26 @@ public sealed class ModScanner
         ["Uncommon"] = "Uncommon", ["Rare"] = "Rare",
         ["Epic"] = "VeryRare", ["Legendary"] = "Legendary"
     };
+
+    /// <summary>
+    /// Extracts the AMP whitelist (StatIds in REL_All tables) from the AMP pak's TreasureTable.
+    /// </summary>
+    private static HashSet<string> ExtractAmpWhitelist(string ampPakPath)
+    {
+        try
+        {
+            using var fs = File.OpenRead(ampPakPath);
+            var header = PakReader.ReadHeader(fs);
+            var entries = PakReader.ReadFileList(fs, header);
+            var ttEntry = entries.FirstOrDefault(e =>
+                e.Path.EndsWith("TreasureTable.txt", StringComparison.OrdinalIgnoreCase));
+            if (ttEntry.Path == null) return new();
+            var ttData = PakReader.ExtractFileData(fs, ttEntry);
+            var (whitelist, _) = ParseTreasureTableInfo(ttData);
+            return whitelist;
+        }
+        catch { return new(); }
+    }
 
     private ModInfo? ScanAmpPak(string ampPakPath)
     {
@@ -147,20 +184,31 @@ public sealed class ModScanner
                     var vanilla = _vanillaDb.Resolver.Get(modEntry.Name);
                     if (vanilla != null)
                     {
-                        var mergedData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
-                        foreach (var kvp in modEntry.Data)
-                            mergedData[kvp.Key] = kvp.Value;
-
                         var mergedUsing = modEntry.Using;
                         if (mergedUsing != null && mergedUsing.Equals(modEntry.Name, StringComparison.OrdinalIgnoreCase))
                             mergedUsing = vanilla.Using;
+
+                        var effectiveUsing = mergedUsing ?? vanilla.Using;
+                        bool sameChain = string.Equals(effectiveUsing, vanilla.Using, StringComparison.OrdinalIgnoreCase);
+
+                        Dictionary<string, string> finalData;
+                        if (sameChain)
+                        {
+                            finalData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
+                            foreach (var kvp in modEntry.Data)
+                                finalData[kvp.Key] = kvp.Value;
+                        }
+                        else
+                        {
+                            finalData = modEntry.Data;
+                        }
 
                         resolver.AddEntries(new[] { new StatsEntry
                         {
                             Name = modEntry.Name,
                             Type = modEntry.Type,
-                            Using = mergedUsing ?? vanilla.Using,
-                            Data = mergedData
+                            Using = effectiveUsing,
+                            Data = finalData
                         }});
                     }
                     else
@@ -289,7 +337,7 @@ public sealed class ModScanner
         return second < 0 ? "" : line[(first + 1)..second];
     }
 
-    private ModInfo? ScanPak(string pakPath)
+    private ModInfo? ScanPak(string pakPath, HashSet<string>? ampWhitelist = null)
     {
         try
         {
@@ -336,21 +384,36 @@ public sealed class ModScanner
                 var vanilla = _vanillaDb.Resolver.Get(modEntry.Name);
                 if (vanilla != null)
                 {
-                    var mergedData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
-                    foreach (var kvp in modEntry.Data)
-                        mergedData[kvp.Key] = kvp.Value;
-
-                    // Keep vanilla's using chain if mod self-references (broken skeleton pattern)
+                    // Fix self-referencing Using (broken skeleton pattern)
                     var mergedUsing = modEntry.Using;
                     if (mergedUsing != null && mergedUsing.Equals(modEntry.Name, StringComparison.OrdinalIgnoreCase))
                         mergedUsing = vanilla.Using;
+
+                    var effectiveUsing = mergedUsing ?? vanilla.Using;
+
+                    // Only merge vanilla data when inheritance chain is unchanged.
+                    // If the mod changes Using, vanilla data (Slot, ArmorType, etc.) would
+                    // shadow values from the new chain, causing misclassification.
+                    bool sameChain = string.Equals(effectiveUsing, vanilla.Using, StringComparison.OrdinalIgnoreCase);
+
+                    Dictionary<string, string> finalData;
+                    if (sameChain)
+                    {
+                        finalData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
+                        foreach (var kvp in modEntry.Data)
+                            finalData[kvp.Key] = kvp.Value;
+                    }
+                    else
+                    {
+                        finalData = modEntry.Data;
+                    }
 
                     resolver.AddEntries(new[] { new StatsEntry
                     {
                         Name = modEntry.Name,
                         Type = modEntry.Type,
-                        Using = mergedUsing ?? vanilla.Using,
-                        Data = mergedData
+                        Using = effectiveUsing,
+                        Data = finalData
                     }});
                 }
                 else
@@ -360,11 +423,13 @@ public sealed class ModScanner
             }
 
             // Filter: keep only Armor/Weapon entries from this mod that are NOT vanilla rebals
+            // and NOT already in AMP treasure tables
             var items = new List<ItemEntry>();
             foreach (var entry in modEntries)
             {
                 if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
                 if (_vanillaDb.Resolver.AllEntries.ContainsKey(entry.Name)) continue;
+                if (ampWhitelist != null && ampWhitelist.Contains(entry.Name)) continue;
 
                 var item = ResolveItem(entry, resolver);
                 if (item == null) continue;
@@ -479,5 +544,162 @@ public sealed class ModScanner
             "Legendary" => "Legendary",
             _ => "Uncommon" // Default
         };
+    }
+
+    /// <summary>
+    /// Adds entries to resolver without letting StatusData/PassiveData overwrite Armor/Weapon entries.
+    /// Same-name StatusData entries (e.g. WPN_SPEAR_U) would erase RootTemplate from Weapon entries.
+    /// </summary>
+    private static void AddEntriesSafe(Parsing.StatsResolver resolver, IEnumerable<Parsing.StatsEntry> entries)
+    {
+        foreach (var entry in entries)
+        {
+            var existing = resolver.Get(entry.Name);
+            if (existing != null
+                && (existing.Type == "Armor" || existing.Type == "Weapon")
+                && entry.Type != "Armor" && entry.Type != "Weapon")
+            {
+                continue; // Don't let StatusData/PassiveData overwrite Armor/Weapon
+            }
+            resolver.AddEntries(new[] { entry });
+        }
+    }
+
+    private static void ResolveDisplayNames(string ampPakPath, ModInfo? ampMod,
+        List<ModInfo> mods, string[] modPakPaths, string langCode, Parsing.StatsResolver baseResolver,
+        IProgress<ScanProgress>? progress = null)
+    {
+        var allItems = new List<ItemEntry>();
+        if (ampMod != null) allItems.AddRange(ampMod.Items);
+        foreach (var mod in mods) allItems.AddRange(mod.Items);
+        if (allItems.Count == 0) return;
+
+        progress?.Report(new ScanProgress { Stage = "BuildResolver", Percent = 58 });
+
+        // Build combined resolver for using-chain walking
+        var resolver = new Parsing.StatsResolver();
+        foreach (var kvp in baseResolver.AllEntries)
+            resolver.AddEntries(new[] { kvp.Value });
+
+        // Add AMP stats entries (they have RootTemplate UUIDs and using chains)
+        try
+        {
+            using var ampFs = File.OpenRead(ampPakPath);
+            var ampHeader = PakReader.ReadHeader(ampFs);
+            var ampEntries = PakReader.ReadFileList(ampFs, ampHeader);
+            foreach (var sf in ampEntries.Where(e =>
+                e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
+                e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)))
+            {
+                var data = PakReader.ExtractFileData(ampFs, sf);
+                var text = System.Text.Encoding.UTF8.GetString(data);
+                AddEntriesSafe(resolver, Parsing.StatsParser.Parse(text));
+            }
+        }
+        catch { }
+
+        // Add mod stats entries
+        foreach (var mod in mods)
+        {
+            try
+            {
+                using var fs = File.OpenRead(mod.PakPath);
+                var header = PakReader.ReadHeader(fs);
+                var entries = PakReader.ReadFileList(fs, header);
+                foreach (var sf in entries.Where(e =>
+                    e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
+                    e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var data = PakReader.ExtractFileData(fs, sf);
+                    var text = System.Text.Encoding.UTF8.GetString(data);
+                    AddEntriesSafe(resolver, Parsing.StatsParser.Parse(text));
+                }
+            }
+            catch { }
+        }
+
+        progress?.Report(new ScanProgress { Stage = "ResolveTemplates", Percent = 65 });
+
+        // For each item, walk the using chain to find the first ancestor with a RootTemplate UUID
+        // Build: UUID → list of StatIds that resolve to it
+        var uuidToStatIds = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var item in allItems)
+        {
+            var current = item.StatId;
+            int depth = 0;
+            string? foundUuid = null;
+
+            while (current != null && depth < 20)
+            {
+                var entry = resolver.Get(current);
+                if (entry != null && entry.Data.TryGetValue("RootTemplate", out var uuid)
+                    && !string.IsNullOrEmpty(uuid))
+                {
+                    foundUuid = uuid;
+                    break;
+                }
+                current = entry?.Using;
+                depth++;
+            }
+
+            if (foundUuid != null)
+            {
+                if (!uuidToStatIds.TryGetValue(foundUuid, out var list))
+                {
+                    list = new List<string>();
+                    uuidToStatIds[foundUuid] = list;
+                }
+                list.Add(item.StatId);
+            }
+        }
+
+        if (uuidToStatIds.Count == 0) return;
+
+        progress?.Report(new ScanProgress { Stage = "ScanTemplates", Percent = 70 });
+
+        // Resolve UUID → display name from AMP pak
+        var resolved = ItemNameResolver.ResolveFromPak(ampPakPath, uuidToStatIds, langCode);
+
+        progress?.Report(new ScanProgress { Stage = "ResolveLoca", Percent = 90 });
+
+        // Resolve remaining from mod paks
+        var remainingUuids = uuidToStatIds.Keys
+            .Where(u => !resolved.ContainsKey(u))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (remainingUuids.Count > 0)
+        {
+            var remainingMap = uuidToStatIds
+                .Where(kvp => remainingUuids.Contains(kvp.Key))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var pakPath in modPakPaths)
+            {
+                if (remainingMap.Count == 0) break;
+                try
+                {
+                    var modResolved = ItemNameResolver.ResolveFromPak(pakPath, remainingMap, langCode);
+                    foreach (var (uuid, name) in modResolved)
+                    {
+                        resolved[uuid] = name;
+                        remainingMap.Remove(uuid);
+                    }
+                }
+                catch { }
+            }
+        }
+
+        // Apply: UUID → name → all items that share this UUID
+        foreach (var (uuid, statIds) in uuidToStatIds)
+        {
+            if (!resolved.TryGetValue(uuid, out var displayName)) continue;
+            foreach (var statId in statIds)
+            {
+                var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
+                if (item != null)
+                    item.DisplayName = displayName;
+            }
+        }
     }
 }

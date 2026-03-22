@@ -125,6 +125,27 @@ public partial class Loc : ObservableObject
     public string MissingItemsWarning => this["MissingItemsWarning"];
     public string MissingItemsDismiss => this["MissingItemsDismiss"];
 
+    public string SortByName => this["SortByName"];
+    public string SortByRarity => this["SortByRarity"];
+    public string SortByTheme => this["SortByTheme"];
+    public string SortBySlot => this["SortBySlot"];
+
+    public string ScanStageMods => this["ScanStageMods"];
+    public string ScanStageAMP => this["ScanStageAMP"];
+    public string ScanStageResolver => this["ScanStageResolver"];
+    public string ScanStageNames => this["ScanStageNames"];
+    public string ScanStageTemplates => this["ScanStageTemplates"];
+    public string ScanStageLoca => this["ScanStageLoca"];
+    public string ScanStageDone => this["ScanStageDone"];
+
+    public string FolderPickerTitle => this["FolderPickerTitle"];
+    public string UpdateCheckTooltip => this["UpdateCheckTooltip"];
+    public string UpdateCheckingTooltip => this["UpdateCheckingTooltip"];
+    public string UpdateAvailableTooltip(string version) => string.Format(this["UpdateAvailableTooltip"], version);
+    public string UpdateDownloadingTooltip(int progress) => string.Format(this["UpdateDownloadingTooltip"], progress);
+    public string UpdateUpToDateTooltip => this["UpdateUpToDateTooltip"];
+    public string UpdateFailedTooltip => this["UpdateFailedTooltip"];
+
     public string PatchingInProgress => this["PatchingInProgress"];
     public string PatchSuccessLabel => this["PatchSuccess"];
     public string PatchErrorLabel => this["PatchError"];

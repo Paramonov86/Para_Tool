@@ -53,6 +53,9 @@ public partial class ItemVM : ObservableObject
 
     public string StatId => _entry.StatId;
     public string StatType => _entry.StatType;
+    public string? DisplayName => _entry.DisplayName;
+    public string ItemLabel => _entry.DisplayName ?? _entry.StatId;
+    public bool HasDisplayName => _entry.DisplayName != null;
     public string DetectedPool => _entry.DetectedPool ?? "?";
     public string DetectedRarity => _entry.DetectedRarity ?? "?";
     public ItemEntry Entry => _entry;

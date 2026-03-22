@@ -67,5 +67,26 @@
   "ProfileNewName": "Назва профілю",
   "ProfileSaved": "Профіль збережено!",
   "MissingItemsWarning": "Раніше пропатчені предмети не знайдені:",
-  "MissingItemsDismiss": "Закрити"
+  "MissingItemsDismiss": "Закрити",
+
+  "ScanStageMods": "Scanning mods...",
+  "ScanStageAMP": "Scanning AMP items...",
+  "ScanStageResolver": "Building item database...",
+  "ScanStageNames": "Resolving item names...",
+  "ScanStageTemplates": "Reading templates...",
+  "ScanStageLoca": "Loading localization...",
+  "ScanStageDone": "Done!",
+
+  "SortByName": "Назва",
+  "SortByRarity": "Рідкісність",
+  "SortByTheme": "Тематика",
+  "SortBySlot": "Слот",
+
+  "FolderPickerTitle": "Оберіть папку Mods BG3",
+  "UpdateCheckTooltip": "Перевірити оновлення",
+  "UpdateCheckingTooltip": "Перевірка оновлень\u2026",
+  "UpdateAvailableTooltip": "v{0} доступна \u2014 натисніть для оновлення",
+  "UpdateDownloadingTooltip": "Завантаження\u2026 {0}%",
+  "UpdateUpToDateTooltip": "Актуальна версія",
+  "UpdateFailedTooltip": "Помилка перевірки оновлень"
 }
