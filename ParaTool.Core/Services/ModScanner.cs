@@ -48,9 +48,9 @@ public sealed class ModScanner
         var ampPakPath = ampPaks[0];
         var nonAmpPaks = pakFiles.Where(p => p != ampPakPath).ToArray();
 
-        // Extract AMP whitelist first — items already in AMP should not be shown from mods
+        // Extract AMP integration info — items already in AMP TT are marked as integrated in mods
         progress?.Report(new ScanProgress { Stage = "ScanAMP", Percent = 0 });
-        var ampWhitelist = ExtractAmpWhitelist(ampPakPath);
+        var (ampWhitelist, ampRarities, ampThemes) = ExtractAmpIntegrationInfo(ampPakPath);
 
         var mods = new List<ModInfo>();
         int scanned = 0;
@@ -63,7 +63,7 @@ public sealed class ModScanner
             CancellationToken = ct
         }, async (pakPath, innerCt) =>
         {
-            var mod = await Task.Run(() => ScanPak(pakPath, ampWhitelist), innerCt);
+            var mod = await Task.Run(() => ScanPak(pakPath, ampWhitelist, ampRarities, ampThemes), innerCt);
             var count = Interlocked.Increment(ref scanned);
 
             if (mod != null)
@@ -114,9 +114,11 @@ public sealed class ModScanner
     };
 
     /// <summary>
-    /// Extracts the AMP whitelist (StatIds in REL_All tables) from the AMP pak's TreasureTable.
+    /// Extracts AMP integration info from the AMP pak's TreasureTable:
+    /// whitelist (StatIds in REL_All tables), per-item rarity, per-item themes.
     /// </summary>
-    private static HashSet<string> ExtractAmpWhitelist(string ampPakPath)
+    private static (HashSet<string> whitelist, Dictionary<string, string> rarities, Dictionary<string, List<string>> themes)
+        ExtractAmpIntegrationInfo(string ampPakPath)
     {
         try
         {
@@ -125,12 +127,12 @@ public sealed class ModScanner
             var entries = PakReader.ReadFileList(fs, header);
             var ttEntry = entries.FirstOrDefault(e =>
                 e.Path.EndsWith("TreasureTable.txt", StringComparison.OrdinalIgnoreCase));
-            if (ttEntry.Path == null) return new();
+            if (ttEntry.Path == null) return (new(), new(), new());
             var ttData = PakReader.ExtractFileData(fs, ttEntry);
-            var (whitelist, _) = ParseTreasureTableInfo(ttData);
-            return whitelist;
+            var (whitelist, themes, rarities) = ParseTreasureTableInfo(ttData);
+            return (whitelist, rarities, themes);
         }
-        catch { return new(); }
+        catch { return (new(), new(), new()); }
     }
 
     private ModInfo? ScanAmpPak(string ampPakPath)
@@ -149,13 +151,42 @@ public sealed class ModScanner
             var modInfo = MetaLsxParser.Parse(metaData, ampPakPath);
             if (modInfo == null) return null;
 
-            // Parse TreasureTable → whitelist (REL_All items) + themes per item
-            var ttEntry = entries.FirstOrDefault(e =>
-                e.Path.EndsWith("TreasureTable.txt", StringComparison.OrdinalIgnoreCase));
-            if (ttEntry.Path == null) return null;
+            // Parse TreasureTable → whitelist (REL_All items) + themes per item.
+            // If the pak was patched by us (contains ParaTool_Overrides.txt), use the
+            // stored original TT so mod items don't appear as AMP items.
+            // If the pak is clean (no overrides file), read TT from pak directly —
+            // this handles AMP updates where the stored original would be stale.
+            bool isPatchedByUs = entries.Any(e =>
+                e.Path.EndsWith("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase));
 
-            var ttData = PakReader.ExtractFileData(fs, ttEntry);
-            var (whitelist, themeMap) = ParseTreasureTableInfo(ttData);
+            HashSet<string> whitelist;
+            Dictionary<string, List<string>> themeMap;
+
+            if (isPatchedByUs && OriginalTtStore.HasValidOriginal(ampPakPath))
+            {
+                var originalText = OriginalTtStore.Load();
+                if (originalText != null)
+                {
+                    var origBytes = System.Text.Encoding.UTF8.GetBytes(originalText);
+                    (whitelist, themeMap, _) = ParseTreasureTableInfo(origBytes);
+                }
+                else
+                {
+                    var ttEntry = entries.FirstOrDefault(e =>
+                        e.Path.EndsWith("TreasureTable.txt", StringComparison.OrdinalIgnoreCase));
+                    if (ttEntry.Path == null) return null;
+                    var ttData = PakReader.ExtractFileData(fs, ttEntry);
+                    (whitelist, themeMap, _) = ParseTreasureTableInfo(ttData);
+                }
+            }
+            else
+            {
+                var ttEntry = entries.FirstOrDefault(e =>
+                    e.Path.EndsWith("TreasureTable.txt", StringComparison.OrdinalIgnoreCase));
+                if (ttEntry.Path == null) return null;
+                var ttData = PakReader.ExtractFileData(fs, ttEntry);
+                (whitelist, themeMap, _) = ParseTreasureTableInfo(ttData);
+            }
             if (whitelist.Count == 0) return null;
 
             // Build merged resolver: vanilla + AMP stats
@@ -165,7 +196,14 @@ public sealed class ModScanner
 
             var statFiles = entries.Where(e =>
                 e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
-                e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)).ToList();
+                e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) &&
+                !e.Path.EndsWith("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            // Pass 1: Merge all entries with the same name across stat files.
+            // BG3 stats work as a cascade: later definitions supplement earlier ones.
+            // After PakWriter repacks the pak, file order changes (alphabetical vs original),
+            // so we must merge across files instead of relying on load order.
+            var mergedEntries = new Dictionary<string, StatsEntry>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var statFile in statFiles)
             {
@@ -173,48 +211,97 @@ public sealed class ModScanner
                 var text = System.Text.Encoding.UTF8.GetString(data);
                 var parsed = StatsParser.Parse(text);
 
-                foreach (var modEntry in parsed)
+                foreach (var entry in parsed)
                 {
-                    // Don't let StatusData overwrite Armor/Weapon entries (same name, case-insensitive)
-                    var existing = resolver.Get(modEntry.Name);
-                    if (existing != null && modEntry.Type != "Armor" && modEntry.Type != "Weapon"
-                        && (existing.Type == "Armor" || existing.Type == "Weapon"))
-                        continue;
-
-                    var vanilla = _vanillaDb.Resolver.Get(modEntry.Name);
-                    if (vanilla != null)
+                    if (mergedEntries.TryGetValue(entry.Name, out var prev))
                     {
-                        var mergedUsing = modEntry.Using;
-                        if (mergedUsing != null && mergedUsing.Equals(modEntry.Name, StringComparison.OrdinalIgnoreCase))
-                            mergedUsing = vanilla.Using;
+                        // Don't let StatusData overwrite Armor/Weapon entries
+                        if (entry.Type != "Armor" && entry.Type != "Weapon"
+                            && (prev.Type == "Armor" || prev.Type == "Weapon"))
+                            continue;
 
-                        var effectiveUsing = mergedUsing ?? vanilla.Using;
-                        bool sameChain = string.Equals(effectiveUsing, vanilla.Using, StringComparison.OrdinalIgnoreCase);
+                        // Merge data: previous base + new overrides
+                        var mergedData = new Dictionary<string, string>(prev.Data, StringComparer.OrdinalIgnoreCase);
+                        foreach (var kvp in entry.Data)
+                            mergedData[kvp.Key] = kvp.Value;
 
-                        Dictionary<string, string> finalData;
-                        if (sameChain)
-                        {
-                            finalData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
-                            foreach (var kvp in modEntry.Data)
-                                finalData[kvp.Key] = kvp.Value;
-                        }
-                        else
-                        {
-                            finalData = modEntry.Data;
-                        }
+                        // Self-referencing Using is a BG3 skeleton pattern — keep the
+                        // correct Using from the earlier definition instead
+                        var mergedUsing = entry.Using;
+                        if (mergedUsing != null && mergedUsing.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))
+                            mergedUsing = prev.Using;
 
-                        resolver.AddEntries(new[] { new StatsEntry
+                        mergedEntries[entry.Name] = new StatsEntry
                         {
-                            Name = modEntry.Name,
-                            Type = modEntry.Type,
-                            Using = effectiveUsing,
-                            Data = finalData
-                        }});
+                            Name = entry.Name,
+                            Type = entry.Type,
+                            Using = mergedUsing ?? prev.Using,
+                            Data = mergedData
+                        };
                     }
                     else
                     {
-                        resolver.AddEntries(new[] { modEntry });
+                        mergedEntries[entry.Name] = entry;
                     }
+                }
+            }
+
+            // Pass 2: Add merged entries to resolver with vanilla merge
+            foreach (var modEntry in mergedEntries.Values)
+            {
+                // Don't let non-Armor/Weapon overwrite Armor/Weapon from vanilla
+                var existing = resolver.Get(modEntry.Name);
+                if (existing != null && modEntry.Type != "Armor" && modEntry.Type != "Weapon"
+                    && (existing.Type == "Armor" || existing.Type == "Weapon"))
+                    continue;
+
+                // Fix self-referencing Using: replace with the Using from vanilla DB
+                // or from the resolver (which has vanilla entries loaded first)
+                var fixedUsing = modEntry.Using;
+                if (fixedUsing != null && fixedUsing.Equals(modEntry.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    fixedUsing = existing?.Using; // Try resolver's existing entry (vanilla)
+                }
+
+                var vanilla = _vanillaDb.Resolver.Get(modEntry.Name);
+                if (vanilla != null)
+                {
+                    var mergedUsing = fixedUsing;
+                    if (mergedUsing != null && mergedUsing.Equals(modEntry.Name, StringComparison.OrdinalIgnoreCase))
+                        mergedUsing = vanilla.Using;
+
+                    var effectiveUsing = mergedUsing ?? vanilla.Using;
+                    bool sameChain = string.Equals(effectiveUsing, vanilla.Using, StringComparison.OrdinalIgnoreCase);
+
+                    Dictionary<string, string> finalData;
+                    if (sameChain)
+                    {
+                        finalData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
+                        foreach (var kvp in modEntry.Data)
+                            finalData[kvp.Key] = kvp.Value;
+                    }
+                    else
+                    {
+                        finalData = modEntry.Data;
+                    }
+
+                    resolver.AddEntries(new[] { new StatsEntry
+                    {
+                        Name = modEntry.Name,
+                        Type = modEntry.Type,
+                        Using = effectiveUsing,
+                        Data = finalData
+                    }});
+                }
+                else
+                {
+                    resolver.AddEntries(new[] { new StatsEntry
+                    {
+                        Name = modEntry.Name,
+                        Type = modEntry.Type,
+                        Using = fixedUsing,
+                        Data = modEntry.Data
+                    }});
                 }
             }
 
@@ -256,18 +343,20 @@ public sealed class ModScanner
     }
 
     /// <summary>
-    /// Parses TreasureTable.txt → whitelist of StatIds in REL_All_* tables + theme map.
+    /// Parses TreasureTable.txt → whitelist of StatIds in REL_All_* tables + theme map + rarity map.
     /// </summary>
-    private static (HashSet<string> whitelist, Dictionary<string, List<string>> themes)
+    private static (HashSet<string> whitelist, Dictionary<string, List<string>> themes, Dictionary<string, string> rarities)
         ParseTreasureTableInfo(byte[] ttData)
     {
         var text = System.Text.Encoding.UTF8.GetString(ttData);
         var whitelist = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var themes = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        var rarities = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         bool inRelTable = false;
         bool isAllTable = false;
         string? currentTheme = null;
+        string? currentAllRarity = null;
 
         foreach (var rawLine in text.Split('\n'))
         {
@@ -278,6 +367,7 @@ public sealed class ModScanner
                 inRelTable = false;
                 isAllTable = false;
                 currentTheme = null;
+                currentAllRarity = null;
 
                 var name = ExtractQuoted(line);
                 if (!name.StartsWith("REL_", StringComparison.OrdinalIgnoreCase))
@@ -289,6 +379,12 @@ public sealed class ModScanner
                 if (rest.StartsWith("All_", StringComparison.OrdinalIgnoreCase))
                 {
                     isAllTable = true;
+                    // Extract rarity from table name: REL_All_Uncommon → Uncommon
+                    var tableRarity = rest[4..];
+                    if (TableRarityMap.TryGetValue(tableRarity, out var mapped))
+                        currentAllRarity = mapped;
+                    else
+                        currentAllRarity = tableRarity;
                 }
                 else
                 {
@@ -312,7 +408,11 @@ public sealed class ModScanner
             var statId = line[start..end];
 
             if (isAllTable)
+            {
                 whitelist.Add(statId);
+                if (currentAllRarity != null)
+                    rarities[statId] = currentAllRarity;
+            }
 
             if (currentTheme != null)
             {
@@ -326,7 +426,7 @@ public sealed class ModScanner
             }
         }
 
-        return (whitelist, themes);
+        return (whitelist, themes, rarities);
     }
 
     private static string ExtractQuoted(string line)
@@ -337,7 +437,10 @@ public sealed class ModScanner
         return second < 0 ? "" : line[(first + 1)..second];
     }
 
-    private ModInfo? ScanPak(string pakPath, HashSet<string>? ampWhitelist = null)
+    private ModInfo? ScanPak(string pakPath,
+        HashSet<string>? ampWhitelist = null,
+        Dictionary<string, string>? ampRarities = null,
+        Dictionary<string, List<string>>? ampThemes = null)
     {
         try
         {
@@ -367,19 +470,50 @@ public sealed class ModScanner
             foreach (var kvp in _vanillaDb.Resolver.AllEntries)
                 resolver.AddEntries(new[] { kvp.Value });
 
-            // Parse mod stats
-            var modEntries = new List<StatsEntry>();
+            // Pass 1: Parse mod stats and merge same-name entries across files
+            var mergedModEntries = new Dictionary<string, StatsEntry>(StringComparer.OrdinalIgnoreCase);
             foreach (var statFile in statFiles)
             {
                 var data = PakReader.ExtractFileData(fs, statFile);
                 var text = System.Text.Encoding.UTF8.GetString(data);
                 var parsed = StatsParser.Parse(text);
-                modEntries.AddRange(parsed);
+
+                foreach (var entry in parsed)
+                {
+                    if (mergedModEntries.TryGetValue(entry.Name, out var prev))
+                    {
+                        if (entry.Type != "Armor" && entry.Type != "Weapon"
+                            && (prev.Type == "Armor" || prev.Type == "Weapon"))
+                            continue;
+
+                        var mergedData = new Dictionary<string, string>(prev.Data, StringComparer.OrdinalIgnoreCase);
+                        foreach (var kvp in entry.Data)
+                            mergedData[kvp.Key] = kvp.Value;
+
+                        // Self-referencing Using is a BG3 rebalance pattern — keep prev Using
+                        var mergedUsing = entry.Using;
+                        if (mergedUsing != null && mergedUsing.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))
+                            mergedUsing = prev.Using;
+
+                        mergedModEntries[entry.Name] = new StatsEntry
+                        {
+                            Name = entry.Name,
+                            Type = entry.Type,
+                            Using = mergedUsing ?? prev.Using,
+                            Data = mergedData
+                        };
+                    }
+                    else
+                    {
+                        mergedModEntries[entry.Name] = entry;
+                    }
+                }
             }
 
-            // Merge mod entries with vanilla: mod data overrides, but vanilla data fills gaps.
+            // Pass 2: Merge with vanilla and add to resolver.
+            // Mod data overrides vanilla, but vanilla data fills gaps.
             // This preserves vanilla Slot/ArmorType in skeleton entries that mods redefine.
-            foreach (var modEntry in modEntries)
+            foreach (var modEntry in mergedModEntries.Values)
             {
                 var vanilla = _vanillaDb.Resolver.Get(modEntry.Name);
                 if (vanilla != null)
@@ -422,17 +556,26 @@ public sealed class ModScanner
                 }
             }
 
-            // Filter: keep only Armor/Weapon entries from this mod that are NOT vanilla rebals
-            // and NOT already in AMP treasure tables
+            // Filter: keep only Armor/Weapon entries from this mod that are NOT vanilla rebals.
+            // Items already in AMP treasure tables are kept but marked as integrated.
             var items = new List<ItemEntry>();
-            foreach (var entry in modEntries)
+            foreach (var entry in mergedModEntries.Values)
             {
                 if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
                 if (_vanillaDb.Resolver.AllEntries.ContainsKey(entry.Name)) continue;
-                if (ampWhitelist != null && ampWhitelist.Contains(entry.Name)) continue;
 
                 var item = ResolveItem(entry, resolver);
                 if (item == null) continue;
+
+                // If item is already in AMP loot tables, apply current AMP integration state
+                if (ampWhitelist != null && ampWhitelist.Contains(entry.Name))
+                {
+                    item.IsIntegrated = true;
+                    if (ampRarities != null && ampRarities.TryGetValue(entry.Name, out var ampRarity))
+                        item.DetectedRarity = ampRarity;
+                    if (ampThemes != null && ampThemes.TryGetValue(entry.Name, out var themes))
+                        item.DetectedThemes = themes;
+                }
 
                 items.Add(item);
             }

@@ -22,8 +22,11 @@ public sealed class ItemEntry
     // Localized display name (from RootTemplates + Localization)
     public string? DisplayName { get; set; }
 
-    // AMP item flag
+    // AMP item flag (native AMP items from AMP pak)
     public bool IsAmpItem { get; set; }
+
+    // Item is already integrated into AMP loot tables (patched previously)
+    public bool IsIntegrated { get; set; }
 
     // User-editable
     public bool Enabled { get; set; } = true;

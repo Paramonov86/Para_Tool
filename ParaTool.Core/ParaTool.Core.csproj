@@ -15,8 +15,10 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\Vanilla\Armor.txt" />
     <EmbeddedResource Include="Resources\Vanilla\Armor_2.txt" />
+    <EmbeddedResource Include="Resources\Vanilla\Gustav_Armor.txt" />
     <EmbeddedResource Include="Resources\Vanilla\Weapon.txt" />
     <EmbeddedResource Include="Resources\Vanilla\Weapon_2.txt" />
+    <EmbeddedResource Include="Resources\Vanilla\Gustav_Weapon.txt" />
   </ItemGroup>
 
 </Project>
