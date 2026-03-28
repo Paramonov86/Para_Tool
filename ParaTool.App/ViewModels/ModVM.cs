@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using ParaTool.App.Themes;
 using ParaTool.Core.Models;
 
 namespace ParaTool.App.ViewModels;
@@ -21,7 +22,7 @@ public partial class ModVM : ObservableObject
     public bool IsAmp => ModInfo.IsAmp;
     public IBrush ModBackground => IsAmp
         ? new SolidColorBrush(Color.Parse("#33C8A96E"))
-        : new SolidColorBrush(Color.Parse("#2F2C3A"));
+        : Themes.ThemeBrushes.PanelBg;
     public ObservableCollection<ItemVM> Items { get; }
 
     [ObservableProperty] private bool _enabled;
