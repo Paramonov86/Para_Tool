@@ -92,17 +92,13 @@ public partial class IconBrowserVM : ObservableObject
 
     public ObservableCollection<AtlasTabVM> Tabs { get; } = [];
     public ObservableCollection<IconEntryVM> DisplayIcons { get; } = [];
-    private List<IconEntryVM> _filteredInTab = [];
 
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private bool _isOpen;
     [ObservableProperty] private AtlasTabVM? _selectedTab;
     [ObservableProperty] private string _currentIconName = "";
     [ObservableProperty] private WriteableBitmap? _currentIconBitmap;
-    [ObservableProperty] private int _currentPage;
-    [ObservableProperty] private int _totalPages;
-
-    private const int PageSize = 24; // 4x6 grid
+    [ObservableProperty] private int _iconCount;
 
     public event Action<string>? IconSelected;
 
@@ -134,14 +130,8 @@ public partial class IconBrowserVM : ObservableObject
     [RelayCommand]
     public void Close() => IsOpen = false;
 
-    partial void OnSearchTextChanged(string value) { CurrentPage = 0; RefreshDisplay(); }
-    partial void OnSelectedTabChanged(AtlasTabVM? value) { CurrentPage = 0; RefreshDisplay(); }
-
-    [RelayCommand]
-    private void NextPage() { if (CurrentPage < TotalPages - 1) { CurrentPage++; ShowPage(); } }
-
-    [RelayCommand]
-    private void PrevPage() { if (CurrentPage > 0) { CurrentPage--; ShowPage(); } }
+    partial void OnSearchTextChanged(string value) => RefreshDisplay();
+    partial void OnSelectedTabChanged(AtlasTabVM? value) => RefreshDisplay();
 
     [RelayCommand]
     private void SelectTab(AtlasTabVM? tab) => SelectedTab = tab;
@@ -199,48 +189,35 @@ public partial class IconBrowserVM : ObservableObject
             Tabs.Add(new AtlasTabVM(atlasName, icons));
     }
 
-    private void RefreshDisplay()
-    {
-        if (SelectedTab == null) { DisplayIcons.Clear(); return; }
-
-        var query = SearchText.Trim();
-        _filteredInTab = string.IsNullOrEmpty(query)
-            ? SelectedTab.Icons.ToList()
-            : SelectedTab.Icons.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
-
-        TotalPages = Math.Max(1, (_filteredInTab.Count + PageSize - 1) / PageSize);
-
-        // Jump to page with current icon
-        if (!string.IsNullOrEmpty(CurrentIconName) && CurrentPage == 0 && string.IsNullOrEmpty(query))
-        {
-            var idx = _filteredInTab.FindIndex(i => i.Name.Equals(CurrentIconName, StringComparison.OrdinalIgnoreCase));
-            if (idx >= 0) CurrentPage = idx / PageSize;
-        }
-        CurrentPage = Math.Min(CurrentPage, TotalPages - 1);
-        ShowPage();
-    }
-
-    private async void ShowPage()
+    private async void RefreshDisplay()
     {
         DisplayIcons.Clear();
-        var pageItems = _filteredInTab.Skip(CurrentPage * PageSize).Take(PageSize).ToList();
+        if (SelectedTab == null) { IconCount = 0; return; }
 
-        // Load thumbnails in background to prevent UI freeze
+        var query = SearchText.Trim();
+        var filtered = string.IsNullOrEmpty(query)
+            ? SelectedTab.Icons
+            : SelectedTab.Icons.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+        var items = filtered.ToList();
+
+        // Load thumbnails in background
         await Task.Run(() =>
         {
-            foreach (var icon in pageItems)
+            foreach (var icon in items)
             {
                 try { icon.TryLoadThumbnail(); }
                 catch { /* skip broken */ }
             }
         });
 
-        // Update UI on main thread
-        foreach (var icon in pageItems)
+        // Add only successfully loaded icons
+        foreach (var icon in items)
         {
             if (icon.Thumbnail != null)
                 DisplayIcons.Add(icon);
         }
+        IconCount = DisplayIcons.Count;
     }
 
     public void SelectIcon(IconEntryVM icon)
