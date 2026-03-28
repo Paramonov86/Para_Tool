@@ -183,10 +183,9 @@ public class BoostBlocksEditor : UserControl
             }
             else if (param.Type == "dice")
             {
-                var diceOptions = new[] { "1d4", "1d6", "1d8", "1d10", "1d12", "2d4", "2d6", "2d8", "2d10", "2d12", "3d6", "3d8", "4d6", "5d6", "6d6", "8d6", "10d6" };
                 var chip = new TumblerChipEditor
                 {
-                    Text = value, Items = diceOptions,
+                    Text = value, Items = BoostMapping.FormulaValues,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 chip.Tag = (rawBoost, paramIdx);
@@ -214,9 +213,9 @@ public class BoostBlocksEditor : UserControl
             }
             else if (param.Type == "formula")
             {
-                var presets = new[] { "1", "2", "3", "4", "5", "1d4", "1d6", "1d8", "1d10", "1d12", "2d6", "2d8", "ProficiencyBonus", "Level" };
-                // Add current value if not in presets
-                var items = presets.Contains(value) ? presets : presets.Append(value).ToArray();
+                var items = BoostMapping.FormulaValues.Contains(value)
+                    ? BoostMapping.FormulaValues
+                    : BoostMapping.FormulaValues.Append(value).ToArray();
                 var chip = new TumblerChipEditor
                 {
                     Text = value, Items = items,

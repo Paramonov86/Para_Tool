@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using ParaTool.App.Localization;
 using ParaTool.Core.Schema;
 
 namespace ParaTool.App.Controls;
@@ -22,6 +23,7 @@ public class ConditionBlocksEditor : UserControl
 
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;
+    private List<CondToken> _tokens = []; // current tokens for drag-drop
 
     private static readonly SolidColorBrush FgFunc = new(Color.Parse("#2ECC71"));
     private static readonly SolidColorBrush BgFunc = new(Color.Parse("#1A2ECC71"));
@@ -60,17 +62,17 @@ public class ConditionBlocksEditor : UserControl
     {
         _panel.Children.Clear();
         var raw = Text ?? "";
-        if (string.IsNullOrWhiteSpace(raw)) { AddPlusButton(); return; }
+        if (string.IsNullOrWhiteSpace(raw)) { _tokens = []; AddPlusButton(); return; }
 
-        var tokens = Tokenize(raw);
-        for (int i = 0; i < tokens.Count; i++)
+        _tokens = Tokenize(raw);
+        for (int i = 0; i < _tokens.Count; i++)
         {
-            var token = tokens[i];
+            var token = _tokens[i];
             var idx = i;
 
+            Control element;
             if (token.Type is CondToken.Kind.And or CondToken.Kind.Or)
             {
-                // Clickable connector — click toggles AND↔OR
                 var connLabel = token.Type == CondToken.Kind.And ? "AND" : "OR";
                 var connBtn = new Button
                 {
@@ -85,20 +87,79 @@ public class ConditionBlocksEditor : UserControl
                 };
                 connBtn.Click += (_, _) =>
                 {
-                    // Toggle AND↔OR
                     token.Type = token.Type == CondToken.Kind.And ? CondToken.Kind.Or : CondToken.Kind.And;
-                    SyncFromTokens(tokens);
+                    SyncFromTokens(_tokens);
                 };
-                _panel.Children.Add(connBtn);
+                element = connBtn;
             }
             else
             {
-                // Condition chip
-                _panel.Children.Add(BuildConditionChip(token, tokens, idx));
+                element = BuildConditionChip(token, _tokens, idx);
             }
+
+            // Drag-and-drop: hold and drag to reorder
+            SetupDrag(element, idx);
+            _panel.Children.Add(element);
         }
 
         AddPlusButton();
+    }
+
+    // ── Drag and drop ──────────────────────────────────────────
+
+    private void SetupDrag(Control element, int tokenIdx)
+    {
+        element.Tag = tokenIdx;
+
+        // Start drag on pointer press + move
+        element.PointerPressed += async (s, e) =>
+        {
+            if (e.GetCurrentPoint(element).Properties.IsLeftButtonPressed && s is Control ctrl)
+            {
+                // Small delay to distinguish click from drag
+                var startPos = e.GetPosition(_panel);
+
+                void onMove(object? _, PointerEventArgs me)
+                {
+                    var pos = me.GetPosition(_panel);
+                    if (Math.Abs(pos.X - startPos.X) > 8 || Math.Abs(pos.Y - startPos.Y) > 8)
+                    {
+                        ctrl.PointerMoved -= onMove;
+                        var data = new DataObject();
+                        data.Set("CondTokenIdx", tokenIdx);
+                        ctrl.Opacity = 0.5;
+                        DragDrop.DoDragDrop(me, data, DragDropEffects.Move);
+                        ctrl.Opacity = 1;
+                    }
+                }
+                ctrl.PointerMoved += onMove;
+                ctrl.PointerReleased += (_, _) => ctrl.PointerMoved -= onMove;
+            }
+        };
+
+        // Drop target
+        DragDrop.SetAllowDrop(element, true);
+        element.AddHandler(DragDrop.DropEvent, (_, e) =>
+        {
+            if (e.Data.Get("CondTokenIdx") is int fromIdx)
+            {
+                var toIdx = tokenIdx;
+                if (fromIdx != toIdx && fromIdx >= 0 && fromIdx < _tokens.Count && toIdx >= 0 && toIdx < _tokens.Count)
+                {
+                    var moved = _tokens[fromIdx];
+                    _tokens.RemoveAt(fromIdx);
+                    var insertAt = toIdx > fromIdx ? toIdx - 1 : toIdx;
+                    if (insertAt < 0) insertAt = 0;
+                    if (insertAt > _tokens.Count) insertAt = _tokens.Count;
+                    _tokens.Insert(insertAt, moved);
+                    SyncFromTokens(_tokens);
+                }
+            }
+        });
+        element.AddHandler(DragDrop.DragOverEvent, (_, e) =>
+        {
+            e.DragEffects = DragDropEffects.Move;
+        });
     }
 
     // ── Build a single condition chip ──────────────────────────
@@ -126,7 +187,8 @@ public class ConditionBlocksEditor : UserControl
         }
 
         // Function label
-        var label = def?.Name ?? token.FuncName;
+        var isRu = Localization.Loc.Instance.Lang == "ru";
+        var label = ConditionLabels.GetLabel(token.FuncName, isRu);
         stack.Children.Add(new TextBlock
         {
             Text = label, FontSize = 11, FontWeight = FontWeight.SemiBold,
@@ -134,75 +196,77 @@ public class ConditionBlocksEditor : UserControl
         });
 
         // Parameter controls
-        if (def != null && def.Params.Length > 0)
-        {
-            for (int pi = 0; pi < def.Params.Length && pi < token.Args.Length; pi++)
-            {
-                var param = def.Params[pi];
-                var argVal = token.Args[pi].Trim('\'', '"', ' ');
-                var paramIdx = pi;
+        // Show params: use def if available, otherwise show raw args
+        var paramCount = def?.Params.Length ?? 0;
+        var argCount = token.Args.Length;
+        var count = Math.Max(paramCount, argCount);
 
-                if (param.Type == "enum" && param.EnumValues != null)
+        for (int pi = 0; pi < count; pi++)
+        {
+            var param = pi < paramCount ? def!.Params[pi] : null;
+            var argVal = pi < argCount ? token.Args[pi].Trim('\'', '"', ' ') : "";
+            var paramIdx = pi;
+
+            // Skip entity/target params — user doesn't set these
+            if (param != null && param.Type == "entity") continue;
+
+            if (param?.Type == "enum" && param.EnumValues != null)
+            {
+                var enumTumbler = new TumblerChipEditor
                 {
-                    var combo = new ComboBox
-                    {
-                        ItemsSource = param.EnumValues,
-                        SelectedItem = param.EnumValues.FirstOrDefault(v =>
-                            v.Equals(argVal, StringComparison.OrdinalIgnoreCase)) ?? argVal,
-                        FontSize = 10, Padding = new Thickness(4, 1),
-                        MinWidth = 60, Background = InputBg,
-                        VerticalAlignment = VerticalAlignment.Center,
-                    };
-                    combo.SelectionChanged += (s, _) =>
-                    {
-                        if (s is ComboBox c)
-                        {
-                            token.Args[paramIdx] = $"'{c.SelectedItem}'";
-                            SyncFromTokens(tokens);
-                        }
-                    };
-                    stack.Children.Add(combo);
-                }
-                else if (param.Type is "int")
+                    Text = argVal, Items = param.EnumValues,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                enumTumbler.PropertyChanged += (s, e) =>
                 {
-                    var tumbler = new TumblerChipEditor
+                    if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
                     {
-                        Text = argVal, Step = 1, MinValue = 0, MaxValue = 999,
-                        VerticalAlignment = VerticalAlignment.Center,
-                    };
-                    tumbler.PropertyChanged += (s, e) =>
-                    {
-                        if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
-                        {
-                            token.Args[paramIdx] = tc.Text ?? "0";
-                            SyncFromTokens(tokens);
-                        }
-                    };
-                    stack.Children.Add(tumbler);
-                }
-                else
+                        token.Args[paramIdx] = $"'{tc.Text}'";
+                        SyncFromTokens(tokens);
+                    }
+                };
+                stack.Children.Add(enumTumbler);
+            }
+            else if (param?.Type is "int")
+            {
+                var tumbler = new TumblerChipEditor
                 {
-                    // String parameter — small editable text
-                    var tb = new TextBox
+                    Text = argVal, Step = 1, MinValue = 0, MaxValue = 999,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                tumbler.PropertyChanged += (s, e) =>
+                {
+                    if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
                     {
-                        Text = argVal, FontSize = 10,
-                        Padding = new Thickness(4, 1), MinWidth = 60,
-                        Background = InputBg, CornerRadius = new CornerRadius(4),
-                        VerticalAlignment = VerticalAlignment.Center,
-                    };
-                    tb.LostFocus += (s, _) =>
+                        token.Args[paramIdx] = tc.Text ?? "0";
+                        SyncFromTokens(tokens);
+                    }
+                };
+                stack.Children.Add(tumbler);
+            }
+            else
+            {
+                // String/unknown — small TextBox
+                var tb = new TextBox
+                {
+                    Text = argVal, FontSize = 10,
+                    Padding = new Thickness(4, 1), MinWidth = 60,
+                    Background = InputBg, CornerRadius = new CornerRadius(4),
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                tb.LostFocus += (s, _) =>
+                {
+                    if (s is TextBox t)
                     {
-                        if (s is TextBox t)
-                        {
-                            token.Args[paramIdx] = $"'{t.Text}'";
-                            SyncFromTokens(tokens);
-                        }
-                    };
-                    stack.Children.Add(tb);
-                }
+                        token.Args[paramIdx] = $"'{t.Text}'";
+                        SyncFromTokens(tokens);
+                    }
+                };
+                stack.Children.Add(tb);
             }
         }
-        else if (token.Args.Length > 0 && def == null)
+
+        if (count == 0 && token.Args.Length > 0 && def == null)
         {
             // Unknown function — show raw args as text
             var argsText = string.Join(", ", token.Args);
@@ -278,10 +342,12 @@ public class ConditionBlocksEditor : UserControl
             "IsRangedWeaponAttack", "IsCritical", "IsMiss", "InSurface",
             "HasShieldEquipped", "Dead", "IsSpell", "IsCantrip", "HasPassive" };
 
+        var isRu = Localization.Loc.Instance.Lang == "ru";
+
         foreach (var fav in favorites)
         {
             if (!schema.ByName.TryGetValue(fav, out var def)) continue;
-            var item = new MenuItem { Header = def.Name, Tag = def };
+            var item = new MenuItem { Header = ConditionLabels.GetLabel(fav, isRu), Tag = def };
             item.Click += (_, _) => AddCondition(def);
             menu.Items.Add(item);
         }
@@ -291,13 +357,14 @@ public class ConditionBlocksEditor : UserControl
         // All by category
         foreach (var group in groups)
         {
-            var sub = new MenuItem { Header = group.Key };
+            var sub = new MenuItem { Header = ConditionLabels.GetCategoryLabel(group.Key, isRu) };
             foreach (var def in group.OrderBy(d => d.Name))
             {
+                var displayName = ConditionLabels.GetLabel(def.Name, isRu);
                 var paramHint = def.Params.Length > 0
                     ? $" ({string.Join(", ", def.Params.Select(p => p.Name))})"
                     : "";
-                var item = new MenuItem { Header = def.Name + paramHint, Tag = def };
+                var item = new MenuItem { Header = displayName + paramHint, Tag = def };
                 item.Click += (_, _) => AddCondition(def);
                 sub.Items.Add(item);
             }

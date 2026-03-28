@@ -1,78 +1,69 @@
-# Condition & Surface Localization Mapping
+# Задание: Интеграция ConditionLabels в UI
 
-## What's Needed
+## Что уже сделано
 
-The Condition Chips system needs human-readable labels (English + Russian) for:
+Создан файл `ParaTool.Core/Schema/ConditionLabels.cs` с полным маппингом:
+- **~400 условий** (Functions) — EN + RU лейблы
+- **~40 поверхностей** (Surfaces) — EN + RU лейблы
+- **14 категорий** (Categories) — EN + RU лейблы
+- Хелпер-методы: `GetLabel()`, `GetSurfaceLabel()`, `GetCategoryLabel()`
 
-### 1. Condition Functions (597 total)
+## Что нужно сделать
 
-Currently condition chips show raw function names like `InSurface`, `HasStatus`, `IsWeaponAttack`.
-Need a mapping file: `FunctionName` -> `English Label` / `Russian Label`
+### 1. ConditionBlocksEditor — показывать лейблы вместо сырых имён
 
-**Format needed** (add to `BoostMapping.cs` or new file):
+**Файл:** `ParaTool.App/Controls/ConditionBlocksEditor.cs`
+
+В методе `BuildConditionChip()` (строка ~129):
 ```csharp
-public static readonly Dictionary<string, (string En, string Ru)> ConditionLabels = new()
-{
-    ["Enemy"] = ("Is Enemy", "Враг"),
-    ["Ally"] = ("Is Ally", "Союзник"),
-    ["Self"] = ("Is Self", "Это вы"),
-    ["Combat"] = ("In Combat", "В бою"),
-    ["InSurface"] = ("In Surface", "На поверхности"),
-    ["HasStatus"] = ("Has Status", "Имеет статус"),
-    ["IsWeaponAttack"] = ("Weapon Attack", "Атака оружием"),
-    // ... etc for all commonly used conditions
-};
+// БЫЛО:
+var label = def?.Name ?? token.FuncName;
+
+// НАДО:
+var isRu = /* определить текущий язык */;
+var label = ConditionLabels.GetLabel(token.FuncName, isRu);
 ```
 
-**Priority conditions to label** (most used in AMP):
-- Target: Enemy, Ally, Self, Party, Player, Summon
-- Combat: Combat, TurnBased
-- Attack: IsWeaponAttack, IsMeleeAttack, IsRangedWeaponAttack, IsSpellAttack
-- Roll: IsCritical, IsMiss, IsCriticalMiss
-- Status: HasStatus, StatusId
-- Spell: SpellId, IsSpell, IsCantrip, IsSpellOfSchool
-- Equipment: HasShieldEquipped, WieldingWeapon, WearingArmor
-- Surface: InSurface
-- State: Dead, IsDowned, LethalHP
+Для определения языка — `ConditionBlocksEditor` должен получать текущий язык из ViewModel или через статический сервис. Проще всего передать `bool IsRussian` через свойство контрола или привязать к `Localization.Instance.Lang`.
 
-### 2. Surface Types for InSurface
+### 2. ConditionBlocksEditor — лейблы поверхностей в InSurface ComboBox
 
-Currently shows raw strings like `SurfaceWater`, `SurfaceBloodElectrified`.
-Need display labels:
+Когда параметр типа `enum` с `EnumValues = InSurfaceValues`, показывать `ConditionLabels.GetSurfaceLabel()` вместо сырого `SurfaceWater`.
 
-```csharp
-public static readonly Dictionary<string, (string En, string Ru)> SurfaceLabels = new()
-{
-    ["SurfaceWater"] = ("Water", "Вода"),
-    ["SurfaceWaterElectrified"] = ("Electrified Water", "Электр. вода"),
-    ["SurfaceWaterFrozen"] = ("Frozen Water", "Замёрзшая вода"),
-    ["SurfaceBlood"] = ("Blood", "Кровь"),
-    ["SurfaceFire"] = ("Fire", "Огонь"),
-    ["SurfaceLava"] = ("Lava", "Лава"),
-    ["SurfaceAcid"] = ("Acid", "Кислота"),
-    ["SurfacePoison"] = ("Poison", "Яд"),
-    ["SurfaceOil"] = ("Oil", "Масло"),
-    ["SurfaceGrease"] = ("Grease", "Жир"),
-    ["SurfaceWeb"] = ("Web", "Паутина"),
-    // ... etc
-};
-```
+Варианты:
+- Использовать `ComboBox.ItemTemplate` с конвертером
+- Или создать список `(Raw, Display)` пар и биндить через `DisplayMemberPath`
 
-### 3. Trigger Events (When)
+### 3. ConditionBlocksEditor — группированное меню "Добавить условие"
 
-Already have labels in `BoostMapping.TriggerEvents` — format: `"OnDamage" = "On damage dealt / При нанесении урона"`.
-These work but could be split into separate En/Ru fields.
+В методе "Add Condition" ContextMenu — сгруппировать условия по категориям из `ConditionSchema.CategorizeCondition()` и показывать `ConditionLabels.GetCategoryLabel()` как заголовки, а `ConditionLabels.GetLabel()` как пункты.
 
-## How to Integrate
+### 4. Удалить старый `BoostMapping.Conditions` словарь (17 записей)
 
-Once labels are provided:
-1. Add to `BoostMapping.cs` (or new `ConditionLabels.cs`)
-2. In `ConditionBlocksEditor.BuildConditionChip()` — use label instead of raw function name
-3. In `TumblerChipEditor` list mode — show labels in drum, store raw values
-4. In `ConditionSchema.cs` — populate `Label`/`LabelRu` fields on `ConditionDef`
+**Файл:** `ParaTool.Core/Schema/BoostMapping.cs` (строки 319-338)
 
-## Files to Edit
-- `ParaTool.Core/Schema/BoostMapping.cs` — add label dictionaries
-- `ParaTool.Core/Schema/ConditionSchema.cs` — populate Label/LabelRu from dictionaries
-- `ParaTool.App/Controls/ConditionBlocksEditor.cs` — use labels in chip text
-- `ParaTool.App/Controls/TumblerChipEditor.cs` — support display labels vs raw values
+Словарь `Conditions` больше не нужен — он заменён `ConditionLabels.Functions` (400+ записей). Удалить или пометить `[Obsolete]`.
+
+### 5. (Опционально) TumblerChipEditor — лейблы в списках
+
+**Файл:** `ParaTool.App/Controls/TumblerChipEditor.cs`
+
+Если TumblerChipEditor используется для выбора поверхностей или условий в режиме списка (`Items`), показывать лейблы вместо сырых значений. Для этого нужно добавить `DisplayItems` свойство или конвертер.
+
+## Ключевые файлы
+
+| Файл | Что делать |
+|---|---|
+| `ParaTool.Core/Schema/ConditionLabels.cs` | **УЖЕ ГОТОВ** — словари и хелперы |
+| `ParaTool.App/Controls/ConditionBlocksEditor.cs` | Заменить `def?.Name` на `ConditionLabels.GetLabel()` |
+| `ParaTool.Core/Schema/BoostMapping.cs` | Удалить/заменить старый `Conditions` словарь |
+| `ParaTool.Core/Schema/ConditionSchema.cs` | Можно заполнить `Label`/`LabelRu` при загрузке из `ConditionLabels` |
+| `ParaTool.App/Controls/TumblerChipEditor.cs` | Опционально: поддержка display labels |
+
+## Важные правила
+
+1. **Язык UI**: Приложение поддерживает русский и английский. Используй `ConditionLabels.GetLabel(name, isRussian)`.
+2. **Тема**: Все цвета через `ThemeBrushes` (не хардкод `Color.Parse`).
+3. **"Для детей"**: Никаких сырых имён функций — только читаемые лейблы.
+4. **Fallback**: Если лейбл не найден, показывать сырое имя (метод `GetLabel` уже делает это).
+5. **dotnet на этой системе**: `"/mnt/c/Program Files/dotnet/dotnet.exe"` (Windows exe через WSL).
