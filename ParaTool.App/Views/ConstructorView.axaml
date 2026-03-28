@@ -500,9 +500,17 @@
                            Foreground="{StaticResource TextMutedBrush}"
                            HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
 
-                <!-- Language selector -->
-                <ctrl:TumblerChipEditor Grid.Row="1" Name="LocaLangSelector"
-                          Margin="8,0,8,6" HorizontalAlignment="Left" />
+                <!-- Language selector + code/preview toggle -->
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="8,0,8,6">
+                    <ctrl:TumblerChipEditor Name="LocaLangSelector" HorizontalAlignment="Left" />
+                    <Button Grid.Column="2" Name="ToggleCodeViewBtn"
+                            Content="&lt;/&gt;" FontSize="11" FontWeight="Bold"
+                            Padding="8,4" CornerRadius="6" Cursor="Hand"
+                            Background="{StaticResource CardBgBrush}"
+                            Foreground="{StaticResource TextMutedBrush}"
+                            BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}"
+                            ToolTip.Tip="Toggle BB-code editor / preview" />
+                </Grid>
 
                 <!-- Loca warning -->
                 <Border Grid.Row="2"
@@ -595,7 +603,7 @@
                             <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="12,10" />
 
                             <!-- Boosts (display) -->
-                            <TextBlock Text="{Binding EditBoosts}" FontSize="12"
+                            <ctrl:BbCodeTextBlock BbText="{Binding EditBoosts}" FontSize="12"
                                        Foreground="#2ECC71" TextWrapping="Wrap"
                                        Margin="16,0,16,4" IsVisible="{Binding HasBoosts}" />
 
@@ -606,14 +614,14 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="vm:PassiveVM">
                                         <StackPanel Margin="0,0,0,8">
-                                            <!-- Passive name (editable) -->
+                                            <!-- Passive name (always editable) -->
                                             <TextBox Text="{Binding EditDisplayName}"
                                                      Watermark="Passive name"
                                                      FontSize="12" FontWeight="Bold"
                                                      Foreground="#C8A96E"
                                                      Background="Transparent" BorderThickness="0"
                                                      Padding="0" Name="LocaPassiveName" />
-                                            <!-- Passive description (editable, rich) -->
+                                            <!-- Passive description (always editable, BB-code rendered inline) -->
                                             <TextBox Text="{Binding EditDescription}"
                                                      Watermark="Passive description (BB-code)"
                                                      FontSize="12"
@@ -631,15 +639,23 @@
                             <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="12,6"
                                     IsVisible="{Binding HasDescription}" />
 
-                            <!-- Description / lore (editable) -->
+                            <!-- Description / lore -->
+                            <ctrl:BbCodeTextBlock Name="LorePreview" BbText="{Binding EditDescription}"
+                                     FontSize="12" FontStyle="Italic"
+                                     Foreground="{StaticResource TextSecondaryBrush}"
+                                     TextWrapping="Wrap"
+                                     Margin="16,0,16,8"
+                                     IsVisible="{Binding HasDescription}" />
                             <TextBox Name="LocaDescription"
                                      Text="{Binding EditDescription}"
                                      Watermark="Description / lore (BB-code)"
                                      TextWrapping="Wrap" AcceptsReturn="True"
-                                     MinHeight="50" FontSize="12" FontStyle="Italic"
-                                     Foreground="{StaticResource TextSecondaryBrush}"
-                                     Background="Transparent" BorderThickness="0"
-                                     Padding="0" Margin="16,0,16,8" />
+                                     MinHeight="40" FontSize="11"
+                                     Foreground="{StaticResource TextMutedBrush}"
+                                     Background="{StaticResource InputBgBrush}"
+                                     CornerRadius="4" Padding="8,4"
+                                     Margin="16,0,16,8"
+                                     IsVisible="False" />
 
                             <Border Height="8" />
                         </StackPanel>

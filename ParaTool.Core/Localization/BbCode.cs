@@ -101,6 +101,22 @@ public static partial class BbCode
     /// Convert BB-code to "visual" HTML for preview rendering (Avalonia WebView or TextBlock).
     /// Returns simplified HTML with inline styles.
     /// </summary>
+    /// <summary>Strip all BB-code tags, leaving plain text content.</summary>
+    public static string StripBbTags(string bbcode)
+    {
+        if (string.IsNullOrEmpty(bbcode)) return bbcode;
+        var text = bbcode;
+        // Remove closing tags
+        text = Regex.Replace(text, @"\[/[a-z]+\]", "", RegexOptions.IgnoreCase);
+        // Remove opening tags with args: [tag=arg]
+        text = Regex.Replace(text, @"\[[a-z]+=([^\]]*)\]", "", RegexOptions.IgnoreCase);
+        // Remove simple tags: [b], [i], [br]
+        text = Regex.Replace(text, @"\[[a-z]+\]", "", RegexOptions.IgnoreCase);
+        // Remove param tags: [p1], [dp1]
+        text = Regex.Replace(text, @"\[d?p(\d+)\]", "[$1]");
+        return text.Trim();
+    }
+
     public static string ToPreviewHtml(string bbcode)
     {
         var sb = new StringBuilder();

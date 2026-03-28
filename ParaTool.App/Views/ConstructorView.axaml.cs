@@ -69,6 +69,32 @@ public partial class ConstructorView : UserControl
                     OnLocaLangChanged(tc.Text);
             };
         }
+
+        // Toggle code/preview button
+        var toggleBtn = this.FindControl<Button>("ToggleCodeViewBtn");
+        if (toggleBtn != null)
+            toggleBtn.Click += OnToggleCodeView;
+    }
+
+    private bool _codeViewMode;
+
+    private void OnToggleCodeView(object? sender, RoutedEventArgs e)
+    {
+        _codeViewMode = !_codeViewMode;
+
+        if (sender is Button btn)
+        {
+            btn.Content = _codeViewMode ? "\ud83d\udc41" : "</>";
+            btn.Foreground = _codeViewMode
+                ? Themes.ThemeBrushes.Accent
+                : Themes.ThemeBrushes.TextMuted;
+        }
+
+        // Toggle visibility of preview vs edit elements
+        var lorePreview = this.FindControl<BbCodeTextBlock>("LorePreview");
+        var loreEdit = this.FindControl<TextBox>("LocaDescription");
+        if (lorePreview != null) lorePreview.IsVisible = !_codeViewMode;
+        if (loreEdit != null) loreEdit.IsVisible = _codeViewMode;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
