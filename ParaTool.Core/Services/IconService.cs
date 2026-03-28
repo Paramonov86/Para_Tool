@@ -67,9 +67,8 @@ public sealed class IconService
 
                 foreach (var entry in entries)
                 {
-                    // Prefer items_png (144x144) over ItemIcons (380x380)
-                    if (!entry.Path.Contains("items_png", StringComparison.OrdinalIgnoreCase) &&
-                        !entry.Path.Contains("ItemIcons", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!entry.Path.Contains("ItemIcons", StringComparison.OrdinalIgnoreCase) &&
+                        !entry.Path.Contains("items_png", StringComparison.OrdinalIgnoreCase)) continue;
                     if (!entry.Path.EndsWith(".DDS", StringComparison.OrdinalIgnoreCase) &&
                         !entry.Path.EndsWith(".dds", StringComparison.OrdinalIgnoreCase)) continue;
 

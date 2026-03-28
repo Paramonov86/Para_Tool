@@ -595,7 +595,7 @@
                 Padding="16"
                 MaxWidth="800" MaxHeight="600"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
                 <!-- Header + close -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
                     <TextBlock Text="Choose Icon" FontSize="16" FontWeight="Bold"
@@ -606,7 +606,7 @@
                             FontSize="14" Padding="8,4" BorderThickness="0" Cursor="Hand" />
                 </Grid>
 
-                <!-- Current icon display -->
+                <!-- Current icon -->
                 <Border Grid.Row="1" Background="{StaticResource CardBgBrush}" CornerRadius="6"
                         Padding="10,8" Margin="0,0,0,8">
                     <StackPanel Orientation="Horizontal" Spacing="10">
@@ -623,18 +623,43 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Atlas tabs -->
+                <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled" Margin="0,0,0,6">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <ItemsControl ItemsSource="{Binding IconBrowser.Tabs}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:AtlasTabVM">
+                                    <Button Content="{Binding Name}"
+                                            Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).IconBrowser.SelectTabCommand}"
+                                            CommandParameter="{Binding}"
+                                            FontSize="11" Padding="10,5" CornerRadius="6"
+                                            Background="{StaticResource CardBgBrush}"
+                                            Foreground="{StaticResource TextSecondaryBrush}"
+                                            BorderThickness="0" Cursor="Hand" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
                 <!-- Search -->
-                <TextBox Grid.Row="2" Text="{Binding IconBrowser.SearchText}"
+                <TextBox Grid.Row="3" Text="{Binding IconBrowser.SearchText}"
                          Watermark="Search icons by name..."
-                         FontSize="12" Padding="8,6" CornerRadius="6" Margin="0,0,0,8"
+                         FontSize="12" Padding="8,6" CornerRadius="6" Margin="0,0,0,6"
                          Background="{StaticResource InputBgBrush}" />
 
-                <!-- Icon grid (page) -->
-                <ScrollViewer Grid.Row="3">
-                    <ItemsControl ItemsSource="{Binding IconBrowser.PageIcons}">
+                <!-- Icon grid -->
+                <ScrollViewer Grid.Row="4">
+                    <ItemsControl ItemsSource="{Binding IconBrowser.DisplayIcons}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel />
+                                <WrapPanel ItemWidth="150" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
@@ -642,51 +667,26 @@
                                 <Button Background="Transparent" BorderThickness="0"
                                         Padding="4" Margin="2" Cursor="Hand"
                                         ToolTip.Tip="{Binding Name}"
-                                        Name="IconGridBtn" Tag="{Binding}">
-                                    <StackPanel Width="72" Spacing="2">
-                                        <Border Width="64" Height="64" CornerRadius="4"
+                                        Name="IconGridBtn" Tag="{Binding}"
+                                        HorizontalAlignment="Stretch">
+                                    <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                        <Border Width="80" Height="80" CornerRadius="4"
                                                 ClipToBounds="True"
                                                 Background="{StaticResource CardBgBrush}">
-                                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                                            <Image Source="{Binding Thumbnail}" Stretch="Uniform" />
                                         </Border>
                                         <TextBlock Text="{Binding Name}"
-                                                   FontSize="8"
+                                                   FontSize="9"
                                                    Foreground="{StaticResource TextMutedBrush}"
                                                    TextTrimming="CharacterEllipsis"
                                                    HorizontalAlignment="Center"
-                                                   MaxWidth="68" />
+                                                   MaxWidth="140" />
                                     </StackPanel>
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
-
-                <!-- Pagination -->
-                <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0">
-                    <Button Grid.Column="0" Content="&#x25C0; Prev"
-                            Command="{Binding IconBrowser.PrevPageCommand}"
-                            FontSize="11" Padding="10,4" CornerRadius="4"
-                            Background="{StaticResource CardBgBrush}"
-                            Foreground="{StaticResource TextSecondaryBrush}"
-                            BorderThickness="0" Cursor="Hand" />
-                    <TextBlock Grid.Column="1"
-                               FontSize="11" Foreground="{StaticResource TextMutedBrush}"
-                               HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock.Text>
-                            <MultiBinding StringFormat="Page {0} / {1}">
-                                <Binding Path="IconBrowser.CurrentPage" Converter="{x:Static vm:PlusOneConverter.Instance}" />
-                                <Binding Path="IconBrowser.TotalPages" />
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                    <Button Grid.Column="2" Content="Next &#x25B6;"
-                            Command="{Binding IconBrowser.NextPageCommand}"
-                            FontSize="11" Padding="10,4" CornerRadius="4"
-                            Background="{StaticResource CardBgBrush}"
-                            Foreground="{StaticResource TextSecondaryBrush}"
-                            BorderThickness="0" Cursor="Hand" />
-                </Grid>
             </Grid>
         </Border>
     </Border>
