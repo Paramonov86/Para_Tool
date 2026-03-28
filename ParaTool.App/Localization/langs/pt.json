@@ -90,5 +90,8 @@
   "UpdateUpToDateTooltip": "Atualizado",
   "UpdateFailedTooltip": "Falha ao verificar atualizações",
   "RestoreAmpTooltip": "Restaurar AMP original (desfazer patch)",
-  "RestoringAmp": "Restaurando..."
+  "RestoringAmp": "Restaurando...",
+
+  "TabPatcher": "PATCHER",
+  "TabConstructor": "CONSTRUTOR"
 }

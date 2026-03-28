@@ -1,10 +1,13 @@
 using System.Globalization;
 using System.Reflection;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ParaTool.App.Controls;
 using ParaTool.App.Localization;
+using ParaTool.Core.Artifacts;
 using ParaTool.Core.Models;
+using ParaTool.Core.Patching;
 using ParaTool.Core.Services;
 
 namespace ParaTool.App.ViewModels;
@@ -13,6 +16,10 @@ public partial class MainWindowViewModel : ObservableObject
 {
     [ObservableProperty] private ViewModelBase? _currentView;
     [ObservableProperty] private LangInfo? _selectedLanguage;
+
+    // Tab bar
+    [ObservableProperty] private bool _showTabBar;
+    [ObservableProperty] private string _activeTab = "Patcher";
 
     // Update state
     [ObservableProperty] private UpdateState _updateState = UpdateState.Idle;
@@ -23,7 +30,27 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly UpdateService _updateService = new();
     private UpdateService.UpdateInfo? _pendingUpdate;
 
+    // Cached views for tab switching
+    private ItemEditorViewModel? _patcherView;
+    private ConstructorViewModel? _constructorView;
+    private ParaTool.Core.Parsing.StatsResolver? _statsResolver;
+    private Dictionary<string, string>? _locaMap;
+    private HashSet<string>? _existingStatIds;
+    private LocaService? _locaService;
+    private IconService? _iconService;
+
     public LangInfo[] Languages => Loc.Instance.AvailableLanguages;
+
+    // Tab visual state
+    private static readonly SolidColorBrush AccentBrush = new(Color.Parse("#6C5CE7"));
+    private static readonly SolidColorBrush TransparentBrush = new(Colors.Transparent);
+    private static readonly SolidColorBrush TextActiveBrush = new(Color.Parse("#E0DDE6"));
+    private static readonly SolidColorBrush TextInactiveBrush = new(Color.Parse("#8A8494"));
+
+    public IBrush PatcherTabBrush => ActiveTab == "Patcher" ? AccentBrush : TransparentBrush;
+    public IBrush PatcherTabForeground => ActiveTab == "Patcher" ? TextActiveBrush : TextInactiveBrush;
+    public IBrush ConstructorTabBrush => ActiveTab == "Constructor" ? AccentBrush : TransparentBrush;
+    public IBrush ConstructorTabForeground => ActiveTab == "Constructor" ? TextActiveBrush : TextInactiveBrush;
 
     public string AppVersion
     {
@@ -51,6 +78,43 @@ public partial class MainWindowViewModel : ObservableObject
             Loc.Instance.SetLanguage(value.Code);
     }
 
+    partial void OnActiveTabChanged(string value)
+    {
+        OnPropertyChanged(nameof(PatcherTabBrush));
+        OnPropertyChanged(nameof(PatcherTabForeground));
+        OnPropertyChanged(nameof(ConstructorTabBrush));
+        OnPropertyChanged(nameof(ConstructorTabForeground));
+    }
+
+    [RelayCommand]
+    private void SwitchToPatcher()
+    {
+        if (_patcherView == null) return;
+
+        // Refresh artifacts mod when switching back to patcher
+        RefreshArtifactsMod();
+
+        ActiveTab = "Patcher";
+        CurrentView = _patcherView;
+    }
+
+    [RelayCommand]
+    private void SwitchToConstructor()
+    {
+        if (_constructorView == null)
+        {
+            _constructorView = new ConstructorViewModel(_statsResolver, _locaService, _iconService);
+            if (_patcherView != null)
+            {
+                // Exclude virtual artifacts mod from base items
+                var realMods = _patcherView.Mods.Where(m => m.ModInfo.UUID != ArtifactsModUuid);
+                _constructorView.SetBaseItems(realMods);
+            }
+        }
+        ActiveTab = "Constructor";
+        CurrentView = _constructorView;
+    }
+
     private void Initialize()
     {
         var modsPath = ModsFolderDetector.Detect();
@@ -75,6 +139,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     private async void StartScanning(string modsPath)
     {
+        ShowTabBar = false;
+
         var scanVm = new ScanningViewModel();
         CurrentView = scanVm;
 
@@ -129,6 +195,12 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var mod in result.Mods)
             editor.Mods.Add(new ModVM(mod));
+
+        // Add saved artifacts as virtual mod
+        var artifactsMod = BuildArtifactsMod();
+        if (artifactsMod != null)
+            editor.Mods.Add(new ModVM(artifactsMod));
+
         editor.RefreshCounts();
 
         // Check if backup exists
@@ -146,7 +218,81 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch { /* ignore corrupted session file */ }
 
+        _patcherView = editor;
+        _constructorView = null; // reset on rescan
+        _statsResolver = result.Resolver;
+        _locaMap = result.LocaMap;
+
+        // Build loca service with all pak paths, seed with scan results
+        _locaService = new LocaService(result.PakPaths);
+        _locaService.SeedCache(Loc.Instance.Lang, result.LocaMap);
+        // English loaded on-demand — scan LocaMap contains UI language texts only
+
+        // Icon service for lazy DDS loading
+        _iconService = new IconService(result.PakPaths);
+
+        // Collect all known StatIds for override detection
+        _existingStatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (result.AmpMod != null)
+            foreach (var item in result.AmpMod.Items) _existingStatIds.Add(item.StatId);
+        foreach (var mod in result.Mods)
+            foreach (var item in mod.Items) _existingStatIds.Add(item.StatId);
+        ActiveTab = "Patcher";
+        ShowTabBar = true;
         CurrentView = editor;
+    }
+
+    private const string ArtifactsModUuid = "paratool-artifacts-virtual-mod";
+
+    private ModInfo? BuildArtifactsMod()
+    {
+        var artifacts = ArtifactStore.LoadAll();
+        if (artifacts.Count == 0) return null;
+
+        // Only show NEW artifacts (not overrides of existing items)
+        var newArtifacts = artifacts
+            .Where(art => _existingStatIds == null || !_existingStatIds.Contains(art.StatId))
+            .ToList();
+
+        if (newArtifacts.Count == 0) return null;
+
+        var items = newArtifacts.Select(art => new ItemEntry
+        {
+            StatId = art.StatId,
+            StatType = art.StatType,
+            DisplayName = art.DisplayName.TryGetValue(Loc.Instance.Lang, out var n) ? n
+                : art.DisplayName.TryGetValue("en", out var en) ? en : null,
+            DetectedPool = art.LootPool,
+            DetectedRarity = art.Rarity,
+            DetectedThemes = new List<string>(art.LootThemes),
+            Enabled = art.AddToLoot,
+        }).ToList();
+
+        return new ModInfo
+        {
+            Name = "\u2728 My Artifacts",
+            UUID = ArtifactsModUuid,
+            Folder = "ParaTool_Artifacts",
+            PakPath = "",
+            Items = items
+        };
+    }
+
+    private void RefreshArtifactsMod()
+    {
+        if (_patcherView == null) return;
+
+        // Remove old artifacts mod
+        var old = _patcherView.Mods.FirstOrDefault(m => m.ModInfo.UUID == ArtifactsModUuid);
+        if (old != null)
+            _patcherView.Mods.Remove(old);
+
+        // Add fresh
+        var artifactsMod = BuildArtifactsMod();
+        if (artifactsMod != null)
+            _patcherView.Mods.Add(new ModVM(artifactsMod));
+
+        _patcherView.RefreshCounts();
     }
 
     [RelayCommand]

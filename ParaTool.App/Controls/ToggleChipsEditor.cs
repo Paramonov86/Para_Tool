@@ -1,0 +1,100 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media;
+
+namespace ParaTool.App.Controls;
+
+/// <summary>
+/// Multi-select toggle chips for semicolon-separated enum values.
+/// Each option is a clickable chip that toggles on/off.
+/// </summary>
+public class ToggleChipsEditor : UserControl
+{
+    public static readonly StyledProperty<string?> TextProperty =
+        AvaloniaProperty.Register<ToggleChipsEditor, string?>(nameof(Text), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
+
+    public static readonly StyledProperty<string[]?> OptionsProperty =
+        AvaloniaProperty.Register<ToggleChipsEditor, string[]?>(nameof(Options));
+
+    public string? Text
+    {
+        get => GetValue(TextProperty);
+        set => SetValue(TextProperty, value);
+    }
+
+    public string[]? Options
+    {
+        get => GetValue(OptionsProperty);
+        set => SetValue(OptionsProperty, value);
+    }
+
+    private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal };
+    private bool _updating;
+
+    private static readonly SolidColorBrush OffBg = new(Color.Parse("#252330"));
+    private static readonly SolidColorBrush OnBg = new(Color.Parse("#3D3A4D"));
+    private static readonly SolidColorBrush OffFg = new(Color.Parse("#8A8494"));
+    private static readonly SolidColorBrush OnFg = new(Color.Parse("#E0DDE6"));
+    private static readonly SolidColorBrush OnBorder = new(Color.Parse("#6C5CE7"));
+    private static readonly SolidColorBrush OffBorder = new(Color.Parse("#3D3A4D"));
+
+    public ToggleChipsEditor()
+    {
+        Content = _panel;
+        PropertyChanged += (_, e) =>
+        {
+            if ((e.Property == TextProperty || e.Property == OptionsProperty) && !_updating)
+                Rebuild();
+        };
+    }
+
+    private void Rebuild()
+    {
+        _panel.Children.Clear();
+        var options = Options;
+        if (options == null) return;
+
+        var selected = new HashSet<string>(
+            (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var opt in options)
+        {
+            var isOn = selected.Contains(opt);
+            var btn = new Button
+            {
+                Content = opt,
+                Tag = opt,
+                FontSize = 11,
+                Padding = new Thickness(10, 4),
+                Margin = new Thickness(0, 0, 4, 4),
+                CornerRadius = new CornerRadius(10),
+                Cursor = new Cursor(StandardCursorType.Hand),
+                Background = isOn ? OnBg : OffBg,
+                Foreground = isOn ? OnFg : OffFg,
+                BorderThickness = new Thickness(isOn ? 1.5 : 1),
+                BorderBrush = isOn ? OnBorder : OffBorder,
+            };
+            btn.Click += OnChipClick;
+            _panel.Children.Add(btn);
+        }
+    }
+
+    private void OnChipClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string opt) return;
+
+        var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        if (parts.Contains(opt, StringComparer.OrdinalIgnoreCase))
+            parts.RemoveAll(p => p.Equals(opt, StringComparison.OrdinalIgnoreCase));
+        else
+            parts.Add(opt);
+
+        _updating = true;
+        Text = string.Join(";", parts);
+        _updating = false;
+        Rebuild();
+    }
+}

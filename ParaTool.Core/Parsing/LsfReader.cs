@@ -255,16 +255,21 @@ public static partial class LsfScanner
     /// <summary>
     /// Batch version: decompress once, find handles for all UUIDs.
     /// </summary>
-    public static Dictionary<string, string> FindHandlesForUuids(byte[] data, IReadOnlySet<string> uuids)
+    /// <summary>
+    /// Batch version: decompress once, find DisplayName + Description handles for all UUIDs.
+    /// Returns (displayNameHandles, descriptionHandles).
+    /// </summary>
+    public static (Dictionary<string, string> names, Dictionary<string, string> descriptions) FindHandlesForUuidsEx(byte[] data, IReadOnlySet<string> uuids)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var descriptionResult = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         // Get raw bytes — decompress if LSF
         byte[] raw;
         if (IsLsf(data))
         {
             var decompressed = TryDecompressLsf(data);
-            if (decompressed == null) return result;
+            if (decompressed == null) return (result, descriptionResult);
             raw = decompressed;
         }
         else
@@ -278,7 +283,7 @@ public static partial class LsfScanner
         foreach (Match m in HandleRegex().Matches(text))
             handles.Add((m.Index, m.Value));
 
-        if (handles.Count == 0) return result;
+        if (handles.Count == 0) return (result, descriptionResult);
 
         // For each UUID: find as text string OR as binary .NET Guid, then find nearest handle
         foreach (var uuid in uuids)
@@ -299,24 +304,39 @@ public static partial class LsfScanner
             int nodeEnd = FindNextUuidBoundary(raw, text, uuidPos + 36);
             int nodeStart = FindPrevUuidBoundary(text, uuidPos);
 
-            // Find FIRST handle within node boundaries (DisplayName is always the first TranslatedString)
-            string? best = null;
-            int bestOff = int.MaxValue;
+            // Find first TWO handles within node boundaries
+            // 1st = DisplayName, 2nd = Description
+            string? first = null, second = null;
+            int firstOff = int.MaxValue, secondOff = int.MaxValue;
             foreach (var (hOff, hVal) in handles)
             {
                 if (hOff < nodeStart || hOff >= nodeEnd) continue;
-                if (hOff < bestOff)
+                if (hOff < firstOff)
                 {
-                    bestOff = hOff;
-                    best = hVal;
+                    second = first; secondOff = firstOff;
+                    first = hVal; firstOff = hOff;
+                }
+                else if (hOff < secondOff)
+                {
+                    second = hVal; secondOff = hOff;
                 }
             }
 
-            if (best != null)
-                result[uuid] = best;
+            if (first != null)
+                result[uuid] = first;
+            if (second != null)
+                descriptionResult[uuid] = second;
         }
 
-        return result;
+        return (result, descriptionResult);
+    }
+
+    /// <summary>
+    /// Legacy wrapper — returns only DisplayName handles.
+    /// </summary>
+    public static Dictionary<string, string> FindHandlesForUuids(byte[] data, IReadOnlySet<string> uuids)
+    {
+        return FindHandlesForUuidsEx(data, uuids).names;
     }
 
     private static int FindNextUuidBoundary(byte[] raw, string text, int startPos)

@@ -13,7 +13,7 @@
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource AppBgBrush}">
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*,Auto">
         <!-- Top bar: update button + language selector -->
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="8,8,16,4">
             <!-- Update button (left) -->
@@ -50,8 +50,53 @@
                 <DataTemplate DataType="vm:ItemEditorViewModel">
                     <v:ItemEditorView />
                 </DataTemplate>
+                <DataTemplate DataType="vm:ConstructorViewModel">
+                    <v:ConstructorView />
+                </DataTemplate>
             </ContentControl.DataTemplates>
         </ContentControl>
+
+        <!-- Bottom tab bar (only visible after scan completes) -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding ShowTabBar}"
+                Background="{StaticResource PanelBgBrush}"
+                Padding="0,2,0,0">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Spacing="0">
+                <!-- PATCHER tab -->
+                <Button Command="{Binding SwitchToPatcherCommand}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        CornerRadius="0"
+                        Padding="0"
+                        Cursor="Hand">
+                    <Border Padding="32,10"
+                            BorderThickness="0,2,0,0"
+                            BorderBrush="{Binding PatcherTabBrush}">
+                        <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{Binding PatcherTabForeground}" />
+                    </Border>
+                </Button>
+
+                <!-- CONSTRUCTOR tab -->
+                <Button Command="{Binding SwitchToConstructorCommand}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        CornerRadius="0"
+                        Padding="0"
+                        Cursor="Hand">
+                    <Border Padding="32,10"
+                            BorderThickness="0,2,0,0"
+                            BorderBrush="{Binding ConstructorTabBrush}">
+                        <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
+                                   FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{Binding ConstructorTabForeground}" />
+                    </Border>
+                </Button>
+            </StackPanel>
+        </Border>
 
         <!-- Version overlay -->
         <TextBlock Grid.Row="1"

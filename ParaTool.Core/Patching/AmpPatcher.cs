@@ -1,3 +1,5 @@
+using System.Text;
+using ParaTool.Core.Artifacts;
 using ParaTool.Core.Models;
 using ParaTool.Core.Parsing;
 using ParaTool.Core.Services;
@@ -56,7 +58,8 @@ public sealed class AmpPatcher
 
         var modsWithEnabledItems = mods
             .Where(m => m.Items.Any(i => i.Enabled))
-            .Where(m => !m.IsAmp) // Exclude AMP from dependencies
+            .Where(m => !m.IsAmp)
+            .Where(m => !string.IsNullOrEmpty(m.PakPath)) // Exclude virtual mods (artifacts)
             .ToList();
 
         using var tempDir = new TempDirectoryManager();
@@ -124,6 +127,10 @@ public sealed class AmpPatcher
                 await Task.Run(() => ApplyStatOverrides(statsDir, modifiedAmpItems, enabledModItems), ct);
             }
 
+            // Step 3.5: Apply artifact overrides from Constructor
+            progress?.Report(new PatchProgress { Stage = "Applying artifacts...", Percent = 58 });
+            var artifactCount = await Task.Run(() => ApplyArtifacts(extractDir, statsDir, ampPakPath), ct);
+
             // Step 4: Patch meta.lsx with mod dependencies
             progress?.Report(new PatchProgress { Stage = "Updating dependencies...", Percent = 65 });
             var metaPath = FindFile(extractDir, "meta.lsx");
@@ -148,7 +155,7 @@ public sealed class AmpPatcher
             return new PatchResult
             {
                 Success = true,
-                ItemsPatched = enabledModItems.Count + modifiedAmpItems.Count
+                ItemsPatched = enabledModItems.Count + modifiedAmpItems.Count + artifactCount
             };
         }
         catch (Exception ex)
@@ -237,6 +244,214 @@ public sealed class AmpPatcher
         // Step C: Create marker file so we know the pak was patched by ParaTool
         var markerPath = Path.Combine(statsDir, "ZZZ_ParaTool_Overrides.txt");
         File.WriteAllText(markerPath, "// Patched by ParaTool\n");
+    }
+
+    /// <summary>
+    /// Loads all saved artifacts, compiles them, and applies to extracted pak:
+    /// - Overrides: modify existing Stats entries in-place
+    /// - New items: append Stats + add to TreasureTable
+    /// - Both: write Loca XML entries
+    /// </summary>
+    private static int ApplyArtifacts(string extractDir, string? statsDir, string ampPakPath)
+    {
+        var artifacts = ArtifactStore.LoadAll();
+        if (artifacts.Count == 0 || statsDir == null) return 0;
+
+        // Load existing stat IDs to distinguish overrides vs new items
+        var existingStatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var statFile in Directory.GetFiles(statsDir, "*.txt"))
+        {
+            var text = File.ReadAllText(statFile);
+            var parsed = StatsParser.Parse(text);
+            foreach (var entry in parsed)
+                existingStatIds.Add(entry.Name);
+        }
+
+        var overrideStats = new StringBuilder();
+        var newStats = new StringBuilder();
+        var allLocaEntries = new Dictionary<string, List<(string handle, string xmlText)>>(StringComparer.OrdinalIgnoreCase);
+        int count = 0;
+
+        foreach (var art in artifacts)
+        {
+            var compiled = ArtifactCompiler.Compile(art);
+            bool isOverride = existingStatIds.Contains(art.StatId);
+
+            if (isOverride)
+            {
+                // Override: apply compiled stats as in-place modification
+                overrideStats.Append(compiled.StatsText);
+            }
+            else
+            {
+                // New item: append to stats + schedule for TT insertion
+                newStats.Append(compiled.StatsText);
+                // TT integration handled via virtual mod in patcher UI
+            }
+
+            // Merge loca entries
+            foreach (var (lang, entries) in compiled.LocalizationEntries)
+            {
+                if (!allLocaEntries.ContainsKey(lang))
+                    allLocaEntries[lang] = [];
+                allLocaEntries[lang].AddRange(entries);
+            }
+
+            // Icon files
+            if (compiled.IconFiles != null)
+            {
+                foreach (var (relativePath, data) in compiled.IconFiles)
+                {
+                    // Find the Mods/ModFolder/ directory
+                    var modsDirs = Directory.GetDirectories(extractDir, "Mods", SearchOption.TopDirectoryOnly);
+                    if (modsDirs.Length > 0)
+                    {
+                        var subDirs = Directory.GetDirectories(modsDirs[0]);
+                        if (subDirs.Length > 0)
+                        {
+                            var iconPath = Path.Combine(subDirs[0], relativePath);
+                            Directory.CreateDirectory(Path.GetDirectoryName(iconPath)!);
+                            File.WriteAllBytes(iconPath, data);
+                        }
+                    }
+                }
+            }
+
+            count++;
+        }
+
+        var statFiles = Directory.GetFiles(statsDir, "*.txt")
+            .Where(f =>
+            {
+                var name = Path.GetFileName(f);
+                return !name.Equals("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase) &&
+                       !name.Equals("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase);
+            })
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        // Apply override stats via in-place editing
+        if (overrideStats.Length > 0 && statFiles.Length > 0)
+        {
+            var overrideParsed = StatsParser.Parse(overrideStats.ToString());
+            var overrideMap = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entry in overrideParsed)
+            {
+                if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
+                overrideMap[entry.Name] = entry.Data;
+            }
+
+            var unresolved = new HashSet<string>(overrideMap.Keys, StringComparer.OrdinalIgnoreCase);
+            foreach (var filePath in statFiles)
+            {
+                if (unresolved.Count == 0) break;
+                var text = File.ReadAllText(filePath);
+                var relevant = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+                foreach (var statId in unresolved)
+                    if (text.Contains(statId, StringComparison.OrdinalIgnoreCase))
+                        relevant[statId] = overrideMap[statId];
+                if (relevant.Count == 0) continue;
+
+                var (modified, foundEntries) = StatsFileEditor.ModifyEntries(text, relevant);
+                if (foundEntries.Count > 0)
+                {
+                    File.WriteAllText(filePath, modified);
+                    foreach (var entry in foundEntries) unresolved.Remove(entry);
+                }
+            }
+
+            // Append passives/statuses/spells from overrides to last stat file
+            var nonItemOverrides = new StringBuilder();
+            foreach (var entry in overrideParsed)
+            {
+                if (entry.Type == "Armor" || entry.Type == "Weapon") continue;
+                nonItemOverrides.AppendLine($"new entry \"{entry.Name}\"");
+                nonItemOverrides.AppendLine($"type \"{entry.Type}\"");
+                if (entry.Using != null) nonItemOverrides.AppendLine($"using \"{entry.Using}\"");
+                foreach (var (k, v) in entry.Data) nonItemOverrides.AppendLine($"data \"{k}\" \"{v}\"");
+                nonItemOverrides.AppendLine();
+            }
+
+            if (nonItemOverrides.Length > 0)
+            {
+                var lastFile = statFiles[^1];
+                File.AppendAllText(lastFile, "\n" + nonItemOverrides);
+            }
+        }
+
+        // Append new item stats to last stat file
+        if (newStats.Length > 0 && statFiles.Length > 0)
+        {
+            var lastFile = statFiles[^1];
+            File.AppendAllText(lastFile, "\n" + newStats);
+        }
+
+        // TreasureTable for new items is handled by the main TT patching step
+        // (artifacts appear as items in the virtual "My Artifacts" mod)
+
+        // Write loca XML entries
+        if (allLocaEntries.Count > 0)
+        {
+            WriteLocaEntries(extractDir, allLocaEntries);
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Writes localization entries into existing .loca.xml files or creates new ones.
+    /// </summary>
+    private static void WriteLocaEntries(string extractDir,
+        Dictionary<string, List<(string handle, string xmlText)>> entries)
+    {
+        // BG3 loca code → folder name mapping
+        var codeToFolder = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["en"] = "English", ["ru"] = "Russian", ["de"] = "German", ["fr"] = "French",
+            ["es"] = "Spanish", ["it"] = "Italian", ["pl"] = "Polish", ["ja"] = "Japanese",
+            ["ko"] = "Korean", ["tr"] = "Turkish", ["uk"] = "Ukrainian", ["zh"] = "Chinese",
+            ["pt"] = "BrazilianPortuguese"
+        };
+
+        // Find existing Localization directory structure
+        var locaDirs = Directory.GetDirectories(extractDir, "Localization", SearchOption.AllDirectories);
+        if (locaDirs.Length == 0) return;
+
+        var locaBase = locaDirs[0];
+
+        foreach (var (lang, locaEntries) in entries)
+        {
+            if (locaEntries.Count == 0) continue;
+
+            var folderName = codeToFolder.GetValueOrDefault(lang, "English");
+            var langDir = Path.Combine(locaBase, folderName);
+            Directory.CreateDirectory(langDir);
+
+            // Find existing XML loca file or create new one
+            var existingXml = Directory.GetFiles(langDir, "*.xml").FirstOrDefault();
+            if (existingXml != null)
+            {
+                // Append entries before </contentList>
+                var text = File.ReadAllText(existingXml);
+                var insertPoint = text.LastIndexOf("</contentList>", StringComparison.OrdinalIgnoreCase);
+                if (insertPoint >= 0)
+                {
+                    var sb = new StringBuilder();
+                    foreach (var (handle, xmlText) in locaEntries)
+                        sb.AppendLine($"  <content contentuid=\"{handle}\" version=\"1\">{xmlText}</content>");
+                    text = text.Insert(insertPoint, sb.ToString());
+                    File.WriteAllText(existingXml, text);
+                }
+            }
+            else
+            {
+                // Create new file
+                var newPath = Path.Combine(langDir, "ParaTool_Artifacts.loca.xml");
+                var content = ArtifactCompiler.GenerateLocaXml(locaEntries);
+                File.WriteAllText(newPath, content);
+            }
+        }
     }
 
     private static string? FindFile(string dir, string fileName)

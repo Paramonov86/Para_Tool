@@ -22,6 +22,16 @@ public sealed class ItemEntry
     // Localized display name (from RootTemplates + Localization)
     public string? DisplayName { get; set; }
 
+    // Localized description / lore text (from RootTemplates + Localization)
+    public string? Description { get; set; }
+
+    // Icon name from RootTemplate (e.g. "Ring05", "AMP_Kroneth_Ring")
+    public string? IconName { get; set; }
+
+    // Loca handles for on-demand multi-language resolution
+    public string? DisplayNameHandle { get; set; }
+    public string? DescriptionHandle { get; set; }
+
     // AMP item flag (native AMP items from AMP pak)
     public bool IsAmpItem { get; set; }
 

@@ -91,5 +91,47 @@
   "UpdateFailedTooltip": "Ошибка проверки обновлений",
 
   "RestoreAmpTooltip": "Откатить патч AMP",
-  "RestoringAmp": "Восстановление..."
+  "RestoringAmp": "Восстановление...",
+
+  "TabPatcher": "ПАТЧЕР",
+  "TabConstructor": "КОНСТРУКТОР",
+
+  "NavTitle": "НАВИГАТОР",
+  "NavSearch": "Поиск предметов...",
+  "NavMyItems": "МОИ АРТЕФАКТЫ",
+  "NavAllItems": "ВСЕ ПРЕДМЕТЫ",
+  "NavCreateInheritor": "Создать наследника",
+  "NavDuplicate": "Дублировать",
+  "NavDelete": "Удалить",
+  "ConstructorEditorTitle": "РЕДАКТОР",
+  "ConstructorPreviewTitle": "ПРЕВЬЮ",
+
+  "EditorNoSelection": "Выберите предмет в навигаторе\nили создайте наследника",
+  "CardIdentity": "ИДЕНТИФИКАЦИЯ",
+  "CardArmorProps": "СВОЙСТВА БРОНИ",
+  "CardWeaponProps": "СВОЙСТВА ОРУЖИЯ",
+  "CardMechanics": "ЭФФЕКТЫ ПРЕДМЕТА",
+  "CardDescription": "ОПИСАНИЕ",
+  "FieldType": "Тип",
+  "FieldRarity": "Редкость",
+  "FieldUnique": "Уникальный",
+  "FieldValue": "Цена",
+  "FieldWeight": "Вес",
+  "FieldName": "Название",
+  "FieldDescription": "Описание",
+  "ChipSlot": "СЛОТ",
+  "ChipThemes": "ТЕМАТИКИ",
+  "BtnSave": "ПЕРЕЗАПИСАТЬ",
+  "BtnReset": "СБРОСИТЬ",
+
+  "LblBoosts": "Постоянные эффекты",
+  "LblStatuses": "Применяемые статусы",
+  "LblSpells": "Даруемые заклинания",
+  "LblWhenApplied": "Когда применяется",
+  "LblEffects": "Эффекты",
+  "LblTrigger": "Событие-триггер",
+  "LblCondition": "Условие",
+  "LblAction": "Действие",
+  "LblIcon": "ИКОНКА",
+  "LblIconBrowser": "Выбрать иконку"
 }

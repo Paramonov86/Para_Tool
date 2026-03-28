@@ -71,6 +71,151 @@ public sealed class ItemNameResolver
     }
 
     /// <summary>
+    /// Resolves both display names AND descriptions for items.
+    /// </summary>
+    public static (Dictionary<string, string> names, Dictionary<string, string> descriptions)
+        ResolveFromPakExtended(string pakPath, Dictionary<string, List<string>> uuidToStatIds, string langCode)
+    {
+        var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var descs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (uuidToStatIds.Count == 0) return (names, descs);
+
+        try
+        {
+            using var fs = File.OpenRead(pakPath);
+            var header = PakReader.ReadHeader(fs);
+            var entries = PakReader.ReadFileList(fs, header);
+
+            var uuidsToFind = new HashSet<string>(uuidToStatIds.Keys, StringComparer.OrdinalIgnoreCase);
+            var (nameHandles, descHandles) = ScanTemplatesForUuidsEx(fs, entries, uuidsToFind);
+
+            // Collect ALL handles to resolve
+            var allHandles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var h in nameHandles.Values) allHandles.Add(h);
+            foreach (var h in descHandles.Values) allHandles.Add(h);
+
+            var locaMap = ReadLocalization(fs, entries, allHandles, langCode);
+
+            foreach (var (uuid, handle) in nameHandles)
+                if (locaMap.TryGetValue(handle, out var name) && !string.IsNullOrWhiteSpace(name))
+                    names[uuid] = name;
+
+            foreach (var (uuid, handle) in descHandles)
+                if (locaMap.TryGetValue(handle, out var desc) && !string.IsNullOrWhiteSpace(desc))
+                    descs[uuid] = desc;
+        }
+        catch { }
+
+        return (names, descs);
+    }
+
+    /// <summary>
+    /// Reads ALL localization entries from a PAK for a given language.
+    /// Returns handle → text dictionary (not filtered by specific handles).
+    /// </summary>
+    public static Dictionary<string, string> ReadAllLocalization(string pakPath, string langCode)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var fs = File.OpenRead(pakPath);
+            var header = PakReader.ReadHeader(fs);
+            var entries = PakReader.ReadFileList(fs, header);
+
+            var targetLangs = new List<string>();
+            foreach (var (bg3Lang, codes) in LangMapping)
+                if (codes.Contains(langCode)) targetLangs.Add(bg3Lang);
+            if (!targetLangs.Contains("English")) targetLangs.Add("English");
+
+            var locaFiles = entries.Where(e =>
+                e.Path.Contains("Localization", StringComparison.OrdinalIgnoreCase) &&
+                e.Path.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) &&
+                targetLangs.Any(lang => e.Path.Contains(lang, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(e => e.Path.Contains("English", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                .ToList();
+
+            foreach (var entry in locaFiles)
+            {
+                var data = PakReader.ExtractFileData(fs, entry);
+                if (!LocaReader.IsXmlLoca(data)) continue;
+                var parsed = LocaReader.ParseXml(data);
+                foreach (var (uid, text) in parsed)
+                    result.TryAdd(uid, text);
+            }
+        }
+        catch { }
+        return result;
+    }
+
+    /// <summary>
+    /// Extended template scan returning both DisplayName and Description handles.
+    /// </summary>
+    private static (Dictionary<string, string> names, Dictionary<string, string> descs)
+        ScanTemplatesForUuidsEx(FileStream fs, IReadOnlyList<FileEntry> entries, IReadOnlySet<string> uuids)
+    {
+        var nameResult = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var descResult = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var remaining = new HashSet<string>(uuids, StringComparer.OrdinalIgnoreCase);
+
+        var rtFiles = entries.Where(e =>
+            e.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) &&
+            (e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) ||
+             e.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase))).ToList();
+
+        // Pass 1: individual files
+        foreach (var entry in rtFiles)
+        {
+            if (remaining.Count == 0) break;
+            var fileName = Path.GetFileNameWithoutExtension(entry.Path);
+            if (!remaining.Contains(fileName)) continue;
+
+            var data = PakReader.ExtractFileData(fs, entry);
+            var handle = LsfScanner.FindHandleNearUuid(data, fileName);
+            if (handle != null)
+            {
+                nameResult[fileName] = handle;
+                // For individual files, try to get second handle as description
+                var text = System.Text.Encoding.Latin1.GetString(data);
+                var handles = new List<string>();
+                foreach (System.Text.RegularExpressions.Match m in
+                    System.Text.RegularExpressions.Regex.Matches(text,
+                        @"h[0-9a-f]{7,8}g[0-9a-f]{4}g[0-9a-f]{4}g[0-9a-f]{4}g[0-9a-f]{10,12}"))
+                    handles.Add(m.Value);
+                if (handles.Count >= 2 && handles[0] == handle)
+                    descResult[fileName] = handles[1];
+
+                remaining.Remove(fileName);
+            }
+        }
+
+        if (remaining.Count == 0) return (nameResult, descResult);
+
+        // Pass 2: merged files
+        var mergedFiles = entries.Where(e =>
+            (e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) ||
+             e.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
+            (e.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase) ||
+             e.Path.Contains("Content", StringComparison.OrdinalIgnoreCase) ||
+             e.Path.Contains("Globals", StringComparison.OrdinalIgnoreCase))).ToList();
+
+        foreach (var entry in mergedFiles)
+        {
+            if (remaining.Count == 0) break;
+            var data = PakReader.ExtractFileData(fs, entry);
+            var (foundNames, foundDescs) = LsfScanner.FindHandlesForUuidsEx(data, remaining);
+            foreach (var (uuid, handle) in foundNames)
+            {
+                nameResult[uuid] = handle;
+                remaining.Remove(uuid);
+            }
+            foreach (var (uuid, handle) in foundDescs)
+                descResult[uuid] = handle;
+        }
+
+        return (nameResult, descResult);
+    }
+
+    /// <summary>
     /// Scans ALL .lsf and .lsx template files in a PAK for RootTemplate UUIDs.
     /// For each UUID found, extracts the nearest TranslatedString handle (DisplayName).
     /// </summary>

@@ -90,5 +90,8 @@
   "UpdateUpToDateTooltip": "最新です",
   "UpdateFailedTooltip": "更新の確認に失敗しました",
   "RestoreAmpTooltip": "元のAMPを復元（パッチを取り消す）",
-  "RestoringAmp": "復元中..."
+  "RestoringAmp": "復元中...",
+
+  "TabPatcher": "パッチャー",
+  "TabConstructor": "コンストラクター"
 }

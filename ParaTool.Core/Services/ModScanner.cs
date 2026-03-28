@@ -10,6 +10,21 @@ public sealed class ScanResult
     public string? AmpPakPath { get; init; }
     public string? Error { get; init; }
     public int CleanedOldPaks { get; init; }
+
+    /// <summary>
+    /// Combined stats resolver (vanilla + AMP + mods) for full field resolution.
+    /// </summary>
+    public StatsResolver? Resolver { get; init; }
+
+    /// <summary>
+    /// All localization handle → text mappings from scanned paks (scan language + English).
+    /// </summary>
+    public Dictionary<string, string> LocaMap { get; init; } = new();
+
+    /// <summary>
+    /// Paths to all scanned pak files (AMP + mods) for on-demand loca loading.
+    /// </summary>
+    public string[] PakPaths { get; init; } = [];
 }
 
 public sealed class ScanProgress
@@ -111,7 +126,14 @@ public sealed class ModScanner
         // Resolve display names from PAK localization files
         progress?.Report(new ScanProgress { Stage = "ResolveNames", Percent = 55,
             TotalPaks = finalScanned, ScannedPaks = finalScanned, ModsFound = finalFound });
-        await Task.Run(() => ResolveDisplayNames(ampPakPath, ampMod, mods, nonAmpPaks, langCode, _vanillaDb.Resolver, progress), ct);
+        Parsing.StatsResolver? combinedResolver = null;
+        Dictionary<string, string>? locaMap = null;
+        await Task.Run(() =>
+        {
+            var result = ResolveDisplayNames(ampPakPath, ampMod, mods, nonAmpPaks, langCode, _vanillaDb.Resolver, progress);
+            combinedResolver = result.resolver;
+            locaMap = result.locaMap;
+        }, ct);
 
         progress?.Report(new ScanProgress { Stage = "Done", Percent = 100,
             TotalPaks = finalScanned, ScannedPaks = finalScanned, ModsFound = finalFound });
@@ -121,7 +143,10 @@ public sealed class ModScanner
             Mods = mods,
             AmpMod = ampMod,
             AmpPakPath = ampPakPath,
-            CleanedOldPaks = cleanedOldPaks
+            CleanedOldPaks = cleanedOldPaks,
+            Resolver = combinedResolver,
+            LocaMap = locaMap ?? new(),
+            PakPaths = new[] { ampPakPath }.Concat(nonAmpPaks).ToArray()
         };
     }
 
@@ -734,21 +759,21 @@ public sealed class ModScanner
         }
     }
 
-    private static void ResolveDisplayNames(string ampPakPath, ModInfo? ampMod,
+    private static (Parsing.StatsResolver resolver, Dictionary<string, string> locaMap) ResolveDisplayNames(string ampPakPath, ModInfo? ampMod,
         List<ModInfo> mods, string[] modPakPaths, string langCode, Parsing.StatsResolver baseResolver,
         IProgress<ScanProgress>? progress = null)
     {
         var allItems = new List<ItemEntry>();
         if (ampMod != null) allItems.AddRange(ampMod.Items);
         foreach (var mod in mods) allItems.AddRange(mod.Items);
-        if (allItems.Count == 0) return;
-
-        progress?.Report(new ScanProgress { Stage = "BuildResolver", Percent = 58 });
-
-        // Build combined resolver for using-chain walking
         var resolver = new Parsing.StatsResolver();
         foreach (var kvp in baseResolver.AllEntries)
             resolver.AddEntries(new[] { kvp.Value });
+
+        var masterLocaMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (allItems.Count == 0) return (resolver, masterLocaMap);
+
+        progress?.Report(new ScanProgress { Stage = "BuildResolver", Percent = 58 });
 
         // Add AMP stats entries (they have RootTemplate UUIDs and using chains)
         try
@@ -825,12 +850,41 @@ public sealed class ModScanner
             }
         }
 
-        if (uuidToStatIds.Count == 0) return;
+        if (uuidToStatIds.Count == 0) return (resolver, masterLocaMap);
 
         progress?.Report(new ScanProgress { Stage = "ScanTemplates", Percent = 70 });
 
-        // Resolve UUID → display name from AMP pak
-        var resolved = ItemNameResolver.ResolveFromPak(ampPakPath, uuidToStatIds, langCode);
+        // Resolve UUID → display name + description from AMP pak (also get handles)
+        var (resolved, resolvedDescs) = ItemNameResolver.ResolveFromPakExtended(ampPakPath, uuidToStatIds, langCode);
+
+        // Also get the raw handles for on-demand multi-lang resolution
+        Dictionary<string, string> nameHandlesMap = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> descHandlesMap = new(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var hfs = File.OpenRead(ampPakPath);
+            var hHeader = PakReader.ReadHeader(hfs);
+            var hEntries = PakReader.ReadFileList(hfs, hHeader);
+            var uuidsSet = new HashSet<string>(uuidToStatIds.Keys, StringComparer.OrdinalIgnoreCase);
+            // Reuse the Ex scanner to get handles
+            var rtFiles = hEntries.Where(e =>
+                (e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) || e.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
+                (e.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) ||
+                 e.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase))).ToList();
+            foreach (var rtFile in rtFiles)
+            {
+                var data = PakReader.ExtractFileData(hfs, rtFile);
+                var (nh, dh) = Parsing.LsfScanner.FindHandlesForUuidsEx(data, uuidsSet);
+                foreach (var (k, v) in nh) nameHandlesMap.TryAdd(k, v);
+                foreach (var (k, v) in dh) descHandlesMap.TryAdd(k, v);
+            }
+        }
+        catch { }
+
+        // Collect all loca entries from AMP pak
+        var ampLoca = ItemNameResolver.ReadAllLocalization(ampPakPath, langCode);
+        foreach (var (k, v) in ampLoca)
+            masterLocaMap.TryAdd(k, v);
 
         progress?.Report(new ScanProgress { Stage = "ResolveLoca", Percent = 90 });
 
@@ -850,27 +904,43 @@ public sealed class ModScanner
                 if (remainingMap.Count == 0) break;
                 try
                 {
-                    var modResolved = ItemNameResolver.ResolveFromPak(pakPath, remainingMap, langCode);
-                    foreach (var (uuid, name) in modResolved)
+                    var (modNames, modDescs) = ItemNameResolver.ResolveFromPakExtended(pakPath, remainingMap, langCode);
+                    foreach (var (uuid, name) in modNames)
                     {
                         resolved[uuid] = name;
                         remainingMap.Remove(uuid);
                     }
+                    foreach (var (uuid, desc) in modDescs)
+                        resolvedDescs.TryAdd(uuid, desc);
+
+                    // Collect mod loca
+                    var modLoca = ItemNameResolver.ReadAllLocalization(pakPath, langCode);
+                    foreach (var (k, v) in modLoca)
+                        masterLocaMap.TryAdd(k, v);
                 }
                 catch { }
             }
         }
 
-        // Apply: UUID → name → all items that share this UUID
+        // Apply: UUID → name/description → all items that share this UUID
         foreach (var (uuid, statIds) in uuidToStatIds)
         {
-            if (!resolved.TryGetValue(uuid, out var displayName)) continue;
             foreach (var statId in statIds)
             {
                 var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
-                if (item != null)
+                if (item == null) continue;
+
+                if (resolved.TryGetValue(uuid, out var displayName))
                     item.DisplayName = displayName;
+                if (resolvedDescs.TryGetValue(uuid, out var desc))
+                    item.Description = desc;
+                if (nameHandlesMap.TryGetValue(uuid, out var dnHandle))
+                    item.DisplayNameHandle = dnHandle;
+                if (descHandlesMap.TryGetValue(uuid, out var dHandle))
+                    item.DescriptionHandle = dHandle;
             }
         }
+
+        return (resolver, masterLocaMap);
     }
 }

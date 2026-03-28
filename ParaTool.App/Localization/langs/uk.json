@@ -90,5 +90,8 @@
   "UpdateUpToDateTooltip": "Актуальна версія",
   "UpdateFailedTooltip": "Помилка перевірки оновлень",
   "RestoreAmpTooltip": "Відновити оригінальний AMP (скасувати патч)",
-  "RestoringAmp": "Відновлення..."
+  "RestoringAmp": "Відновлення...",
+
+  "TabPatcher": "ПАТЧЕР",
+  "TabConstructor": "КОНСТРУКТОР"
 }

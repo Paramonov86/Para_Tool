@@ -1,0 +1,657 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ParaTool.App.ViewModels"
+             xmlns:loc="using:ParaTool.App.Localization"
+             xmlns:ctrl="using:ParaTool.App.Controls"
+             x:Class="ParaTool.App.Views.ConstructorView"
+             x:DataType="vm:ConstructorViewModel">
+
+    <Panel>
+    <Grid ColumnDefinitions="250*,Auto,500*,Auto,350*" Margin="16,8">
+
+        <!-- ═══════ LEFT: NAVIGATOR ═══════ -->
+        <Border Grid.Column="0" Background="{StaticResource PanelBgBrush}"
+                CornerRadius="8" MinWidth="180">
+            <Grid RowDefinitions="Auto,Auto,Auto,*">
+                <TextBlock Grid.Row="0"
+                           Text="{Binding NavTitle, Source={x:Static loc:Loc.Instance}}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
+                <TextBox Grid.Row="1" Text="{Binding SearchText}"
+                         Watermark="{Binding NavSearch, Source={x:Static loc:Loc.Instance}}"
+                         FontSize="12" Margin="8,0,8,8" Padding="8,6" CornerRadius="6"
+                         Background="{StaticResource InputBgBrush}" />
+
+                <!-- Saved artifacts -->
+                <StackPanel Grid.Row="2" IsVisible="{Binding HasSavedArtifacts}">
+                    <TextBlock Text="{Binding NavMyItems, Source={x:Static loc:Loc.Instance}}"
+                               FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentLightBrush}"
+                               Margin="12,4,8,4" LetterSpacing="1" />
+                    <ItemsControl ItemsSource="{Binding SavedArtifacts}" Margin="4,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:ArtifactItemVM">
+                                <Button Background="Transparent" BorderThickness="0"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                        Padding="0" Margin="0,1" Cursor="Hand"
+                                        Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).SelectSavedArtifactCommand}"
+                                        CommandParameter="{Binding}">
+                                    <Button.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{Binding NavDuplicate, Source={x:Static loc:Loc.Instance}}"
+                                                      Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).DuplicateArtifactCommand}"
+                                                      CommandParameter="{Binding}" />
+                                            <Separator />
+                                            <MenuItem Header="{Binding NavDelete, Source={x:Static loc:Loc.Instance}}"
+                                                      Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).DeleteArtifactCommand}"
+                                                      CommandParameter="{Binding}" />
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
+                                    <Border Padding="10,6" CornerRadius="6"
+                                            BorderThickness="0,0,3,0" BorderBrush="{Binding RarityColor}"
+                                            Background="{Binding SelectionBackground}">
+                                        <Grid RowDefinitions="Auto,Auto">
+                                            <TextBlock Text="{Binding DisplayLabel}" FontSize="12"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Row="1" Text="{Binding EditUsingBase}" FontSize="10"
+                                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,1,0,0" />
+                                        </Grid>
+                                    </Border>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="8,6" />
+                </StackPanel>
+
+                <!-- Items: grouped when no search, flat when searching -->
+                <ScrollViewer Grid.Row="3">
+                    <StackPanel>
+                        <!-- Grouped view (no search) -->
+                        <ItemsControl ItemsSource="{Binding NavGroups}" Margin="4,0"
+                                      IsVisible="{Binding IsNotSearching}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:NavGroupVM">
+                                    <StackPanel Margin="0,0,0,2">
+                                        <!-- Group header -->
+                                        <Button Background="{Binding HeaderBackground}" BorderThickness="0"
+                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                Padding="8,6" Cursor="Hand"
+                                                Name="NavGroupToggle" Tag="{Binding}">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <TextBlock Text="▸"
+                                                           FontSize="11" Foreground="{StaticResource AccentLightBrush}"
+                                                           VerticalAlignment="Center" Width="14" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTip.Tip="{Binding Name}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Count}"
+                                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}"
+                                                           VerticalAlignment="Center" Margin="4,0,0,0" />
+                                            </Grid>
+                                        </Button>
+                                        <!-- Group items -->
+                                        <ItemsControl ItemsSource="{Binding Items}"
+                                                      IsVisible="{Binding IsExpanded}" Margin="0,0,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="vm:BaseItemVM">
+                                                    <Button Background="Transparent" BorderThickness="0"
+                                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                            Padding="0" Margin="0,1" Cursor="Hand"
+                                                            Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).OpenBaseItemCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <Border Padding="8,5" CornerRadius="4"
+                                                                BorderThickness="3,0,0,0"
+                                                                BorderBrush="{Binding RarityColor}">
+                                                            <TextBlock Text="{Binding Label}" FontSize="12"
+                                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                                       TextWrapping="Wrap"
+                                                                       ToolTip.Tip="{Binding FullLabel}" />
+                                                        </Border>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Flat filtered view (when searching) -->
+                        <ItemsControl ItemsSource="{Binding FilteredBaseItems}" Margin="4,0"
+                                      IsVisible="{Binding IsSearching}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:BaseItemVM">
+                                    <Button Background="Transparent" BorderThickness="0"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                            Padding="0" Margin="0,1" Cursor="Hand"
+                                            Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).OpenBaseItemCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Border Padding="8,5" CornerRadius="4"
+                                                BorderThickness="3,0,0,0"
+                                                BorderBrush="{Binding RarityColor}">
+                                            <Grid RowDefinitions="Auto,Auto">
+                                                <TextBlock Text="{Binding Label}" FontSize="12"
+                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                           TextWrapping="Wrap"
+                                                           ToolTip.Tip="{Binding FullLabel}" />
+                                                <TextBlock Grid.Row="1" Text="{Binding ModName}" FontSize="10"
+                                                           Foreground="{StaticResource TextMutedBrush}"
+                                                           Margin="0,1,0,0" />
+                                            </Grid>
+                                        </Border>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <GridSplitter Grid.Column="1" Width="6" Background="Transparent" ResizeDirection="Columns" />
+
+        <!-- ═══════ CENTER: EDITOR ═══════ -->
+        <Border Grid.Column="2" Background="{StaticResource PanelBgBrush}"
+                CornerRadius="8" MinWidth="300">
+            <Grid RowDefinitions="Auto,*,Auto">
+                <TextBlock Grid.Row="0"
+                           Text="{Binding ConstructorEditorTitle, Source={x:Static loc:Loc.Instance}}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
+
+                <TextBlock Grid.Row="1" IsVisible="{Binding HasNoSelection}"
+                           Text="{Binding EditorNoSelection, Source={x:Static loc:Loc.Instance}}"
+                           Foreground="{StaticResource TextMutedBrush}" FontSize="13"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextAlignment="Center" Opacity="0.6" />
+
+                <ScrollViewer Grid.Row="1" IsVisible="{Binding IsArtifactSelected}" Margin="8,4,8,8">
+                    <StackPanel Spacing="10" DataContext="{Binding SelectedArtifact}">
+                        <!-- Rarity -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding FieldRarity, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                <WrapPanel Name="RarityChips" />
+                            </StackPanel>
+                        </Border>
+                        <!-- Slot -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding ChipSlot, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                <WrapPanel Name="PoolChips" />
+                            </StackPanel>
+                        </Border>
+                        <!-- Themes -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding ChipThemes, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                <WrapPanel Name="ThemeChips" />
+                            </StackPanel>
+                        </Border>
+                        <!-- Armor properties -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10"
+                                IsVisible="{Binding IsArmor}">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="ARMOR" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                                    <TextBlock Text="Armor Class" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1" Text="{Binding EditArmorClass}" Watermark="inherit"
+                                             FontSize="12" Padding="8,4" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+
+                                    <TextBlock Grid.Row="1" Text="Armor Type" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding EditArmorType}"
+                                              ItemsSource="{x:Static vm:ArtifactItemVM.ArmorTypeOptions}"
+                                              FontSize="12" Padding="8,4" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
+
+                                    <TextBlock Grid.Row="2" Text="Proficiency" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ComboBox Grid.Row="2" Grid.Column="1" SelectedItem="{Binding EditProficiencyGroup}"
+                                              ItemsSource="{x:Static vm:ArtifactItemVM.ProficiencyOptions}"
+                                              FontSize="12" Padding="8,4" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
+
+                                    <TextBlock Grid.Row="3" Text="Weight" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding EditWeight}" Watermark="inherit"
+                                             FontSize="12" Padding="8,4" Margin="0,6,0,0" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+
+                                </Grid>
+                                <CheckBox Content="Unique" IsChecked="{Binding EditUnique}" FontSize="12"
+                                          Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Weapon properties -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10"
+                                IsVisible="{Binding IsWeapon}">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="WEAPON" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                                    <TextBlock Text="Damage" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1" Text="{Binding EditDamage}" Watermark="1d8"
+                                             FontSize="12" Padding="8,4" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+
+                                    <TextBlock Grid.Row="1" Text="Versatile" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EditVersatileDamage}" Watermark="1d10"
+                                             FontSize="12" Padding="8,4" Margin="0,6,0,0" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+
+                                    <TextBlock Grid.Row="2" Text="Default Boosts" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ctrl:BoostBlocksEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditDefaultBoosts}" Margin="0,6,0,0" />
+
+                                    <TextBlock Grid.Row="3" Text="Properties" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ctrl:ToggleChipsEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditWeaponProperties}"
+                                                                    Options="{x:Static vm:ArtifactItemVM.WeaponPropertyOptions}" Margin="0,6,0,0" />
+
+                                    <TextBlock Grid.Row="4" Text="Weight" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding EditWeight}" Watermark="inherit"
+                                             FontSize="12" Padding="8,4" Margin="0,6,0,0" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+
+                                </Grid>
+                                <CheckBox Content="Unique" IsChecked="{Binding EditUnique}" FontSize="12"
+                                          Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Icon selector -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding LblIcon, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                <Button Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).OpenIconBrowserCommand}"
+                                        Background="{StaticResource InputBgBrush}"
+                                        BorderThickness="0" CornerRadius="6"
+                                        Padding="8,6" Cursor="Hand"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <!-- Mini thumbnail -->
+                                        <Border Width="32" Height="32" CornerRadius="4" ClipToBounds="True"
+                                                Background="{StaticResource CardBgBrush}"
+                                                IsVisible="{Binding HasIcon}">
+                                            <Image Source="{Binding IconBitmap}" Stretch="UniformToFill" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Artifact.AtlasIconMapKey, FallbackValue='Select icon...'}"
+                                                   FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Mechanics -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding CardMechanics, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"
+                                           ToolTip.Tip="Boosts, statuses and spells applied when item is equipped" />
+                                <TextBlock Text="{Binding LblBoosts, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                                <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
+                                <TextBlock Text="{Binding LblStatuses, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBox Text="{Binding EditStatusOnEquip}" FontSize="12" Padding="8,4"
+                                         Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                <TextBlock Text="{Binding LblSpells, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBox Text="{Binding EditSpellsOnEquip}" FontSize="12" Padding="8,4"
+                                         Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                            </StackPanel>
+                        </Border>
+                        <!-- Passives -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="PASSIVES" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                <ItemsControl ItemsSource="{Binding PassiveVMs}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="vm:PassiveVM">
+                                            <Border Background="{StaticResource InputBgBrush}" CornerRadius="4"
+                                                    Padding="8,6" Margin="0,2">
+                                                <StackPanel Spacing="4">
+                                                    <Button Background="Transparent" BorderThickness="0"
+                                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                            Padding="0" Cursor="Hand" Name="PassiveToggleBtn" Tag="{Binding}">
+                                                        <Grid ColumnDefinitions="Auto,*">
+                                                            <TextBlock Text="▸" FontSize="12" Foreground="{StaticResource AccentLightBrush}"
+                                                                       VerticalAlignment="Center" Margin="0,0,6,0" Width="12" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource GoldBrush}" />
+                                                        </Grid>
+                                                    </Button>
+                                                    <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0">
+                                                        <!-- Permanent boosts section -->
+                                                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
+                                                                BorderBrush="#2ECC71" BorderThickness="2,0,0,0">
+                                                            <StackPanel Spacing="3">
+                                                                <TextBlock Text="Permanent Boosts" FontSize="10" FontWeight="SemiBold" Foreground="#2ECC71" />
+                                                                <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
+                                                            </StackPanel>
+                                                        </Border>
+
+                                                        <!-- Trigger-based section -->
+                                                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
+                                                                BorderBrush="#E67E22" BorderThickness="2,0,0,0">
+                                                            <StackPanel Spacing="3">
+                                                                <TextBlock Text="Trigger → Condition → Action" FontSize="10" FontWeight="SemiBold" Foreground="#E67E22" />
+                                                                <Grid ColumnDefinitions="60,*" RowDefinitions="Auto,Auto,Auto">
+                                                                    <TextBlock Text="When" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                                    <ComboBox Grid.Column="1" SelectedItem="{Binding EditStatsFunctorContext}"
+                                                                              ItemsSource="{x:Static vm:PassiveVM.TriggerOptions}"
+                                                                              FontSize="11" Padding="4,2" HorizontalAlignment="Stretch" />
+
+                                                                    <TextBlock Grid.Row="1" Text="If" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                                                    <ctrl:ConditionBlocksEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditConditions}" Margin="0,3,0,0" />
+
+                                                                    <TextBlock Grid.Row="2" Text="Do" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                                                    <ctrl:BoostBlocksEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditStatsFunctors}" IsFunctorMode="True" Margin="0,3,0,0" />
+                                                                </Grid>
+                                                            </StackPanel>
+                                                        </Border>
+
+                                                        <!-- Context for boosts -->
+                                                        <Grid ColumnDefinitions="60,*" IsVisible="{Binding EditBoostContext, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                                            <TextBlock Text="Context" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Grid.Column="1" Text="{Binding EditBoostContext}" FontSize="11" Padding="6,3"
+                                                                     Background="{StaticResource InputBgBrush}" CornerRadius="3" />
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                        <!-- Create new artifact -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="CREATE NEW ITEM" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+
+                                <!-- Based on -->
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="Based on:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding DisplayLabel}" FontSize="11"
+                                               Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- Name input -->
+                                <TextBox Name="NewArtifactNameInput"
+                                         Watermark="Enter name for your new item..."
+                                         FontSize="12" Padding="8,6"
+                                         Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+
+                                <!-- Create button -->
+                                <Button Background="{StaticResource AccentBrush}" Foreground="White"
+                                        FontSize="13" FontWeight="SemiBold"
+                                        Padding="16,8" CornerRadius="6" Cursor="Hand"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        Name="CreateNewArtifactBtn">
+                                    <TextBlock Text="Create as new artifact" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Save / Reset -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8"
+                            HorizontalAlignment="Center" Margin="0,6,0,10"
+                            IsVisible="{Binding IsArtifactSelected}">
+                    <Button Command="{Binding SaveArtifactCommand}"
+                            Background="#2ECC71" Foreground="White"
+                            FontSize="13" FontWeight="SemiBold"
+                            Padding="24,8" CornerRadius="6" Cursor="Hand">
+                        <TextBlock Text="{Binding BtnSave, Source={x:Static loc:Loc.Instance}}" />
+                    </Button>
+                    <Button Command="{Binding ResetArtifactCommand}"
+                            Background="#33E74C3C" Foreground="#E74C3C"
+                            FontSize="13" FontWeight="SemiBold"
+                            Padding="24,8" CornerRadius="6" Cursor="Hand"
+                            BorderBrush="#E74C3C" BorderThickness="1">
+                        <TextBlock Text="{Binding BtnReset, Source={x:Static loc:Loc.Instance}}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <GridSplitter Grid.Column="3" Width="6" Background="Transparent" ResizeDirection="Columns" />
+
+        <!-- ═══════ RIGHT: PREVIEW / LOCA EDITOR ═══════ -->
+        <Border Grid.Column="4" Background="{StaticResource PanelBgBrush}"
+                CornerRadius="8" Padding="8" MinWidth="240">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+                <TextBlock Grid.Row="0"
+                           Text="{Binding ConstructorPreviewTitle, Source={x:Static loc:Loc.Instance}}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
+
+                <!-- Language selector -->
+                <ComboBox Grid.Row="1" Name="LocaLangSelector"
+                          FontSize="12" Margin="8,0,8,6"
+                          HorizontalAlignment="Stretch"
+                          Padding="8,4" />
+
+                <!-- Loca warning -->
+                <Border Grid.Row="2"
+                        IsVisible="{Binding LocaWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Background="#33E67E22" BorderBrush="#E67E22" BorderThickness="1"
+                        CornerRadius="4" Padding="8,4" Margin="8,0,8,4">
+                    <TextBlock Text="{Binding LocaWarning}" FontSize="11" Foreground="#E67E22" TextWrapping="Wrap" />
+                </Border>
+
+                <!-- BB-code toolbar -->
+                <WrapPanel Grid.Row="3" Name="BbToolbar" Margin="8,0,8,6">
+                    <Button Content="B" Tag="b" Classes="BbBtn" FontSize="11" FontWeight="Bold"
+                            Padding="6,3" Margin="2" CornerRadius="4" MinWidth="28"
+                            Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextPrimaryBrush}"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Bold text [b]...[/b]" />
+                    <Button Content="I" Tag="i" Classes="BbBtn" FontSize="11" FontStyle="Italic"
+                            Padding="6,3" Margin="2" CornerRadius="4" MinWidth="28"
+                            Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextPrimaryBrush}"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Italic text [i]...[/i]" />
+                    <Button Content="Status" Tag="status" Classes="BbBtn" FontSize="10"
+                            Padding="6,3" Margin="2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="#E74C3C"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Status tooltip. Wraps text as [status=ID]text[/status]" />
+                    <Button Content="Tooltip" Tag="tip" Classes="BbBtn" FontSize="10"
+                            Padding="6,3" Margin="2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="#87CEEB"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Game tooltip (AC, Saving Throw, etc). Wraps as [tip=Name]text[/tip]" />
+                    <Button Content="Spell" Tag="spell" Classes="BbBtn" FontSize="10"
+                            Padding="6,3" Margin="2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="#9B59B6"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Spell/ability link. Wraps as [spell=SpellId]text[/spell]" />
+                    <Button Content="Passive" Tag="passive" Classes="BbBtn" FontSize="10"
+                            Padding="6,3" Margin="2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="#2ECC71"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Passive link. Wraps as [passive=ID]text[/passive]" />
+                    <Button Content="Resource" Tag="resource" Classes="BbBtn" FontSize="10"
+                            Padding="6,3" Margin="2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="#F1C40F"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Action resource (Ki, Spell Slot, etc). Wraps as [resource=ID]text[/resource]" />
+                    <Button Content="[p]" Tag="p" Classes="BbBtn" FontSize="10"
+                            Padding="6,3" Margin="2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="#E67E22"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Parameter placeholder [p1] — replaced by DescriptionParams value at runtime" />
+                    <Button Content="BR" Tag="br" Classes="BbBtn" FontSize="10"
+                            Padding="6,3" Margin="2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextMutedBrush}"
+                            BorderThickness="0" Cursor="Hand"
+                            ToolTip.Tip="Line break [br]" />
+                </WrapPanel>
+
+                <!-- Tooltip preview (inline editable) -->
+                <ScrollViewer Grid.Row="4" IsVisible="{Binding IsArtifactSelected}" Margin="4">
+                    <Border Background="#221E2A" CornerRadius="8"
+                            BorderBrush="{Binding RarityColor}"
+                            BorderThickness="2,0,0,0"
+                            DataContext="{Binding SelectedArtifact}">
+                        <StackPanel>
+                            <!-- Top: Icon (right) + Name (left) -->
+                            <Grid ColumnDefinitions="*,Auto" Margin="16,12,12,0">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                                    <!-- Name (editable) -->
+                                    <TextBox Name="LocaDisplayName"
+                                             Text="{Binding EditDisplayName}" Watermark="Item Name"
+                                             FontSize="18" FontWeight="Bold"
+                                             Foreground="{Binding RarityColor}"
+                                             Background="Transparent" BorderThickness="0"
+                                             Padding="0" TextWrapping="Wrap" />
+                                    <!-- Rarity + Type -->
+                                    <TextBlock Text="{Binding PreviewSubtitle}" FontSize="12"
+                                               Foreground="{Binding RarityColor}" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <!-- Icon -->
+                                <Border Grid.Column="1" Width="90" Height="90"
+                                        CornerRadius="6" ClipToBounds="True"
+                                        Background="Transparent"
+                                        Margin="8,0,0,0"
+                                        IsVisible="{Binding HasIcon}">
+                                    <Image Source="{Binding IconBitmap}" Stretch="Uniform" />
+                                </Border>
+                            </Grid>
+
+                            <Border Height="1" Background="#33FFFFFF" Margin="12,10" />
+
+                            <!-- Boosts (display) -->
+                            <TextBlock Text="{Binding EditBoosts}" FontSize="12"
+                                       Foreground="#2ECC71" TextWrapping="Wrap"
+                                       Margin="16,0,16,4" IsVisible="{Binding HasBoosts}" />
+
+                            <!-- Passives: each name + description editable -->
+                            <ItemsControl ItemsSource="{Binding PassiveVMs}"
+                                          Margin="16,0,16,4"
+                                          IsVisible="{Binding HasPassives}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:PassiveVM">
+                                        <StackPanel Margin="0,0,0,8">
+                                            <!-- Passive name (editable) -->
+                                            <TextBox Text="{Binding EditDisplayName}"
+                                                     Watermark="Passive name"
+                                                     FontSize="12" FontWeight="Bold"
+                                                     Foreground="#C8A96E"
+                                                     Background="Transparent" BorderThickness="0"
+                                                     Padding="0" Name="LocaPassiveName" />
+                                            <!-- Passive description (editable, rich) -->
+                                            <TextBox Text="{Binding EditDescription}"
+                                                     Watermark="Passive description (BB-code)"
+                                                     FontSize="12"
+                                                     Foreground="{StaticResource TextSecondaryBrush}"
+                                                     Background="Transparent" BorderThickness="0"
+                                                     Padding="0" TextWrapping="Wrap"
+                                                     AcceptsReturn="True"
+                                                     Name="LocaPassiveDesc" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Separator -->
+                            <Border Height="1" Background="#33FFFFFF" Margin="12,6"
+                                    IsVisible="{Binding HasDescription}" />
+
+                            <!-- Description / lore (editable) -->
+                            <TextBox Name="LocaDescription"
+                                     Text="{Binding EditDescription}"
+                                     Watermark="Description / lore (BB-code)"
+                                     TextWrapping="Wrap" AcceptsReturn="True"
+                                     MinHeight="50" FontSize="12" FontStyle="Italic"
+                                     Foreground="{StaticResource TextSecondaryBrush}"
+                                     Background="Transparent" BorderThickness="0"
+                                     Padding="0" Margin="16,0,16,8" />
+
+                            <Border Height="8" />
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+    <!-- Icon browser popup overlay -->
+    <Border IsVisible="{Binding IconBrowser.IsOpen}"
+            Background="#CC000000"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Border Background="{StaticResource PanelBgBrush}"
+                CornerRadius="12"
+                Margin="60,30"
+                Padding="16"
+                MaxWidth="800" MaxHeight="600"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <!-- Header -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                    <TextBlock Text="{Binding LblIconBrowser, Source={x:Static loc:Loc.Instance}}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <Button Grid.Column="1" Content="X"
+                            Command="{Binding IconBrowser.CloseCommand}"
+                            Background="Transparent" Foreground="{StaticResource TextMutedBrush}"
+                            FontSize="14" Padding="8,4" BorderThickness="0" Cursor="Hand" />
+                </Grid>
+
+                <!-- Search -->
+                <TextBox Grid.Row="1" Text="{Binding IconBrowser.SearchText}"
+                         Watermark="{Binding NavSearch, Source={x:Static loc:Loc.Instance}}"
+                         FontSize="12" Padding="8,6" CornerRadius="6" Margin="0,0,0,8"
+                         Background="{StaticResource InputBgBrush}" />
+
+                <!-- Icon grid -->
+                <ScrollViewer Grid.Row="2">
+                    <ItemsControl ItemsSource="{Binding IconBrowser.FilteredIcons}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:IconEntryVM">
+                                <Button Background="Transparent" BorderThickness="0"
+                                        Padding="4" Margin="2" Cursor="Hand"
+                                        ToolTip.Tip="{Binding Name}"
+                                        Name="IconGridBtn" Tag="{Binding}">
+                                    <StackPanel Width="72" Spacing="2">
+                                        <Border Width="64" Height="64" CornerRadius="4"
+                                                ClipToBounds="True"
+                                                Background="{StaticResource CardBgBrush}">
+                                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="8"
+                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   HorizontalAlignment="Center"
+                                                   MaxWidth="68" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Status bar -->
+                <TextBlock Grid.Row="3" Margin="0,8,0,0"
+                           FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                           Text="{Binding IconBrowser.FilteredIcons.Count, StringFormat='Icons: {0} (max 200 shown)'}" />
+            </Grid>
+        </Border>
+    </Border>
+    </Panel>
+</UserControl>

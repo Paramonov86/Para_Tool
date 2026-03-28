@@ -90,5 +90,8 @@
   "UpdateUpToDateTooltip": "Güncel",
   "UpdateFailedTooltip": "Güncelleme kontrolü başarısız",
   "RestoreAmpTooltip": "Orijinal AMP'yi geri yükle (yamayı geri al)",
-  "RestoringAmp": "Geri yükleniyor..."
+  "RestoringAmp": "Geri yükleniyor...",
+
+  "TabPatcher": "YAMALAYICI",
+  "TabConstructor": "OLUŞTURUCU"
 }

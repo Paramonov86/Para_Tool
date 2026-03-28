@@ -155,6 +155,48 @@ public partial class Loc : ObservableObject
     public string RestoreAmpTooltip => this["RestoreAmpTooltip"];
     public string RestoringAmp => this["RestoringAmp"];
 
+    public string TabPatcher => this["TabPatcher"];
+    public string TabConstructor => this["TabConstructor"];
+
+    public string NavTitle => this["NavTitle"];
+    public string NavSearch => this["NavSearch"];
+    public string NavMyItems => this["NavMyItems"];
+    public string NavAllItems => this["NavAllItems"];
+    public string NavCreateInheritor => this["NavCreateInheritor"];
+    public string NavDuplicate => this["NavDuplicate"];
+    public string NavDelete => this["NavDelete"];
+    public string ConstructorEditorTitle => this["ConstructorEditorTitle"];
+    public string ConstructorPreviewTitle => this["ConstructorPreviewTitle"];
+
+    public string EditorNoSelection => this["EditorNoSelection"];
+    public string CardIdentity => this["CardIdentity"];
+    public string CardArmorProps => this["CardArmorProps"];
+    public string CardWeaponProps => this["CardWeaponProps"];
+    public string CardMechanics => this["CardMechanics"];
+    public string CardDescription => this["CardDescription"];
+    public string FieldType => this["FieldType"];
+    public string FieldRarity => this["FieldRarity"];
+    public string FieldUnique => this["FieldUnique"];
+    public string FieldValue => this["FieldValue"];
+    public string FieldWeight => this["FieldWeight"];
+    public string FieldName => this["FieldName"];
+    public string FieldDescription => this["FieldDescription"];
+    public string ChipSlot => this["ChipSlot"];
+    public string ChipThemes => this["ChipThemes"];
+    public string BtnSave => this["BtnSave"];
+    public string BtnReset => this["BtnReset"];
+
+    public string LblBoosts => this["LblBoosts"];
+    public string LblStatuses => this["LblStatuses"];
+    public string LblSpells => this["LblSpells"];
+    public string LblWhenApplied => this["LblWhenApplied"];
+    public string LblEffects => this["LblEffects"];
+    public string LblTrigger => this["LblTrigger"];
+    public string LblCondition => this["LblCondition"];
+    public string LblAction => this["LblAction"];
+    public string LblIcon => this["LblIcon"];
+    public string LblIconBrowser => this["LblIconBrowser"];
+
     // === Dynamic lookups ===
 
     public string PoolName(string pool)

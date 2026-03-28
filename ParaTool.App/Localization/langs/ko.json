@@ -90,5 +90,8 @@
   "UpdateUpToDateTooltip": "최신 버전입니다",
   "UpdateFailedTooltip": "업데이트 확인 실패",
   "RestoreAmpTooltip": "원본 AMP 복원 (패치 취소)",
-  "RestoringAmp": "복원 중..."
+  "RestoringAmp": "복원 중...",
+
+  "TabPatcher": "패처",
+  "TabConstructor": "생성기"
 }

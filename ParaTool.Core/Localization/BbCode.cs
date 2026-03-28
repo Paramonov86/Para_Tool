@@ -68,6 +68,7 @@ public static partial class BbCode
 
         // Convert HTML/LSTag back to BB-code
         text = BoldRegex().Replace(text, "[b]$1[/b]");
+        text = ItalicRegex().Replace(text, "[i]$1[/i]");
         text = text.Replace("<br>", "[br]");
 
         // LSTag with Type
@@ -149,6 +150,9 @@ public static partial class BbCode
             return ($"[{pMatch.Groups[1].Value}]", start + pMatch.Length);
 
         // Paired tags
+        if (TryMatchPaired(text, start, "i", null, null, out var iXml, out var iEnd))
+            return (iXml, iEnd);
+
         if (TryMatchPaired(text, start, "b", null, null, out var bXml, out var bEnd))
             return (bXml, bEnd);
 
@@ -246,6 +250,9 @@ public static partial class BbCode
 
     [GeneratedRegex(@"<b>(.*?)</b>", RegexOptions.Singleline)]
     private static partial Regex BoldRegex();
+
+    [GeneratedRegex(@"<i>(.*?)</i>", RegexOptions.Singleline)]
+    private static partial Regex ItalicRegex();
 
     [GeneratedRegex(@"<LSTag Type=""(\w+)"" Tooltip=""([^""]+)"">(.*?)</LSTag>", RegexOptions.Singleline)]
     private static partial Regex LsTagTypedRegex();

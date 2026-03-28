@@ -90,5 +90,8 @@
   "UpdateUpToDateTooltip": "已是最新版本",
   "UpdateFailedTooltip": "检查更新失败",
   "RestoreAmpTooltip": "恢复原始AMP（撤销补丁）",
-  "RestoringAmp": "恢复中..."
+  "RestoringAmp": "恢复中...",
+
+  "TabPatcher": "修补工具",
+  "TabConstructor": "构造器"
 }

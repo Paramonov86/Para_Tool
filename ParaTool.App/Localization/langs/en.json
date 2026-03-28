@@ -91,5 +91,47 @@
   "UpdateFailedTooltip": "Update check failed",
 
   "RestoreAmpTooltip": "Restore original AMP (undo patch)",
-  "RestoringAmp": "Restoring..."
+  "RestoringAmp": "Restoring...",
+
+  "TabPatcher": "PATCHER",
+  "TabConstructor": "CONSTRUCTOR",
+
+  "NavTitle": "NAVIGATOR",
+  "NavSearch": "Search items...",
+  "NavMyItems": "MY ARTIFACTS",
+  "NavAllItems": "ALL ITEMS",
+  "NavCreateInheritor": "Create inheritor",
+  "NavDuplicate": "Duplicate",
+  "NavDelete": "Delete",
+  "ConstructorEditorTitle": "EDITOR",
+  "ConstructorPreviewTitle": "PREVIEW",
+
+  "EditorNoSelection": "Select an item from the navigator\nor create an inheritor",
+  "CardIdentity": "IDENTITY",
+  "CardArmorProps": "ARMOR PROPERTIES",
+  "CardWeaponProps": "WEAPON PROPERTIES",
+  "CardMechanics": "ITEM EFFECTS",
+  "CardDescription": "DESCRIPTION",
+  "FieldType": "Type",
+  "FieldRarity": "Rarity",
+  "FieldUnique": "Unique",
+  "FieldValue": "Value",
+  "FieldWeight": "Weight",
+  "FieldName": "Name",
+  "FieldDescription": "Description",
+  "ChipSlot": "SLOT",
+  "ChipThemes": "THEMES",
+  "BtnSave": "SAVE",
+  "BtnReset": "RESET",
+
+  "LblBoosts": "Permanent effects",
+  "LblStatuses": "Applied statuses",
+  "LblSpells": "Granted spells",
+  "LblWhenApplied": "When applied",
+  "LblEffects": "Effects",
+  "LblTrigger": "Trigger event",
+  "LblCondition": "Condition",
+  "LblAction": "Action",
+  "LblIcon": "ICON",
+  "LblIconBrowser": "Choose Icon"
 }
