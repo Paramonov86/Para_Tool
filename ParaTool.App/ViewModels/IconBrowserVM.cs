@@ -76,10 +76,8 @@ public partial class IconEntryVM : ObservableObject
 public partial class IconBrowserVM : ObservableObject
 {
     private readonly IconService _iconService;
-    private VanillaIconAtlasService? _vanillaService;
+    private readonly VanillaIconAtlasService _vanillaService = new();
     private readonly List<IconEntryVM> _allEntries = [];
-    [ObservableProperty] private bool _vanillaLoaded;
-    [ObservableProperty] private bool _vanillaLoading;
 
     public ObservableCollection<IconEntryVM> FilteredIcons { get; } = [];
 
@@ -110,8 +108,27 @@ public partial class IconBrowserVM : ObservableObject
     private void LoadAllIcons()
     {
         _allEntries.Clear();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // AMP/mod icons first
         foreach (var info in _iconService.GetAllIcons())
+        {
             _allEntries.Add(new IconEntryVM(info, _iconService));
+            seen.Add(info.Name);
+        }
+
+        // Vanilla atlas icons (embedded)
+        foreach (var icon in _vanillaService.LoadIconList())
+        {
+            if (seen.Contains(icon.Name)) continue;
+            seen.Add(icon.Name);
+            _allEntries.Add(new IconEntryVM(
+                new IconInfo { Name = icon.Name, Source = "Vanilla" }, _iconService)
+            {
+                VanillaIcon = icon,
+                VanillaService = _vanillaService
+            });
+        }
     }
 
     private void ApplyFilter()
@@ -140,54 +157,4 @@ public partial class IconBrowserVM : ObservableObject
         Close();
     }
 
-    /// <summary>
-    /// Load vanilla icons from unpacked BG3 data (F:\BG3 Multitool\UnpackedData).
-    /// </summary>
-    [RelayCommand]
-    private async Task LoadVanillaIconsAsync()
-    {
-        if (VanillaLoaded || VanillaLoading) return;
-        VanillaLoading = true;
-
-        // Known paths for unpacked BG3 data
-        var knownPaths = new[]
-        {
-            @"F:\BG3 Multitool\UnpackedData",
-            @"C:\BG3 Multitool\UnpackedData",
-            @"D:\BG3 Multitool\UnpackedData",
-        };
-
-        var dataPath = knownPaths.FirstOrDefault(p => Directory.Exists(p));
-        if (dataPath == null)
-        {
-            VanillaLoading = false;
-            return;
-        }
-
-        _vanillaService = new VanillaIconAtlasService(dataPath);
-
-        await Task.Run(() =>
-        {
-            var icons = _vanillaService.LoadIconList();
-            var existing = new HashSet<string>(_allEntries.Select(e => e.Name), StringComparer.OrdinalIgnoreCase);
-
-            foreach (var icon in icons)
-            {
-                if (existing.Contains(icon.Name)) continue;
-                existing.Add(icon.Name);
-
-                _allEntries.Add(new IconEntryVM(
-                    new IconInfo { Name = icon.Name, Source = "Vanilla" },
-                    _iconService)
-                {
-                    VanillaIcon = icon,
-                    VanillaService = _vanillaService
-                });
-            }
-        });
-
-        VanillaLoaded = true;
-        VanillaLoading = false;
-        ApplyFilter();
-    }
 }

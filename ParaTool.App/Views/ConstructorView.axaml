@@ -647,22 +647,9 @@
                 </ScrollViewer>
 
                 <!-- Bottom bar -->
-                <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-                    <TextBlock FontSize="11" Foreground="{StaticResource TextMutedBrush}"
-                               Text="{Binding IconBrowser.FilteredIcons.Count, StringFormat='Icons: {0}'}"
-                               VerticalAlignment="Center" />
-                    <Button Grid.Column="1"
-                            Command="{Binding IconBrowser.LoadVanillaIconsCommand}"
-                            IsVisible="{Binding !IconBrowser.VanillaLoaded}"
-                            IsEnabled="{Binding !IconBrowser.VanillaLoading}"
-                            Background="{StaticResource AccentBrush}" Foreground="White"
-                            FontSize="11" Padding="12,4" CornerRadius="4" Cursor="Hand">
-                        <TextBlock Text="Load Vanilla Icons" />
-                    </Button>
-                    <TextBlock Grid.Column="1" Text="Vanilla loaded"
-                               IsVisible="{Binding IconBrowser.VanillaLoaded}"
-                               FontSize="11" Foreground="#2ECC71" VerticalAlignment="Center" />
-                </Grid>
+                <TextBlock Grid.Row="3" Margin="0,8,0,0"
+                           FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                           Text="{Binding IconBrowser.FilteredIcons.Count, StringFormat='Icons: {0}'}" />
             </Grid>
         </Border>
     </Border>

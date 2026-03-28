@@ -22,6 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\VanillaIcons\*.dds" />
+    <EmbeddedResource Include="Resources\VanillaIcons\*.lsx" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Resources\Schema\Modifiers.txt" />
     <EmbeddedResource Include="Resources\Schema\ValueLists.txt" />
     <EmbeddedResource Include="Resources\Schema\LSLibDefinitions.xml" />

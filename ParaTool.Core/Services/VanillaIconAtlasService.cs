@@ -1,12 +1,14 @@
 using System.Globalization;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using ParaTool.Core.Textures;
 
 namespace ParaTool.Core.Services;
 
 /// <summary>
-/// Parses vanilla BG3 icon atlases (Icons_Items*.lsx + .dds) from unpacked game data.
-/// Extracts individual 144x144 icon tiles by UV coordinates.
+/// Parses vanilla BG3 icon atlases from embedded resources.
+/// Icons_Items*.lsx (UV coords) + Icons_Items*.dds (atlas textures).
+/// Extracts individual ~144x144 tiles.
 /// </summary>
 public sealed class VanillaIconAtlasService
 {
@@ -18,44 +20,41 @@ public sealed class VanillaIconAtlasService
         public float V1 { get; init; }
         public float U2 { get; init; }
         public float V2 { get; init; }
-        public byte[]? RgbaData { get; set; } // 144x144 RGBA
+        public byte[]? RgbaData { get; set; }
     }
 
-    private readonly string _unpackedDataPath;
+    private static readonly string ResourcePrefix = "ParaTool.Core.Resources.VanillaIcons.";
     private List<AtlasIcon>? _icons;
     private readonly Dictionary<string, (int w, int h, byte[] rgba)> _atlasCache = new();
 
-    public VanillaIconAtlasService(string unpackedDataPath)
-    {
-        _unpackedDataPath = unpackedDataPath;
-    }
-
     /// <summary>
-    /// Load all icon definitions from Icons_Items*.lsx files.
-    /// Does NOT decode atlases yet — call ExtractIcon() to get pixel data.
+    /// Load all icon definitions from embedded Icons_Items*.lsx.
     /// </summary>
     public List<AtlasIcon> LoadIconList()
     {
         if (_icons != null) return _icons;
 
         _icons = [];
-        var guiDir = Path.Combine(_unpackedDataPath, "Shared", "Public", "Shared", "GUI");
-        if (!Directory.Exists(guiDir)) return _icons;
+        var assembly = typeof(VanillaIconAtlasService).Assembly;
+        var lsxResources = assembly.GetManifestResourceNames()
+            .Where(n => n.StartsWith(ResourcePrefix) && n.EndsWith(".lsx"))
+            .OrderBy(n => n);
 
-        var lsxFiles = Directory.GetFiles(guiDir, "Icons_Items*.lsx");
-        foreach (var lsxPath in lsxFiles.OrderBy(f => f))
+        foreach (var resName in lsxResources)
         {
-            var atlasName = Path.GetFileNameWithoutExtension(lsxPath);
-            var entries = ParseLsx(lsxPath, atlasName);
-            _icons.AddRange(entries);
+            var atlasName = resName[ResourcePrefix.Length..^".lsx".Length];
+            using var stream = assembly.GetManifestResourceStream(resName);
+            if (stream == null) continue;
+            using var reader = new StreamReader(stream);
+            var text = reader.ReadToEnd();
+            _icons.AddRange(ParseLsx(text, atlasName));
         }
 
         return _icons;
     }
 
     /// <summary>
-    /// Extract 144x144 RGBA pixel data for a specific icon.
-    /// Decodes the parent atlas DDS on first use (cached).
+    /// Extract RGBA pixel data for a specific icon tile.
     /// </summary>
     public byte[]? ExtractIcon(AtlasIcon icon)
     {
@@ -66,7 +65,6 @@ public sealed class VanillaIconAtlasService
 
         var (aw, ah, rgba) = atlas.Value;
 
-        // UV to pixel coords
         int x1 = (int)(icon.U1 * aw);
         int y1 = (int)(icon.V1 * ah);
         int x2 = (int)(icon.U2 * aw);
@@ -74,9 +72,8 @@ public sealed class VanillaIconAtlasService
 
         int tileW = x2 - x1;
         int tileH = y2 - y1;
-        if (tileW <= 0 || tileH <= 0 || tileW > 256 || tileH > 256) return null;
+        if (tileW <= 0 || tileH <= 0 || tileW > 512 || tileH > 512) return null;
 
-        // Crop tile from atlas
         var tile = new byte[tileW * tileH * 4];
         for (int row = 0; row < tileH; row++)
         {
@@ -90,7 +87,6 @@ public sealed class VanillaIconAtlasService
         return tile;
     }
 
-    /// <summary>Width/height of extracted tile (from UV).</summary>
     public (int w, int h) GetTileSize(AtlasIcon icon)
     {
         var atlas = LoadAtlas(icon.AtlasName);
@@ -104,13 +100,16 @@ public sealed class VanillaIconAtlasService
         if (_atlasCache.TryGetValue(atlasName, out var cached))
             return cached;
 
-        // Find DDS file
-        var ddsPath = FindAtlasDds(atlasName);
-        if (ddsPath == null || !File.Exists(ddsPath)) return null;
+        var assembly = typeof(VanillaIconAtlasService).Assembly;
+        var resName = $"{ResourcePrefix}{atlasName}.dds";
+        using var stream = assembly.GetManifestResourceStream(resName);
+        if (stream == null) return null;
 
         try
         {
-            var ddsData = File.ReadAllBytes(ddsPath);
+            using var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            var ddsData = ms.ToArray();
             var (w, h, rgba) = DdsReader.Decode(ddsData);
             var result = (w, h, rgba);
             _atlasCache[atlasName] = result;
@@ -122,54 +121,30 @@ public sealed class VanillaIconAtlasService
         }
     }
 
-    private string? FindAtlasDds(string atlasName)
-    {
-        var searchDirs = new[]
-        {
-            Path.Combine(_unpackedDataPath, "Icons", "Public", "Shared", "Assets", "Textures", "Icons"),
-            Path.Combine(_unpackedDataPath, "Icons", "Public", "SharedDev", "Assets", "Textures", "Icons"),
-            Path.Combine(_unpackedDataPath, "Shared", "Public", "Shared", "Assets", "Textures", "Icons"),
-        };
-
-        foreach (var dir in searchDirs)
-        {
-            if (!Directory.Exists(dir)) continue;
-            var file = Path.Combine(dir, $"{atlasName}.dds");
-            if (File.Exists(file)) return file;
-        }
-
-        return null;
-    }
-
-    private static List<AtlasIcon> ParseLsx(string path, string atlasName)
+    private static List<AtlasIcon> ParseLsx(string text, string atlasName)
     {
         var icons = new List<AtlasIcon>();
-        try
-        {
-            var text = File.ReadAllText(path);
-            var matches = Regex.Matches(text,
-                @"<node id=""IconUV"">\s*" +
-                @"<attribute id=""MapKey""[^>]*value=""([^""]+)""/>\s*" +
-                @"<attribute id=""U1""[^>]*value=""([^""]+)""/>\s*" +
-                @"<attribute id=""U2""[^>]*value=""([^""]+)""/>\s*" +
-                @"<attribute id=""V1""[^>]*value=""([^""]+)""/>\s*" +
-                @"<attribute id=""V2""[^>]*value=""([^""]+)""/>",
-                RegexOptions.Singleline);
+        var matches = Regex.Matches(text,
+            @"<node id=""IconUV"">\s*" +
+            @"<attribute id=""MapKey""[^>]*value=""([^""]+)""/>\s*" +
+            @"<attribute id=""U1""[^>]*value=""([^""]+)""/>\s*" +
+            @"<attribute id=""U2""[^>]*value=""([^""]+)""/>\s*" +
+            @"<attribute id=""V1""[^>]*value=""([^""]+)""/>\s*" +
+            @"<attribute id=""V2""[^>]*value=""([^""]+)""/>",
+            RegexOptions.Singleline);
 
-            foreach (Match m in matches)
+        foreach (Match m in matches)
+        {
+            icons.Add(new AtlasIcon
             {
-                icons.Add(new AtlasIcon
-                {
-                    Name = m.Groups[1].Value,
-                    AtlasName = atlasName,
-                    U1 = float.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture),
-                    U2 = float.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture),
-                    V1 = float.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture),
-                    V2 = float.Parse(m.Groups[5].Value, CultureInfo.InvariantCulture),
-                });
-            }
+                Name = m.Groups[1].Value,
+                AtlasName = atlasName,
+                U1 = float.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture),
+                U2 = float.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture),
+                V1 = float.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture),
+                V2 = float.Parse(m.Groups[5].Value, CultureInfo.InvariantCulture),
+            });
         }
-        catch { }
         return icons;
     }
 }
