@@ -55,6 +55,7 @@ public class BoostBlocksEditor : UserControl
 
     private void Rebuild()
     {
+        _updating = true;
         _panel.Children.Clear();
         var raw = Text ?? "";
         var parts = raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -82,6 +83,7 @@ public class BoostBlocksEditor : UserControl
         };
         addBtn.Click += OnAddClick;
         _panel.Children.Add(addBtn);
+        _updating = false;
     }
 
     private Control? CreateBlock(string rawBoost)
@@ -149,28 +151,26 @@ public class BoostBlocksEditor : UserControl
             }
             else if (param.Type == "enum" && param.EnumValues != null)
             {
-                var combo = new ComboBox
+                var chip = new TumblerChipEditor
                 {
-                    ItemsSource = param.EnumValues,
-                    SelectedItem = param.EnumValues.FirstOrDefault(v =>
-                        v.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? value,
-                    FontSize = 11, Padding = new Thickness(4, 1),
-                    MinWidth = 60, Background = InputBg,
+                    Text = value, Items = param.EnumValues,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
-                combo.Tag = (rawBoost, paramIdx);
-                combo.SelectionChanged += OnParamChanged;
-                stack.Children.Add(combo);
+                chip.Tag = (rawBoost, paramIdx);
+                chip.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, tc.Text ?? "");
+                };
+                stack.Children.Add(chip);
             }
             else if (param.Type is "number" or "float")
             {
-                // Tumbler drum chip for number parameters
                 var chip = new TumblerChipEditor
                 {
                     Text = value,
                     Step = param.Type == "float" ? 0.1 : 1,
-                    MinValue = 0,
-                    MaxValue = param.Type == "float" ? 999 : 999,
+                    MinValue = 0, MaxValue = 999,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 chip.Tag = (rawBoost, paramIdx);
@@ -183,67 +183,70 @@ public class BoostBlocksEditor : UserControl
             }
             else if (param.Type == "dice")
             {
-                // Dice picker as ComboBox
                 var diceOptions = new[] { "1d4", "1d6", "1d8", "1d10", "1d12", "2d4", "2d6", "2d8", "2d10", "2d12", "3d6", "3d8", "4d6", "5d6", "6d6", "8d6", "10d6" };
-                var combo = new ComboBox
+                var chip = new TumblerChipEditor
                 {
-                    ItemsSource = diceOptions,
-                    SelectedItem = diceOptions.FirstOrDefault(d => d.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? value,
-                    FontSize = 11, Padding = new Thickness(4, 1),
-                    MinWidth = 55, Background = InputBg,
+                    Text = value, Items = diceOptions,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
-                combo.Tag = (rawBoost, paramIdx);
-                combo.SelectionChanged += OnParamChanged;
-                combo.LostFocus += (s, _) => { if (s is ComboBox c && c.Tag is (string rb2, int pi2)) UpdateParam(rb2, pi2, c.SelectedItem?.ToString() ?? ""); };
-                stack.Children.Add(combo);
+                chip.Tag = (rawBoost, paramIdx);
+                chip.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, tc.Text ?? "");
+                };
+                stack.Children.Add(chip);
             }
             else if (param.Type == "bool")
             {
-                var options = new[] { "true", "false" };
-                var combo = new ComboBox
+                var chip = new TumblerChipEditor
                 {
-                    ItemsSource = options,
-                    SelectedItem = options.FirstOrDefault(o => o.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? value,
-                    FontSize = 11, Padding = new Thickness(4, 1),
-                    MinWidth = 55, Background = InputBg,
+                    Text = value, Items = ["true", "false"],
                     VerticalAlignment = VerticalAlignment.Center,
                 };
-                combo.Tag = (rawBoost, paramIdx);
-                combo.SelectionChanged += OnParamChanged;
-                stack.Children.Add(combo);
+                chip.Tag = (rawBoost, paramIdx);
+                chip.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, tc.Text ?? "");
+                };
+                stack.Children.Add(chip);
             }
             else if (param.Type == "formula")
             {
-                // Formula — editable ComboBox with common presets
-                var presets = new[] { "1", "2", "3", "4", "5", "1d4", "1d6", "1d8", "2d6", "ProficiencyBonus", "Level", value };
-                var combo = new ComboBox
+                var presets = new[] { "1", "2", "3", "4", "5", "1d4", "1d6", "1d8", "1d10", "1d12", "2d6", "2d8", "ProficiencyBonus", "Level" };
+                // Add current value if not in presets
+                var items = presets.Contains(value) ? presets : presets.Append(value).ToArray();
+                var chip = new TumblerChipEditor
                 {
-                    ItemsSource = presets.Distinct().ToArray(),
-                    SelectedItem = value,
-                    FontSize = 11, Padding = new Thickness(4, 1),
-                    MinWidth = 70, Background = InputBg,
+                    Text = value, Items = items,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
-                combo.Tag = (rawBoost, paramIdx);
-                combo.SelectionChanged += OnParamChanged;
-                combo.LostFocus += (s, _) => { if (s is ComboBox c && c.Tag is (string rb2, int pi2)) UpdateParam(rb2, pi2, c.SelectedItem?.ToString() ?? ""); };
-                stack.Children.Add(combo);
+                chip.Tag = (rawBoost, paramIdx);
+                chip.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, tc.Text ?? "");
+                };
+                stack.Children.Add(chip);
             }
             else
             {
-                // String/guid — editable ComboBox with current value
-                var combo = new ComboBox
+                // String/guid — editable TextBox
+                var tb = new TextBox
                 {
-                    ItemsSource = new[] { value },
-                    SelectedItem = value,
-                    FontSize = 11, Padding = new Thickness(4, 1),
-                    MinWidth = 60, Background = InputBg,
+                    Text = value, FontSize = 11,
+                    Padding = new Thickness(4, 1), MinWidth = 60,
+                    Background = InputBg, CornerRadius = new CornerRadius(4),
                     VerticalAlignment = VerticalAlignment.Center,
                 };
-                combo.Tag = (rawBoost, paramIdx);
-                combo.LostFocus += (s, _) => { if (s is ComboBox c && c.Tag is (string rb2, int pi2)) UpdateParam(rb2, pi2, c.SelectedItem?.ToString() ?? ""); };
-                stack.Children.Add(combo);
+                tb.Tag = (rawBoost, paramIdx);
+                tb.LostFocus += (s, _) =>
+                {
+                    if (s is TextBox t && t.Tag is (string rb2, int pi2))
+                        UpdateParam(rb2, pi2, t.Text ?? "");
+                };
+                stack.Children.Add(tb);
             }
         }
 
@@ -452,6 +455,7 @@ public class BoostBlocksEditor : UserControl
 
     private void UpdateParam(string rawBoost, int paramIdx, string newValue)
     {
+        if (_updating) return; // prevent re-entrant updates during Rebuild
         var parsed = BoostMapping.ParseBoostCall(rawBoost);
         if (parsed == null) return;
 
@@ -473,6 +477,20 @@ public class BoostBlocksEditor : UserControl
         // Open a simple popup to select which boost to add
         var defs = IsFunctorMode ? BoostMapping.Functors : BoostMapping.Boosts;
         var menu = new ContextMenu();
+
+        if (IsFunctorMode)
+        {
+            var ifItem = new MenuItem { Header = "⚡ Conditional (IF)", FontWeight = FontWeight.Bold };
+            ifItem.Click += (_, _) =>
+            {
+                var current = Text ?? "";
+                var newIf = "IF(Enemy()):ApplyStatus(YOURSTATUS,100,1)";
+                SyncText(string.IsNullOrEmpty(current) ? newIf : $"{current};{newIf}");
+            };
+            menu.Items.Add(ifItem);
+            menu.Items.Add(new Separator());
+        }
+
         foreach (var def in defs)
         {
             var item = new MenuItem { Header = def.Label, Tag = def };
@@ -481,6 +499,8 @@ public class BoostBlocksEditor : UserControl
                 var d = (BoostMapping.BlockDef)item.Tag!;
                 var defaultArgs = d.Params.Select(p => p.Type switch
                 {
+                    "hidden" => "100",
+                    "int" => "1",
                     "number" => "1",
                     "float" => "1",
                     "dice" => "1d6",

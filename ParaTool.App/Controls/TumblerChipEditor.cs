@@ -23,10 +23,18 @@ public class TumblerChipEditor : UserControl
     public static readonly StyledProperty<double> MaxValueProperty =
         AvaloniaProperty.Register<TumblerChipEditor, double>(nameof(MaxValue), 999.0);
 
+    public static readonly StyledProperty<string[]?> ItemsProperty =
+        AvaloniaProperty.Register<TumblerChipEditor, string[]?>(nameof(Items));
+
     public string? Text { get => GetValue(TextProperty); set => SetValue(TextProperty, value); }
     public double Step { get => GetValue(StepProperty); set => SetValue(StepProperty, value); }
     public double MinValue { get => GetValue(MinValueProperty); set => SetValue(MinValueProperty, value); }
     public double MaxValue { get => GetValue(MaxValueProperty); set => SetValue(MaxValueProperty, value); }
+
+    /// <summary>If set, tumbler scrolls through this list instead of numeric range.</summary>
+    public string[]? Items { get => GetValue(ItemsProperty); set => SetValue(ItemsProperty, value); }
+
+    private bool IsListMode => Items is { Length: > 0 };
 
     private const int SidesCount = 3;
     private const double RowH = 26;
@@ -43,6 +51,7 @@ public class TumblerChipEditor : UserControl
     private TextBlock[]? _upperLabels, _lowerLabels;
     private bool _drumOpen;
     private double _currentValue;
+    private int _currentIndex; // for list mode
     private double _velocity, _accumulator;
     private DispatcherTimer? _inertiaTimer;
     private DateTime _lastScrollTime;
@@ -56,7 +65,7 @@ public class TumblerChipEditor : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
-            MinWidth = 30, // prevent jitter from text width changes
+            MinWidth = 30,
         };
 
         _chip = new Border
@@ -81,7 +90,11 @@ public class TumblerChipEditor : UserControl
         Content = _root;
         ClipToBounds = false;
 
-        PropertyChanged += (_, e) => { if (e.Property == TextProperty) UpdateChipText(); };
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextProperty) UpdateChipText();
+            if (e.Property == ItemsProperty) UpdateMinWidthFromItems();
+        };
         UpdateChipText();
     }
 
@@ -178,6 +191,23 @@ public class TumblerChipEditor : UserControl
         MinWidth = 30,
     };
 
+    private void UpdateMinWidthFromItems()
+    {
+        if (Items is not { Length: > 0 }) return;
+        // Measure widest item text to set chip width
+        var longest = Items.OrderByDescending(s => s.Length).First();
+        var tb = new TextBlock { Text = longest, FontSize = 14, FontWeight = FontWeight.SemiBold };
+        tb.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var w = tb.DesiredSize.Width + 24; // +padding
+        _chip.MinWidth = Math.Max(w, 48);
+        _valueText.MinWidth = w - 20;
+        // Also set min width on drum labels
+        if (_upperLabels != null)
+            foreach (var l in _upperLabels) l.MinWidth = w - 20;
+        if (_lowerLabels != null)
+            foreach (var l in _lowerLabels) l.MinWidth = w - 20;
+    }
+
     private void UpdateChipText()
     {
         var val = Text?.Trim() ?? "";
@@ -210,7 +240,17 @@ public class TumblerChipEditor : UserControl
     private void OpenDrum()
     {
         _drumOpen = true;
-        _currentValue = ParseCurrent();
+        if (IsListMode)
+        {
+            var items = Items!;
+            var cur = Text?.Trim() ?? "";
+            _currentIndex = Array.FindIndex(items, s => s.Equals(cur, StringComparison.OrdinalIgnoreCase));
+            if (_currentIndex < 0) _currentIndex = 0;
+        }
+        else
+        {
+            _currentValue = ParseCurrent();
+        }
         _velocity = 0;
         _accumulator = 0;
 
@@ -239,7 +279,7 @@ public class TumblerChipEditor : UserControl
         if (!_drumOpen) return;
         _drumOpen = false;
         StopInertia();
-        Text = Fmt(_currentValue);
+        Text = IsListMode ? Items![_currentIndex] : Fmt(_currentValue);
 
         HideDimmer();
         RestoreAncestors();
@@ -432,8 +472,8 @@ public class TumblerChipEditor : UserControl
         int dir = e.Delta.Y > 0 ? -1 : 1;
         Nudge(dir);
 
-        // Scale inertia by step size — int chips (Step>=1) get less momentum
-        var impulse = Step >= 1 ? 0.3 : 1.0;
+        // Scale inertia — int/list chips get less momentum
+        var impulse = (IsListMode || Step >= 1) ? 0.3 : 1.0;
         if (dt < 0.08)
             _velocity = Math.Clamp(_velocity + dir * 30.0 * impulse, -400 * impulse, 400 * impulse);
         else if (dt < 0.15)
@@ -452,23 +492,40 @@ public class TumblerChipEditor : UserControl
     {
         if (_upperLabels == null || _lowerLabels == null) return;
 
-        var step = EffectiveStep;
-        for (int i = 0; i < SidesCount; i++)
+        if (IsListMode)
         {
-            double val = Math.Round(_currentValue + (-(SidesCount - i)) * step, 4);
-            _upperLabels[i].Text = val >= MinValue ? Fmt(val) : "";
+            var items = Items!;
+            for (int i = 0; i < SidesCount; i++)
+            {
+                int idx = _currentIndex - (SidesCount - i);
+                _upperLabels[i].Text = idx >= 0 ? items[idx] : "";
+            }
+            for (int i = 0; i < SidesCount; i++)
+            {
+                int idx = _currentIndex + i + 1;
+                _lowerLabels[i].Text = idx < items.Length ? items[idx] : "";
+            }
+            _valueText.Text = items[_currentIndex];
         }
-        for (int i = 0; i < SidesCount; i++)
+        else
         {
-            double val = Math.Round(_currentValue + (i + 1) * step, 4);
-            _lowerLabels[i].Text = val <= MaxValue ? Fmt(val) : "";
+            var step = EffectiveStep;
+            for (int i = 0; i < SidesCount; i++)
+            {
+                double val = Math.Round(_currentValue + (-(SidesCount - i)) * step, 4);
+                _upperLabels[i].Text = val >= MinValue ? Fmt(val) : "";
+            }
+            for (int i = 0; i < SidesCount; i++)
+            {
+                double val = Math.Round(_currentValue + (i + 1) * step, 4);
+                _lowerLabels[i].Text = val <= MaxValue ? Fmt(val) : "";
+            }
+            _valueText.Text = Fmt(_currentValue);
         }
 
-        _valueText.Text = Fmt(_currentValue);
         _valueText.Foreground = ThemeBrushes.TextPrimary;
     }
 
-    /// <summary>Adaptive step: base Step below 10, ×10 above 10, ×100 above 100.</summary>
     private double EffectiveStep =>
         _currentValue >= 100 ? Math.Max(Step * 100, 1.0) :
         _currentValue >= 10 ? Math.Max(Step * 10, 0.1) :
@@ -476,10 +533,19 @@ public class TumblerChipEditor : UserControl
 
     private void Nudge(int steps)
     {
-        var next = Math.Round(_currentValue + steps * EffectiveStep, 4);
-        next = Math.Clamp(next, MinValue, MaxValue);
-        if (Math.Abs(next - _currentValue) < 1e-9) return;
-        _currentValue = next;
+        if (IsListMode)
+        {
+            var next = Math.Clamp(_currentIndex + steps, 0, Items!.Length - 1);
+            if (next == _currentIndex) return;
+            _currentIndex = next;
+        }
+        else
+        {
+            var next = Math.Round(_currentValue + steps * EffectiveStep, 4);
+            next = Math.Clamp(next, MinValue, MaxValue);
+            if (Math.Abs(next - _currentValue) < 1e-9) return;
+            _currentValue = next;
+        }
         RefreshDrum();
     }
 

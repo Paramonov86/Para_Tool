@@ -406,9 +406,9 @@
                                                                 <TextBlock Text="Trigger → Condition → Action" FontSize="10" FontWeight="SemiBold" Foreground="#E67E22" />
                                                                 <Grid ColumnDefinitions="60,*" RowDefinitions="Auto,Auto,Auto" ClipToBounds="False">
                                                                     <TextBlock Text="When" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-                                                                    <ComboBox Grid.Column="1" SelectedItem="{Binding EditStatsFunctorContext}"
-                                                                              ItemsSource="{x:Static vm:PassiveVM.TriggerOptions}"
-                                                                              FontSize="11" Padding="4,2" HorizontalAlignment="Stretch" />
+                                                                    <ctrl:ToggleChipsEditor Grid.Column="1" Text="{Binding EditStatsFunctorContext}"
+                                                                                          Options="{x:Static vm:PassiveVM.TriggerOptions}"
+                                                                                          FontSize="11" Margin="0" />
 
                                                                     <TextBlock Grid.Row="1" Text="If" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
                                                                     <ctrl:ConditionBlocksEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditConditions}" Margin="0,3,0,0" />

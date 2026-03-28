@@ -86,6 +86,23 @@ public sealed class ConditionSchema
 
     public static readonly string[] ItemSlots = BoostMapping.StatItemSlot;
 
+    public static readonly string[] InSurfaceValues =
+    [
+        "SurfaceNone", "SurfaceWater", "SurfaceWaterElectrified", "SurfaceWaterFrozen",
+        "SurfaceBlood", "SurfaceBloodElectrified", "SurfaceBloodFrozen",
+        "SurfacePoison", "SurfaceOil", "SurfaceLava", "SurfaceGrease",
+        "SurfaceWeb", "SurfaceDeepwater", "SurfaceFire", "SurfaceAcid",
+        "SurfaceMud", "SurfaceAlcohol", "SurfaceHellfire", "SurfaceAsh",
+        "SurfaceSpikeGrowth", "SurfaceHolyFire", "SurfaceBlackTentacles",
+        "SurfaceOvergrowth", "SurfaceWaterCloud", "SurfaceWaterCloudElectrified",
+        "SurfacePoisonCloud", "SurfaceCloudkillCloud", "SurfaceDarknessCloud",
+        "SurfaceFogCloud", "SurfaceIceCloud", "SurfaceSentinel",
+        "SurfaceBladeBarrier", "SurfaceCausticBrine",
+        "SurfaceWaterDeepRunning", "SurfaceWaterRunning",
+        "SurfaceSurfaceDeepWater", "SurfaceSurfaceDeepWaterRunning",
+        "SurfaceWaterElectrified", "SurfaceSurfaceWaterElectrified",
+    ];
+
     // ── Parsing ────────────────────────────────────────────────
 
     private static ConditionSchema Load()
@@ -156,6 +173,12 @@ public sealed class ConditionSchema
                             EnumValues = GetEnumValues(pType),
                             IsOptional = false,
                         });
+                    }
+
+                    // Special case: InSurface gridStateStr → surface enum
+                    if (func.Value.name == "InSurface" && funcParams.Count > 0)
+                    {
+                        funcParams[0] = new ConditionParam { Name = "surface", Type = "enum", EnumValues = InSurfaceValues };
                     }
 
                     AddFunc(schema, new ConditionDef
