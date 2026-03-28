@@ -601,10 +601,22 @@ public partial class ConstructorViewModel : ViewModelBase
             }
         }
 
-        // 2. Try IconName from RootTemplate (resolved during scan)
+        // 2. Try IconName from RootTemplate (resolved during scan) or vanilla UUID mapping
         var baseItem = _allBaseItems.FirstOrDefault(b => b.StatId == vm.Artifact.StatId
             || b.StatId == vm.Artifact.UsingBase);
         var rtIconName = baseItem?.Entry.IconName;
+
+        // 2b. Try vanilla UUID→Icon mapping if RootTemplate UUID is known
+        if (rtIconName == null && _resolver != null)
+        {
+            var rtUuid = _resolver.Resolve(vm.Artifact.UsingBase ?? vm.Artifact.StatId, "RootTemplate");
+            if (rtUuid != null)
+            {
+                // Try from scan (AMP parsed via LSFReader)
+                // Then from embedded vanilla mapping
+                rtIconName = VanillaIconAtlasService.GetIconNameByUuid(rtUuid);
+            }
+        }
 
         // Also walk using-chain to find IconName from parent
         if (rtIconName == null && _resolver != null)

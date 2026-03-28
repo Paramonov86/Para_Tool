@@ -877,9 +877,10 @@ public sealed class ModScanner
                 var (nh, dh) = Parsing.LsfScanner.FindHandlesForUuidsEx(data, uuidsSet);
                 foreach (var (k, v) in nh) nameHandlesMap.TryAdd(k, v);
                 foreach (var (k, v) in dh) descHandlesMap.TryAdd(k, v);
-                // Also extract Icon names
-                var icons = Parsing.LsfScanner.FindIconNamesForUuids(data, uuidsSet);
-                foreach (var (k, v) in icons) iconNamesMap.TryAdd(k, v);
+                // Extract Icon names using full LSF parser
+                var icons = RootTemplateIconExtractor.ExtractFromLsf(data);
+                foreach (var (k, v) in icons)
+                    if (uuidsSet.Contains(k)) iconNamesMap.TryAdd(k, v);
             }
         }
         catch { }
@@ -932,8 +933,9 @@ public sealed class ModScanner
                             var (mnh, mdh) = Parsing.LsfScanner.FindHandlesForUuidsEx(rtData, mUuids);
                             foreach (var (k2, v2) in mnh) nameHandlesMap.TryAdd(k2, v2);
                             foreach (var (k2, v2) in mdh) descHandlesMap.TryAdd(k2, v2);
-                            var mIcons = Parsing.LsfScanner.FindIconNamesForUuids(rtData, mUuids);
-                            foreach (var (k2, v2) in mIcons) iconNamesMap.TryAdd(k2, v2);
+                            var mIcons = RootTemplateIconExtractor.ExtractFromLsf(rtData);
+                            foreach (var (k2, v2) in mIcons)
+                                if (mUuids.Contains(k2)) iconNamesMap.TryAdd(k2, v2);
                         }
                     }
                     catch { }

@@ -26,6 +26,7 @@ public sealed class VanillaIconAtlasService
     private static readonly string ResourcePrefix = "ParaTool.Core.Resources.VanillaIcons.";
     private List<AtlasIcon>? _icons;
     private readonly Dictionary<string, (int w, int h, byte[] rgba)> _atlasCache = new();
+    private static Dictionary<string, string>? _uuidToIcon;
 
     /// <summary>
     /// Load all icon definitions from embedded Icons_Items*.lsx.
@@ -119,6 +120,32 @@ public sealed class VanillaIconAtlasService
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Get icon name for a RootTemplate UUID from embedded vanilla mapping.
+    /// </summary>
+    public static string? GetIconNameByUuid(string uuid)
+    {
+        if (_uuidToIcon == null)
+        {
+            _uuidToIcon = new(StringComparer.OrdinalIgnoreCase);
+            var assembly = typeof(VanillaIconAtlasService).Assembly;
+            var resName = $"{ResourcePrefix}uuid_to_icon.tsv";
+            using var stream = assembly.GetManifestResourceStream(resName);
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    var parts = line.Split('\t');
+                    if (parts.Length == 2)
+                        _uuidToIcon.TryAdd(parts[0], parts[1]);
+                }
+            }
+        }
+        return _uuidToIcon.TryGetValue(uuid, out var icon) ? icon : null;
     }
 
     private static List<AtlasIcon> ParseLsx(string text, string atlasName)
