@@ -150,12 +150,27 @@ public partial class IconBrowserVM : ObservableObject
     {
         Tabs.Clear();
 
-        // AMP/mod icons
-        var ampIcons = new List<IconEntryVM>();
+        // AMP/mod icons — group by source (pak name)
+        var bySource = new Dictionary<string, List<IconEntryVM>>(StringComparer.OrdinalIgnoreCase);
         foreach (var info in _iconService.GetAllIcons())
-            ampIcons.Add(new IconEntryVM(info, _iconService));
-        if (ampIcons.Count > 0)
-            Tabs.Add(new AtlasTabVM("AMP", ampIcons));
+        {
+            var source = info.Source;
+            if (!bySource.TryGetValue(source, out var list))
+            {
+                list = [];
+                bySource[source] = list;
+            }
+            list.Add(new IconEntryVM(info, _iconService));
+        }
+
+        // AMP first, then other mods
+        foreach (var (source, icons) in bySource.OrderByDescending(kv => kv.Key.Contains("Ancient") ? 1 : 0).ThenBy(kv => kv.Key))
+        {
+            if (icons.Count > 0)
+                Tabs.Add(new AtlasTabVM(source, icons));
+        }
+
+        var ampIcons = bySource.Values.SelectMany(v => v).ToList();
 
         // Vanilla atlas icons — grouped by atlas name
         var vanillaIcons = _vanillaService.LoadIconList();
