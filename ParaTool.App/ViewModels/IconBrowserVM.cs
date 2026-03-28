@@ -141,14 +141,11 @@ public partial class IconBrowserVM : ObservableObject
             ? _allEntries
             : _allEntries.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
 
-        int count = 0;
         foreach (var icon in source)
         {
-            if (count >= 500) break; // Show more, lazy load thumbnails
             icon.EnsureThumbnail();
-            if (icon.Thumbnail == null) continue; // Skip icons that failed to load
+            if (icon.Thumbnail == null) continue; // Skip failed icons
             FilteredIcons.Add(icon);
-            count++;
         }
     }
 

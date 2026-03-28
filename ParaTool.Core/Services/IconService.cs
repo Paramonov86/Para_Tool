@@ -67,8 +67,9 @@ public sealed class IconService
 
                 foreach (var entry in entries)
                 {
-                    if (!entry.Path.Contains("ItemIcons", StringComparison.OrdinalIgnoreCase) &&
-                        !entry.Path.Contains("items_png", StringComparison.OrdinalIgnoreCase)) continue;
+                    // Prefer items_png (144x144) over ItemIcons (380x380)
+                    if (!entry.Path.Contains("items_png", StringComparison.OrdinalIgnoreCase) &&
+                        !entry.Path.Contains("ItemIcons", StringComparison.OrdinalIgnoreCase)) continue;
                     if (!entry.Path.EndsWith(".DDS", StringComparison.OrdinalIgnoreCase) &&
                         !entry.Path.EndsWith(".dds", StringComparison.OrdinalIgnoreCase)) continue;
 
@@ -151,11 +152,16 @@ public sealed class IconService
                 var header = PakReader.ReadHeader(fs);
                 var entries = PakReader.ReadFileList(fs, header);
 
+                // Prefer 144x144 (items_png) over 380x380 (ItemIcons)
                 var entry = entries.FirstOrDefault(e =>
-                    e.Path.EndsWith($"ItemIcons/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
-                    e.Path.EndsWith($"ItemIcons/{iconName}.dds", StringComparison.OrdinalIgnoreCase) ||
                     e.Path.EndsWith($"items_png/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
                     e.Path.EndsWith($"items_png/{iconName}.dds", StringComparison.OrdinalIgnoreCase));
+
+                // Fallback to 380x380
+                if (entry.Path == null)
+                    entry = entries.FirstOrDefault(e =>
+                        e.Path.EndsWith($"ItemIcons/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
+                        e.Path.EndsWith($"ItemIcons/{iconName}.dds", StringComparison.OrdinalIgnoreCase));
 
                 if (entry.Path != null)
                 {
