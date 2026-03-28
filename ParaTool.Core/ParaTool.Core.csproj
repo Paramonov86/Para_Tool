@@ -24,6 +24,11 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\VanillaIcons\*.dds" />
     <EmbeddedResource Include="Resources\VanillaIcons\*.lsx" />
+    <EmbeddedResource Include="Resources\VanillaIcons\*.tsv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\VanillaLoca\*.tsv" />
   </ItemGroup>
 
   <ItemGroup>

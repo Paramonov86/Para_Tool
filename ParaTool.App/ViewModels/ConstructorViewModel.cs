@@ -9,6 +9,7 @@ using ParaTool.Core.Parsing;
 using ParaTool.App.Converters;
 using ParaTool.Core.Localization;
 using ParaTool.Core.Services;
+using VanillaLoca = ParaTool.Core.Services.VanillaLocaService;
 
 namespace ParaTool.App.ViewModels;
 
@@ -495,11 +496,55 @@ public partial class ConstructorViewModel : ViewModelBase
             }
         }
 
+        // Fallback: vanilla embedded localization
+        FillFromVanillaLoca(artifact);
+
         artifact.LootPool = baseItem.Entry.DetectedPool;
         if (baseItem.Entry.DetectedThemes.Count > 0)
             artifact.LootThemes = new List<string>(baseItem.Entry.DetectedThemes);
 
         return artifact;
+    }
+
+    /// <summary>
+    /// Fill missing localization from embedded vanilla TSV data.
+    /// </summary>
+    private static void FillFromVanillaLoca(ArtifactDefinition artifact)
+    {
+        var statId = artifact.UsingBase ?? artifact.StatId;
+
+        // Item name/description
+        foreach (var lang in new[] { "en", "ru" })
+        {
+            if (!artifact.DisplayName.ContainsKey(lang) || string.IsNullOrEmpty(artifact.DisplayName.GetValueOrDefault(lang)))
+            {
+                var name = VanillaLoca.GetDisplayName(statId, lang);
+                if (name != null) artifact.DisplayName[lang] = BbCode.FromBg3Xml(name);
+            }
+            if (!artifact.Description.ContainsKey(lang) || string.IsNullOrEmpty(artifact.Description.GetValueOrDefault(lang)))
+            {
+                var desc = VanillaLoca.GetDescription(statId, lang);
+                if (desc != null) artifact.Description[lang] = BbCode.FromBg3Xml(desc);
+            }
+        }
+
+        // Passive names/descriptions
+        foreach (var passive in artifact.Passives)
+        {
+            foreach (var lang in new[] { "en", "ru" })
+            {
+                if (!passive.DisplayName.ContainsKey(lang) || string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(lang)))
+                {
+                    var name = VanillaLoca.GetDisplayName(passive.Name, lang);
+                    if (name != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(name);
+                }
+                if (!passive.Description.ContainsKey(lang) || string.IsNullOrEmpty(passive.Description.GetValueOrDefault(lang)))
+                {
+                    var desc = VanillaLoca.GetDescription(passive.Name, lang);
+                    if (desc != null) passive.Description[lang] = BbCode.FromBg3Xml(desc);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -611,10 +656,12 @@ public partial class ConstructorViewModel : ViewModelBase
             }
         }
 
-        // 2. Try IconName from RootTemplate (resolved during scan) or vanilla UUID mapping
+        // 2. Try IconName from RootTemplate (resolved during scan) or vanilla UUID mapping or vanilla loca
         var baseItem = _allBaseItems.FirstOrDefault(b => b.StatId == vm.Artifact.StatId
             || b.StatId == vm.Artifact.UsingBase);
-        var rtIconName = baseItem?.Entry.IconName;
+        var rtIconName = baseItem?.Entry.IconName
+            ?? VanillaLoca.GetIconName(vm.Artifact.StatId)
+            ?? VanillaLoca.GetIconName(vm.Artifact.UsingBase ?? "");
 
         // 2b. Try vanilla UUID→Icon mapping if RootTemplate UUID is known
         if (rtIconName == null && _resolver != null)
