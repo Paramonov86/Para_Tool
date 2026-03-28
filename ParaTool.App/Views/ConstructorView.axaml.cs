@@ -137,6 +137,21 @@ public partial class ConstructorView : UserControl
             return;
         }
 
+        // Boosty support link
+        if (btn.Name == "BoostyLink")
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://boosty.to/paramonovgames",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+            return;
+        }
+
         // Create new artifact
         if (btn.Name == "CreateNewArtifactBtn" && DataContext is ConstructorViewModel cvm)
         {

@@ -12,7 +12,7 @@
         <!-- ═══════ LEFT: NAVIGATOR ═══════ -->
         <Border Grid.Column="0" Background="{StaticResource PanelBgBrush}"
                 CornerRadius="8" MinWidth="180">
-            <Grid RowDefinitions="Auto,Auto,Auto,*">
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
                 <TextBlock Grid.Row="0"
                            Text="{Binding NavTitle, Source={x:Static loc:Loc.Instance}}"
                            FontSize="13" FontWeight="SemiBold"
@@ -156,6 +156,21 @@
                         </ItemsControl>
                     </StackPanel>
                 </ScrollViewer>
+
+                <!-- Support link -->
+                <Border Grid.Row="4" Background="{StaticResource CardBgBrush}"
+                        CornerRadius="6" Padding="8,6" Margin="8,6,8,8">
+                    <Button Background="Transparent" BorderThickness="0"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Padding="0" Cursor="Hand"
+                            Name="BoostyLink">
+                        <TextBlock FontSize="10" TextAlignment="Center"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   TextWrapping="Wrap">
+                            <Run Text="Made with " /><Run Text="&#x2764;" Foreground="#E74C3C" /><Run Text=" Support this tool" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" TextDecorations="Underline" />
+                        </TextBlock>
+                    </Button>
+                </Border>
             </Grid>
         </Border>
 
