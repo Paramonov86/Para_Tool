@@ -16,10 +16,37 @@ namespace ParaTool.App.ViewModels;
 public partial class BaseItemVM : ObservableObject
 {
     public ItemEntry Entry { get; }
-    public string Label => Entry.DisplayName
-        ?? VanillaLocaService.GetDisplayName(Entry.StatId, Localization.Loc.Instance.Lang)
-        ?? Entry.StatId;
-    public string FullLabel => Entry.DisplayName != null ? $"{Entry.DisplayName} ({Entry.StatId})" : Entry.StatId;
+
+    /// <summary>Display name: try loca handle for current UI lang, then vanilla, then scan name, then StatId.</summary>
+    public string Label
+    {
+        get
+        {
+            var lang = Localization.Loc.Instance.Lang;
+            // Try resolve from handle via LocaService (AMP items)
+            if (_locaService != null && !string.IsNullOrEmpty(Entry.DisplayNameHandle))
+            {
+                var resolved = _locaService.ResolveHandle(Entry.DisplayNameHandle, lang);
+                if (resolved != null) return BbCode.FromBg3Xml(resolved);
+            }
+            // Try vanilla loca
+            return VanillaLocaService.GetDisplayName(Entry.StatId, lang)
+                ?? Entry.DisplayName
+                ?? Entry.StatId;
+        }
+    }
+
+    private LocaService? _locaService;
+
+    public string FullLabel
+    {
+        get
+        {
+            var name = Label;
+            return name != Entry.StatId ? $"{name} ({Entry.StatId})" : Entry.StatId;
+        }
+    }
+
     public string StatId => Entry.StatId;
     public string StatType => Entry.StatType;
     public string Rarity => Entry.DetectedRarity ?? "Uncommon";
@@ -35,10 +62,16 @@ public partial class BaseItemVM : ObservableObject
         _ => new SolidColorBrush(Avalonia.Media.Color.Parse("#8A8494")),
     };
 
-    public BaseItemVM(ItemEntry entry, string modName)
+    public BaseItemVM(ItemEntry entry, string modName, LocaService? locaService = null)
     {
         Entry = entry;
         ModName = modName;
+        _locaService = locaService;
+        Localization.Loc.Instance.PropertyChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(Label));
+            OnPropertyChanged(nameof(FullLabel));
+        };
     }
 }
 
@@ -90,7 +123,7 @@ public partial class ConstructorViewModel : ViewModelBase
             var items = new List<BaseItemVM>();
             foreach (var item in mod.Items)
             {
-                var bvm = new BaseItemVM(item.Entry, mod.Name);
+                var bvm = new BaseItemVM(item.Entry, mod.Name, _locaService);
                 items.Add(bvm);
                 _allBaseItems.Add(bvm);
             }
