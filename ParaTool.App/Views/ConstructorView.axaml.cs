@@ -45,6 +45,7 @@ public partial class ConstructorView : UserControl
 
     private TextBox? _lastFocusedLocaBox;
     private string _currentLocaLang = "en";
+    private ConstructorViewModel? _subscribedVm;
 
     public ConstructorView()
     {
@@ -69,14 +70,21 @@ public partial class ConstructorView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        // Unsubscribe from old VM
+        if (_subscribedVm != null)
+            _subscribedVm.PropertyChanged -= OnVmPropertyChanged;
+
         if (DataContext is ConstructorViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName == nameof(vm.SelectedArtifact))
-                    RebuildChips();
-            };
+            _subscribedVm = vm;
+            vm.PropertyChanged += OnVmPropertyChanged;
         }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(ConstructorViewModel.SelectedArtifact))
+            RebuildChips();
     }
 
     private void OnLocaLangChanged(object? sender, SelectionChangedEventArgs e)

@@ -83,8 +83,11 @@ public sealed class VanillaIconAtlasService
         {
             var srcOff = ((y1 + row) * aw + x1) * 4;
             var dstOff = row * tileW * 4;
-            if (srcOff + tileW * 4 <= rgba.Length)
+            if (srcOff >= 0 && srcOff + tileW * 4 <= rgba.Length &&
+                dstOff >= 0 && dstOff + tileW * 4 <= tile.Length)
                 Array.Copy(rgba, srcOff, tile, dstOff, tileW * 4);
+            else
+                return null; // Malformed UV coordinates
         }
 
         icon.RgbaData = tile;

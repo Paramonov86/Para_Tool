@@ -516,7 +516,7 @@ public partial class ConstructorViewModel : ViewModelBase
         // Generate StatId: "My Cool Sword" → "AMP_My_Cool_Sword"
         var cleaned = System.Text.RegularExpressions.Regex.Replace(humanName.Trim(), @"[^a-zA-Z0-9\s]", "");
         var parts = cleaned.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var statId = "AMP_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + p[1..]));
+        var statId = "AMP_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + (p.Length > 1 ? p[1..] : "")));
 
         // Ensure unique
         var baseId = statId;
@@ -572,19 +572,18 @@ public partial class ConstructorViewModel : ViewModelBase
         }
     }
 
-    private static readonly VanillaIconAtlasService _vanillaAtlas = new();
-    private static bool _vanillaAtlasLoaded;
+    private static readonly Lazy<VanillaIconAtlasService> _vanillaAtlasLazy = new(() =>
+    {
+        var svc = new VanillaIconAtlasService();
+        svc.LoadIconList();
+        return svc;
+    });
 
     private void LoadIconForArtifact(ArtifactItemVM vm)
     {
         if (_iconService == null) return;
 
-        // Ensure vanilla atlas is loaded
-        if (!_vanillaAtlasLoaded)
-        {
-            _vanillaAtlas.LoadIconList();
-            _vanillaAtlasLoaded = true;
-        }
+        var _vanillaAtlas = _vanillaAtlasLazy.Value;
 
         // 1. Try AMP DDS by StatId / using-chain
         var iconName = _iconService.FindIconName(vm.Artifact.StatId, _resolver);

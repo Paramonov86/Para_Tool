@@ -219,10 +219,11 @@ public partial class ArtifactItemVM : ObservableObject
     public void LoadPassivesFromArtifact()
     {
         PassiveVMs.Clear();
-        foreach (var p in Artifact.Passives)
+        foreach (var p in Artifact.Passives ?? [])
         {
-            if (p.Properties.Contains("IsHidden", StringComparison.OrdinalIgnoreCase)) continue;
-            PassiveVMs.Add(new PassiveVM(p, this));
+            if (p?.Properties?.Contains("IsHidden", StringComparison.OrdinalIgnoreCase) ?? false) continue;
+            if (p != null)
+                PassiveVMs.Add(new PassiveVM(p, this));
         }
         OnPropertyChanged(nameof(HasPassives));
     }
@@ -236,13 +237,13 @@ public partial class ArtifactItemVM : ObservableObject
     public string PreviewUsing => !string.IsNullOrEmpty(Artifact.UsingBase) ? $"using {Artifact.UsingBase}" : "";
     public string PreviewDescription => GetLangValue(Artifact.Description);
     public bool HasBoosts => !string.IsNullOrWhiteSpace(Artifact.Boosts);
-    public bool HasPassives => Artifact.Passives.Count > 0;
+    public bool HasPassives => (Artifact.Passives?.Count ?? 0) > 0;
     public bool HasDescription => !string.IsNullOrWhiteSpace(PreviewDescription);
 
     public List<(string name, string description)> GetPassiveTexts()
     {
         var lang = EditLang;
-        return Artifact.Passives
+        return (Artifact.Passives ?? [])
             .Where(p => !p.Properties.Contains("IsHidden", StringComparison.OrdinalIgnoreCase))
             .Select(p =>
             {
@@ -345,7 +346,7 @@ public partial class PassiveVM : ObservableObject
                 var parts = cleaned.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length > 0)
                 {
-                    Passive.Name = "Passive_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + p[1..]));
+                    Passive.Name = "Passive_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + (p.Length > 1 ? p[1..] : "")));
                     OnPropertyChanged(nameof(Name));
                 }
             }
