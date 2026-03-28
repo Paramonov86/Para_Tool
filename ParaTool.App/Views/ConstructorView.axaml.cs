@@ -164,6 +164,21 @@ public partial class ConstructorView : UserControl
             return;
         }
 
+        // Add status/spell to field
+        if (btn.Name is "AddStatusBtn" or "AddSpellBtn" && DataContext is ConstructorViewModel addVm)
+        {
+            var statsType = btn.Name == "AddStatusBtn" ? "StatusData" : "SpellData";
+            var entries = addVm.GetStatsOfType(statsType);
+            // Find the TextBox sibling (first child of parent Grid)
+            var parentGrid = btn.Parent as Avalonia.Controls.Grid;
+            var targetTb = parentGrid?.Children.OfType<TextBox>().FirstOrDefault();
+            if (targetTb != null && entries.Count > 0)
+            {
+                ShowFieldAutocomplete(btn, entries, targetTb);
+            }
+            return;
+        }
+
         // Icon grid click
         if (btn.Name == "IconGridBtn" && btn.Tag is IconEntryVM iconVm
             && DataContext is ConstructorViewModel ctorVm && ctorVm.IconBrowser != null)
@@ -188,7 +203,10 @@ public partial class ConstructorView : UserControl
 
     private void ShowBbAutocomplete(Button source, string bbTag, TextBox targetBox)
     {
-        // For passive/spell/status — show real entries from resolver
+        // Build entries list
+        List<(string id, string display)> allEntries = [];
+
+        // For passive/spell/status — use real parsed entries from resolver
         if (bbTag is "passive" or "spell" or "status" && DataContext is ConstructorViewModel cvm2)
         {
             var statsType = bbTag switch
@@ -198,103 +216,191 @@ public partial class ConstructorView : UserControl
                 "status" => "StatusData",
                 _ => ""
             };
-            var entries = cvm2.GetStatsOfType(statsType);
-            if (entries.Count > 0)
+            foreach (var name in cvm2.GetStatsOfType(statsType))
+                allEntries.Add((name, name));
+        }
+
+        // For tip/resource — use LsTagDatabase
+        if (bbTag is "tip" or "resource" || allEntries.Count == 0)
+        {
+            var allTags = ParaTool.Core.Localization.LsTagDatabase.Tooltips
+                .Concat(ParaTool.Core.Localization.LsTagDatabase.ActionResources).ToArray();
+            var filtered = bbTag == "tip" ? allTags.Where(t => t.Type == null)
+                : bbTag == "resource" ? allTags.Where(t => t.Type == "ActionResource")
+                : allTags.AsEnumerable();
+            foreach (var t in filtered)
             {
-                ShowStatsAutocomplete(source, bbTag, targetBox, entries);
-                return;
+                var label = Loc.Instance.Lang == "ru" && t.LabelRu != null ? t.LabelRu : t.Label;
+                allEntries.Add((t.Tooltip, $"{label} ({t.Tooltip})"));
             }
         }
 
-        var allTags = ParaTool.Core.Localization.LsTagDatabase.Tooltips
-            .Concat(ParaTool.Core.Localization.LsTagDatabase.ActionResources).ToArray();
-        var items = bbTag switch
+        // Build popup with search + scrollable list
+        var popup = new Avalonia.Controls.Primitives.Popup
         {
-            "tip" => allTags.Where(t => t.Type == null).ToArray(),
-            "resource" => ParaTool.Core.Localization.LsTagDatabase.ActionResources,
-            _ => allTags,
+            PlacementTarget = source,
+            Placement = Avalonia.Controls.PlacementMode.Bottom,
+            IsLightDismissEnabled = true,
+            MaxHeight = 400,
+            MinWidth = 300,
         };
 
-        // Also allow custom input
-        var menu = new ContextMenu();
-
-        // Add "Custom..." option
-        var customItem = new MenuItem { Header = "Custom (type your own)..." };
-        customItem.Click += (_, _) =>
+        var searchBox = new TextBox
         {
-            InsertBbCode(targetBox, bbTag);
+            Watermark = "Search...",
+            FontSize = 12, Padding = new Avalonia.Thickness(8, 6),
+            Background = new SolidColorBrush(Color.Parse("#252330")),
+            Margin = new Avalonia.Thickness(0, 0, 0, 4),
         };
-        menu.Items.Add(customItem);
-        menu.Items.Add(new Separator());
 
-        foreach (var tag in items.Take(50)) // Limit for performance
+        var listBox = new ListBox
         {
-            var label = Loc.Instance.Lang == "ru" && tag.LabelRu != null ? tag.LabelRu : tag.Label;
-            var item = new MenuItem { Header = $"{label} ({tag.Tooltip})", Tag = tag };
-            item.Click += (_, _) =>
+            MaxHeight = 300,
+            Background = Avalonia.Media.Brushes.Transparent,
+            BorderThickness = new Avalonia.Thickness(0),
+        };
+
+        // Populate
+        void Filter(string query)
+        {
+            listBox.Items.Clear();
+            var q = query.Trim();
+            var source2 = string.IsNullOrEmpty(q)
+                ? allEntries.Take(200)
+                : allEntries.Where(e => e.display.Contains(q, StringComparison.OrdinalIgnoreCase)
+                    || e.id.Contains(q, StringComparison.OrdinalIgnoreCase)).Take(200);
+
+            // Custom option first
+            var customBtn = new ListBoxItem { Content = "Custom (type your own)...", FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#6C5CE7")) };
+            listBox.Items.Add(customBtn);
+
+            foreach (var (id, display) in source2)
             {
-                var t = (ParaTool.Core.Localization.LsTagDatabase.TagInfo)item.Tag!;
-                var bbTagName = ParaTool.Core.Localization.LsTagDatabase.BbTagForType(t.Type);
-                var displayText = Loc.Instance.Lang == "ru" && t.LabelRu != null ? t.LabelRu : t.Label;
-
-                var selStart = targetBox.SelectionStart;
-                var text = targetBox.Text ?? "";
-                var selected = "";
-                if (targetBox.SelectionStart != targetBox.SelectionEnd)
-                {
-                    var s = Math.Min(targetBox.SelectionStart, targetBox.SelectionEnd);
-                    var e2 = Math.Max(targetBox.SelectionStart, targetBox.SelectionEnd);
-                    selected = text[s..e2];
-                }
-                var content = selected.Length > 0 ? selected : displayText;
-                var insert = $"[{bbTagName}={t.Tooltip}]{content}[/{bbTagName}]";
-
-                var pos = Math.Max(0, selStart);
-                if (selected.Length > 0)
-                {
-                    var s = Math.Min(targetBox.SelectionStart, targetBox.SelectionEnd);
-                    var e2 = Math.Max(targetBox.SelectionStart, targetBox.SelectionEnd);
-                    targetBox.Text = text[..s] + insert + text[e2..];
-                }
-                else
-                {
-                    targetBox.Text = text[..pos] + insert + text[pos..];
-                }
-                targetBox.CaretIndex = pos + insert.Length;
-                targetBox.Focus();
-            };
-            menu.Items.Add(item);
+                var item = new ListBoxItem { Content = display, Tag = id, FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#C8B8DB")) };
+                listBox.Items.Add(item);
+            }
         }
 
-        menu.Open(source);
+        searchBox.TextChanged += (_, _) => Filter(searchBox.Text ?? "");
+        Filter("");
+
+        listBox.SelectionChanged += (_, _) =>
+        {
+            if (listBox.SelectedItem is not ListBoxItem selected) return;
+
+            popup.IsOpen = false;
+
+            if (selected.Tag == null)
+            {
+                // Custom
+                InsertBbCode(targetBox, bbTag);
+                return;
+            }
+
+            var id = selected.Tag.ToString()!;
+            var text = targetBox.Text ?? "";
+            var pos = Math.Max(0, targetBox.SelectionStart);
+            var insert = $"[{bbTag}={id}]{id}[/{bbTag}]";
+            targetBox.Text = text[..pos] + insert + text[pos..];
+            targetBox.CaretIndex = pos + insert.Length;
+            targetBox.Focus();
+        };
+
+        var panel = new StackPanel
+        {
+            Children = { searchBox, listBox },
+        };
+
+        popup.Child = new Border
+        {
+            Child = panel,
+            Background = new SolidColorBrush(Color.Parse("#1E1B26")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#33FFFFFF")),
+            BorderThickness = new Avalonia.Thickness(1),
+            CornerRadius = new Avalonia.CornerRadius(8),
+            Padding = new Avalonia.Thickness(8),
+        };
+
+        // Must be in visual tree
+        if (source.Parent is Avalonia.Controls.Panel parentPanel)
+        {
+            parentPanel.Children.Add(popup);
+            popup.IsOpen = true;
+            popup.Closed += (_, _) => parentPanel.Children.Remove(popup);
+        }
+        else
+        {
+            // Fallback: use overlay panel
+            var overlayParent = this.FindControl<Avalonia.Controls.Panel>("BbToolbar")?.Parent as Avalonia.Controls.Panel;
+            if (overlayParent != null)
+            {
+                overlayParent.Children.Add(popup);
+                popup.IsOpen = true;
+                popup.Closed += (_, _) => overlayParent.Children.Remove(popup);
+            }
+        }
     }
 
-    private void ShowStatsAutocomplete(Button source, string bbTag, TextBox targetBox, List<string> entries)
+    private void ShowFieldAutocomplete(Button source, List<string> entries, TextBox targetBox)
     {
-        var menu = new ContextMenu();
-
-        var customItem = new MenuItem { Header = "Custom..." };
-        customItem.Click += (_, _) => InsertBbCode(targetBox, bbTag);
-        menu.Items.Add(customItem);
-        menu.Items.Add(new Separator());
-
-        foreach (var entry in entries.Take(50))
+        var popup = new Avalonia.Controls.Primitives.Popup
         {
-            var item = new MenuItem { Header = entry, Tag = entry };
-            item.Click += (_, _) =>
-            {
-                var id = item.Tag?.ToString() ?? "";
-                var text = targetBox.Text ?? "";
-                var pos = Math.Max(0, targetBox.SelectionStart);
-                var insert = $"[{bbTag}={id}]{id}[/{bbTag}]";
-                targetBox.Text = text[..pos] + insert + text[pos..];
-                targetBox.CaretIndex = pos + insert.Length;
-                targetBox.Focus();
-            };
-            menu.Items.Add(item);
+            PlacementTarget = source,
+            Placement = Avalonia.Controls.PlacementMode.Bottom,
+            IsLightDismissEnabled = true,
+            MaxHeight = 350, MinWidth = 250,
+        };
+
+        var searchBox = new TextBox
+        {
+            Watermark = "Search...", FontSize = 12,
+            Padding = new Avalonia.Thickness(8, 6),
+            Background = new SolidColorBrush(Color.Parse("#252330")),
+            Margin = new Avalonia.Thickness(0, 0, 0, 4),
+        };
+
+        var listBox = new ListBox
+        {
+            MaxHeight = 280, Background = Avalonia.Media.Brushes.Transparent, BorderThickness = new Avalonia.Thickness(0),
+        };
+
+        void Filter(string q)
+        {
+            listBox.Items.Clear();
+            var source2 = string.IsNullOrEmpty(q?.Trim())
+                ? entries.Take(200)
+                : entries.Where(e => e.Contains(q!.Trim(), StringComparison.OrdinalIgnoreCase)).Take(200);
+            foreach (var e in source2)
+                listBox.Items.Add(new ListBoxItem { Content = e, Tag = e, FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#C8B8DB")) });
         }
 
-        menu.Open(source);
+        searchBox.TextChanged += (_, _) => Filter(searchBox.Text ?? "");
+        Filter("");
+
+        listBox.SelectionChanged += (_, _) =>
+        {
+            if (listBox.SelectedItem is not ListBoxItem sel || sel.Tag is not string id) return;
+            popup.IsOpen = false;
+            var current = targetBox.Text?.Trim() ?? "";
+            targetBox.Text = string.IsNullOrEmpty(current) ? id : $"{current};{id}";
+        };
+
+        popup.Child = new Border
+        {
+            Child = new StackPanel { Children = { searchBox, listBox } },
+            Background = new SolidColorBrush(Color.Parse("#1E1B26")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#33FFFFFF")),
+            BorderThickness = new Avalonia.Thickness(1),
+            CornerRadius = new Avalonia.CornerRadius(8),
+            Padding = new Avalonia.Thickness(8),
+        };
+
+        if (source.Parent is Avalonia.Controls.Panel parentPanel)
+        {
+            parentPanel.Children.Add(popup);
+            popup.IsOpen = true;
+            popup.Closed += (_, _) => parentPanel.Children.Remove(popup);
+        }
     }
 
     private void InsertBbCode(TextBox tb, string tag)

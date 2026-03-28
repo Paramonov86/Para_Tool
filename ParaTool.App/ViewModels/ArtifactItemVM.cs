@@ -344,7 +344,21 @@ public partial class PassiveVM : ObservableObject
 
     [ObservableProperty] private bool _isExpanded;
 
-    public string Name => Passive.Name;
+    public string Name
+    {
+        get
+        {
+            // Try localized name first, fallback to StatId
+            var lang = EditLang;
+            if (Passive.DisplayName.TryGetValue(lang, out var locName) && !string.IsNullOrEmpty(locName))
+                return locName;
+            if (Passive.DisplayName.TryGetValue("en", out var enName) && !string.IsNullOrEmpty(enName))
+                return enName;
+            return Passive.Name;
+        }
+    }
+
+    public string StatName => Passive.Name;
 
     public string EditDisplayName
     {

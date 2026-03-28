@@ -336,12 +336,30 @@
                                 <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
                                 <TextBlock Text="{Binding LblStatuses, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                                <TextBox Text="{Binding EditStatusOnEquip}" FontSize="12" Padding="8,4"
-                                         Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Text="{Binding EditStatusOnEquip}" FontSize="12" Padding="8,4"
+                                             Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                    <Button Grid.Column="1" Content="+" FontSize="12" FontWeight="Bold"
+                                            Padding="8,4" Margin="4,0,0,0" CornerRadius="4"
+                                            Background="{StaticResource CardBgBrush}"
+                                            Foreground="{StaticResource AccentLightBrush}"
+                                            BorderThickness="0" Cursor="Hand"
+                                            Name="AddStatusBtn"
+                                            ToolTip.Tip="Browse statuses" />
+                                </Grid>
                                 <TextBlock Text="{Binding LblSpells, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                                <TextBox Text="{Binding EditSpellsOnEquip}" FontSize="12" Padding="8,4"
-                                         Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Text="{Binding EditSpellsOnEquip}" FontSize="12" Padding="8,4"
+                                             Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                    <Button Grid.Column="1" Content="+" FontSize="12" FontWeight="Bold"
+                                            Padding="8,4" Margin="4,0,0,0" CornerRadius="4"
+                                            Background="{StaticResource CardBgBrush}"
+                                            Foreground="{StaticResource AccentLightBrush}"
+                                            BorderThickness="0" Cursor="Hand"
+                                            Name="AddSpellBtn"
+                                            ToolTip.Tip="Browse spells" />
+                                </Grid>
                             </StackPanel>
                         </Border>
                         <!-- Passives -->
@@ -362,7 +380,8 @@
                                                             <TextBlock Text="▸" FontSize="12" Foreground="{StaticResource AccentLightBrush}"
                                                                        VerticalAlignment="Center" Margin="0,0,6,0" Width="12" />
                                                             <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"
-                                                                       Foreground="{StaticResource GoldBrush}" />
+                                                                       Foreground="{StaticResource GoldBrush}"
+                                                                       ToolTip.Tip="{Binding StatName}" />
                                                         </Grid>
                                                     </Button>
                                                     <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0">
