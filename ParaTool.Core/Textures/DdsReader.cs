@@ -34,19 +34,20 @@ public static class DdsReader
         int blocksY = (height + 3) / 4;
         var output = new byte[width * height * 4];
 
+        // Pre-allocate outside loops to avoid StackOverflow
+        Span<byte> palette = stackalloc byte[4 * 4];
+
         for (int by = 0; by < blocksY; by++)
         {
             for (int bx = 0; bx < blocksX; bx++)
             {
-                int blockIndex = (by * blocksX + bx) * 8; // BC1 = 8 bytes/block
+                int blockIndex = (by * blocksX + bx) * 8;
                 if (blockIndex + 8 > blockData.Length) break;
 
                 var block = blockData.Slice(blockIndex, 8);
 
                 ushort c0 = (ushort)(block[0] | (block[1] << 8));
                 ushort c1 = (ushort)(block[2] | (block[3] << 8));
-
-                Span<byte> palette = stackalloc byte[4 * 4]; // 4 colors × RGBA
                 ExpandRgb565(c0, palette.Slice(0, 3));
                 palette[3] = 255;
                 ExpandRgb565(c1, palette.Slice(4, 3));

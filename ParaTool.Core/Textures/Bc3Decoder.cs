@@ -8,6 +8,10 @@ public static class Bc3Decoder
         int blocksY = (height + 3) / 4;
         var output = new byte[width * height * 4];
 
+        // Pre-allocate outside loops to avoid StackOverflow on large textures
+        Span<byte> alphas = stackalloc byte[16];
+        Span<byte> colors = stackalloc byte[16 * 4];
+
         for (int by = 0; by < blocksY; by++)
         {
             for (int bx = 0; bx < blocksX; bx++)
@@ -16,8 +20,6 @@ public static class Bc3Decoder
                 if (blockIndex + 16 > blockData.Length) break;
 
                 var block = blockData.Slice(blockIndex, 16);
-                Span<byte> alphas = stackalloc byte[16];
-                Span<byte> colors = stackalloc byte[16 * 4]; // 16 pixels × RGBA
 
                 DecodeAlphaBlock(block.Slice(0, 8), alphas);
                 DecodeColorBlock(block.Slice(8, 8), colors);
