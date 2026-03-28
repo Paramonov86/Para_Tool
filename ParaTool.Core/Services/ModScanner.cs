@@ -9,6 +9,7 @@ public sealed class ScanResult
     public ModInfo? AmpMod { get; init; }
     public string? AmpPakPath { get; init; }
     public string? Error { get; init; }
+    public int CleanedOldPaks { get; init; }
 }
 
 public sealed class ScanProgress
@@ -42,10 +43,21 @@ public sealed class ModScanner
 
         if (ampPaks.Length == 0)
             return new ScanResult { Error = "AMP pak not found. Install Ancient Mega Pack first." };
-        if (ampPaks.Length > 1)
-            return new ScanResult { Error = "Multiple AMP paks found. Keep only one version." };
 
-        var ampPakPath = ampPaks[0];
+        // Multiple AMP paks: keep the largest (latest version), clean the rest
+        string ampPakPath;
+        int cleanedOldPaks = 0;
+        if (ampPaks.Length > 1)
+        {
+            ampPakPath = ampPaks.OrderByDescending(p => new FileInfo(p).Length).First();
+            cleanedOldPaks = AmpBackupService.CleanOldAmpPaks(modsFolder, ampPakPath);
+            // Re-read after cleanup
+            pakFiles = Directory.GetFiles(modsFolder, "*.pak");
+        }
+        else
+        {
+            ampPakPath = ampPaks[0];
+        }
         var nonAmpPaks = pakFiles.Where(p => p != ampPakPath).ToArray();
 
         // Extract AMP integration info — items already in AMP TT are marked as integrated in mods
@@ -55,7 +67,11 @@ public sealed class ModScanner
         var mods = new List<ModInfo>();
         int scanned = 0;
 
-        progress?.Report(new ScanProgress { Stage = "ScanMods", Percent = 5 });
+        progress?.Report(new ScanProgress
+        {
+            Stage = "ScanMods", Percent = 5,
+            TotalPaks = nonAmpPaks.Length, ScannedPaks = 0, ModsFound = 0
+        });
 
         await Parallel.ForEachAsync(nonAmpPaks, new ParallelOptions
         {
@@ -83,21 +99,29 @@ public sealed class ModScanner
 
         mods.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
 
+        // Carry forward final scan counts for all subsequent progress reports
+        int finalScanned = nonAmpPaks.Length;
+        int finalFound = mods.Count;
+
         // Scan AMP pak itself for editable items
-        progress?.Report(new ScanProgress { Stage = "ScanAMP", Percent = 42 });
+        progress?.Report(new ScanProgress { Stage = "ScanAMP", Percent = 42,
+            TotalPaks = finalScanned, ScannedPaks = finalScanned, ModsFound = finalFound });
         var ampMod = ScanAmpPak(ampPakPath);
 
         // Resolve display names from PAK localization files
-        progress?.Report(new ScanProgress { Stage = "ResolveNames", Percent = 55 });
+        progress?.Report(new ScanProgress { Stage = "ResolveNames", Percent = 55,
+            TotalPaks = finalScanned, ScannedPaks = finalScanned, ModsFound = finalFound });
         await Task.Run(() => ResolveDisplayNames(ampPakPath, ampMod, mods, nonAmpPaks, langCode, _vanillaDb.Resolver, progress), ct);
 
-        progress?.Report(new ScanProgress { Stage = "Done", Percent = 100 });
+        progress?.Report(new ScanProgress { Stage = "Done", Percent = 100,
+            TotalPaks = finalScanned, ScannedPaks = finalScanned, ModsFound = finalFound });
 
         return new ScanResult
         {
             Mods = mods,
             AmpMod = ampMod,
-            AmpPakPath = ampPakPath
+            AmpPakPath = ampPakPath,
+            CleanedOldPaks = cleanedOldPaks
         };
     }
 
@@ -152,11 +176,12 @@ public sealed class ModScanner
             if (modInfo == null) return null;
 
             // Parse TreasureTable → whitelist (REL_All items) + themes per item.
-            // If the pak was patched by us (contains ParaTool_Overrides.txt), use the
+            // If the pak was patched by us (contains ZZZ_ParaTool_Overrides.txt), use the
             // stored original TT so mod items don't appear as AMP items.
             // If the pak is clean (no overrides file), read TT from pak directly —
             // this handles AMP updates where the stored original would be stale.
             bool isPatchedByUs = entries.Any(e =>
+                e.Path.EndsWith("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase) ||
                 e.Path.EndsWith("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase));
 
             HashSet<string> whitelist;
@@ -197,6 +222,7 @@ public sealed class ModScanner
             var statFiles = entries.Where(e =>
                 e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
                 e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) &&
+                !e.Path.EndsWith("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase) &&
                 !e.Path.EndsWith("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase)).ToList();
 
             // Pass 1: Merge all entries with the same name across stat files.
@@ -732,7 +758,9 @@ public sealed class ModScanner
             var ampEntries = PakReader.ReadFileList(ampFs, ampHeader);
             foreach (var sf in ampEntries.Where(e =>
                 e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
-                e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)))
+                e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) &&
+                !e.Path.EndsWith("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase) &&
+                !e.Path.EndsWith("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase)))
             {
                 var data = PakReader.ExtractFileData(ampFs, sf);
                 var text = System.Text.Encoding.UTF8.GetString(data);

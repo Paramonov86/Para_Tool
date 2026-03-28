@@ -21,4 +21,13 @@
     <EmbeddedResource Include="Resources\Vanilla\Gustav_Weapon.txt" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Schema\Modifiers.txt" />
+    <EmbeddedResource Include="Resources\Schema\ValueLists.txt" />
+    <EmbeddedResource Include="Resources\Schema\LSLibDefinitions.xml" />
+    <EmbeddedResource Include="Resources\Schema\Khn.HardcodedConditions.lua" />
+    <EmbeddedResource Include="Resources\Schema\CommonConditions.khn" />
+    <EmbeddedResource Include="Resources\Schema\amp_conditions.khn" />
+  </ItemGroup>
+
 </Project>

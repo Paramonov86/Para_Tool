@@ -88,5 +88,8 @@
   "UpdateAvailableTooltip": "v{0} available \u2014 click to update",
   "UpdateDownloadingTooltip": "Downloading\u2026 {0}%",
   "UpdateUpToDateTooltip": "Up to date",
-  "UpdateFailedTooltip": "Update check failed"
+  "UpdateFailedTooltip": "Update check failed",
+
+  "RestoreAmpTooltip": "Restore original AMP (undo patch)",
+  "RestoringAmp": "Restoring..."
 }

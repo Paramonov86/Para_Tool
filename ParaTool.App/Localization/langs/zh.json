@@ -88,5 +88,7 @@
   "UpdateAvailableTooltip": "v{0}可用 \u2014 点击更新",
   "UpdateDownloadingTooltip": "下载中\u2026 {0}%",
   "UpdateUpToDateTooltip": "已是最新版本",
-  "UpdateFailedTooltip": "检查更新失败"
+  "UpdateFailedTooltip": "检查更新失败",
+  "RestoreAmpTooltip": "恢复原始AMP（撤销补丁）",
+  "RestoringAmp": "恢复中..."
 }

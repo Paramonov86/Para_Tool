@@ -88,5 +88,8 @@
   "UpdateAvailableTooltip": "v{0} доступна \u2014 нажмите для обновления",
   "UpdateDownloadingTooltip": "Загрузка\u2026 {0}%",
   "UpdateUpToDateTooltip": "Актуальная версия",
-  "UpdateFailedTooltip": "Ошибка проверки обновлений"
+  "UpdateFailedTooltip": "Ошибка проверки обновлений",
+
+  "RestoreAmpTooltip": "Откатить патч AMP",
+  "RestoringAmp": "Восстановление..."
 }

@@ -348,16 +348,36 @@
         <!-- Bottom: Patch button / Progress + Discord -->
         <Grid Grid.Row="2" Margin="0,12,0,0" ColumnDefinitions="*,Auto">
             <Panel Grid.Column="0" HorizontalAlignment="Right">
-                <!-- Patch button -->
-                <Button Content="{Binding PatchButton, Source={x:Static loc:Loc.Instance}}"
-                        IsVisible="{Binding ShowPatchButton}"
-                        Command="{Binding PatchCommand}"
-                        Background="{StaticResource AccentBrush}"
-                        Foreground="White"
-                        FontSize="18" FontWeight="Bold"
-                        Padding="40,12"
-                        CornerRadius="8"
-                        HorizontalAlignment="Right" />
+                <!-- Patch + Restore row -->
+                <StackPanel Orientation="Horizontal" Spacing="10"
+                            HorizontalAlignment="Right"
+                            IsVisible="{Binding ShowPatchButton}">
+                    <!-- Restore AMP button (undo icon) -->
+                    <Button IsVisible="{Binding ShowRestoreButton}"
+                            Command="{Binding RestoreAmpCommand}"
+                            ToolTip.Tip="{Binding RestoreAmpTooltip, Source={x:Static loc:Loc.Instance}}"
+                            Background="#332ECC71"
+                            BorderBrush="#2ECC71"
+                            BorderThickness="1.5"
+                            CornerRadius="8"
+                            Padding="10,10"
+                            VerticalAlignment="Center"
+                            Cursor="Hand">
+                        <Path Fill="#2ECC71"
+                              Data="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L2.5 7.56v7.17h7.17l-3.13-3.13C7.98 10.19 10.07 9.25 12.5 9.25c3.58 0 6.61 2.35 7.63 5.58l1.24-.4C20.15 10.79 16.64 8 12.5 8z"
+                              Stretch="Uniform"
+                              Width="22" Height="22" />
+                    </Button>
+
+                    <!-- Patch button -->
+                    <Button Content="{Binding PatchButton, Source={x:Static loc:Loc.Instance}}"
+                            Command="{Binding PatchCommand}"
+                            Background="{StaticResource AccentBrush}"
+                            Foreground="White"
+                            FontSize="18" FontWeight="Bold"
+                            Padding="40,12"
+                            CornerRadius="8" />
+                </StackPanel>
 
                 <!-- Progress bar -->
                 <Border IsVisible="{Binding IsPatching}"

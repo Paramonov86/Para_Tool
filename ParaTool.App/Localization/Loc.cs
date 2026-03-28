@@ -152,6 +152,9 @@ public partial class Loc : ObservableObject
 
     public string PatchSuccessMessage(int count) => string.Format(this["PatchSuccessMessage"], count);
 
+    public string RestoreAmpTooltip => this["RestoreAmpTooltip"];
+    public string RestoringAmp => this["RestoringAmp"];
+
     // === Dynamic lookups ===
 
     public string PoolName(string pool)

@@ -56,4 +56,10 @@ public static class OriginalTtStore
     {
         return File.Exists(TtPath) ? File.ReadAllText(TtPath) : null;
     }
+
+    public static void Clear()
+    {
+        try { if (File.Exists(TtPath)) File.Delete(TtPath); } catch { }
+        try { if (File.Exists(MetaPath)) File.Delete(MetaPath); } catch { }
+    }
 }

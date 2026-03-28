@@ -88,5 +88,7 @@
   "UpdateAvailableTooltip": "v{0} 사용 가능 \u2014 클릭하여 업데이트",
   "UpdateDownloadingTooltip": "다운로드 중\u2026 {0}%",
   "UpdateUpToDateTooltip": "최신 버전입니다",
-  "UpdateFailedTooltip": "업데이트 확인 실패"
+  "UpdateFailedTooltip": "업데이트 확인 실패",
+  "RestoreAmpTooltip": "원본 AMP 복원 (패치 취소)",
+  "RestoringAmp": "복원 중..."
 }

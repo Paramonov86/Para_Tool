@@ -34,6 +34,11 @@ public partial class ItemEditorViewModel : ViewModelBase
     [ObservableProperty] private string? _profileToastText;
     private bool _suppressProfileLoad;
 
+    // Backup/restore state
+    [ObservableProperty] private bool _hasBackup;
+    [ObservableProperty] private bool _isRestoring;
+    [ObservableProperty] private bool _restoreSuccess;
+
     public string? AmpPakPath { get; set; }
 
     public int TotalItems => Mods.Sum(m => m.TotalItems);
@@ -42,6 +47,7 @@ public partial class ItemEditorViewModel : ViewModelBase
     public string ModsCountText => Loc.Instance.ModsFoundInfo(Mods.Count);
 
     public bool ShowPatchButton => !IsPatching && !PatchSuccess && PatchError == null;
+    public bool ShowRestoreButton => HasBackup && !IsPatching && !IsRestoring;
 
     public ItemEditorViewModel()
     {
@@ -54,8 +60,14 @@ public partial class ItemEditorViewModel : ViewModelBase
         RefreshProfileList();
     }
 
-    partial void OnIsPatchingChanged(bool value) => OnPropertyChanged(nameof(ShowPatchButton));
+    partial void OnIsPatchingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowPatchButton));
+        OnPropertyChanged(nameof(ShowRestoreButton));
+    }
     partial void OnPatchSuccessChanged(bool value) => OnPropertyChanged(nameof(ShowPatchButton));
+    partial void OnIsRestoringChanged(bool value) => OnPropertyChanged(nameof(ShowRestoreButton));
+    partial void OnHasBackupChanged(bool value) => OnPropertyChanged(nameof(ShowRestoreButton));
     partial void OnPatchErrorChanged(string? value) => OnPropertyChanged(nameof(ShowPatchButton));
     partial void OnCurrentSortChanged(SortMode value) => ApplySort();
     partial void OnSortDescendingChanged(bool value) => ApplySort();
@@ -195,6 +207,36 @@ public partial class ItemEditorViewModel : ViewModelBase
         }
 
         IsPatching = false;
+        CheckBackup();
+    }
+
+    public void CheckBackup()
+    {
+        HasBackup = AmpPakPath != null && AmpBackupService.HasBackup(AmpPakPath);
+    }
+
+    /// <summary>
+    /// Raised when restore completes — MainWindowViewModel should re-scan.
+    /// </summary>
+    public event Action? RestoreCompleted;
+
+    [RelayCommand]
+    private async Task RestoreAmpAsync()
+    {
+        if (AmpPakPath == null) return;
+
+        IsRestoring = true;
+        RestoreSuccess = false;
+
+        var success = await Task.Run(() => AmpBackupService.Restore(AmpPakPath));
+
+        IsRestoring = false;
+
+        if (success)
+        {
+            RestoreSuccess = true;
+            RestoreCompleted?.Invoke();
+        }
     }
 
     // === Profile methods ===

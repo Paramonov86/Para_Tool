@@ -84,9 +84,10 @@ public partial class MainWindowViewModel : ObservableObject
         var scanner = new ModScanner(vanillaDb);
         var progress = new Progress<ScanProgress>(p =>
         {
-            scanVm.TotalPaks = p.TotalPaks;
-            scanVm.ScannedPaks = p.ScannedPaks;
-            scanVm.ModsFound = p.ModsFound;
+            // Only update counters when non-zero — later stages don't carry them
+            if (p.TotalPaks > 0) scanVm.TotalPaks = p.TotalPaks;
+            if (p.ScannedPaks > 0) scanVm.ScannedPaks = p.ScannedPaks;
+            if (p.ModsFound > 0) scanVm.ModsFound = p.ModsFound;
             scanVm.Percent = p.Percent;
             scanVm.StageText = p.Stage switch
             {
@@ -129,6 +130,12 @@ public partial class MainWindowViewModel : ObservableObject
         foreach (var mod in result.Mods)
             editor.Mods.Add(new ModVM(mod));
         editor.RefreshCounts();
+
+        // Check if backup exists
+        editor.CheckBackup();
+
+        // Re-scan after AMP restore
+        editor.RestoreCompleted += () => StartScanning(modsPath);
 
         // Restore last session selections
         try

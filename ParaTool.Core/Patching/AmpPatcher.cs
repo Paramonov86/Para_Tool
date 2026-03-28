@@ -1,4 +1,5 @@
 using ParaTool.Core.Models;
+using ParaTool.Core.Parsing;
 using ParaTool.Core.Services;
 
 namespace ParaTool.Core.Patching;
@@ -39,8 +40,6 @@ public sealed class AmpPatcher
             .Where(i => i.IsModified && i.Enabled)
             .ToList() ?? new List<ItemEntry>();
 
-        var enabledItems = enabledModItems.Concat(modifiedAmpItems).ToList();
-
         // For TT patching: pass all items (including unmodified AMP for removal logic)
         var allItemsForTt = mods.SelectMany(m => m.Items).ToList();
         if (ampMod != null)
@@ -65,6 +64,10 @@ public sealed class AmpPatcher
 
         try
         {
+            // Step 0: Ensure backup exists before modifying anything
+            progress?.Report(new PatchProgress { Stage = "Creating backup...", Percent = 5 });
+            await Task.Run(() => AmpBackupService.EnsureBackup(ampPakPath), ct);
+
             // Step 1: Extract AMP pak
             progress?.Report(new PatchProgress { Stage = "Extracting AMP pak...", Percent = 10 });
             await Task.Run(() => PakReader.ExtractAll(ampPakPath, extractDir), ct);
@@ -90,9 +93,8 @@ public sealed class AmpPatcher
             var patchedTt = TreasureTablePatcher.Patch(ttText, allItemsForTt);
             await File.WriteAllTextAsync(ttPath, patchedTt, ct);
 
-            // Step 3: Generate ParaTool_Overrides.txt (mod items + modified AMP items only)
-            progress?.Report(new PatchProgress { Stage = "Generating stat overrides...", Percent = 50 });
-            var overridesContent = StatsOverrideGenerator.Generate(enabledItems);
+            // Step 3: Apply stat overrides
+            progress?.Report(new PatchProgress { Stage = "Applying stat overrides...", Percent = 50 });
 
             var statsDir = FindDirectory(extractDir, Path.Combine("Stats", "Generated", "Data"));
             if (statsDir == null)
@@ -111,8 +113,15 @@ public sealed class AmpPatcher
 
             if (statsDir != null)
             {
-                var overridesPath = Path.Combine(statsDir, "ParaTool_Overrides.txt");
-                await File.WriteAllTextAsync(overridesPath, overridesContent, ct);
+                // Clean up old overrides files from previous ParaTool versions
+                foreach (var oldFile in new[] { "ParaTool_Overrides.txt", "ZZZ_ParaTool_Overrides.txt" })
+                {
+                    var oldPath = Path.Combine(statsDir, oldFile);
+                    if (File.Exists(oldPath))
+                        File.Delete(oldPath);
+                }
+
+                await Task.Run(() => ApplyStatOverrides(statsDir, modifiedAmpItems, enabledModItems), ct);
             }
 
             // Step 4: Patch meta.lsx with mod dependencies
@@ -146,6 +155,88 @@ public sealed class AmpPatcher
         {
             return new PatchResult { Success = false, Error = ex.Message };
         }
+    }
+
+    /// <summary>
+    /// Applies stat overrides:
+    /// - AMP items: modify entries in-place within their source stat files
+    /// - Mod items: append skeleton entries to the last stat file
+    /// Creates a marker file so we know the pak was patched.
+    /// </summary>
+    private static void ApplyStatOverrides(
+        string statsDir,
+        IReadOnlyList<ItemEntry> ampItems,
+        IReadOnlyList<ItemEntry> modItems)
+    {
+        // Build override fields for AMP items
+        var ampMods = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in ampItems)
+        {
+            var fields = StatsOverrideGenerator.ComputeFields(item);
+            if (fields != null)
+                ampMods[item.StatId] = fields;
+        }
+
+        // Get all stat files (excluding old/new overrides)
+        var statFiles = Directory.GetFiles(statsDir, "*.txt")
+            .Where(f =>
+            {
+                var name = Path.GetFileName(f);
+                return !name.Equals("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase) &&
+                       !name.Equals("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase);
+            })
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        // Step A: Modify AMP items in-place across stat files
+        var unresolved = new HashSet<string>(ampMods.Keys, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var filePath in statFiles)
+        {
+            if (unresolved.Count == 0) break;
+
+            var text = File.ReadAllText(filePath);
+
+            // Only pass entries that might be in this file
+            var relevant = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var statId in unresolved)
+            {
+                if (text.Contains(statId, StringComparison.OrdinalIgnoreCase))
+                    relevant[statId] = ampMods[statId];
+            }
+            if (relevant.Count == 0) continue;
+
+            var (modified, foundEntries) = StatsFileEditor.ModifyEntries(text, relevant);
+            if (foundEntries.Count > 0)
+            {
+                File.WriteAllText(filePath, modified);
+                foreach (var entry in foundEntries)
+                    unresolved.Remove(entry);
+            }
+        }
+
+        // Step B: Generate skeleton entries for mod items
+        var skeletonText = StatsOverrideGenerator.GenerateSkeletonEntries(modItems);
+
+        // Also generate skeletons for any unresolved AMP items (not found in any file)
+        if (unresolved.Count > 0)
+        {
+            var unresolvedItems = ampItems.Where(i => unresolved.Contains(i.StatId)).ToList();
+            skeletonText += StatsOverrideGenerator.GenerateSkeletonEntries(unresolvedItems);
+        }
+
+        // Append skeleton entries to the last stat file (loaded last by BG3)
+        if (!string.IsNullOrWhiteSpace(skeletonText) && statFiles.Length > 0)
+        {
+            var lastFile = statFiles[^1];
+            var text = File.ReadAllText(lastFile);
+            text = StatsFileEditor.AppendSkeletonEntries(text, skeletonText);
+            File.WriteAllText(lastFile, text);
+        }
+
+        // Step C: Create marker file so we know the pak was patched by ParaTool
+        var markerPath = Path.Combine(statsDir, "ZZZ_ParaTool_Overrides.txt");
+        File.WriteAllText(markerPath, "// Patched by ParaTool\n");
     }
 
     private static string? FindFile(string dir, string fileName)
