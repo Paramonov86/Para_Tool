@@ -157,14 +157,30 @@ public partial class IconBrowserVM : ObservableObject
 
     private void ApplyFilter()
     {
+        // Pre-filter: only include icons that can actually load
+        // For vanilla atlas icons, we can check without full decode
         var query = SearchText.Trim();
-        _filteredEntries = string.IsNullOrEmpty(query)
-            ? _allEntries.ToList()
-            : _allEntries.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+        var source = string.IsNullOrEmpty(query)
+            ? _allEntries
+            : _allEntries.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+        // Build filtered list — test-load each icon on first filter
+        _filteredEntries = [];
+        foreach (var icon in source)
+        {
+            // Vanilla atlas icons always have data
+            if (icon.VanillaIcon != null)
+            {
+                _filteredEntries.Add(icon);
+                continue;
+            }
+            // AMP/mod icons — check if DDS exists (without full decode)
+            if (icon.Info.DdsData != null || _iconService.GetIconDds(icon.Name) != null)
+                _filteredEntries.Add(icon);
+        }
 
         TotalPages = Math.Max(1, (_filteredEntries.Count + PageSize - 1) / PageSize);
 
-        // Try to jump to page with current icon
         if (!string.IsNullOrEmpty(CurrentIconName) && CurrentPage == 0 && string.IsNullOrEmpty(query))
         {
             var idx = _filteredEntries.FindIndex(i => i.Name.Equals(CurrentIconName, StringComparison.OrdinalIgnoreCase));
@@ -178,9 +194,16 @@ public partial class IconBrowserVM : ObservableObject
 
     private void ShowPage()
     {
+        // Free thumbnails from previous page to save memory
+        foreach (var old in PageIcons)
+        {
+            old.Thumbnail = null;
+            old.IsLoaded = false;
+        }
+
         PageIcons.Clear();
         var skip = CurrentPage * PageSize;
-        var pageItems = _filteredEntries.Skip(skip).Take(PageSize);
+        var pageItems = _filteredEntries.Skip(skip).Take(PageSize).ToList();
 
         foreach (var icon in pageItems)
         {
