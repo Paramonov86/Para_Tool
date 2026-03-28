@@ -32,7 +32,7 @@ public class BoostBlocksEditor : UserControl
         set => SetValue(IsFunctorModeProperty, value);
     }
 
-    private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal };
+    private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;
 
     private static SolidColorBrush BgDefault => Themes.ThemeBrushes.InputBg;
@@ -43,6 +43,7 @@ public class BoostBlocksEditor : UserControl
     public BoostBlocksEditor()
     {
         Content = _panel;
+        ClipToBounds = false;
         PropertyChanged += OnPropertyChanged;
     }
 
@@ -83,7 +84,7 @@ public class BoostBlocksEditor : UserControl
         _panel.Children.Add(addBtn);
     }
 
-    private Border? CreateBlock(string rawBoost)
+    private Control? CreateBlock(string rawBoost)
     {
         var parsed = BoostMapping.ParseBoostCall(rawBoost);
         if (parsed == null) return CreateRawBlock(rawBoost);
@@ -122,7 +123,31 @@ public class BoostBlocksEditor : UserControl
             var value = args[i];
             var paramIdx = i;
 
-            if (param.Type == "enum" && param.EnumValues != null)
+            if (param.Type == "hidden")
+            {
+                // Invisible constant — don't render, keep value as-is
+                continue;
+            }
+            else if (param.Type == "int")
+            {
+                // Integer tumbler chip
+                var chip = new TumblerChipEditor
+                {
+                    Text = value,
+                    Step = 1,
+                    MinValue = 0,
+                    MaxValue = 999,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                chip.Tag = (rawBoost, paramIdx);
+                chip.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, tc.Text ?? "");
+                };
+                stack.Children.Add(chip);
+            }
+            else if (param.Type == "enum" && param.EnumValues != null)
             {
                 var combo = new ComboBox
                 {
@@ -236,14 +261,21 @@ public class BoostBlocksEditor : UserControl
         removeBtn.Click += OnRemoveClick;
         stack.Children.Add(removeBtn);
 
-        return new Border
+        // Use Panel so CornerRadius border doesn't clip tumbler drum overflow
+        var bgBorder = new Border
         {
-            Child = stack,
             Background = bgBrush, BorderBrush = colorBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(8, 4), Margin = new Thickness(2),
+            IsHitTestVisible = false,
         };
+        var wrapper = new Panel
+        {
+            Margin = new Thickness(2),
+            ClipToBounds = false,
+            Children = { bgBorder, new Border { Child = stack, Padding = new Thickness(8, 4), ClipToBounds = false } },
+        };
+        return wrapper;
     }
 
     /// <summary>Render IF(condition):effect as a yellow container block.</summary>

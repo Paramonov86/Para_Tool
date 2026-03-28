@@ -198,9 +198,9 @@ public static class BoostMapping
 
         // ── Status Effects ──
         new("ApplyStatus", "Apply Status", "Наложить статус", "#E67E22",
-            [new("StatusId", "Status", "string"), new("Chance", "%", "number"), new("Duration", "Turns", "formula")]),
+            [new("StatusId", "Status", "string"), new("Chance", "%", "hidden"), new("Duration", "Turns", "int")]),
         new("ApplyEquipmentStatus", "Apply Equip Status", "Статус экипировки", "#E67E22",
-            [new("Slot", "Slot", "enum", StatItemSlot), new("StatusId", "Status", "string"), new("Chance", "%", "number"), new("Duration", "Turns", "formula")]),
+            [new("Slot", "Slot", "enum", StatItemSlot), new("StatusId", "Status", "string"), new("Chance", "%", "hidden"), new("Duration", "Turns", "int")]),
         new("RemoveStatus", "Remove Status", "Снять статус", "#F1C40F", [new("StatusId", "Status", "string")]),
         new("RemoveUniqueStatus", "Remove Unique Status", "Снять уник. статус", "#F1C40F", [new("StatusId", "Status", "string")]),
         new("SetStatusDuration", "Set Status Duration", "Длительность статуса", "#E67E22",

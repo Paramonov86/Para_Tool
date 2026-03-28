@@ -39,6 +39,7 @@ public class TumblerChipEditor : UserControl
     private readonly Panel _root;
 
     private Border? _upperBg, _lowerBg, _upperGrad, _lowerGrad;
+    private readonly List<(Control ctrl, int oldZ)> _liftedAncestors = [];
     private TextBlock[]? _upperLabels, _lowerLabels;
     private bool _drumOpen;
     private double _currentValue;
@@ -214,6 +215,7 @@ public class TumblerChipEditor : UserControl
         _accumulator = 0;
 
         ShowDimmer();
+        LiftAncestors();
 
         _chip.Background = ThemeBrushes.HoverBg;
         _chip.BorderBrush = ThemeBrushes.Accent;
@@ -240,6 +242,7 @@ public class TumblerChipEditor : UserControl
         Text = Fmt(_currentValue);
 
         HideDimmer();
+        RestoreAncestors();
 
         _chip.Background = ThemeBrushes.InputBg;
         _chip.BorderBrush = ThemeBrushes.BorderSubtle;
@@ -254,6 +257,28 @@ public class TumblerChipEditor : UserControl
     }
 
     // ── Dimmer with hole for tumbler ────────────────────────────
+
+    /// <summary>Raise ZIndex on all ancestors so drum overflow draws above sibling blocks.</summary>
+    private void LiftAncestors()
+    {
+        _liftedAncestors.Clear();
+        Control? current = this;
+        while (current != null)
+        {
+            if (current.Parent is Window) break;
+            var oldZ = current.ZIndex;
+            current.ZIndex = 8000;
+            _liftedAncestors.Add((current, oldZ));
+            current = current.Parent as Control;
+        }
+    }
+
+    private void RestoreAncestors()
+    {
+        foreach (var (ctrl, oldZ) in _liftedAncestors)
+            ctrl.ZIndex = oldZ;
+        _liftedAncestors.Clear();
+    }
 
     private Panel? _dimmerPanel;
     private Border? _creepLayer; // slowly darkens over time
@@ -342,7 +367,7 @@ public class TumblerChipEditor : UserControl
         {
             if (_creepLayer?.Background is SolidColorBrush b)
             {
-                var next = Math.Min(b.Opacity + 0.000042, 1.0); // 0.0025 per sec at 60fps
+                var next = Math.Min(b.Opacity + 0.000084, 1.0); // 0.5% per sec at 60fps
                 _creepLayer.Background = new SolidColorBrush(Colors.Black, next);
             }
         };
@@ -407,13 +432,14 @@ public class TumblerChipEditor : UserControl
         int dir = e.Delta.Y > 0 ? -1 : 1;
         Nudge(dir);
 
-        // Only accumulate heavy velocity on FAST scrolling
+        // Scale inertia by step size — int chips (Step>=1) get less momentum
+        var impulse = Step >= 1 ? 0.3 : 1.0;
         if (dt < 0.08)
-            _velocity = Math.Clamp(_velocity + dir * 30.0, -400, 400);
+            _velocity = Math.Clamp(_velocity + dir * 30.0 * impulse, -400 * impulse, 400 * impulse);
         else if (dt < 0.15)
-            _velocity = Math.Clamp(_velocity + dir * 12.0, -200, 200);
+            _velocity = Math.Clamp(_velocity + dir * 12.0 * impulse, -200 * impulse, 200 * impulse);
         else
-            _velocity = dir * 0.5; // single tick: barely any residual
+            _velocity = dir * 0.5 * impulse;
 
         _accumulator = 0;
         StartInertia();

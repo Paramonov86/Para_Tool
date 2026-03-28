@@ -407,6 +407,8 @@ public partial class ConstructorViewModel : ViewModelBase
             if (fields.TryGetValue("Weight", out var w) && double.TryParse(w, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var wd)) artifact.Weight = wd;
             if (fields.TryGetValue("ArmorClass", out var ac) && int.TryParse(ac, out var aci)) artifact.ArmorClass = aci;
             if (fields.TryGetValue("ArmorType", out var at)) artifact.ArmorType = at;
+            if (fields.TryGetValue("Proficiency Group", out var pg)) artifact.ProficiencyGroup = pg;
+            if (fields.TryGetValue("ComboCategory", out var cc) && !string.IsNullOrEmpty(cc)) artifact.ComboCategory = cc;
             if (fields.TryGetValue("Damage", out var dmg)) artifact.Damage = dmg;
             if (fields.TryGetValue("VersatileDamage", out var vd)) artifact.VersatileDamage = vd;
             if (fields.TryGetValue("Weapon Properties", out var wp)) artifact.WeaponProperties = wp;

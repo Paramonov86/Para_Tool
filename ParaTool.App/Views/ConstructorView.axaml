@@ -366,16 +366,17 @@
                             </StackPanel>
                         </Border>
                         <!-- Passives -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
-                            <StackPanel Spacing="6">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
+                                ClipToBounds="False">
+                            <StackPanel Spacing="6" ClipToBounds="False">
                                 <TextBlock Text="PASSIVES" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
-                                <ItemsControl ItemsSource="{Binding PassiveVMs}">
+                                <ItemsControl ItemsSource="{Binding PassiveVMs}" ClipToBounds="False">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="vm:PassiveVM">
                                             <Border Background="{StaticResource InputBgBrush}" CornerRadius="4"
-                                                    Padding="8,6" Margin="0,2">
-                                                <StackPanel Spacing="4">
+                                                    Padding="8,6" Margin="0,2" ClipToBounds="False">
+                                                <StackPanel Spacing="4" ClipToBounds="False">
                                                     <Button Background="Transparent" BorderThickness="0"
                                                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                                                             Padding="0" Cursor="Hand" Name="PassiveToggleBtn" Tag="{Binding}">
@@ -387,7 +388,7 @@
                                                                        ToolTip.Tip="{Binding StatName}" />
                                                         </Grid>
                                                     </Button>
-                                                    <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0">
+                                                    <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0" ClipToBounds="False">
                                                         <!-- Permanent boosts section -->
                                                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
                                                                 BorderBrush="#2ECC71" BorderThickness="2,0,0,0">
@@ -399,10 +400,11 @@
 
                                                         <!-- Trigger-based section -->
                                                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
-                                                                BorderBrush="#E67E22" BorderThickness="2,0,0,0">
-                                                            <StackPanel Spacing="3">
+                                                                BorderBrush="#E67E22" BorderThickness="2,0,0,0"
+                                                                ClipToBounds="False">
+                                                            <StackPanel Spacing="3" ClipToBounds="False">
                                                                 <TextBlock Text="Trigger → Condition → Action" FontSize="10" FontWeight="SemiBold" Foreground="#E67E22" />
-                                                                <Grid ColumnDefinitions="60,*" RowDefinitions="Auto,Auto,Auto">
+                                                                <Grid ColumnDefinitions="60,*" RowDefinitions="Auto,Auto,Auto" ClipToBounds="False">
                                                                     <TextBlock Text="When" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
                                                                     <ComboBox Grid.Column="1" SelectedItem="{Binding EditStatsFunctorContext}"
                                                                               ItemsSource="{x:Static vm:PassiveVM.TriggerOptions}"
