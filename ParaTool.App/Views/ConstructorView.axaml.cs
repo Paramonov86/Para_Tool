@@ -11,11 +11,11 @@ namespace ParaTool.App.Views;
 
 public partial class ConstructorView : UserControl
 {
-    private static readonly SolidColorBrush ChipDefaultBg = new(Color.Parse("#252330"));
-    private static readonly SolidColorBrush ChipSelectedBg = new(Color.Parse("#6C5CE7"));
-    private static readonly SolidColorBrush ChipTextDefault = new(Color.Parse("#8A8494"));
-    private static readonly SolidColorBrush ChipTextSelected = new(Color.Parse("#E0DDE6"));
-    private static readonly SolidColorBrush ThemeSelectedBg = new(Color.Parse("#3D3A4D"));
+    private static SolidColorBrush ChipDefaultBg => Themes.ThemeBrushes.InputBg;
+    private static SolidColorBrush ChipSelectedBg => Themes.ThemeBrushes.Accent;
+    private static SolidColorBrush ChipTextDefault => Themes.ThemeBrushes.TextMuted;
+    private static SolidColorBrush ChipTextSelected => Themes.ThemeBrushes.TextPrimary;
+    private static SolidColorBrush ThemeSelectedBg => Themes.ThemeBrushes.CardBg;
 
     private static readonly Dictionary<string, SolidColorBrush> RarityBrushes = new()
     {
@@ -534,7 +534,7 @@ public partial class ConstructorView : UserControl
                 Background = isSelected ? ChipSelectedBg : ChipDefaultBg,
                 Foreground = isSelected ? ChipTextSelected : ChipTextDefault,
                 BorderThickness = new Thickness(isSelected ? 1.5 : 1),
-                BorderBrush = isSelected ? ChipSelectedBg : new SolidColorBrush(Color.Parse("#3D3A4D")),
+                BorderBrush = isSelected ? ChipSelectedBg : Themes.ThemeBrushes.CardBg,
             };
             btn.Click += (_, _) => { vm.SetPoolCommand.Execute(btn.Tag as string); RebuildChips(); };
             panel.Children.Add(btn);
@@ -558,7 +558,7 @@ public partial class ConstructorView : UserControl
                 Background = isSelected ? ThemeSelectedBg : ChipDefaultBg,
                 Foreground = isSelected ? ChipTextSelected : ChipTextDefault,
                 BorderThickness = new Thickness(isSelected ? 1.5 : 1),
-                BorderBrush = isSelected ? Themes.ThemeBrushes.Accent : new SolidColorBrush(Color.Parse("#3D3A4D")),
+                BorderBrush = isSelected ? Themes.ThemeBrushes.Accent : Themes.ThemeBrushes.CardBg,
             };
             btn.Click += (_, _) => { vm.ToggleThemeCommand.Execute(btn.Tag as string); RebuildChips(); };
             panel.Children.Add(btn);
