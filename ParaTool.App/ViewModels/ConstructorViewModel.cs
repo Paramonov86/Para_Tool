@@ -16,7 +16,9 @@ namespace ParaTool.App.ViewModels;
 public partial class BaseItemVM : ObservableObject
 {
     public ItemEntry Entry { get; }
-    public string Label => Entry.DisplayName ?? Entry.StatId;
+    public string Label => Entry.DisplayName
+        ?? VanillaLocaService.GetDisplayName(Entry.StatId, Localization.Loc.Instance.Lang)
+        ?? Entry.StatId;
     public string FullLabel => Entry.DisplayName != null ? $"{Entry.DisplayName} ({Entry.StatId})" : Entry.StatId;
     public string StatId => Entry.StatId;
     public string StatType => Entry.StatType;
