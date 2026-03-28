@@ -971,21 +971,65 @@ public sealed class ModScanner
         }
 
         // Fallback: fill missing DisplayNames from embedded VanillaLocaService
+        // Also walk using-chain for tiered items (_1, _2, _3)
         foreach (var item in allItems)
         {
             if (item.DisplayName == null)
             {
+                // Try direct StatId
                 var name = VanillaLocaService.GetDisplayName(item.StatId, langCode);
+
+                // Walk using-chain to find parent with loca
+                if (name == null)
+                {
+                    var current = item.StatId;
+                    int depth = 0;
+                    while (name == null && current != null && depth < 20)
+                    {
+                        var entry = resolver.Get(current);
+                        if (entry == null) break;
+                        name = VanillaLocaService.GetDisplayName(entry.Name, langCode);
+                        current = entry.Using;
+                        depth++;
+                    }
+                }
+
                 if (name != null) item.DisplayName = name;
             }
             if (item.Description == null)
             {
                 var desc = VanillaLocaService.GetDescription(item.StatId, langCode);
+                if (desc == null)
+                {
+                    var current = item.StatId;
+                    int depth = 0;
+                    while (desc == null && current != null && depth < 20)
+                    {
+                        var entry = resolver.Get(current);
+                        if (entry == null) break;
+                        desc = VanillaLocaService.GetDescription(entry.Name, langCode);
+                        current = entry.Using;
+                        depth++;
+                    }
+                }
                 if (desc != null) item.Description = desc;
             }
             if (item.IconName == null)
             {
                 var icon = VanillaLocaService.GetIconName(item.StatId);
+                if (icon == null)
+                {
+                    var current = item.StatId;
+                    int depth = 0;
+                    while (icon == null && current != null && depth < 20)
+                    {
+                        var entry = resolver.Get(current);
+                        if (entry == null) break;
+                        icon = VanillaLocaService.GetIconName(entry.Name);
+                        current = entry.Using;
+                        depth++;
+                    }
+                }
                 if (icon != null) item.IconName = icon;
             }
         }
