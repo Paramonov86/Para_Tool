@@ -172,8 +172,10 @@ public partial class ArtifactItemVM : ObservableObject
 
     public string EditWeight
     {
-        get => Artifact.Weight < 0 ? "" : Artifact.Weight.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-        set { Artifact.Weight = double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var w) ? w : -1; MarkDirty(); OnPropertyChanged(); }
+        get => Artifact.Weight < 0 ? "" : (Artifact.Weight == (int)Artifact.Weight
+            ? ((int)Artifact.Weight).ToString()
+            : Artifact.Weight.ToString("G", System.Globalization.CultureInfo.InvariantCulture));
+        set { Artifact.Weight = double.TryParse(value?.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var w) ? w : -1; MarkDirty(); OnPropertyChanged(); }
     }
 
     public bool EditUnique

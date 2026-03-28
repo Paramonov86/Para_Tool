@@ -249,9 +249,8 @@
                                               FontSize="12" Padding="8,4" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
 
                                     <TextBlock Grid.Row="3" Text="Weight" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:NumberChipEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditWeight}" Label="kg"
-                                                           MinValue="0" MaxValue="30" Margin="0,6,0,0"
-                                                           HorizontalAlignment="Left" />
+                                    <ctrl:WeightChipEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditWeight}"
+                                                           Step="0.05" Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                 </Grid>
                                 <CheckBox Content="Unique (not recommended)" Foreground="#E67E22"
@@ -284,9 +283,8 @@
                                                                     Options="{x:Static vm:ArtifactItemVM.WeaponPropertyOptions}" Margin="0,6,0,0" />
 
                                     <TextBlock Grid.Row="4" Text="Weight" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:NumberChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditWeight}" Label="kg"
-                                                           MinValue="0" MaxValue="30" Margin="0,6,0,0"
-                                                           HorizontalAlignment="Left" />
+                                    <ctrl:WeightChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditWeight}"
+                                                           Step="0.05" Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                 </Grid>
                                 <CheckBox Content="Unique (not recommended)" Foreground="#E67E22"
