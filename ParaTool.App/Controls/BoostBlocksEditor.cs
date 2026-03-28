@@ -89,6 +89,11 @@ public class BoostBlocksEditor : UserControl
         if (parsed == null) return CreateRawBlock(rawBoost);
 
         var (funcName, args) = parsed.Value;
+
+        // Special: IF(...):Effect → yellow container block
+        if (funcName.Equals("IF", StringComparison.OrdinalIgnoreCase) && args.Length > 0)
+            return CreateIfBlock(rawBoost, args[0]);
+
         var defs = IsFunctorMode ? BoostMapping.Functors : BoostMapping.Boosts;
         var def = defs.FirstOrDefault(d => d.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase));
 
@@ -110,7 +115,7 @@ public class BoostBlocksEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center,
         });
 
-        // Parameters
+        // Parameters — render as appropriate controls
         for (int i = 0; i < def.Params.Length && i < args.Length; i++)
         {
             var param = def.Params[i];
@@ -122,28 +127,51 @@ public class BoostBlocksEditor : UserControl
                 var combo = new ComboBox
                 {
                     ItemsSource = param.EnumValues,
-                    SelectedItem = param.EnumValues.FirstOrDefault(v => v.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? value,
+                    SelectedItem = param.EnumValues.FirstOrDefault(v =>
+                        v.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? value,
                     FontSize = 11, Padding = new Thickness(4, 1),
-                    MinWidth = 60,
-                    Background = InputBg,
+                    MinWidth = 60, Background = InputBg,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 combo.Tag = (rawBoost, paramIdx);
                 combo.SelectionChanged += OnParamChanged;
                 stack.Children.Add(combo);
             }
+            else if (param.Type == "number")
+            {
+                // Number shown as bold colored text in a small box
+                var tb = new TextBox
+                {
+                    Text = value,
+                    FontSize = 12, FontWeight = FontWeight.Bold,
+                    Padding = new Thickness(6, 2),
+                    MinWidth = 30, MaxWidth = 50,
+                    Background = InputBg,
+                    Foreground = colorBrush,
+                    BorderThickness = new Thickness(0),
+                    CornerRadius = new CornerRadius(4),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                };
+                tb.Tag = (rawBoost, paramIdx);
+                tb.LostFocus += OnParamTextChanged;
+                stack.Children.Add(tb);
+            }
             else
             {
+                // String param — show simplified name
+                var displayValue = SimplifyName(funcName, value);
                 var tb = new TextBox
                 {
                     Text = value,
                     FontSize = 11, Padding = new Thickness(4, 2),
-                    MinWidth = 30, MaxWidth = 80,
+                    MinWidth = 40, MaxWidth = 200,
                     Background = InputBg,
                     Foreground = FgLight,
                     BorderThickness = new Thickness(0),
                     CornerRadius = new CornerRadius(3),
                     VerticalAlignment = VerticalAlignment.Center,
+                    Watermark = param.Label,
                 };
                 tb.Tag = (rawBoost, paramIdx);
                 tb.LostFocus += OnParamTextChanged;
@@ -156,8 +184,7 @@ public class BoostBlocksEditor : UserControl
         {
             Content = "×", FontSize = 11,
             Padding = new Thickness(4, 0),
-            Background = Brushes.Transparent,
-            Foreground = FgMuted,
+            Background = Brushes.Transparent, Foreground = FgMuted,
             BorderThickness = new Thickness(0),
             Cursor = new Cursor(StandardCursorType.Hand),
             VerticalAlignment = VerticalAlignment.Center,
@@ -169,13 +196,120 @@ public class BoostBlocksEditor : UserControl
         return new Border
         {
             Child = stack,
-            Background = bgBrush,
-            BorderBrush = colorBrush,
+            Background = bgBrush, BorderBrush = colorBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(8, 4),
-            Margin = new Thickness(2),
+            Padding = new Thickness(8, 4), Margin = new Thickness(2),
         };
+    }
+
+    /// <summary>Render IF(condition):effect as a yellow container block.</summary>
+    private Border CreateIfBlock(string rawBoost, string content)
+    {
+        var ifColor = Color.Parse("#F1C40F");
+        var ifBrush = new SolidColorBrush(ifColor);
+
+        // Split condition:effect
+        var colonIdx = content.IndexOf(')');
+        string condition, effect;
+        if (colonIdx >= 0 && colonIdx + 1 < content.Length && content[colonIdx + 1] == ':')
+        {
+            condition = content[1..colonIdx]; // inside (...)
+            effect = content[(colonIdx + 2)..];
+        }
+        else
+        {
+            condition = content;
+            effect = "";
+        }
+
+        var outer = new StackPanel { Spacing = 4 };
+
+        // IF label + condition
+        var condRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        condRow.Children.Add(new TextBlock
+        {
+            Text = "IF", FontSize = 11, FontWeight = FontWeight.Bold,
+            Foreground = ifBrush, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+        });
+        condRow.Children.Add(new Border
+        {
+            Child = new TextBlock
+            {
+                Text = SimplifyCondition(condition),
+                FontSize = 10, Foreground = FgLight,
+            },
+            Background = new SolidColorBrush(ifColor, 0.1),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(6, 2),
+        });
+        outer.Children.Add(condRow);
+
+        // Effect as nested block
+        if (!string.IsNullOrEmpty(effect))
+        {
+            var effectBlock = CreateBlock(effect);
+            if (effectBlock != null)
+            {
+                effectBlock.Margin = new Thickness(16, 0, 0, 0);
+                outer.Children.Add(effectBlock);
+            }
+        }
+
+        // Remove
+        var removeBtn = new Button
+        {
+            Content = "×", FontSize = 10,
+            Padding = new Thickness(4, 0),
+            Background = Brushes.Transparent, Foreground = FgMuted,
+            BorderThickness = new Thickness(0),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+        };
+        removeBtn.Tag = rawBoost;
+        removeBtn.Click += OnRemoveClick;
+        outer.Children.Add(removeBtn);
+
+        return new Border
+        {
+            Child = outer,
+            Background = new SolidColorBrush(ifColor, 0.08),
+            BorderBrush = ifBrush,
+            BorderThickness = new Thickness(2, 0, 0, 0),
+            CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(8, 6), Margin = new Thickness(2),
+        };
+    }
+
+    /// <summary>Simplify condition text for display.</summary>
+    private static string SimplifyCondition(string cond)
+    {
+        // Replace common patterns with human text
+        return cond
+            .Replace("Tagged('PLAYABLE',context.Source)", "Is Playable")
+            .Replace("context.Source", "source")
+            .Replace("context.Target", "target")
+            .Replace("Enemy()", "Is Enemy")
+            .Replace("Ally()", "Is Ally")
+            .Replace("not ", "NOT ")
+            .Replace(" and ", " AND ")
+            .Replace(" or ", " OR ");
+    }
+
+    /// <summary>Simplify a parameter value for display.</summary>
+    private static string SimplifyName(string funcName, string value)
+    {
+        // For UnlockSpell: strip prefixes
+        if (funcName.Equals("UnlockSpell", StringComparison.OrdinalIgnoreCase))
+        {
+            return value
+                .Replace("Target_", "")
+                .Replace("Projectile_", "")
+                .Replace("Shout_", "")
+                .Replace("Zone_", "")
+                .Replace("Throw_", "");
+        }
+        return value;
     }
 
     private Border CreateRawBlock(string raw)

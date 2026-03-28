@@ -175,19 +175,75 @@ public static class BoostMapping
 
     /// <summary>
     /// Parse a raw boost string like "AC(2)" into (funcName, args[]).
+    /// Handles nested parentheses: IF(Enemy()):DealDamage(1d6,Fire) → funcName="IF", args=["Enemy():DealDamage(1d6,Fire)"]
     /// </summary>
     public static (string funcName, string[] args)? ParseBoostCall(string raw)
     {
         raw = raw.Trim();
+
+        // Handle IF(...):Effect pattern
+        if (raw.StartsWith("IF", StringComparison.OrdinalIgnoreCase) && raw.Contains(':'))
+        {
+            return ("IF", [raw[2..].Trim()]);
+        }
+
         var parenIdx = raw.IndexOf('(');
         if (parenIdx < 0)
             return (raw, []); // No args, e.g. "BlockRegainHP"
 
         var funcName = raw[..parenIdx];
-        var argsStr = raw[(parenIdx + 1)..].TrimEnd(')');
-        var args = argsStr.Split(',').Select(a => a.Trim()).Where(a => a.Length > 0).ToArray();
+
+        // Find matching close paren (handle nesting)
+        int depth = 0;
+        int closeIdx = -1;
+        for (int i = parenIdx; i < raw.Length; i++)
+        {
+            if (raw[i] == '(') depth++;
+            else if (raw[i] == ')') { depth--; if (depth == 0) { closeIdx = i; break; } }
+        }
+
+        if (closeIdx < 0) closeIdx = raw.Length - 1;
+        var argsStr = raw[(parenIdx + 1)..closeIdx];
+
+        // Split args by comma, but respect nested parens
+        var args = SplitArgs(argsStr);
         return (funcName, args);
     }
+
+    private static string[] SplitArgs(string argsStr)
+    {
+        var result = new List<string>();
+        int depth = 0;
+        int start = 0;
+        for (int i = 0; i < argsStr.Length; i++)
+        {
+            if (argsStr[i] == '(') depth++;
+            else if (argsStr[i] == ')') depth--;
+            else if (argsStr[i] == ',' && depth == 0)
+            {
+                result.Add(argsStr[start..i].Trim());
+                start = i + 1;
+            }
+        }
+        if (start < argsStr.Length)
+            result.Add(argsStr[start..].Trim());
+        return result.Where(a => a.Length > 0).ToArray();
+    }
+
+    /// <summary>Human-readable label for a weapon property.</summary>
+    public static string WeaponPropertyLabel(string prop) => prop switch
+    {
+        "Finesse" => "Finesse / Фехтовальное",
+        "Light" => "Light / Лёгкое",
+        "Heavy" => "Heavy / Тяжёлое",
+        "Melee" => "Melee / Ближний бой",
+        "Magical" => "Magical / Магическое",
+        "Reach" => "Reach / Досягаемость",
+        "Thrown" => "Thrown / Метательное",
+        "Twohanded" => "Two-handed / Двуручное",
+        "Versatile" => "Versatile / Универсальное",
+        _ => prop
+    };
 
     /// <summary>
     /// Find block definition by function name.
