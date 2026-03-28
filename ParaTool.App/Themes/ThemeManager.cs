@@ -46,7 +46,62 @@ public static class ThemeManager
         Error: Color.Parse("#F44336"), Info: Color.Parse("#2196F3"),
         BorderSubtle: Color.Parse("#333333"));
 
-    public static readonly ThemeDef[] AllThemes = [Paramonov, Light, Dota2];
+    // ── Cyberpunk — neon yellow / cyan on deep dark ──────────
+    public static readonly ThemeDef Cyberpunk = new("Cyberpunk",
+        AppBg: Color.Parse("#0A0A12"), PanelBg: Color.Parse("#12121E"), CardBg: Color.Parse("#1A1A2E"),
+        HoverBg: Color.Parse("#252540"), InputBg: Color.Parse("#0E0E1A"),
+        TextPrimary: Color.Parse("#E0F0FF"), TextSecondary: Color.Parse("#A0C8E8"),
+        TextMuted: Color.Parse("#5A7088"), TextDisabled: Color.Parse("#3A4858"),
+        Accent: Color.Parse("#F7D731"), AccentLight: Color.Parse("#FFE95C"), Gold: Color.Parse("#F7D731"),
+        Success: Color.Parse("#00FF9C"), Warning: Color.Parse("#FF9C00"),
+        Error: Color.Parse("#FF3860"), Info: Color.Parse("#00D4FF"),
+        BorderSubtle: Color.Parse("#2A2A44"));
+
+    // ── Dracula — purple/pink/green pastel glow ───────────────
+    public static readonly ThemeDef Dracula = new("Dracula",
+        AppBg: Color.Parse("#282A36"), PanelBg: Color.Parse("#2D2F3D"), CardBg: Color.Parse("#343746"),
+        HoverBg: Color.Parse("#44475A"), InputBg: Color.Parse("#21222C"),
+        TextPrimary: Color.Parse("#F8F8F2"), TextSecondary: Color.Parse("#D0CCE0"),
+        TextMuted: Color.Parse("#6272A4"), TextDisabled: Color.Parse("#4A5070"),
+        Accent: Color.Parse("#BD93F9"), AccentLight: Color.Parse("#D4AAFF"), Gold: Color.Parse("#F1FA8C"),
+        Success: Color.Parse("#50FA7B"), Warning: Color.Parse("#FFB86C"),
+        Error: Color.Parse("#FF5555"), Info: Color.Parse("#8BE9FD"),
+        BorderSubtle: Color.Parse("#44475A"));
+
+    // ── Nord — cool arctic blue-gray ──────────────────────────
+    public static readonly ThemeDef Nord = new("Nord",
+        AppBg: Color.Parse("#2E3440"), PanelBg: Color.Parse("#3B4252"), CardBg: Color.Parse("#434C5E"),
+        HoverBg: Color.Parse("#4C566A"), InputBg: Color.Parse("#2E3440"),
+        TextPrimary: Color.Parse("#ECEFF4"), TextSecondary: Color.Parse("#D8DEE9"),
+        TextMuted: Color.Parse("#7B88A0"), TextDisabled: Color.Parse("#5A6478"),
+        Accent: Color.Parse("#88C0D0"), AccentLight: Color.Parse("#8FBCBB"), Gold: Color.Parse("#EBCB8B"),
+        Success: Color.Parse("#A3BE8C"), Warning: Color.Parse("#EBCB8B"),
+        Error: Color.Parse("#BF616A"), Info: Color.Parse("#81A1C1"),
+        BorderSubtle: Color.Parse("#4C566A"));
+
+    // ── Synthwave — hot pink / magenta neon on deep blue ──────
+    public static readonly ThemeDef Synthwave = new("Synthwave",
+        AppBg: Color.Parse("#0B0620"), PanelBg: Color.Parse("#150E30"), CardBg: Color.Parse("#1E1540"),
+        HoverBg: Color.Parse("#2A1E55"), InputBg: Color.Parse("#0E0928"),
+        TextPrimary: Color.Parse("#F0E0FF"), TextSecondary: Color.Parse("#C8A8E8"),
+        TextMuted: Color.Parse("#7A5C99"), TextDisabled: Color.Parse("#4A3568"),
+        Accent: Color.Parse("#FF2E97"), AccentLight: Color.Parse("#FF6EB4"), Gold: Color.Parse("#FFD700"),
+        Success: Color.Parse("#72F1B8"), Warning: Color.Parse("#FEDE5D"),
+        Error: Color.Parse("#FE4450"), Info: Color.Parse("#36F9F6"),
+        BorderSubtle: Color.Parse("#2A1E55"));
+
+    // ── BG3 Dark — amber / gold inspired by the game UI ───────
+    public static readonly ThemeDef Bg3Dark = new("BG3 Dark",
+        AppBg: Color.Parse("#111015"), PanelBg: Color.Parse("#1C1A22"), CardBg: Color.Parse("#26232E"),
+        HoverBg: Color.Parse("#332E3C"), InputBg: Color.Parse("#15131B"),
+        TextPrimary: Color.Parse("#E8DDD0"), TextSecondary: Color.Parse("#BCA88A"),
+        TextMuted: Color.Parse("#7A6E5C"), TextDisabled: Color.Parse("#4A4238"),
+        Accent: Color.Parse("#C8963E"), AccentLight: Color.Parse("#E0B05A"), Gold: Color.Parse("#C8963E"),
+        Success: Color.Parse("#5A9E4B"), Warning: Color.Parse("#D4903A"),
+        Error: Color.Parse("#B03030"), Info: Color.Parse("#4A8AB5"),
+        BorderSubtle: Color.Parse("#332E3C"));
+
+    public static readonly ThemeDef[] AllThemes = [Paramonov, Light, Dota2, Cyberpunk, Dracula, Nord, Synthwave, Bg3Dark];
 
     public static void ApplyTheme(Application app, ThemeDef theme)
     {

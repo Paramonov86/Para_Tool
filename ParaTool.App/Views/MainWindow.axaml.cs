@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using ParaTool.App.Services;
 using ParaTool.App.Themes;
 using ParaTool.App.ViewModels;
 
@@ -9,6 +10,9 @@ namespace ParaTool.App.Views;
 
 public partial class MainWindow : Window
 {
+    private UiSettings _uiSettings = new();
+    private bool _suppressSave; // prevent saving during initial load
+
     public MainWindow()
     {
         InitializeComponent();
@@ -20,6 +24,48 @@ public partial class MainWindow : Window
         var fontSelector = this.FindControl<ComboBox>("FontSizeSelector");
         if (fontSelector != null)
             fontSelector.SelectionChanged += OnFontSizeChanged;
+
+        RestoreUiSettings(themeSelector, fontSelector);
+    }
+
+    private void RestoreUiSettings(ComboBox? themeSelector, ComboBox? fontSelector)
+    {
+        _suppressSave = true;
+        _uiSettings = UiSettingsService.Load();
+
+        // Restore theme
+        if (themeSelector != null)
+        {
+            var theme = ThemeManager.AllThemes.FirstOrDefault(t => t.Name == _uiSettings.Theme)
+                ?? ThemeManager.Paramonov;
+            // Find matching ComboBoxItem
+            for (int i = 0; i < themeSelector.Items.Count; i++)
+            {
+                if (themeSelector.Items[i] is ComboBoxItem item
+                    && (item.Content?.ToString()?.Contains(theme.Name) ?? false))
+                {
+                    themeSelector.SelectedIndex = i;
+                    break;
+                }
+            }
+            ThemeManager.ApplyTheme(Application.Current!, theme);
+        }
+
+        // Restore font size
+        if (fontSelector != null)
+        {
+            var idx = Math.Clamp(_uiSettings.FontSizeIndex, 0, fontSelector.Items.Count - 1);
+            fontSelector.SelectedIndex = idx;
+            if (fontSelector.Items[idx] is ComboBoxItem fi
+                && fi.Tag is string sizeStr && double.TryParse(sizeStr, out var size))
+            {
+                FontSize = size;
+                if (Application.Current != null)
+                    Application.Current.Resources["DefaultFontSize"] = size;
+            }
+        }
+
+        _suppressSave = false;
     }
 
     private void OnUpdateButtonTapped(object? sender, TappedEventArgs e)
@@ -32,10 +78,16 @@ public partial class MainWindow : Window
     {
         if (sender is ComboBox cb && cb.SelectedItem is ComboBoxItem item)
         {
-            var themeName = item.Content?.ToString() ?? "Paramonov";
-            var theme = ThemeManager.AllThemes.FirstOrDefault(t => t.Name == themeName)
+            var text = item.Content?.ToString() ?? "";
+            var theme = ThemeManager.AllThemes.FirstOrDefault(t => text.Contains(t.Name))
                 ?? ThemeManager.Paramonov;
             ThemeManager.ApplyTheme(Application.Current!, theme);
+
+            if (!_suppressSave)
+            {
+                _uiSettings.Theme = theme.Name;
+                UiSettingsService.Save(_uiSettings);
+            }
         }
     }
 
@@ -44,12 +96,15 @@ public partial class MainWindow : Window
         if (sender is ComboBox cb && cb.SelectedItem is ComboBoxItem item
             && item.Tag is string sizeStr && double.TryParse(sizeStr, out var size))
         {
-            // Scale all text by changing the window's default font size
-            // This propagates to children that don't have explicit FontSize
             FontSize = size;
-            // Also set on Application level for new controls
             if (Application.Current != null)
                 Application.Current.Resources["DefaultFontSize"] = size;
+
+            if (!_suppressSave)
+            {
+                _uiSettings.FontSizeIndex = cb.SelectedIndex;
+                UiSettingsService.Save(_uiSettings);
+            }
         }
     }
 }

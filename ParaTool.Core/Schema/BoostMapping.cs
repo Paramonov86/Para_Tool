@@ -268,6 +268,33 @@ public static class BoostMapping
         new("TriggerRandomCast", "Trigger Random Cast", "Случайный каст", "#9B59B6",
             [new("DC", "DC", "number"), new("Delay", "Delay", "float"), new("Outcome", "Outcome", "string")]),
         new("Knockback", "Knockback", "Отброс", "#E67E22", [new("Distance", "Distance", "number")]),
+
+        // ── Missing from LSLibDefinitions.xml (added) ──
+        new("Spawn", "Spawn", "Создать существо", "#9B59B6",
+            [new("Template", "Template", "guid"), new("AiHelper", "AI", "string")]),
+        new("SpawnInInventory", "Spawn in Inventory", "Создать в инвентаре", "#9B59B6",
+            [new("Template", "Template", "guid"), new("Amount", "Amount", "number")]),
+        new("RemoveStatusByLevel", "Remove Status by Level", "Снять статус по уровню", "#F1C40F",
+            [new("StatusId", "Status", "string"), new("Level", "Level", "number"), new("Ability", "Ability", "enum", Abilities)]),
+        new("RemoveAuraByChildStatus", "Remove Aura by Child", "Снять ауру по потомку", "#F1C40F",
+            [new("StatusId", "Status", "string")]),
+        new("SurfaceClearLayer", "Clear Surface Layer", "Очистить слой поверхн.", "#3498DB",
+            [new("Layer1", "Layer 1", "enum", SurfaceLayers), new("Layer2", "Layer 2", "enum", SurfaceLayers)]),
+        new("CreateWall", "Create Wall", "Создать стену", "#3498DB", []),
+        new("SwitchDeathType", "Switch Death Type", "Тип смерти", "#E74C3C",
+            [new("Type", "Type", "enum", DeathTypes)]),
+        new("RegainTemporaryHitPoints", "Regain Temp HP", "Восстановить врем. ОЗ", "#2ECC71",
+            [new("Amount", "Amount", "formula")]),
+        new("DisarmAndStealWeapon", "Disarm & Steal", "Обезоружить и украсть", "#E67E22", []),
+        new("Unlock", "Unlock", "Открыть замок", "#8A8494", []),
+        new("Sabotage", "Sabotage", "Саботаж", "#8A8494", [new("Amount", "Amount", "number")]),
+        new("Pickup", "Pick Up", "Подобрать", "#8A8494", [new("Effect", "Effect", "string")]),
+        new("Drop", "Drop", "Уронить", "#8A8494", [new("Effect", "Effect", "string")]),
+        new("ResetCombatTurn", "Reset Turn", "Сбросить ход", "#E67E22", []),
+        new("SpawnExtraProjectiles", "Extra Projectiles", "Доп. снаряды", "#E74C3C",
+            [new("SpellId", "Spell", "string")]),
+        new("CameraWait", "Camera Wait", "Ждать камеру", "#8A8494", [new("Duration", "Sec", "float")]),
+        new("TutorialEvent", "Tutorial Event", "Событие туториала", "#8A8494", [new("Event", "Event", "guid")]),
     ];
 
     // ═══════════════════════════════════════════════════════════
@@ -313,27 +340,43 @@ public static class BoostMapping
     public static readonly Dictionary<string, string> TriggerEvents = new()
     {
         ["OnTurn"] = "Each turn / Каждый ход",
-        ["OnSpellCast"] = "On spell cast / При касте",
+        ["OnRound"] = "Each round / Каждый раунд",
         ["OnAttack"] = "On attack / При атаке",
         ["OnAttacked"] = "On attacked / При атаке на вас",
+        ["OnDamage"] = "On damage dealt / При нанесении урона",
+        ["OnDamaged"] = "On damage taken / При получении урона",
+        ["OnHeal"] = "On heal cast / При касте исцеления",
+        ["OnHealed"] = "On healed / При получении исцеления",
+        ["OnCast"] = "On spell cast / При касте",
+        ["OnCastResolved"] = "On cast resolved / Каст завершён",
+        ["OnEquip"] = "On equip / При экипировке",
+        ["OnCreate"] = "On create / При создании",
         ["OnApply"] = "On apply / При наложении",
         ["OnRemove"] = "On remove / При снятии",
         ["OnApplyAndTurn"] = "On apply + turn / При наложении и ходе",
-        ["OnDamage"] = "On damage dealt / При нанесении урона",
-        ["OnEquip"] = "On equip / При экипировке",
-        ["OnUnequip"] = "On unequip / При снятии",
-        ["OnHeal"] = "On heal / При исцелении",
-        ["OnObscurityChanged"] = "Visibility change / Смена видимости",
-        ["OnSurfaceEnter"] = "Surface enter / Вход на поверхность",
         ["OnStatusApplied"] = "Status applied / Статус наложен",
         ["OnStatusRemoved"] = "Status removed / Статус снят",
-        ["OnMove"] = "On move / При перемещении",
+        ["OnStatusApply"] = "Status apply / Наложение статуса",
+        ["OnStatusRemove"] = "Status remove / Снятие статуса",
+        ["OnSurfaceEnter"] = "Surface enter / Вход на поверхность",
+        ["OnObscurityChanged"] = "Visibility change / Смена видимости",
+        ["OnCombatStarted"] = "Combat started / Начало боя",
         ["OnCombatEnded"] = "Combat ended / Конец боя",
-        ["OnLockpickingSucceeded"] = "Lockpick success / Успех взлома",
+        ["OnShortRest"] = "Short rest / Короткий отдых",
+        ["OnLongRest"] = "Long rest / Длинный отдых",
+        ["OnMovedDistance"] = "On moved / При перемещении",
+        ["OnPush"] = "On push / При толчке",
+        ["OnPushed"] = "On pushed / При толчке на вас",
+        ["OnProjectileExploded"] = "Projectile exploded / Снаряд взорвался",
+        ["OnActionResourcesChanged"] = "Resources changed / Ресурсы изменены",
+        ["OnSpellCast"] = "On spell cast / При касте заклинания",
         ["OnSourceDeath"] = "Source death / Смерть источника",
+        ["OnLockpickingSucceeded"] = "Lockpick success / Успех взлома",
         ["OnFactionChanged"] = "Faction changed / Смена фракции",
         ["OnEntityPickUp"] = "Pick up / Подобрать",
         ["OnEntityDrop"] = "Drop / Уронить",
+        ["OnUnequip"] = "On unequip / При снятии",
+        ["OnMove"] = "On move / При движении",
     };
 
     // ═══════════════════════════════════════════════════════════
@@ -371,9 +414,9 @@ public static class BoostMapping
 
     public static readonly string[] AllOrDamageType = ["All", "None", "Slashing", "Piercing", "Bludgeoning", "Acid", "Thunder", "Necrotic", "Fire", "Lightning", "Cold", "Psychic", "Poison", "Radiant", "Force"];
 
-    public static readonly string[] DamageTypesExtended = ["Slashing", "Piercing", "Bludgeoning", "Acid", "Thunder", "Necrotic", "Fire", "Lightning", "Cold", "Psychic", "Poison", "Radiant", "Force", "MainWeaponDamageType", "OffhandWeaponDamageType", "MainMeleeWeaponDamageType", "SourceWeaponDamageType"];
+    public static readonly string[] DamageTypesExtended = ["Slashing", "Piercing", "Bludgeoning", "Acid", "Thunder", "Necrotic", "Fire", "Lightning", "Cold", "Psychic", "Poison", "Radiant", "Force", "MainWeaponDamageType", "OffhandWeaponDamageType", "MainMeleeWeaponDamageType", "OffhandMeleeWeaponDamageType", "MainRangedWeaponDamageType", "OffhandRangedWeaponDamageType", "SourceWeaponDamageType", "ThrownWeaponDamageType"];
 
-    public static readonly string[] StatsRollType = ["Attack", "MeleeWeaponAttack", "RangedWeaponAttack", "MeleeSpellAttack", "RangedSpellAttack", "MeleeUnarmedAttack", "RangedUnarmedAttack", "SkillCheck", "SavingThrow", "RawAbility", "Damage", "DeathSavingThrow"];
+    public static readonly string[] StatsRollType = ["Attack", "MeleeWeaponAttack", "RangedWeaponAttack", "MeleeSpellAttack", "RangedSpellAttack", "MeleeUnarmedAttack", "RangedUnarmedAttack", "MeleeOffHandWeaponAttack", "RangedOffHandWeaponAttack", "SkillCheck", "SavingThrow", "RawAbility", "Damage", "DeathSavingThrow", "MeleeWeaponDamage", "RangedWeaponDamage", "MeleeSpellDamage", "RangedSpellDamage", "MeleeUnarmedDamage", "RangedUnarmedDamage"];
 
     public static readonly string[] AdvantageContext = ["AttackRoll", "AttackTarget", "SavingThrow", "AllSavingThrows", "Ability", "AllAbilities", "Skill", "AllSkills", "SourceDialogue", "DeathSavingThrow", "Concentration"];
 
@@ -416,7 +459,7 @@ public static class BoostMapping
 
     public static readonly string[] ExecuteWeaponFunctorsType = ["MainHand", "OffHand", "BothHands"];
 
-    public static readonly string[] StatItemSlot = ["Helmet", "Breast", "Cloak", "MeleeMainHand", "MeleeOffHand", "RangedMainHand", "RangedOffHand", "Ring", "Underwear", "Boots", "Gloves", "Amulet", "Ring2", "MainHand", "OffHand"];
+    public static readonly string[] StatItemSlot = ["Helmet", "Breast", "Cloak", "MeleeMainHand", "MeleeOffHand", "RangedMainHand", "RangedOffHand", "Ring", "Underwear", "Boots", "Gloves", "Amulet", "Ring2", "Wings", "Horns", "Overhead", "MusicalInstrument", "VanityBody", "VanityBoots", "MainHand", "OffHand"];
 
     public static readonly string[] SetStatusDurationType = ["SetMinimum", "ForceSet", "Add", "Multiply"];
 
@@ -425,6 +468,18 @@ public static class BoostMapping
     public static readonly string[] AttributeFlags = ["None", "SlippingImmunity", "Torch", "Arrow", "Unbreakable", "Grounded", "Floating", "InventoryBound", "IgnoreClouds", "BackstabImmunity", "ThrownImmunity", "InvisibilityImmunity"];
 
     public static readonly string[] ProficiencyGroupFlags = ["LightArmor", "MediumArmor", "HeavyArmor", "Shields", "SimpleMeleeWeapon", "SimpleRangedWeapon", "MartialMeleeWeapon", "MartialRangedWeapon", "HandCrossbows", "Battleaxes", "Flails", "Glaives", "Greataxes", "Greatswords", "Halberds", "Longswords", "Mauls", "Morningstars", "Pikes", "Rapiers", "Scimitars", "Shortswords", "Tridents", "WarPicks", "Warhammers", "Clubs", "Daggers", "Greatclubs", "Handaxes", "Javelins", "LightHammers", "Maces", "Quarterstaffs", "Sickles", "Spears", "LightCrossbows", "Darts", "Shortbows", "Slings", "Longbows", "HeavyCrossbows", "MusicalInstrument"];
+
+    // ── New enums from LSLibDefinitions.xml ──
+    public static readonly string[] SurfaceLayers = ["Ground", "Cloud"];
+    public static readonly string[] DeathTypes = ["None", "Acid", "Chasm", "DoT", "Electrocution", "Explode", "Falling", "Incinerate", "KnockedDown", "Lifetime", "Narcolepsy", "PetrifiedShattered", "Sentinel"];
+    public static readonly string[] ResurrectTypes = ["Living", "Guaranteed", "Construct", "Undead"];
+    public static readonly string[] SummonDurations = ["UntilLongRest", "Permanent"];
+    public static readonly string[] MagicalFlags = ["Magical", "Nonmagical"];
+    public static readonly string[] NonlethalFlags = ["Lethal", "Nonlethal"];
+    public static readonly string[] SizeCategories = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"];
+    public static readonly string[] EngineStatusTypes = ["DYING", "HEAL", "KNOCKED_DOWN", "TELEPORT_FALLING", "BOOST", "REACTION", "STORY_FROZEN", "SNEAKING", "UNLOCK", "FEAR", "SMELLY", "INVISIBLE", "ROTATE", "MATERIAL", "CLIMBING", "INCAPACITATED", "INSURFACE", "POLYMORPHED", "EFFECT", "DEACTIVATED", "DOWNED"];
+    public static readonly string[] StatusRemoveCause = ["Condition", "TimeOut", "Death"];
+    public static readonly string[] ObscuredState = ["Clear", "BabyBent", "BentQuarters", "ThreeQuarters", "FullCover"];
 
     // Keep old names for backward compat
     public static readonly string[] WeaponProperties = WeaponFlags;

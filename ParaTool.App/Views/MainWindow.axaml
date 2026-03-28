@@ -110,20 +110,25 @@
                             Spacing="6" Margin="0,0,12,0">
                     <!-- Font size -->
                     <ComboBox Name="FontSizeSelector"
-                              FontSize="11" Padding="6,3" MinWidth="50"
+                              FontSize="11" Padding="6,3" MinWidth="55"
                               ToolTip.Tip="Font size">
-                        <ComboBoxItem Content="S" Tag="12" />
-                        <ComboBoxItem Content="M" Tag="14" IsSelected="True" />
-                        <ComboBoxItem Content="L" Tag="16" />
+                        <ComboBoxItem Content="A⁻" Tag="12" />
+                        <ComboBoxItem Content="A" Tag="14" />
+                        <ComboBoxItem Content="A⁺" Tag="16" />
                     </ComboBox>
 
                     <!-- Theme -->
                     <ComboBox Name="ThemeSelector"
-                              FontSize="11" Padding="6,3" MinWidth="90"
+                              FontSize="11" Padding="6,3" MinWidth="130"
                               ToolTip.Tip="Color theme">
-                        <ComboBoxItem Content="Paramonov" IsSelected="True" />
-                        <ComboBoxItem Content="Light" />
-                        <ComboBoxItem Content="Dota 2" />
+                        <ComboBoxItem Content="🟣 Paramonov" />
+                        <ComboBoxItem Content="⚪ Light" />
+                        <ComboBoxItem Content="🔴 Dota 2" />
+                        <ComboBoxItem Content="🟡 Cyberpunk" />
+                        <ComboBoxItem Content="🧛 Dracula" />
+                        <ComboBoxItem Content="❄️ Nord" />
+                        <ComboBoxItem Content="💜 Synthwave" />
+                        <ComboBoxItem Content="⚔️ BG3 Dark" />
                     </ComboBox>
                 </StackPanel>
             </Grid>

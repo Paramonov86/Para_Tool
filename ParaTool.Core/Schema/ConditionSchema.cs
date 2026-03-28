@@ -86,6 +86,25 @@ public sealed class ConditionSchema
 
     public static readonly string[] ItemSlots = BoostMapping.StatItemSlot;
 
+    public static readonly string[] EntityTargetsEn = ["Target", "Source"];
+    public static readonly string[] EntityTargetsRu = ["Цель", "Источник"];
+
+    public static string[] GetEntityTargets(bool russian) => russian ? EntityTargetsRu : EntityTargetsEn;
+
+    public static string EntityToRaw(string display) => display switch
+    {
+        "Target" or "Цель" => "context.Target",
+        "Source" or "Источник" => "context.Source",
+        _ => display.Contains('.') ? display : $"context.{display}"
+    };
+
+    public static string EntityFromRaw(string raw, bool russian = false) => raw switch
+    {
+        "context.Target" => russian ? "Цель" : "Target",
+        "context.Source" => russian ? "Источник" : "Source",
+        _ => raw.Replace("context.", "")
+    };
+
     public static readonly string[] InSurfaceValues =
     [
         "SurfaceNone", "SurfaceWater", "SurfaceWaterElectrified", "SurfaceWaterFrozen",
@@ -163,8 +182,8 @@ public sealed class ConditionSchema
                     var funcParams = new List<ConditionParam>();
                     foreach (var (pName, pType) in paramAnnotations)
                     {
-                        // Skip entity/source/target params — user doesn't set these
-                        if (pType is "Khn_Entity" or "Khn_Vector") continue;
+                        // Vector params are internal — skip
+                        if (pType is "Khn_Vector") continue;
 
                         funcParams.Add(new ConditionParam
                         {
@@ -230,8 +249,15 @@ public sealed class ConditionSchema
                 foreach (var arg in argsStr.Split(',', StringSplitOptions.TrimEntries))
                 {
                     if (string.IsNullOrEmpty(arg)) continue;
-                    // Skip entity/context params
-                    if (arg is "entity" or "entity2" or "target" or "source" or "owner") continue;
+                    // Entity params → Target/Source enum
+                    if (arg is "entity" or "entity2" or "target" or "source" or "owner")
+                    {
+                        funcParams.Add(new ConditionParam
+                        {
+                            Name = arg, Type = "enum", EnumValues = EntityTargetsEn, IsOptional = true,
+                        });
+                        continue;
+                    }
 
                     funcParams.Add(new ConditionParam
                     {
@@ -280,6 +306,7 @@ public sealed class ConditionSchema
         "KhnDamageType" => "enum",
         "KhnSchool" => "enum",
         "KhnWeaponProperties" => "enum",
+        "Khn_Entity" => "enum",
         "KhnInstrumentType" => "string",
         "KhnHealingType" => "string",
         "KhnStatusRemoveCause" => "string",
@@ -299,6 +326,7 @@ public sealed class ConditionSchema
         "KhnDamageType" => DamageTypes,
         "KhnSchool" => SpellSchools,
         "KhnWeaponProperties" => WeaponProperties,
+        "Khn_Entity" => EntityTargetsEn,
         "SpellFlags" => SpellFlags,
         "ItemSlot" => ItemSlots,
         _ => null

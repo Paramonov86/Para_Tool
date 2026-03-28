@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using ParaTool.App.Controls;
 using ParaTool.App.ViewModels;
 using ParaTool.App.Localization;
 
@@ -26,7 +27,7 @@ public partial class ConstructorView : UserControl
         ["Legendary"] = new(Color.Parse("#C8A96E")),
     };
 
-    // BG3 localization folder names
+    // BG3 localization folder names with flag emojis
     private static readonly string[] Bg3Languages =
     [
         "English", "Russian", "German", "French", "Spanish", "LatinSpanish",
@@ -34,7 +35,6 @@ public partial class ConstructorView : UserControl
         "Chinese", "ChineseTraditional", "BrazilianPortuguese"
     ];
 
-    // BG3 folder name → ParaTool lang code
     private static readonly Dictionary<string, string> Bg3ToCode = new()
     {
         ["English"] = "en", ["Russian"] = "ru", ["German"] = "de", ["French"] = "fr",
@@ -56,15 +56,18 @@ public partial class ConstructorView : UserControl
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
 
         // Setup language selector
-        var langSelector = this.FindControl<ComboBox>("LocaLangSelector");
+        var langSelector = this.FindControl<TumblerChipEditor>("LocaLangSelector");
         if (langSelector != null)
         {
-            langSelector.ItemsSource = Bg3Languages;
-            // Default to UI language
+            langSelector.Items = Bg3Languages;
             var uiCode = Loc.Instance.Lang;
             var defaultBg3 = Bg3ToCode.FirstOrDefault(x => x.Value == uiCode).Key ?? "English";
-            langSelector.SelectedItem = defaultBg3;
-            langSelector.SelectionChanged += OnLocaLangChanged;
+            langSelector.Text = defaultBg3;
+            langSelector.PropertyChanged += (s, e) =>
+            {
+                if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
+                    OnLocaLangChanged(tc.Text);
+            };
         }
     }
 
@@ -87,15 +90,12 @@ public partial class ConstructorView : UserControl
             RebuildChips();
     }
 
-    private void OnLocaLangChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnLocaLangChanged(string? bg3Lang)
     {
-        if (sender is ComboBox cb && cb.SelectedItem is string bg3Lang)
-        {
-            _currentLocaLang = Bg3ToCode.GetValueOrDefault(bg3Lang, "en");
-            // Only change editing language, NOT the app UI language
-            if (DataContext is ConstructorViewModel vm)
-                vm.EditingLang = _currentLocaLang;
-        }
+        if (bg3Lang == null) return;
+        _currentLocaLang = Bg3ToCode.GetValueOrDefault(bg3Lang, "en");
+        if (DataContext is ConstructorViewModel vm)
+            vm.EditingLang = _currentLocaLang;
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)

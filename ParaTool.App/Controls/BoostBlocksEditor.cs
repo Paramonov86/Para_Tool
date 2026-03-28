@@ -280,60 +280,48 @@ public class BoostBlocksEditor : UserControl
         return wrapper;
     }
 
-    /// <summary>Render IF(condition):effect as a yellow container block.</summary>
+    /// <summary>Render IF(condition):effect as a container with live sub-editors.</summary>
     private Border CreateIfBlock(string rawBoost, string content)
     {
         var ifColor = Color.Parse("#F1C40F");
         var ifBrush = new SolidColorBrush(ifColor);
 
-        // Split condition:effect
-        var colonIdx = content.IndexOf(')');
+        // Split condition:effect — find matching ) then :
         string condition, effect;
-        if (colonIdx >= 0 && colonIdx + 1 < content.Length && content[colonIdx + 1] == ':')
+        int depth = 0, splitAt = -1;
+        for (int ci = 0; ci < content.Length; ci++)
         {
-            condition = content[1..colonIdx]; // inside (...)
-            effect = content[(colonIdx + 2)..];
-        }
-        else
-        {
-            condition = content;
-            effect = "";
-        }
-
-        var outer = new StackPanel { Spacing = 4 };
-
-        // IF label + condition
-        var condRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        condRow.Children.Add(new TextBlock
-        {
-            Text = "IF", FontSize = 11, FontWeight = FontWeight.Bold,
-            Foreground = ifBrush, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-        });
-        condRow.Children.Add(new Border
-        {
-            Child = new TextBlock
+            if (content[ci] == '(') depth++;
+            else if (content[ci] == ')') depth--;
+            if (depth < 0 || (depth == 0 && content[ci] == ')'))
             {
-                Text = SimplifyCondition(condition),
-                FontSize = 10, Foreground = FgLight,
-            },
-            Background = new SolidColorBrush(ifColor, 0.1),
-            CornerRadius = new CornerRadius(4),
-            Padding = new Thickness(6, 2),
-        });
-        outer.Children.Add(condRow);
-
-        // Effect as nested block
-        if (!string.IsNullOrEmpty(effect))
-        {
-            var effectBlock = CreateBlock(effect);
-            if (effectBlock != null)
-            {
-                effectBlock.Margin = new Thickness(16, 0, 0, 0);
-                outer.Children.Add(effectBlock);
+                // Check for ): pattern
+                if (ci + 1 < content.Length && content[ci + 1] == ':')
+                    splitAt = ci;
+                break;
             }
         }
 
-        // Remove
+        if (splitAt >= 0)
+        {
+            condition = content[1..splitAt]; // inside outer (...)
+            effect = content[(splitAt + 2)..];
+        }
+        else
+        {
+            condition = content.Length > 1 ? content[1..].TrimEnd(')') : content;
+            effect = "";
+        }
+
+        var outer = new StackPanel { Spacing = 4, ClipToBounds = false };
+
+        // Row 1: IF label + × button
+        var headerRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        headerRow.Children.Add(new TextBlock
+        {
+            Text = "IF", FontSize = 12, FontWeight = FontWeight.Bold,
+            Foreground = ifBrush, VerticalAlignment = VerticalAlignment.Center,
+        });
         var removeBtn = new Button
         {
             Content = "×", FontSize = 10,
@@ -341,11 +329,59 @@ public class BoostBlocksEditor : UserControl
             Background = Brushes.Transparent, Foreground = FgMuted,
             BorderThickness = new Thickness(0),
             Cursor = new Cursor(StandardCursorType.Hand),
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
         };
         removeBtn.Tag = rawBoost;
         removeBtn.Click += OnRemoveClick;
-        outer.Children.Add(removeBtn);
+        headerRow.Children.Add(removeBtn);
+        outer.Children.Add(headerRow);
+
+        // Mutable state for cross-editor updates
+        var currentCond = condition;
+        var currentEffect = effect;
+
+        // Row 2: Embedded condition editor (live chips)
+        var condEditor = new ConditionBlocksEditor
+        {
+            Text = condition,
+            Margin = new Thickness(12, 0, 0, 0),
+            ClipToBounds = false,
+        };
+        condEditor.PropertyChanged += (s, e2) =>
+        {
+            if (e2.Property.Name == "Text" && s is ConditionBlocksEditor ce && !_updating)
+            {
+                currentCond = ce.Text ?? "";
+                UpdateIfBlock(rawBoost, currentCond, currentEffect);
+            }
+        };
+        outer.Children.Add(condEditor);
+
+        // Row 3: "THEN" label
+        outer.Children.Add(new TextBlock
+        {
+            Text = "THEN", FontSize = 10, FontWeight = FontWeight.SemiBold,
+            Foreground = new SolidColorBrush(ifColor, 0.6),
+            Margin = new Thickness(12, 2, 0, 0),
+        });
+
+        // Row 4: Embedded functor editor (live chip blocks)
+        var functorEditor = new BoostBlocksEditor
+        {
+            Text = effect,
+            IsFunctorMode = true,
+            Margin = new Thickness(12, 0, 0, 0),
+            ClipToBounds = false,
+        };
+        functorEditor.PropertyChanged += (s, e2) =>
+        {
+            if (e2.Property.Name == "Text" && s is BoostBlocksEditor be && !_updating)
+            {
+                currentEffect = be.Text ?? "";
+                UpdateIfBlock(rawBoost, currentCond, currentEffect);
+            }
+        };
+        outer.Children.Add(functorEditor);
 
         return new Border
         {
@@ -355,7 +391,19 @@ public class BoostBlocksEditor : UserControl
             BorderThickness = new Thickness(2, 0, 0, 0),
             CornerRadius = new CornerRadius(6),
             Padding = new Thickness(8, 6), Margin = new Thickness(2),
+            ClipToBounds = false,
         };
+    }
+
+    private void UpdateIfBlock(string oldRawBoost, string newCondition, string newEffect)
+    {
+        if (_updating) return;
+        var newIf = $"IF({newCondition}):{newEffect}";
+        var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        var idx = parts.IndexOf(oldRawBoost);
+        if (idx >= 0)
+            parts[idx] = newIf;
+        SyncText(string.Join(";", parts));
     }
 
     /// <summary>Simplify condition text for display.</summary>
@@ -431,16 +479,6 @@ public class BoostBlocksEditor : UserControl
             var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
             parts.Remove(rawBoost);
             SyncText(string.Join(";", parts));
-        }
-    }
-
-    private void OnParamChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ComboBox combo && combo.Tag is (string rawBoost, int paramIdx))
-        {
-            var newValue = combo.SelectedItem?.ToString();
-            if (newValue != null)
-                UpdateParam(rawBoost, paramIdx, newValue);
         }
     }
 

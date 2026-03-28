@@ -23,7 +23,8 @@ public class ConditionBlocksEditor : UserControl
 
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;
-    private List<CondToken> _tokens = []; // current tokens for drag-drop
+    private List<CondToken> _tokens = [];
+    private readonly Stack<string> _undoStack = new(); // for Ctrl+Z
 
     private static readonly SolidColorBrush FgFunc = new(Color.Parse("#2ECC71"));
     private static readonly SolidColorBrush BgFunc = new(Color.Parse("#1A2ECC71"));
@@ -38,9 +39,21 @@ public class ConditionBlocksEditor : UserControl
     {
         Content = _panel;
         ClipToBounds = false;
+        Focusable = true;
         PropertyChanged += (_, e) =>
         {
             if (e.Property == TextProperty && !_updating) Rebuild();
+        };
+        KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control) && _undoStack.Count > 0)
+            {
+                _updating = true;
+                Text = _undoStack.Pop();
+                _updating = false;
+                Rebuild();
+                e.Handled = true;
+            }
         };
     }
 
@@ -48,12 +61,13 @@ public class ConditionBlocksEditor : UserControl
 
     private sealed class CondToken
     {
-        public enum Kind { Func, And, Or }
+        public enum Kind { Func, And, Or, Group }
         public Kind Type;
-        public bool Negated;       // "not" prefix
-        public string FuncName = "";  // e.g. "InSurface"
-        public string[] Args = [];    // e.g. ["'SurfaceWater'"]
-        public string Raw = "";       // original text
+        public bool Negated;
+        public string FuncName = "";
+        public string[] Args = [];
+        public string Raw = "";
+        public List<CondToken>? Children; // for Group type
     }
 
     // ── Rebuild UI from text ───────────────────────────────────
@@ -92,74 +106,112 @@ public class ConditionBlocksEditor : UserControl
                 };
                 element = connBtn;
             }
+            else if (token.Type == CondToken.Kind.Group)
+            {
+                element = BuildGroupChip(token, _tokens, idx);
+            }
             else
             {
                 element = BuildConditionChip(token, _tokens, idx);
             }
 
             // Drag-and-drop: hold and drag to reorder
-            SetupDrag(element, idx);
+            SetupReorder(element, idx);
             _panel.Children.Add(element);
         }
 
         AddPlusButton();
     }
 
-    // ── Drag and drop ──────────────────────────────────────────
+    // ── Drag-and-drop reorder ─────────────────────────────────
 
-    private void SetupDrag(Control element, int tokenIdx)
+    private int _dragFromIdx = -1;
+
+    private void SetupReorder(Control element, int tokenIdx)
     {
-        element.Tag = tokenIdx;
+        DragDrop.SetAllowDrop(element, true);
 
-        // Start drag on pointer press + move
         element.PointerPressed += async (s, e) =>
         {
-            if (e.GetCurrentPoint(element).Properties.IsLeftButtonPressed && s is Control ctrl)
-            {
-                // Small delay to distinguish click from drag
-                var startPos = e.GetPosition(_panel);
+            if (!e.GetCurrentPoint(element).Properties.IsLeftButtonPressed) return;
+            if (s is not Control ctrl) return;
 
-                void onMove(object? _, PointerEventArgs me)
+            // Wait for small move to start drag
+            var startPos = e.GetPosition(_panel);
+            bool dragging = false;
+
+            void onMove(object? _, PointerEventArgs me)
+            {
+                if (dragging) return;
+                var pos = me.GetPosition(_panel);
+                if (Math.Abs(pos.X - startPos.X) > 10 || Math.Abs(pos.Y - startPos.Y) > 10)
                 {
-                    var pos = me.GetPosition(_panel);
-                    if (Math.Abs(pos.X - startPos.X) > 8 || Math.Abs(pos.Y - startPos.Y) > 8)
+                    dragging = true;
+                    ctrl.PointerMoved -= onMove;
+                    _dragFromIdx = tokenIdx;
+                    ctrl.Opacity = 0.4;
+                    try
                     {
-                        ctrl.PointerMoved -= onMove;
                         var data = new DataObject();
-                        data.Set("CondTokenIdx", tokenIdx);
-                        ctrl.Opacity = 0.5;
-                        DragDrop.DoDragDrop(me, data, DragDropEffects.Move);
-                        ctrl.Opacity = 1;
+                        data.Set("CondIdx", tokenIdx.ToString());
+                        _ = DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
                     }
+                    catch { /* Avalonia DnD can throw on some platforms */ }
+                    ctrl.Opacity = 1;
+                    _dragFromIdx = -1;
                 }
-                ctrl.PointerMoved += onMove;
-                ctrl.PointerReleased += (_, _) => ctrl.PointerMoved -= onMove;
+            }
+            ctrl.PointerMoved += onMove;
+            ctrl.PointerReleased += (_, _) => { ctrl.PointerMoved -= onMove; };
+        };
+
+        element.AddHandler(DragDrop.DragOverEvent, (_, e) => { e.DragEffects = DragDropEffects.Move; });
+
+        element.AddHandler(DragDrop.DropEvent, (_, e) =>
+        {
+            var fromStr = e.Data.Get("CondIdx") as string;
+            if (fromStr == null || !int.TryParse(fromStr, out var fromIdx)) return;
+            var toIdx = tokenIdx;
+            if (fromIdx == toIdx || fromIdx < 0 || fromIdx >= _tokens.Count || toIdx < 0 || toIdx >= _tokens.Count) return;
+
+            var moved = _tokens[fromIdx];
+            _tokens.RemoveAt(fromIdx);
+            var insertAt = toIdx > fromIdx ? toIdx - 1 : toIdx;
+            insertAt = Math.Clamp(insertAt, 0, _tokens.Count);
+            _tokens.Insert(insertAt, moved);
+            SyncFromTokens(_tokens);
+        });
+
+        // Also keep context menu move as fallback
+        var moveLeft = new MenuItem { Header = "← Move Left" };
+        moveLeft.Click += (_, _) =>
+        {
+            if (tokenIdx > 0 && tokenIdx < _tokens.Count)
+            {
+                (_tokens[tokenIdx], _tokens[tokenIdx - 1]) = (_tokens[tokenIdx - 1], _tokens[tokenIdx]);
+                SyncFromTokens(_tokens);
+            }
+        };
+        var moveRight = new MenuItem { Header = "→ Move Right" };
+        moveRight.Click += (_, _) =>
+        {
+            if (tokenIdx >= 0 && tokenIdx < _tokens.Count - 1)
+            {
+                (_tokens[tokenIdx], _tokens[tokenIdx + 1]) = (_tokens[tokenIdx + 1], _tokens[tokenIdx]);
+                SyncFromTokens(_tokens);
             }
         };
 
-        // Drop target
-        DragDrop.SetAllowDrop(element, true);
-        element.AddHandler(DragDrop.DropEvent, (_, e) =>
+        if (element.ContextMenu != null)
         {
-            if (e.Data.Get("CondTokenIdx") is int fromIdx)
-            {
-                var toIdx = tokenIdx;
-                if (fromIdx != toIdx && fromIdx >= 0 && fromIdx < _tokens.Count && toIdx >= 0 && toIdx < _tokens.Count)
-                {
-                    var moved = _tokens[fromIdx];
-                    _tokens.RemoveAt(fromIdx);
-                    var insertAt = toIdx > fromIdx ? toIdx - 1 : toIdx;
-                    if (insertAt < 0) insertAt = 0;
-                    if (insertAt > _tokens.Count) insertAt = _tokens.Count;
-                    _tokens.Insert(insertAt, moved);
-                    SyncFromTokens(_tokens);
-                }
-            }
-        });
-        element.AddHandler(DragDrop.DragOverEvent, (_, e) =>
+            element.ContextMenu.Items.Add(new Separator());
+            element.ContextMenu.Items.Add(moveLeft);
+            element.ContextMenu.Items.Add(moveRight);
+        }
+        else
         {
-            e.DragEffects = DragDropEffects.Move;
-        });
+            element.ContextMenu = new ContextMenu { Items = { moveLeft, moveRight } };
+        }
     }
 
     // ── Build a single condition chip ──────────────────────────
@@ -196,10 +248,11 @@ public class ConditionBlocksEditor : UserControl
         });
 
         // Parameter controls
-        // Show params: use def if available, otherwise show raw args
+        // Only render params that actually exist in the expression
+        // Optional params (entity target/source) only shown if explicitly provided
         var paramCount = def?.Params.Length ?? 0;
         var argCount = token.Args.Length;
-        var count = Math.Max(paramCount, argCount);
+        var count = argCount;
 
         for (int pi = 0; pi < count; pi++)
         {
@@ -207,21 +260,25 @@ public class ConditionBlocksEditor : UserControl
             var argVal = pi < argCount ? token.Args[pi].Trim('\'', '"', ' ') : "";
             var paramIdx = pi;
 
-            // Skip entity/target params — user doesn't set these
-            if (param != null && param.Type == "entity") continue;
-
             if (param?.Type == "enum" && param.EnumValues != null)
             {
+                // For entity params, display localized short names
+                var isRuParam = Localization.Loc.Instance.Lang == "ru";
+                var isEntity = param.EnumValues == ConditionSchema.EntityTargetsEn || param.EnumValues == ConditionSchema.EntityTargetsRu;
+                var displayVal = isEntity ? ConditionSchema.EntityFromRaw(argVal, isRuParam) : argVal;
+
+                var tumblerItems = isEntity ? ConditionSchema.GetEntityTargets(isRuParam) : param.EnumValues;
                 var enumTumbler = new TumblerChipEditor
                 {
-                    Text = argVal, Items = param.EnumValues,
+                    Text = displayVal, Items = tumblerItems,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 enumTumbler.PropertyChanged += (s, e) =>
                 {
                     if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
                     {
-                        token.Args[paramIdx] = $"'{tc.Text}'";
+                        var raw = isEntity ? ConditionSchema.EntityToRaw(tc.Text ?? "") : tc.Text ?? "";
+                        token.Args[paramIdx] = $"{raw}";
                         SyncFromTokens(tokens);
                     }
                 };
@@ -266,6 +323,38 @@ public class ConditionBlocksEditor : UserControl
             }
         }
 
+        // "+" button to add optional params if def has more than current args
+        if (def != null && argCount < paramCount)
+        {
+            var nextParam = def.Params[argCount];
+            var addArgBtn = new Button
+            {
+                Content = $"+{nextParam.Name}", FontSize = 9,
+                Padding = new Thickness(4, 1),
+                Background = Brushes.Transparent, Foreground = FgMuted,
+                BorderThickness = new Thickness(1), BorderBrush = FgMuted,
+                CornerRadius = new CornerRadius(4),
+                Cursor = new Cursor(StandardCursorType.Hand),
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            addArgBtn.Click += (_, _) =>
+            {
+                // Add default value for the next optional param
+                var defaultVal = nextParam.Type switch
+                {
+                    "enum" => nextParam.EnumValues?.FirstOrDefault() ?? "context.Target",
+                    "int" => "1",
+                    "bool" => "true",
+                    _ => "context.Target"
+                };
+                var args = token.Args.ToList();
+                args.Add(nextParam.Type == "string" || nextParam.Type == "enum" ? $"'{defaultVal}'" : defaultVal);
+                token.Args = args.ToArray();
+                SyncFromTokens(tokens);
+            };
+            stack.Children.Add(addArgBtn);
+        }
+
         if (count == 0 && token.Args.Length > 0 && def == null)
         {
             // Unknown function — show raw args as text
@@ -308,6 +397,61 @@ public class ConditionBlocksEditor : UserControl
         return chip;
     }
 
+    // ── Group chip (parentheses) ───────────────────────────────
+
+    private Control BuildGroupChip(CondToken token, List<CondToken> tokens, int tokenIdx)
+    {
+        // Serialize children to string for embedded editor
+        var innerText = token.Children != null ? SerializeTokens(token.Children) : "";
+
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        header.Children.Add(new TextBlock
+        {
+            Text = "( )", FontSize = 11, FontWeight = FontWeight.Bold,
+            Foreground = FgMuted, VerticalAlignment = VerticalAlignment.Center,
+        });
+        var removeBtn = new Button
+        {
+            Content = "×", FontSize = 10,
+            Padding = new Thickness(3, 0),
+            Background = Brushes.Transparent, Foreground = FgMuted,
+            BorderThickness = new Thickness(0),
+            Cursor = new Cursor(StandardCursorType.Hand),
+        };
+        removeBtn.Click += (_, _) => { RemoveToken(tokens, tokenIdx); SyncFromTokens(tokens); };
+        header.Children.Add(removeBtn);
+
+        // Embedded condition editor for group content
+        var innerEditor = new ConditionBlocksEditor
+        {
+            Text = innerText,
+            Margin = new Thickness(4, 2, 4, 0),
+            ClipToBounds = false,
+        };
+        innerEditor.PropertyChanged += (s, e) =>
+        {
+            if (e.Property.Name == "Text" && s is ConditionBlocksEditor ce && !_updating)
+            {
+                // Re-parse inner text to update token children
+                token.Children = Tokenize(ce.Text ?? "");
+                SyncFromTokens(tokens);
+            }
+        };
+
+        var stack = new StackPanel { Spacing = 2, Children = { header, innerEditor } };
+
+        return new Border
+        {
+            Child = stack,
+            Background = new SolidColorBrush(Themes.ThemeBrushes.BorderSubtle.Color, 0.35),
+            BorderBrush = new SolidColorBrush(Color.Parse("#8A8494")),
+            BorderThickness = new Thickness(2),
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(8, 6), Margin = new Thickness(2),
+            ClipToBounds = false,
+        };
+    }
+
     // ── Add button with categorized menu ───────────────────────
 
     private void AddPlusButton()
@@ -329,6 +473,20 @@ public class ConditionBlocksEditor : UserControl
     {
         var schema = ConditionSchema.Instance;
         var menu = new ContextMenu();
+
+        // Group (parentheses) option at top
+        var groupItem = new MenuItem { Header = "( ) Group / Скобки", FontWeight = FontWeight.SemiBold };
+        groupItem.Click += (_, _) =>
+        {
+            var current = Text ?? "";
+            var addition = "(Enemy())";
+            _updating = true;
+            Text = string.IsNullOrEmpty(current) ? addition : $"{current} and {addition}";
+            _updating = false;
+            Rebuild();
+        };
+        menu.Items.Add(groupItem);
+        menu.Items.Add(new Separator());
 
         // Group by category
         var groups = schema.Functions
@@ -420,22 +578,37 @@ public class ConditionBlocksEditor : UserControl
 
     private void SyncFromTokens(List<CondToken> tokens)
     {
+        // Save current state for undo
+        var oldText = Text ?? "";
+        if (!string.IsNullOrEmpty(oldText))
+            _undoStack.Push(oldText);
+
+        _updating = true;
+        Text = SerializeTokens(tokens);
+        _updating = false;
+        Rebuild();
+    }
+
+    private static string SerializeTokens(List<CondToken> tokens)
+    {
         var parts = new List<string>();
         foreach (var t in tokens)
         {
             if (t.Type == CondToken.Kind.And) { parts.Add("and"); continue; }
             if (t.Type == CondToken.Kind.Or) { parts.Add("or"); continue; }
+            if (t.Type == CondToken.Kind.Group)
+            {
+                var inner = t.Children != null ? SerializeTokens(t.Children) : "";
+                parts.Add($"({inner})");
+                continue;
+            }
 
             var sb = "";
             if (t.Negated) sb = "not ";
             sb += t.Args.Length > 0 ? $"{t.FuncName}({string.Join(",", t.Args)})" : $"{t.FuncName}()";
             parts.Add(sb);
         }
-
-        _updating = true;
-        Text = string.Join(" ", parts);
-        _updating = false;
-        Rebuild();
+        return string.Join(" ", parts);
     }
 
     // ── Tokenizer ──────────────────────────────────────────────
@@ -463,6 +636,28 @@ public class ConditionBlocksEditor : UserControl
             {
                 tokens.Add(new CondToken { Type = CondToken.Kind.Or, Raw = "or" });
                 remaining = remaining[2..].TrimStart();
+                continue;
+            }
+
+            // Grouping parentheses → Group token with children
+            if (remaining.StartsWith('(') && !System.Text.RegularExpressions.Regex.IsMatch(remaining, @"^\w+\("))
+            {
+                int d = 1, p = 1;
+                while (p < remaining.Length && d > 0)
+                {
+                    if (remaining[p] == '(') d++;
+                    else if (remaining[p] == ')') d--;
+                    p++;
+                }
+                var inner = remaining[1..(p - 1)];
+                remaining = p < remaining.Length ? remaining[p..] : "";
+
+                tokens.Add(new CondToken
+                {
+                    Type = CondToken.Kind.Group,
+                    Children = Tokenize(inner), // recurse
+                    Raw = $"({inner})"
+                });
                 continue;
             }
 

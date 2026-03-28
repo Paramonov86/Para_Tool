@@ -337,6 +337,13 @@ public partial class PassiveVM : ObservableObject
     private string EditLang => _parent.GetEditingLang?.Invoke() ?? Loc.Instance.Lang;
 
     public static string[] TriggerOptions { get; } = ParaTool.Core.Schema.BoostMapping.TriggerEvents.Keys.ToArray();
+    public static string[] TriggerLabels => ParaTool.Core.Schema.BoostMapping.TriggerEvents.Values
+        .Select(v =>
+        {
+            var parts = v.Split('/');
+            return Localization.Loc.Instance.Lang == "ru" && parts.Length > 1
+                ? parts[1].Trim() : parts[0].Trim();
+        }).ToArray();
 
     public PassiveVM(PassiveDefinition passive, ArtifactItemVM parent)
     {
