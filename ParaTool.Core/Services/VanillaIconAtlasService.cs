@@ -117,21 +117,25 @@ public sealed class VanillaIconAtlasService
             using var ms = new MemoryStream();
             stream.CopyTo(ms);
             var ddsData = ms.ToArray();
-            var (w, h, rgba) = DdsReader.Decode(ddsData);
-            var result = (w, h, rgba);
 
-            // Evict oldest atlas if cache full
+            // Evict oldest atlas BEFORE decoding to free memory
             while (_atlasCacheOrder.Count >= MaxCachedAtlases)
             {
                 var oldest = _atlasCacheOrder.Dequeue();
                 _atlasCache.Remove(oldest);
             }
 
+            // Force GC before large allocation
+            GC.Collect(0, GCCollectionMode.Optimized);
+
+            var (w, h, rgba) = DdsReader.Decode(ddsData);
+            var result = (w, h, rgba);
+
             _atlasCache[atlasName] = result;
             _atlasCacheOrder.Enqueue(atlasName);
             return result;
         }
-        catch
+        catch (Exception)
         {
             return null;
         }

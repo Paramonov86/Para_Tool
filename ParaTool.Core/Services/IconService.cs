@@ -151,16 +151,15 @@ public sealed class IconService
                 var header = PakReader.ReadHeader(fs);
                 var entries = PakReader.ReadFileList(fs, header);
 
-                // Prefer 144x144 (items_png) over 380x380 (ItemIcons)
+                // Prefer 380x380 (ItemIcons) for quality, fallback to 144x144 (items_png)
                 var entry = entries.FirstOrDefault(e =>
-                    e.Path.EndsWith($"items_png/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
-                    e.Path.EndsWith($"items_png/{iconName}.dds", StringComparison.OrdinalIgnoreCase));
+                    e.Path.EndsWith($"ItemIcons/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
+                    e.Path.EndsWith($"ItemIcons/{iconName}.dds", StringComparison.OrdinalIgnoreCase));
 
-                // Fallback to 380x380
                 if (entry.Path == null)
                     entry = entries.FirstOrDefault(e =>
-                        e.Path.EndsWith($"ItemIcons/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
-                        e.Path.EndsWith($"ItemIcons/{iconName}.dds", StringComparison.OrdinalIgnoreCase));
+                        e.Path.EndsWith($"items_png/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
+                        e.Path.EndsWith($"items_png/{iconName}.dds", StringComparison.OrdinalIgnoreCase));
 
                 if (entry.Path != null)
                 {

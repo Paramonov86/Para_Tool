@@ -220,19 +220,26 @@ public partial class IconBrowserVM : ObservableObject
         ShowPage();
     }
 
-    private void ShowPage()
+    private async void ShowPage()
     {
         DisplayIcons.Clear();
-        var pageItems = _filteredInTab.Skip(CurrentPage * PageSize).Take(PageSize);
+        var pageItems = _filteredInTab.Skip(CurrentPage * PageSize).Take(PageSize).ToList();
+
+        // Load thumbnails in background to prevent UI freeze
+        await Task.Run(() =>
+        {
+            foreach (var icon in pageItems)
+            {
+                try { icon.TryLoadThumbnail(); }
+                catch { /* skip broken */ }
+            }
+        });
+
+        // Update UI on main thread
         foreach (var icon in pageItems)
         {
-            try
-            {
-                icon.TryLoadThumbnail();
-                if (icon.Thumbnail != null)
-                    DisplayIcons.Add(icon);
-            }
-            catch { /* skip broken icon */ }
+            if (icon.Thumbnail != null)
+                DisplayIcons.Add(icon);
         }
     }
 
