@@ -2125,3 +2125,37 @@ type "Weapon"
 new entry "_UNI_w_used_in_combat"
 type "Weapon"
 
+
+// === Source: GustavX (Patch 8) ===
+new entry "MAG_Bonded_Baneful_Shortsword"
+type "Weapon"
+using "MAG_Bonded_Baneful_Shortsword"
+data "WeaponFunctors" "IF(HasStatus('WEAPON_BOND', GetAttackWeapon(context.Source)) or HasStatus('PACT_BLADE', GetAttackWeapon(context.Source)) or HasStatus('HEXBLADE_BIND', GetAttackWeapon(context.Source))):ApplyStatus(BANE, 100, 2,,,,not SavingThrow(Ability.Charisma, 14));"
+
+new entry "WPN_Sickle_Pact"
+type "Weapon"
+using "WPN_Sickle"
+data "RootTemplate" "b4941ecd-87ba-497d-a9ec-a270f5301738"
+data "Damage" "1d8"
+data "ValueUUID" "8b2ad47c-891e-4a19-bab8-43cd5e964cb1"
+data "Boosts" "Proficiency(Sickles);"
+data "Weapon Properties" "Light;Melee;Dippable;Magical"
+
+new entry "WPN_Flail_Pact"
+type "Weapon"
+using "WPN_Flail"
+data "RootTemplate" "02376e06-56bf-429b-890f-e52f5d275262"
+data "ValueUUID" "8b2ad47c-891e-4a19-bab8-43cd5e964cb1"
+data "Rarity" ""
+data "Boosts" "Proficiency(Flails);"
+data "Weapon Properties" "Melee;Dippable;Magical"
+
+new entry "WPN_Maul_Pact"
+type "Weapon"
+using "WPN_Maul"
+data "RootTemplate" "b92fcaf1-2895-4faa-b952-1d21bf94acba"
+data "ValueUUID" "8b2ad47c-891e-4a19-bab8-43cd5e964cb1"
+data "Rarity" ""
+data "Boosts" "Proficiency(Mauls);"
+data "Weapon Properties" "Heavy;Twohanded;Melee;Dippable;Magical"
+

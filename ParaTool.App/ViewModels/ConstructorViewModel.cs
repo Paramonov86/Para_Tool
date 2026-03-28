@@ -731,7 +731,6 @@ public partial class ConstructorViewModel : ViewModelBase
             .Where(e => e.Type.Equals(type, StringComparison.OrdinalIgnoreCase))
             .Select(e => e.Name)
             .OrderBy(n => n)
-            .Take(200)
             .ToList();
     }
 

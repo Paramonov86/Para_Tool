@@ -266,9 +266,9 @@ public partial class ConstructorView : UserControl
             listBox.Items.Clear();
             var q = query.Trim();
             var source2 = string.IsNullOrEmpty(q)
-                ? allEntries.Take(200)
+                ? allEntries.Take(1000)
                 : allEntries.Where(e => e.display.Contains(q, StringComparison.OrdinalIgnoreCase)
-                    || e.id.Contains(q, StringComparison.OrdinalIgnoreCase)).Take(200);
+                    || e.id.Contains(q, StringComparison.OrdinalIgnoreCase)).Take(1000);
 
             // Custom option first
             var customBtn = new ListBoxItem { Content = "Custom (type your own)...", FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#6C5CE7")) };
@@ -368,8 +368,8 @@ public partial class ConstructorView : UserControl
         {
             listBox.Items.Clear();
             var source2 = string.IsNullOrEmpty(q?.Trim())
-                ? entries.Take(200)
-                : entries.Where(e => e.Contains(q!.Trim(), StringComparison.OrdinalIgnoreCase)).Take(200);
+                ? entries.Take(1000)
+                : entries.Where(e => e.Contains(q!.Trim(), StringComparison.OrdinalIgnoreCase)).Take(1000);
             foreach (var e in source2)
                 listBox.Items.Add(new ListBoxItem { Content = e, Tag = e, FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#C8B8DB")) });
         }

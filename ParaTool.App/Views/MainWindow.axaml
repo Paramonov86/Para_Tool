@@ -62,45 +62,71 @@
                 Background="{StaticResource PanelBgBrush}"
                 CornerRadius="8,8,0,0"
                 Padding="0,4,0,4">
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Spacing="4">
-                <!-- PATCHER tab -->
-                <Button Command="{Binding SwitchToPatcherCommand}"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        CornerRadius="6"
-                        Padding="0"
-                        Cursor="Hand">
-                    <Border Padding="36,10"
+            <Grid ColumnDefinitions="*,Auto,*">
+                <!-- Tabs (center) -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Spacing="4">
+                    <!-- PATCHER tab -->
+                    <Button Command="{Binding SwitchToPatcherCommand}"
+                            Background="Transparent"
+                            BorderThickness="0"
                             CornerRadius="6"
-                            BorderThickness="0,3,0,0"
-                            BorderBrush="{Binding PatcherTabBrush}">
-                        <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
-                                   FontSize="14" FontWeight="Bold"
-                                   Foreground="{Binding PatcherTabForeground}"
-                                   LetterSpacing="1" />
-                    </Border>
-                </Button>
+                            Padding="0"
+                            Cursor="Hand">
+                        <Border Padding="36,10"
+                                CornerRadius="6"
+                                BorderThickness="0,3,0,0"
+                                BorderBrush="{Binding PatcherTabBrush}">
+                            <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="14" FontWeight="Bold"
+                                       Foreground="{Binding PatcherTabForeground}"
+                                       LetterSpacing="1" />
+                        </Border>
+                    </Button>
 
-                <!-- CONSTRUCTOR tab -->
-                <Button Command="{Binding SwitchToConstructorCommand}"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        CornerRadius="6"
-                        Padding="0"
-                        Cursor="Hand">
-                    <Border Padding="36,10"
+                    <!-- CONSTRUCTOR tab -->
+                    <Button Command="{Binding SwitchToConstructorCommand}"
+                            Background="Transparent"
+                            BorderThickness="0"
                             CornerRadius="6"
-                            BorderThickness="0,3,0,0"
-                            BorderBrush="{Binding ConstructorTabBrush}">
-                        <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
-                                   FontSize="14" FontWeight="Bold"
-                                   Foreground="{Binding ConstructorTabForeground}"
-                                   LetterSpacing="1" />
-                    </Border>
-                </Button>
-            </StackPanel>
+                            Padding="0"
+                            Cursor="Hand">
+                        <Border Padding="36,10"
+                                CornerRadius="6"
+                                BorderThickness="0,3,0,0"
+                                BorderBrush="{Binding ConstructorTabBrush}">
+                            <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="14" FontWeight="Bold"
+                                       Foreground="{Binding ConstructorTabForeground}"
+                                       LetterSpacing="1" />
+                        </Border>
+                    </Button>
+                </StackPanel>
+
+                <!-- Settings (right) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Spacing="6" Margin="0,0,12,0">
+                    <!-- Font size -->
+                    <ComboBox Name="FontSizeSelector"
+                              FontSize="11" Padding="6,3" MinWidth="50"
+                              ToolTip.Tip="Font size">
+                        <ComboBoxItem Content="S" Tag="12" />
+                        <ComboBoxItem Content="M" Tag="14" IsSelected="True" />
+                        <ComboBoxItem Content="L" Tag="16" />
+                    </ComboBox>
+
+                    <!-- Theme -->
+                    <ComboBox Name="ThemeSelector"
+                              FontSize="11" Padding="6,3" MinWidth="90"
+                              ToolTip.Tip="Color theme">
+                        <ComboBoxItem Content="Paramonov" IsSelected="True" />
+                        <ComboBoxItem Content="Light" />
+                        <ComboBoxItem Content="Dota 2" />
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- Version overlay -->

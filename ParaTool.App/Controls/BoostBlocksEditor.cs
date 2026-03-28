@@ -137,45 +137,88 @@ public class BoostBlocksEditor : UserControl
                 combo.SelectionChanged += OnParamChanged;
                 stack.Children.Add(combo);
             }
-            else if (param.Type == "number")
+            else if (param.Type is "number" or "float")
             {
-                // Number shown as bold colored text in a small box
-                var tb = new TextBox
+                // Compact number chip with popup grid
+                var chip = new NumberChipEditor
                 {
                     Text = value,
-                    FontSize = 12, FontWeight = FontWeight.Bold,
-                    Padding = new Thickness(6, 2),
-                    MinWidth = 30, MaxWidth = 50,
-                    Background = InputBg,
-                    Foreground = colorBrush,
-                    BorderThickness = new Thickness(0),
-                    CornerRadius = new CornerRadius(4),
+                    Label = param.Label,
+                    MinValue = 0,
+                    MaxValue = param.Type == "float" ? 30 : 99,
                     VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                 };
-                tb.Tag = (rawBoost, paramIdx);
-                tb.LostFocus += OnParamTextChanged;
-                stack.Children.Add(tb);
+                chip.Tag = (rawBoost, paramIdx);
+                chip.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is NumberChipEditor nc && nc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, nc.Text ?? "");
+                };
+                stack.Children.Add(chip);
+            }
+            else if (param.Type == "dice")
+            {
+                // Dice picker as ComboBox
+                var diceOptions = new[] { "1d4", "1d6", "1d8", "1d10", "1d12", "2d4", "2d6", "2d8", "2d10", "2d12", "3d6", "3d8", "4d6", "5d6", "6d6", "8d6", "10d6" };
+                var combo = new ComboBox
+                {
+                    ItemsSource = diceOptions,
+                    SelectedItem = diceOptions.FirstOrDefault(d => d.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? value,
+                    FontSize = 11, Padding = new Thickness(4, 1),
+                    MinWidth = 55, Background = InputBg,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                combo.Tag = (rawBoost, paramIdx);
+                combo.SelectionChanged += OnParamChanged;
+                combo.LostFocus += (s, _) => { if (s is ComboBox c && c.Tag is (string rb2, int pi2)) UpdateParam(rb2, pi2, c.SelectedItem?.ToString() ?? ""); };
+                stack.Children.Add(combo);
+            }
+            else if (param.Type == "bool")
+            {
+                var options = new[] { "true", "false" };
+                var combo = new ComboBox
+                {
+                    ItemsSource = options,
+                    SelectedItem = options.FirstOrDefault(o => o.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? value,
+                    FontSize = 11, Padding = new Thickness(4, 1),
+                    MinWidth = 55, Background = InputBg,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                combo.Tag = (rawBoost, paramIdx);
+                combo.SelectionChanged += OnParamChanged;
+                stack.Children.Add(combo);
+            }
+            else if (param.Type == "formula")
+            {
+                // Formula — editable ComboBox with common presets
+                var presets = new[] { "1", "2", "3", "4", "5", "1d4", "1d6", "1d8", "2d6", "ProficiencyBonus", "Level", value };
+                var combo = new ComboBox
+                {
+                    ItemsSource = presets.Distinct().ToArray(),
+                    SelectedItem = value,
+                    FontSize = 11, Padding = new Thickness(4, 1),
+                    MinWidth = 70, Background = InputBg,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                combo.Tag = (rawBoost, paramIdx);
+                combo.SelectionChanged += OnParamChanged;
+                combo.LostFocus += (s, _) => { if (s is ComboBox c && c.Tag is (string rb2, int pi2)) UpdateParam(rb2, pi2, c.SelectedItem?.ToString() ?? ""); };
+                stack.Children.Add(combo);
             }
             else
             {
-                // String param — show simplified name
-                var displayValue = SimplifyName(funcName, value);
-                var tb = new TextBox
+                // String/guid — editable ComboBox with current value
+                var combo = new ComboBox
                 {
-                    Text = value,
-                    FontSize = 11, Padding = new Thickness(4, 2),
-                    MinWidth = 40, MaxWidth = 200,
-                    Background = InputBg,
-                    Foreground = FgLight,
-                    BorderThickness = new Thickness(0),
-                    CornerRadius = new CornerRadius(3),
+                    ItemsSource = new[] { value },
+                    SelectedItem = value,
+                    FontSize = 11, Padding = new Thickness(4, 1),
+                    MinWidth = 60, Background = InputBg,
                     VerticalAlignment = VerticalAlignment.Center,
-                    Watermark = param.Label,
                 };
-                tb.Tag = (rawBoost, paramIdx);
-                tb.LostFocus += OnParamTextChanged;
-                stack.Children.Add(tb);
+                combo.Tag = (rawBoost, paramIdx);
+                combo.LostFocus += (s, _) => { if (s is ComboBox c && c.Tag is (string rb2, int pi2)) UpdateParam(rb2, pi2, c.SelectedItem?.ToString() ?? ""); };
+                stack.Children.Add(combo);
             }
         }
 

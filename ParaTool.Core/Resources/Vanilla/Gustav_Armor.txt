@@ -340,3 +340,15 @@ type "Armor"
 new entry "_UND_a"
 type "Armor"
 
+
+// === Source: GustavX (Patch 8) ===
+new entry "ARM_ScaleMail_Body_Paladin_Crown"
+type "Armor"
+using "ARM_ScaleMail_Body_Paladin_Devotion"
+data "RootTemplate" "247bfb1b-2902-4852-b92e-eba0ceaa8249"
+
+new entry "ARM_Robe_Body_Sorcerer_ShadowSorcery"
+type "Armor"
+using "ARM_Robe_Body_Sorcerer"
+data "RootTemplate" "f518ca6e-6422-4ea6-9c92-adc4da9a48f4"
+
