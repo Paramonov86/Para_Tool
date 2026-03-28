@@ -44,6 +44,8 @@ public class ConditionBlocksEditor : UserControl
         {
             if (e.Property == TextProperty && !_updating) Rebuild();
         };
+        // Rebuild chips when UI language changes (labels need to update)
+        Loc.Instance.PropertyChanged += (_, _) => { if (!_updating) Rebuild(); };
         KeyDown += (_, e) =>
         {
             if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control) && _undoStack.Count > 0)

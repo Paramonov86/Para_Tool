@@ -302,6 +302,8 @@ public partial class ArtifactItemVM : ObservableObject
         OnPropertyChanged(nameof(RarityColor));
         OnPropertyChanged(nameof(PreviewName));
         OnPropertyChanged(nameof(PreviewRarityText));
+        OnPropertyChanged(nameof(PreviewSlot));
+        OnPropertyChanged(nameof(PreviewSubtitle));
         OnPropertyChanged(nameof(PreviewDescription));
         OnPropertyChanged(nameof(HasDescription));
         OnPropertyChanged(nameof(HasBoosts));

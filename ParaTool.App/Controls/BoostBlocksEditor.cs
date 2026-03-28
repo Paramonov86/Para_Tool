@@ -45,6 +45,8 @@ public class BoostBlocksEditor : UserControl
         Content = _panel;
         ClipToBounds = false;
         PropertyChanged += OnPropertyChanged;
+        // Rebuild when UI language changes
+        Localization.Loc.Instance.PropertyChanged += (_, _) => { if (!_updating) Rebuild(); };
     }
 
     private void OnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)

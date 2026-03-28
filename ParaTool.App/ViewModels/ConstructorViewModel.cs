@@ -220,7 +220,14 @@ public partial class ConstructorViewModel : ViewModelBase
     partial void OnSelectedArtifactChanged(ArtifactItemVM? oldValue, ArtifactItemVM? newValue)
     {
         if (oldValue != null) oldValue.IsSelected = false;
-        if (newValue != null) newValue.IsSelected = true;
+        if (newValue != null)
+        {
+            newValue.IsSelected = true;
+            // Load loca for current editing language (may differ from scan language)
+            if (_resolver != null && _locaService != null)
+                ReloadLocaForCurrentLang(newValue);
+            newValue.RefreshAll();
+        }
         OnPropertyChanged(nameof(IsArtifactSelected));
         OnPropertyChanged(nameof(HasNoSelection));
     }
