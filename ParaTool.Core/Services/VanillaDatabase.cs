@@ -35,14 +35,11 @@ public sealed class VanillaDatabase
             "ParaTool.Core.Resources.Vanilla.Vanilla_Spells.txt",
         };
 
-        // AMP overrides (highest priority — loaded last)
-        var ampResources = new[]
-        {
-            "ParaTool.Core.Resources.Vanilla.AMP_Overrides.txt",
-        };
+        // AMP overrides loaded from pak at scan time, not from embedded resources
+        // (avoids conflicts with fresh pak data)
 
-        // Load in order: vanilla base → extra types → AMP overrides
-        foreach (var resourceName in armorWeaponResources.Concat(extraResources).Concat(ampResources))
+        // Load in order: vanilla base → extra types
+        foreach (var resourceName in armorWeaponResources.Concat(extraResources))
         {
             using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null) continue; // Skip missing (AMP_Overrides may not exist in tests)

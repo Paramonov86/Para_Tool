@@ -9,7 +9,16 @@ public sealed class StatsResolver
     public void AddEntries(IEnumerable<StatsEntry> entries)
     {
         foreach (var entry in entries)
+        {
+            // Don't let non-Armor/Weapon overwrite Armor/Weapon entries
+            if (_entries.TryGetValue(entry.Name, out var existing))
+            {
+                if ((existing.Type is "Armor" or "Weapon") &&
+                    entry.Type is not "Armor" and not "Weapon")
+                    continue; // Skip — preserve item entry
+            }
             _entries[entry.Name] = entry;
+        }
     }
 
     public StatsEntry? Get(string name)
