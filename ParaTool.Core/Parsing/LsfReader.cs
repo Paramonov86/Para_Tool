@@ -519,6 +519,75 @@ public static partial class LsfScanner
         return -1;
     }
 
+    /// <summary>
+    /// Batch find Icon names near UUIDs in decompressed LSF/LSX data.
+    /// Looks for FixedString values that match icon name patterns near each UUID.
+    /// </summary>
+    public static Dictionary<string, string> FindIconNamesForUuids(byte[] data, IReadOnlySet<string> uuids)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        byte[] raw;
+        if (IsLsf(data))
+        {
+            var decompressed = TryDecompressLsf(data);
+            if (decompressed == null) return result;
+            raw = decompressed;
+        }
+        else
+        {
+            raw = data;
+        }
+
+        var text = Encoding.Latin1.GetString(raw);
+
+        // Also try as UTF8 for LSX format
+        string? utf8Text = null;
+        try { utf8Text = Encoding.UTF8.GetString(raw); } catch { }
+
+        foreach (var uuid in uuids)
+        {
+            // Find UUID position
+            int uuidPos = text.IndexOf(uuid, StringComparison.OrdinalIgnoreCase);
+            if (uuidPos < 0 && Guid.TryParse(uuid, out var guid))
+                uuidPos = FindBytes(raw, guid.ToByteArray());
+            if (uuidPos < 0) continue;
+
+            // Search for "Icon" attribute in LSX format nearby
+            if (utf8Text != null)
+            {
+                // In LSX: <attribute id="Icon" type="FixedString" value="ICON_NAME" />
+                var searchRegion = utf8Text.Substring(
+                    Math.Max(0, uuidPos - 500),
+                    Math.Min(5000, utf8Text.Length - Math.Max(0, uuidPos - 500)));
+                var iconMatch = IconLsxRegex().Match(searchRegion);
+                if (iconMatch.Success)
+                {
+                    result[uuid] = iconMatch.Groups[1].Value;
+                    continue;
+                }
+            }
+
+            // In binary LSF: look for known icon name patterns as FixedString
+            // Icon names typically contain "Item_", "Ring", "Amulet", "Helmet", etc.
+            int searchStart = Math.Max(0, uuidPos - 200);
+            int searchEnd = Math.Min(raw.Length, uuidPos + 3000);
+            var region = Encoding.Latin1.GetString(raw, searchStart, searchEnd - searchStart);
+            var binaryMatch = IconBinaryRegex().Match(region);
+            if (binaryMatch.Success)
+                result[uuid] = binaryMatch.Value;
+        }
+
+        return result;
+    }
+
     [GeneratedRegex(@"h[0-9a-f]{7,8}g[0-9a-f]{4}g[0-9a-f]{4}g[0-9a-f]{4}g[0-9a-f]{10,12}", RegexOptions.Compiled)]
     private static partial Regex HandleRegex();
+
+    [GeneratedRegex(@"id=""Icon""[^>]*value=""([^""]+)""", RegexOptions.Compiled)]
+    private static partial Regex IconLsxRegex();
+
+    // Matches common BG3 icon name patterns in binary data
+    [GeneratedRegex(@"(?:Item_|Generated_|GEN_)[A-Z][A-Za-z0-9_]{3,60}", RegexOptions.Compiled)]
+    private static partial Regex IconBinaryRegex();
 }

@@ -860,13 +860,13 @@ public sealed class ModScanner
         // Also get the raw handles for on-demand multi-lang resolution
         Dictionary<string, string> nameHandlesMap = new(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> descHandlesMap = new(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> iconNamesMap = new(StringComparer.OrdinalIgnoreCase);
         try
         {
             using var hfs = File.OpenRead(ampPakPath);
             var hHeader = PakReader.ReadHeader(hfs);
             var hEntries = PakReader.ReadFileList(hfs, hHeader);
             var uuidsSet = new HashSet<string>(uuidToStatIds.Keys, StringComparer.OrdinalIgnoreCase);
-            // Reuse the Ex scanner to get handles
             var rtFiles = hEntries.Where(e =>
                 (e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) || e.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
                 (e.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) ||
@@ -877,6 +877,9 @@ public sealed class ModScanner
                 var (nh, dh) = Parsing.LsfScanner.FindHandlesForUuidsEx(data, uuidsSet);
                 foreach (var (k, v) in nh) nameHandlesMap.TryAdd(k, v);
                 foreach (var (k, v) in dh) descHandlesMap.TryAdd(k, v);
+                // Also extract Icon names
+                var icons = Parsing.LsfScanner.FindIconNamesForUuids(data, uuidsSet);
+                foreach (var (k, v) in icons) iconNamesMap.TryAdd(k, v);
             }
         }
         catch { }
@@ -929,6 +932,8 @@ public sealed class ModScanner
                             var (mnh, mdh) = Parsing.LsfScanner.FindHandlesForUuidsEx(rtData, mUuids);
                             foreach (var (k2, v2) in mnh) nameHandlesMap.TryAdd(k2, v2);
                             foreach (var (k2, v2) in mdh) descHandlesMap.TryAdd(k2, v2);
+                            var mIcons = Parsing.LsfScanner.FindIconNamesForUuids(rtData, mUuids);
+                            foreach (var (k2, v2) in mIcons) iconNamesMap.TryAdd(k2, v2);
                         }
                     }
                     catch { }
@@ -958,6 +963,8 @@ public sealed class ModScanner
                     item.DisplayNameHandle = dnHandle;
                 if (descHandlesMap.TryGetValue(uuid, out var dHandle))
                     item.DescriptionHandle = dHandle;
+                if (iconNamesMap.TryGetValue(uuid, out var iconName))
+                    item.IconName = iconName;
             }
         }
 

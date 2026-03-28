@@ -54,6 +54,8 @@ public partial class IconEntryVM : ObservableObject
             Thumbnail = DdsBitmapConverter.ToAvaloniaBitmap(dds);
     }
 
+    public static WriteableBitmap? RgbaToBitmapStatic(byte[] rgba, int w, int h) => RgbaToBitmap(rgba, w, h);
+
     private static WriteableBitmap? RgbaToBitmap(byte[] rgba, int w, int h)
     {
         if (w <= 0 || h <= 0 || rgba.Length < w * h * 4) return null;

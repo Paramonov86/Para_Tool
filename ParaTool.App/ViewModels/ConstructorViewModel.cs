@@ -570,14 +570,22 @@ public partial class ConstructorViewModel : ViewModelBase
         }
     }
 
+    private static readonly VanillaIconAtlasService _vanillaAtlas = new();
+    private static bool _vanillaAtlasLoaded;
+
     private void LoadIconForArtifact(ArtifactItemVM vm)
     {
         if (_iconService == null) return;
 
-        // Try to find icon through using-chain
-        var iconName = _iconService.FindIconName(vm.Artifact.StatId, _resolver);
+        // Ensure vanilla atlas is loaded
+        if (!_vanillaAtlasLoaded)
+        {
+            _vanillaAtlas.LoadIconList();
+            _vanillaAtlasLoaded = true;
+        }
 
-        // Also try UsingBase if different
+        // 1. Try AMP DDS by StatId / using-chain
+        var iconName = _iconService.FindIconName(vm.Artifact.StatId, _resolver);
         if (iconName == null && !string.IsNullOrEmpty(vm.Artifact.UsingBase)
             && vm.Artifact.UsingBase != vm.Artifact.StatId)
             iconName = _iconService.FindIconName(vm.Artifact.UsingBase, _resolver);
@@ -588,9 +596,58 @@ public partial class ConstructorViewModel : ViewModelBase
             var dds = _iconService.GetIconDds(iconName);
             if (dds != null)
             {
-                var bitmap = DdsBitmapConverter.ToAvaloniaBitmap(dds);
-                if (bitmap != null)
-                    vm.IconBitmap = bitmap;
+                vm.IconBitmap = DdsBitmapConverter.ToAvaloniaBitmap(dds);
+                if (vm.IconBitmap != null) return;
+            }
+        }
+
+        // 2. Try IconName from RootTemplate (resolved during scan)
+        var baseItem = _allBaseItems.FirstOrDefault(b => b.StatId == vm.Artifact.StatId
+            || b.StatId == vm.Artifact.UsingBase);
+        var rtIconName = baseItem?.Entry.IconName;
+
+        // Also walk using-chain to find IconName from parent
+        if (rtIconName == null && _resolver != null)
+        {
+            var current = vm.Artifact.UsingBase ?? vm.Artifact.StatId;
+            int depth = 0;
+            while (current != null && depth < 20)
+            {
+                var parentItem = _allBaseItems.FirstOrDefault(b => b.StatId == current);
+                if (parentItem?.Entry.IconName != null)
+                {
+                    rtIconName = parentItem.Entry.IconName;
+                    break;
+                }
+                var entry = _resolver.Get(current);
+                current = entry?.Using;
+                depth++;
+            }
+        }
+
+        if (rtIconName != null)
+        {
+            vm.Artifact.AtlasIconMapKey ??= rtIconName;
+
+            // Try AMP DDS first
+            var dds = _iconService.GetIconDds(rtIconName);
+            if (dds != null)
+            {
+                vm.IconBitmap = DdsBitmapConverter.ToAvaloniaBitmap(dds);
+                if (vm.IconBitmap != null) return;
+            }
+
+            // Try vanilla atlas
+            var vanillaIcon = _vanillaAtlas.LoadIconList()
+                .FirstOrDefault(i => i.Name.Equals(rtIconName, StringComparison.OrdinalIgnoreCase));
+            if (vanillaIcon != null)
+            {
+                var rgba = _vanillaAtlas.ExtractIcon(vanillaIcon);
+                if (rgba != null)
+                {
+                    var (w, h) = _vanillaAtlas.GetTileSize(vanillaIcon);
+                    vm.IconBitmap = IconEntryVM.RgbaToBitmapStatic(rgba, w, h);
+                }
             }
         }
     }
