@@ -42,6 +42,7 @@
     <EmbeddedResource Include="Resources\Schema\Khn.HardcodedConditions.lua" />
     <EmbeddedResource Include="Resources\Schema\CommonConditions.khn" />
     <EmbeddedResource Include="Resources\Schema\amp_conditions.khn" />
+    <EmbeddedResource Include="Resources\Schema\CommonConditionsDev.khn" />
   </ItemGroup>
 
 </Project>
