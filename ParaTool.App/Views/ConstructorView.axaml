@@ -48,15 +48,16 @@
                                                       CommandParameter="{Binding}" />
                                         </ContextMenu>
                                     </Button.ContextMenu>
-                                    <Border Padding="10,6" CornerRadius="6"
+                                    <Border Padding="10,8" CornerRadius="6"
                                             BorderThickness="0,0,3,0" BorderBrush="{Binding RarityColor}"
                                             Background="{Binding SelectionBackground}">
                                         <Grid RowDefinitions="Auto,Auto">
-                                            <TextBlock Text="{Binding DisplayLabel}" FontSize="12"
+                                            <TextBlock Text="{Binding DisplayLabel}" FontSize="13"
+                                                       FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextPrimaryBrush}"
                                                        TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Row="1" Text="{Binding EditUsingBase}" FontSize="10"
-                                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,1,0,0" />
+                                                       Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
                                         </Grid>
                                     </Border>
                                 </Button>
@@ -78,20 +79,23 @@
                                         <!-- Group header -->
                                         <Button Background="{Binding HeaderBackground}" BorderThickness="0"
                                                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                                Padding="8,6" Cursor="Hand"
+                                                Padding="10,8" Cursor="Hand" CornerRadius="6"
                                                 Name="NavGroupToggle" Tag="{Binding}">
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 <TextBlock Text="▸"
-                                                           FontSize="11" Foreground="{StaticResource AccentLightBrush}"
-                                                           VerticalAlignment="Center" Width="14" />
-                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12"
+                                                           FontSize="12" Foreground="{StaticResource AccentLightBrush}"
+                                                           VerticalAlignment="Center" Width="16" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13"
                                                            FontWeight="SemiBold"
                                                            Foreground="{StaticResource TextPrimaryBrush}"
                                                            TextTrimming="CharacterEllipsis"
                                                            ToolTip.Tip="{Binding Name}" />
-                                                <TextBlock Grid.Column="2" Text="{Binding Count}"
-                                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}"
-                                                           VerticalAlignment="Center" Margin="4,0,0,0" />
+                                                <Border Grid.Column="2" Background="{StaticResource CardBgBrush}"
+                                                        CornerRadius="8" Padding="6,2" Margin="6,0,0,0">
+                                                    <TextBlock Text="{Binding Count}"
+                                                               FontSize="10" Foreground="{StaticResource TextMutedBrush}"
+                                                               VerticalAlignment="Center" />
+                                                </Border>
                                             </Grid>
                                         </Button>
                                         <!-- Group items -->
@@ -101,12 +105,13 @@
                                                 <DataTemplate DataType="vm:BaseItemVM">
                                                     <Button Background="Transparent" BorderThickness="0"
                                                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                                            Padding="0" Margin="0,1" Cursor="Hand"
+                                                            Padding="0" Margin="0,2" Cursor="Hand"
                                                             Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).OpenBaseItemCommand}"
                                                             CommandParameter="{Binding}">
-                                                        <Border Padding="8,5" CornerRadius="4"
+                                                        <Border Padding="10,7" CornerRadius="6"
                                                                 BorderThickness="3,0,0,0"
-                                                                BorderBrush="{Binding RarityColor}">
+                                                                BorderBrush="{Binding RarityColor}"
+                                                                Background="{StaticResource InputBgBrush}">
                                                             <TextBlock Text="{Binding Label}" FontSize="12"
                                                                        Foreground="{StaticResource TextSecondaryBrush}"
                                                                        TextWrapping="Wrap"
@@ -128,12 +133,13 @@
                                 <DataTemplate DataType="vm:BaseItemVM">
                                     <Button Background="Transparent" BorderThickness="0"
                                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                            Padding="0" Margin="0,1" Cursor="Hand"
+                                            Padding="0" Margin="0,2" Cursor="Hand"
                                             Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).OpenBaseItemCommand}"
                                             CommandParameter="{Binding}">
-                                        <Border Padding="8,5" CornerRadius="4"
+                                        <Border Padding="10,7" CornerRadius="6"
                                                 BorderThickness="3,0,0,0"
-                                                BorderBrush="{Binding RarityColor}">
+                                                BorderBrush="{Binding RarityColor}"
+                                                Background="{StaticResource InputBgBrush}">
                                             <Grid RowDefinitions="Auto,Auto">
                                                 <TextBlock Text="{Binding Label}" FontSize="12"
                                                            Foreground="{StaticResource TextSecondaryBrush}"
@@ -141,7 +147,7 @@
                                                            ToolTip.Tip="{Binding FullLabel}" />
                                                 <TextBlock Grid.Row="1" Text="{Binding ModName}" FontSize="10"
                                                            Foreground="{StaticResource TextMutedBrush}"
-                                                           Margin="0,1,0,0" />
+                                                           Margin="0,2,0,0" />
                                             </Grid>
                                         </Border>
                                     </Button>
@@ -165,40 +171,46 @@
                            Foreground="{StaticResource TextMutedBrush}"
                            HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
 
-                <TextBlock Grid.Row="1" IsVisible="{Binding HasNoSelection}"
-                           Text="{Binding EditorNoSelection, Source={x:Static loc:Loc.Instance}}"
-                           Foreground="{StaticResource TextMutedBrush}" FontSize="13"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                           TextAlignment="Center" Opacity="0.6" />
+                <StackPanel Grid.Row="1" IsVisible="{Binding HasNoSelection}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Spacing="12">
+                    <TextBlock Text="&#x1F4E6;" FontSize="40"
+                               HorizontalAlignment="Center" Opacity="0.3" />
+                    <TextBlock Text="{Binding EditorNoSelection, Source={x:Static loc:Loc.Instance}}"
+                               Foreground="{StaticResource TextMutedBrush}" FontSize="14"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center" Opacity="0.5"
+                               LineHeight="22" />
+                </StackPanel>
 
                 <ScrollViewer Grid.Row="1" IsVisible="{Binding IsArtifactSelected}" Margin="8,4,8,8">
-                    <StackPanel Spacing="10" DataContext="{Binding SelectedArtifact}">
+                    <StackPanel Spacing="12" DataContext="{Binding SelectedArtifact}">
                         <!-- Rarity -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
-                            <StackPanel Spacing="6">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                            <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding FieldRarity, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                           FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <WrapPanel Name="RarityChips" />
                             </StackPanel>
                         </Border>
                         <!-- Slot -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
-                            <StackPanel Spacing="6">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                            <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding ChipSlot, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                           FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <WrapPanel Name="PoolChips" />
                             </StackPanel>
                         </Border>
                         <!-- Themes -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
-                            <StackPanel Spacing="6">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                            <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding ChipThemes, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                           FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <WrapPanel Name="ThemeChips" />
                             </StackPanel>
                         </Border>
                         <!-- Armor properties -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10"
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
                                 IsVisible="{Binding IsArmor}">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="ARMOR" FontSize="11" FontWeight="SemiBold"
@@ -229,7 +241,7 @@
                         </Border>
 
                         <!-- Weapon properties -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10"
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
                                 IsVisible="{Binding IsWeapon}">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="WEAPON" FontSize="11" FontWeight="SemiBold"
@@ -261,7 +273,7 @@
                         </Border>
 
                         <!-- Icon selector -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding LblIcon, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="11" FontWeight="SemiBold"
@@ -287,7 +299,7 @@
                         </Border>
 
                         <!-- Mechanics -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding CardMechanics, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"
@@ -306,7 +318,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Passives -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="PASSIVES" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
@@ -371,7 +383,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Create new artifact -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="6" Padding="12,10">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="CREATE NEW ITEM" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
@@ -403,20 +415,20 @@
                 </ScrollViewer>
 
                 <!-- Save / Reset -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8"
-                            HorizontalAlignment="Center" Margin="0,6,0,10"
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10"
+                            HorizontalAlignment="Center" Margin="0,8,0,12"
                             IsVisible="{Binding IsArtifactSelected}">
                     <Button Command="{Binding SaveArtifactCommand}"
                             Background="#2ECC71" Foreground="White"
-                            FontSize="13" FontWeight="SemiBold"
-                            Padding="24,8" CornerRadius="6" Cursor="Hand">
+                            FontSize="14" FontWeight="Bold"
+                            Padding="30,10" CornerRadius="8" Cursor="Hand">
                         <TextBlock Text="{Binding BtnSave, Source={x:Static loc:Loc.Instance}}" />
                     </Button>
                     <Button Command="{Binding ResetArtifactCommand}"
-                            Background="#33E74C3C" Foreground="#E74C3C"
-                            FontSize="13" FontWeight="SemiBold"
-                            Padding="24,8" CornerRadius="6" Cursor="Hand"
-                            BorderBrush="#E74C3C" BorderThickness="1">
+                            Background="#1AE74C3C" Foreground="#E74C3C"
+                            FontSize="14" FontWeight="Bold"
+                            Padding="30,10" CornerRadius="8" Cursor="Hand"
+                            BorderBrush="#55E74C3C" BorderThickness="1.5">
                         <TextBlock Text="{Binding BtnReset, Source={x:Static loc:Loc.Instance}}" />
                     </Button>
                 </StackPanel>
@@ -500,13 +512,13 @@
 
                 <!-- Tooltip preview (inline editable) -->
                 <ScrollViewer Grid.Row="4" IsVisible="{Binding IsArtifactSelected}" Margin="4">
-                    <Border Background="#221E2A" CornerRadius="8"
+                    <Border Background="#221E2A" CornerRadius="10"
                             BorderBrush="{Binding RarityColor}"
-                            BorderThickness="2,0,0,0"
+                            BorderThickness="3,0,0,0"
                             DataContext="{Binding SelectedArtifact}">
                         <StackPanel>
                             <!-- Top: Icon (right) + Name (left) -->
-                            <Grid ColumnDefinitions="*,Auto" Margin="16,12,12,0">
+                            <Grid ColumnDefinitions="*,Auto" Margin="18,14,14,0">
                                 <StackPanel Grid.Column="0" VerticalAlignment="Top">
                                     <!-- Name (editable) -->
                                     <TextBox Name="LocaDisplayName"

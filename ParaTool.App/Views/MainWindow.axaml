@@ -60,23 +60,26 @@
         <Border Grid.Row="2"
                 IsVisible="{Binding ShowTabBar}"
                 Background="{StaticResource PanelBgBrush}"
-                Padding="0,2,0,0">
+                CornerRadius="8,8,0,0"
+                Padding="0,4,0,4">
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Center"
-                        Spacing="0">
+                        Spacing="4">
                 <!-- PATCHER tab -->
                 <Button Command="{Binding SwitchToPatcherCommand}"
                         Background="Transparent"
                         BorderThickness="0"
-                        CornerRadius="0"
+                        CornerRadius="6"
                         Padding="0"
                         Cursor="Hand">
-                    <Border Padding="32,10"
-                            BorderThickness="0,2,0,0"
+                    <Border Padding="36,10"
+                            CornerRadius="6"
+                            BorderThickness="0,3,0,0"
                             BorderBrush="{Binding PatcherTabBrush}">
                         <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
-                                   FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{Binding PatcherTabForeground}" />
+                                   FontSize="14" FontWeight="Bold"
+                                   Foreground="{Binding PatcherTabForeground}"
+                                   LetterSpacing="1" />
                     </Border>
                 </Button>
 
@@ -84,15 +87,17 @@
                 <Button Command="{Binding SwitchToConstructorCommand}"
                         Background="Transparent"
                         BorderThickness="0"
-                        CornerRadius="0"
+                        CornerRadius="6"
                         Padding="0"
                         Cursor="Hand">
-                    <Border Padding="32,10"
-                            BorderThickness="0,2,0,0"
+                    <Border Padding="36,10"
+                            CornerRadius="6"
+                            BorderThickness="0,3,0,0"
                             BorderBrush="{Binding ConstructorTabBrush}">
                         <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
-                                   FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{Binding ConstructorTabForeground}" />
+                                   FontSize="14" FontWeight="Bold"
+                                   Foreground="{Binding ConstructorTabForeground}"
+                                   LetterSpacing="1" />
                     </Border>
                 </Button>
             </StackPanel>
