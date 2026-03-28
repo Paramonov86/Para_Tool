@@ -448,6 +448,21 @@ public partial class ConstructorViewModel : ViewModelBase
         artifact.DisplayNameHandle = baseItem.Entry.DisplayNameHandle ?? "";
         artifact.DescriptionHandle = baseItem.Entry.DescriptionHandle ?? "";
 
+        // Pre-load English if available and UI is not English
+        if (Loc.Instance.Lang != "en" && _locaService != null)
+        {
+            if (!string.IsNullOrEmpty(artifact.DisplayNameHandle))
+            {
+                var enName = _locaService.ResolveHandle(artifact.DisplayNameHandle, "en");
+                if (enName != null) artifact.DisplayName["en"] = BbCode.FromBg3Xml(enName);
+            }
+            if (!string.IsNullOrEmpty(artifact.DescriptionHandle))
+            {
+                var enDesc = _locaService.ResolveHandle(artifact.DescriptionHandle, "en");
+                if (enDesc != null) artifact.Description["en"] = BbCode.FromBg3Xml(enDesc);
+            }
+        }
+
         // DisplayName — load for UI language
         if (!string.IsNullOrEmpty(baseItem.Entry.DisplayName))
         {
@@ -578,6 +593,18 @@ public partial class ConstructorViewModel : ViewModelBase
                     vm.IconBitmap = bitmap;
             }
         }
+    }
+
+    /// <summary>Get all stats entries of a given type for autocomplete.</summary>
+    public List<string> GetStatsOfType(string type)
+    {
+        if (_resolver == null) return [];
+        return _resolver.AllEntries.Values
+            .Where(e => e.Type.Equals(type, StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.Name)
+            .OrderBy(n => n)
+            .Take(200)
+            .ToList();
     }
 
     private static string MapRarity(string raw) => raw switch

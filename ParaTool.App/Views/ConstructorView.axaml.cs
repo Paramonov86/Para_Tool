@@ -165,6 +165,24 @@ public partial class ConstructorView : UserControl
 
     private void ShowBbAutocomplete(Button source, string bbTag, TextBox targetBox)
     {
+        // For passive/spell/status — show real entries from resolver
+        if (bbTag is "passive" or "spell" or "status" && DataContext is ConstructorViewModel cvm2)
+        {
+            var statsType = bbTag switch
+            {
+                "passive" => "PassiveData",
+                "spell" => "SpellData",
+                "status" => "StatusData",
+                _ => ""
+            };
+            var entries = cvm2.GetStatsOfType(statsType);
+            if (entries.Count > 0)
+            {
+                ShowStatsAutocomplete(source, bbTag, targetBox, entries);
+                return;
+            }
+        }
+
         var allTags = ParaTool.Core.Localization.LsTagDatabase.Tooltips
             .Concat(ParaTool.Core.Localization.LsTagDatabase.ActionResources).ToArray();
         var items = bbTag switch
@@ -219,6 +237,34 @@ public partial class ConstructorView : UserControl
                 {
                     targetBox.Text = text[..pos] + insert + text[pos..];
                 }
+                targetBox.CaretIndex = pos + insert.Length;
+                targetBox.Focus();
+            };
+            menu.Items.Add(item);
+        }
+
+        menu.Open(source);
+    }
+
+    private void ShowStatsAutocomplete(Button source, string bbTag, TextBox targetBox, List<string> entries)
+    {
+        var menu = new ContextMenu();
+
+        var customItem = new MenuItem { Header = "Custom..." };
+        customItem.Click += (_, _) => InsertBbCode(targetBox, bbTag);
+        menu.Items.Add(customItem);
+        menu.Items.Add(new Separator());
+
+        foreach (var entry in entries.Take(50))
+        {
+            var item = new MenuItem { Header = entry, Tag = entry };
+            item.Click += (_, _) =>
+            {
+                var id = item.Tag?.ToString() ?? "";
+                var text = targetBox.Text ?? "";
+                var pos = Math.Max(0, targetBox.SelectionStart);
+                var insert = $"[{bbTag}={id}]{id}[/{bbTag}]";
+                targetBox.Text = text[..pos] + insert + text[pos..];
                 targetBox.CaretIndex = pos + insert.Length;
                 targetBox.Focus();
             };

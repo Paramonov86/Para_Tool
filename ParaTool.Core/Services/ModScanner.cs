@@ -913,6 +913,26 @@ public sealed class ModScanner
                     foreach (var (uuid, desc) in modDescs)
                         resolvedDescs.TryAdd(uuid, desc);
 
+                    // Collect mod handles
+                    try
+                    {
+                        using var mfs = File.OpenRead(pakPath);
+                        var mHeader = PakReader.ReadHeader(mfs);
+                        var mEntries = PakReader.ReadFileList(mfs, mHeader);
+                        var mUuids = new HashSet<string>(remainingMap.Keys, StringComparer.OrdinalIgnoreCase);
+                        var mRtFiles = mEntries.Where(e2 =>
+                            (e2.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) || e2.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
+                            (e2.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) || e2.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase)));
+                        foreach (var rtf in mRtFiles)
+                        {
+                            var rtData = PakReader.ExtractFileData(mfs, rtf);
+                            var (mnh, mdh) = Parsing.LsfScanner.FindHandlesForUuidsEx(rtData, mUuids);
+                            foreach (var (k2, v2) in mnh) nameHandlesMap.TryAdd(k2, v2);
+                            foreach (var (k2, v2) in mdh) descHandlesMap.TryAdd(k2, v2);
+                        }
+                    }
+                    catch { }
+
                     // Collect mod loca
                     var modLoca = ItemNameResolver.ReadAllLocalization(pakPath, langCode);
                     foreach (var (k, v) in modLoca)
