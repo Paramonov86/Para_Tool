@@ -25,7 +25,10 @@ public sealed class VanillaIconAtlasService
 
     private static readonly string ResourcePrefix = "ParaTool.Core.Resources.VanillaIcons.";
     private List<AtlasIcon>? _icons;
+    // LRU atlas cache — max 2 atlases in memory (~40MB each decoded)
     private readonly Dictionary<string, (int w, int h, byte[] rgba)> _atlasCache = new();
+    private readonly Queue<string> _atlasCacheOrder = new();
+    private const int MaxCachedAtlases = 2;
     private static Dictionary<string, string>? _uuidToIcon;
 
     /// <summary>
@@ -113,7 +116,16 @@ public sealed class VanillaIconAtlasService
             var ddsData = ms.ToArray();
             var (w, h, rgba) = DdsReader.Decode(ddsData);
             var result = (w, h, rgba);
+
+            // Evict oldest atlas if cache full
+            while (_atlasCacheOrder.Count >= MaxCachedAtlases)
+            {
+                var oldest = _atlasCacheOrder.Dequeue();
+                _atlasCache.Remove(oldest);
+            }
+
             _atlasCache[atlasName] = result;
+            _atlasCacheOrder.Enqueue(atlasName);
             return result;
         }
         catch

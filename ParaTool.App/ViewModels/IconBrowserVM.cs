@@ -157,27 +157,10 @@ public partial class IconBrowserVM : ObservableObject
 
     private void ApplyFilter()
     {
-        // Pre-filter: only include icons that can actually load
-        // For vanilla atlas icons, we can check without full decode
         var query = SearchText.Trim();
-        var source = string.IsNullOrEmpty(query)
-            ? _allEntries
-            : _allEntries.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
-
-        // Build filtered list — test-load each icon on first filter
-        _filteredEntries = [];
-        foreach (var icon in source)
-        {
-            // Vanilla atlas icons always have data
-            if (icon.VanillaIcon != null)
-            {
-                _filteredEntries.Add(icon);
-                continue;
-            }
-            // AMP/mod icons — check if DDS exists (without full decode)
-            if (icon.Info.DdsData != null || _iconService.GetIconDds(icon.Name) != null)
-                _filteredEntries.Add(icon);
-        }
+        _filteredEntries = string.IsNullOrEmpty(query)
+            ? _allEntries.ToList()
+            : _allEntries.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
 
         TotalPages = Math.Max(1, (_filteredEntries.Count + PageSize - 1) / PageSize);
 
@@ -194,20 +177,16 @@ public partial class IconBrowserVM : ObservableObject
 
     private void ShowPage()
     {
-        // Free thumbnails from previous page to save memory
-        foreach (var old in PageIcons)
-        {
-            old.Thumbnail = null;
-            old.IsLoaded = false;
-        }
-
         PageIcons.Clear();
         var skip = CurrentPage * PageSize;
-        var pageItems = _filteredEntries.Skip(skip).Take(PageSize).ToList();
+        // Take more than PageSize to account for decode failures, then trim to PageSize
+        var candidates = _filteredEntries.Skip(skip).Take(PageSize).ToList();
 
-        foreach (var icon in pageItems)
+        foreach (var icon in candidates)
         {
-            icon.EnsureThumbnail();
+            // Only decode thumbnails for current page
+            if (!icon.IsLoaded)
+                icon.EnsureThumbnail();
             if (icon.Thumbnail != null)
                 PageIcons.Add(icon);
         }
