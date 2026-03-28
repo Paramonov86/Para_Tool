@@ -33,12 +33,12 @@ public class ToggleChipsEditor : UserControl
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal };
     private bool _updating;
 
-    private static readonly SolidColorBrush OffBg = new(Color.Parse("#252330"));
-    private static readonly SolidColorBrush OnBg = new(Color.Parse("#3D3A4D"));
-    private static readonly SolidColorBrush OffFg = new(Color.Parse("#8A8494"));
-    private static readonly SolidColorBrush OnFg = new(Color.Parse("#E0DDE6"));
+    private static readonly SolidColorBrush OffBg = new(Color.Parse("#1A1820"));
+    private static readonly SolidColorBrush OnBg = new(Color.Parse("#2A2545"));
+    private static readonly SolidColorBrush OffFg = new(Color.Parse("#5A5465"));
+    private static readonly SolidColorBrush OnFg = new(Color.Parse("#FFFFFF"));
     private static readonly SolidColorBrush OnBorder = new(Color.Parse("#6C5CE7"));
-    private static readonly SolidColorBrush OffBorder = new(Color.Parse("#3D3A4D"));
+    private static readonly SolidColorBrush OffBorder = new(Color.Parse("#2F2C3A"));
 
     public ToggleChipsEditor()
     {

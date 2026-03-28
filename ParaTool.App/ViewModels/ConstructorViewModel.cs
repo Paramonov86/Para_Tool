@@ -48,7 +48,7 @@ public partial class ConstructorViewModel : ViewModelBase
 
     [ObservableProperty] private ArtifactItemVM? _selectedArtifact;
     [ObservableProperty] private string _searchText = "";
-    [ObservableProperty] private string _editingLang = Loc.Instance.Lang;
+    [ObservableProperty] private string _editingLang = Localization.Loc.Instance.Lang;
 
     private readonly StatsResolver? _resolver;
     private readonly LocaService? _locaService;
@@ -371,6 +371,8 @@ public partial class ConstructorViewModel : ViewModelBase
 
     private ArtifactDefinition BuildArtifactFromBase(BaseItemVM baseItem)
     {
+        var scanLang = Localization.Loc.Instance.Lang; // Language used during scan (UI lang)
+
         var artifact = new ArtifactDefinition
         {
             StatId = baseItem.StatId,
@@ -410,25 +412,19 @@ public partial class ConstructorViewModel : ViewModelBase
                     var passive = new PassiveDefinition { Name = pName };
                     if (pFields.TryGetValue("DisplayName", out var dn))
                     {
-                        // Load for UI language
-                        var t = ResolveLoca(dn);
-                        if (t != null) passive.DisplayName[Loc.Instance.Lang] = t;
-                        // Also load English separately
-                        if (Loc.Instance.Lang != "en")
-                        {
-                            var en = ResolveLoca(dn, "en");
-                            if (en != null) passive.DisplayName["en"] = en;
-                        }
+                        // Load for editing language
+                        var t = ResolveLoca(dn, EditingLang);
+                        if (t != null) passive.DisplayName[EditingLang] = t;
+                        // Also load scan language and English
+                        if (EditingLang != scanLang) { var st = ResolveLoca(dn, scanLang); if (st != null) passive.DisplayName[scanLang] = st; }
+                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dn, "en"); if (en != null) passive.DisplayName["en"] = en; }
                     }
                     if (pFields.TryGetValue("Description", out var dd))
                     {
-                        var t = ResolveLoca(dd);
-                        if (t != null) passive.Description[Loc.Instance.Lang] = t;
-                        if (Loc.Instance.Lang != "en")
-                        {
-                            var en = ResolveLoca(dd, "en");
-                            if (en != null) passive.Description["en"] = en;
-                        }
+                        var t = ResolveLoca(dd, EditingLang);
+                        if (t != null) passive.Description[EditingLang] = t;
+                        if (EditingLang != scanLang) { var st = ResolveLoca(dd, scanLang); if (st != null) passive.Description[scanLang] = st; }
+                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dd, "en"); if (en != null) passive.Description["en"] = en; }
                     }
                     if (pFields.TryGetValue("DescriptionParams", out var dp)) passive.DescriptionParams = dp;
                     if (pFields.TryGetValue("Icon", out var icon)) passive.Icon = icon;
@@ -449,7 +445,7 @@ public partial class ConstructorViewModel : ViewModelBase
         artifact.DescriptionHandle = baseItem.Entry.DescriptionHandle ?? "";
 
         // Pre-load English if available and UI is not English
-        if (Loc.Instance.Lang != "en" && _locaService != null)
+        if (EditingLang != "en" && _locaService != null)
         {
             if (!string.IsNullOrEmpty(artifact.DisplayNameHandle))
             {
@@ -463,27 +459,40 @@ public partial class ConstructorViewModel : ViewModelBase
             }
         }
 
-        // DisplayName — load for UI language
+        // DisplayName — Entry.DisplayName is in scan language (UI lang at scan time)
         if (!string.IsNullOrEmpty(baseItem.Entry.DisplayName))
+            artifact.DisplayName[scanLang] = BbCode.FromBg3Xml(baseItem.Entry.DisplayName);
+        if (!string.IsNullOrEmpty(baseItem.Entry.Description))
+            artifact.Description[scanLang] = BbCode.FromBg3Xml(baseItem.Entry.Description);
+
+        // Load for EditingLang via LocaService (if different from scan lang)
+        if (EditingLang != scanLang && _locaService != null)
         {
-            artifact.DisplayName[Loc.Instance.Lang] = BbCode.FromBg3Xml(baseItem.Entry.DisplayName);
-        }
-        // Also load English separately via LocaService
-        if (Loc.Instance.Lang != "en" && !string.IsNullOrEmpty(artifact.DisplayNameHandle))
-        {
-            var enText = _locaService?.ResolveHandle(artifact.DisplayNameHandle, "en");
-            if (enText != null) artifact.DisplayName["en"] = BbCode.FromBg3Xml(enText);
+            if (!string.IsNullOrEmpty(artifact.DisplayNameHandle))
+            {
+                var text = _locaService.ResolveHandle(artifact.DisplayNameHandle, EditingLang);
+                if (text != null) artifact.DisplayName[EditingLang] = BbCode.FromBg3Xml(text);
+            }
+            if (!string.IsNullOrEmpty(artifact.DescriptionHandle))
+            {
+                var text = _locaService.ResolveHandle(artifact.DescriptionHandle, EditingLang);
+                if (text != null) artifact.Description[EditingLang] = BbCode.FromBg3Xml(text);
+            }
         }
 
-        // Description
-        if (!string.IsNullOrEmpty(baseItem.Entry.Description))
+        // Also pre-load English if not already covered
+        if (scanLang != "en" && EditingLang != "en" && _locaService != null)
         {
-            artifact.Description[Loc.Instance.Lang] = BbCode.FromBg3Xml(baseItem.Entry.Description);
-        }
-        if (Loc.Instance.Lang != "en" && !string.IsNullOrEmpty(artifact.DescriptionHandle))
-        {
-            var enText = _locaService?.ResolveHandle(artifact.DescriptionHandle, "en");
-            if (enText != null) artifact.Description["en"] = BbCode.FromBg3Xml(enText);
+            if (!string.IsNullOrEmpty(artifact.DisplayNameHandle))
+            {
+                var enText = _locaService.ResolveHandle(artifact.DisplayNameHandle, "en");
+                if (enText != null) artifact.DisplayName["en"] = BbCode.FromBg3Xml(enText);
+            }
+            if (!string.IsNullOrEmpty(artifact.DescriptionHandle))
+            {
+                var enText = _locaService.ResolveHandle(artifact.DescriptionHandle, "en");
+                if (enText != null) artifact.Description["en"] = BbCode.FromBg3Xml(enText);
+            }
         }
 
         artifact.LootPool = baseItem.Entry.DetectedPool;
@@ -498,7 +507,7 @@ public partial class ConstructorViewModel : ViewModelBase
     /// </summary>
     private string? ResolveLoca(string handleField, string? langOverride = null)
     {
-        var raw = _locaService?.ResolveHandle(handleField, langOverride ?? Loc.Instance.Lang);
+        var raw = _locaService?.ResolveHandle(handleField, langOverride ?? EditingLang);
         if (raw == null) return null;
         // Convert BG3 XML-escaped → BB-code for human-readable editing
         return BbCode.FromBg3Xml(raw);
