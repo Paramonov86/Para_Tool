@@ -970,6 +970,26 @@ public sealed class ModScanner
             }
         }
 
+        // Fallback: fill missing DisplayNames from embedded VanillaLocaService
+        foreach (var item in allItems)
+        {
+            if (item.DisplayName == null)
+            {
+                var name = VanillaLocaService.GetDisplayName(item.StatId, langCode);
+                if (name != null) item.DisplayName = name;
+            }
+            if (item.Description == null)
+            {
+                var desc = VanillaLocaService.GetDescription(item.StatId, langCode);
+                if (desc != null) item.Description = desc;
+            }
+            if (item.IconName == null)
+            {
+                var icon = VanillaLocaService.GetIconName(item.StatId);
+                if (icon != null) item.IconName = icon;
+            }
+        }
+
         return (resolver, masterLocaMap);
     }
 }
