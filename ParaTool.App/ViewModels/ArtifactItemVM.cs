@@ -67,7 +67,9 @@ public partial class ArtifactItemVM : ObservableObject
     ];
     public static string[] WeaponPropertyOptions => ParaTool.Core.Schema.BoostMapping.WeaponProperties;
     public static string[] ArmorTypeOptions => ParaTool.Core.Schema.BoostMapping.ArmorTypes;
+    public static string[] ArmorTypeLabels => ParaTool.Core.Schema.BoostMapping.ArmorTypeLabels;
     public static string[] ProficiencyOptions => ParaTool.Core.Schema.BoostMapping.ProficiencyTypes;
+    public static string[] ProficiencyLabels => ParaTool.Core.Schema.BoostMapping.ProficiencyLabels;
 
     public static string[] ThemeOptions =>
     [
@@ -111,6 +113,18 @@ public partial class ArtifactItemVM : ObservableObject
     // Type-dependent visibility
     public bool IsArmor => Artifact.StatType == "Armor";
     public bool IsWeapon => Artifact.StatType == "Weapon";
+
+    /// <summary>Show AC only for actual armor/shields, not rings/amulets/etc.</summary>
+    public bool ShowArmorClass
+    {
+        get
+        {
+            if (!IsArmor) return false;
+            var pool = Artifact.LootPool;
+            // Rings, Amulets, Cloaks, Boots, Gloves — no AC
+            return pool is null or "Armor" or "Clothes" or "Shields" or "Hats";
+        }
+    }
 
     // Armor properties
     public string EditArmorClass

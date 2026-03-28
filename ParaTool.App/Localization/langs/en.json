@@ -113,7 +113,7 @@
   "CardMechanics": "ITEM EFFECTS",
   "CardDescription": "DESCRIPTION",
   "FieldType": "Type",
-  "FieldRarity": "Rarity",
+  "FieldRarity": "RARITY",
   "FieldUnique": "Unique",
   "FieldValue": "Value",
   "FieldWeight": "Weight",

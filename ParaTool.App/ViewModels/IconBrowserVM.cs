@@ -99,6 +99,7 @@ public partial class IconBrowserVM : ObservableObject
     [ObservableProperty] private string _currentIconName = "";
     [ObservableProperty] private WriteableBitmap? _currentIconBitmap;
     [ObservableProperty] private int _iconCount;
+    [ObservableProperty] private bool _isLoading;
 
     public event Action<string>? IconSelected;
 
@@ -192,7 +193,10 @@ public partial class IconBrowserVM : ObservableObject
     private async void RefreshDisplay()
     {
         DisplayIcons.Clear();
-        if (SelectedTab == null) { IconCount = 0; return; }
+        IconCount = 0;
+        if (SelectedTab == null) return;
+
+        IsLoading = true;
 
         var query = SearchText.Trim();
         var filtered = string.IsNullOrEmpty(query)
@@ -218,6 +222,7 @@ public partial class IconBrowserVM : ObservableObject
                 DisplayIcons.Add(icon);
         }
         IconCount = DisplayIcons.Count;
+        IsLoading = false;
     }
 
     public void SelectIcon(IconEntryVM icon)

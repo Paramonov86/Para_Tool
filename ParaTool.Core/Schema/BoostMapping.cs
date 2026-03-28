@@ -230,6 +230,46 @@ public static class BoostMapping
         return result.Where(a => a.Length > 0).ToArray();
     }
 
+    /// <summary>Human-readable label for an armor type.</summary>
+    public static string ArmorTypeLabel(string type) => type switch
+    {
+        "None" => "None / Нет",
+        "Cloth" => "Cloth / Ткань",
+        "Padded" => "Padded / Стёганая",
+        "Leather" => "Leather / Кожаная",
+        "StuddedLeather" => "Studded Leather / Проклёпанная кожа",
+        "Hide" => "Hide / Шкурная",
+        "ChainShirt" => "Chain Shirt / Кольчужная рубаха",
+        "ScaleMail" => "Scale Mail / Чешуйчатая",
+        "BreastPlate" => "Breastplate / Нагрудник",
+        "HalfPlate" => "Half Plate / Полулаты",
+        "RingMail" => "Ring Mail / Кольчуга",
+        "ChainMail" => "Chain Mail / Кольчужная",
+        "Splint" => "Splint / Шинная",
+        "Plate" => "Plate / Латная",
+        _ => type
+    };
+
+    /// <summary>Human-readable label for proficiency.</summary>
+    public static string ProficiencyLabel(string prof) => prof switch
+    {
+        "LightArmor" => "Light Armor / Лёгкая броня",
+        "MediumArmor" => "Medium Armor / Средняя броня",
+        "HeavyArmor" => "Heavy Armor / Тяжёлая броня",
+        "Shields" => "Shields / Щиты",
+        "SimpleMeleeWeapon" => "Simple Melee / Простое ближнее",
+        "SimpleRangedWeapon" => "Simple Ranged / Простое дальнобойное",
+        "MartialMeleeWeapon" => "Martial Melee / Воинское ближнее",
+        "MartialRangedWeapon" => "Martial Ranged / Воинское дальнобойное",
+        _ => prof
+    };
+
+    /// <summary>Human-readable labels for armor types (for ComboBox).</summary>
+    public static readonly string[] ArmorTypeLabels = ArmorTypes.Select(ArmorTypeLabel).ToArray();
+
+    /// <summary>Human-readable labels for proficiency (for ComboBox).</summary>
+    public static readonly string[] ProficiencyLabels = ProficiencyTypes.Select(ProficiencyLabel).ToArray();
+
     /// <summary>Human-readable label for a weapon property.</summary>
     public static string WeaponPropertyLabel(string prop) => prop switch
     {

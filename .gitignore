@@ -45,3 +45,6 @@ publish/
 discord_icon.*.png
 app_icon.svg
 .claude/
+
+# Task files
+BOOST_MAPPING_TASK.md

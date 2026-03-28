@@ -113,7 +113,7 @@
   "CardMechanics": "ЭФФЕКТЫ ПРЕДМЕТА",
   "CardDescription": "ОПИСАНИЕ",
   "FieldType": "Тип",
-  "FieldRarity": "Редкость",
+  "FieldRarity": "РЕДКОСТЬ",
   "FieldUnique": "Уникальный",
   "FieldValue": "Цена",
   "FieldWeight": "Вес",
