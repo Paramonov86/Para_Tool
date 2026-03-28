@@ -4,6 +4,8 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
+using ParaTool.App.Themes;
 
 namespace ParaTool.App.Controls;
 
@@ -49,11 +51,11 @@ public class NumberChipEditor : UserControl
         set => SetValue(LabelProperty, value);
     }
 
-    private static readonly SolidColorBrush ChipBg = new(Color.Parse("#252330"));
-    private static readonly SolidColorBrush ChipBgHover = new(Color.Parse("#3D3A4D"));
-    private static readonly SolidColorBrush ChipFg = new(Color.Parse("#E0DDE6"));
-    private static readonly SolidColorBrush AccentBrush = new(Color.Parse("#6C5CE7"));
-    private static readonly SolidColorBrush MutedBrush = new(Color.Parse("#8A8494"));
+    private static SolidColorBrush ChipBg => Themes.ThemeBrushes.InputBg;
+    private static SolidColorBrush ChipBgHover => Themes.ThemeBrushes.CardBg;
+    private static SolidColorBrush ChipFg => Themes.ThemeBrushes.TextPrimary;
+    private static SolidColorBrush AccentBrush => Themes.ThemeBrushes.Accent;
+    private static SolidColorBrush MutedBrush => Themes.ThemeBrushes.TextMuted;
 
     private readonly Button _chip;
     private readonly TextBlock _valueText;
@@ -118,63 +120,21 @@ public class NumberChipEditor : UserControl
 
     private void OnChipClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var popup = new Popup
-        {
-            PlacementTarget = _chip,
-            Placement = PlacementMode.Bottom,
-            IsLightDismissEnabled = true,
-            MaxHeight = 300,
-        };
-
-        var wrapPanel = new WrapPanel
-        {
-            ItemWidth = 36, ItemHeight = 32,
-            MaxWidth = 260,
-        };
-
+        var menu = new ContextMenu();
         int currentVal = int.TryParse(Text, out var cv) ? cv : -1;
 
         for (int i = MinValue; i <= MaxValue; i++)
         {
             var num = i;
-            var isSelected = num == currentVal;
-            var btn = new Button
+            var item = new MenuItem
             {
-                Content = num.ToString(),
-                FontSize = 11, FontWeight = isSelected ? FontWeight.Bold : FontWeight.Normal,
-                Padding = new Thickness(2),
-                Margin = new Thickness(1),
-                MinWidth = 32, MinHeight = 28,
-                CornerRadius = new CornerRadius(6),
-                Background = isSelected ? AccentBrush : ChipBg,
-                Foreground = isSelected ? Brushes.White : ChipFg,
-                BorderThickness = new Thickness(0),
-                Cursor = new Cursor(StandardCursorType.Hand),
-                HorizontalContentAlignment = HorizontalAlignment.Center,
+                Header = num.ToString(),
+                FontWeight = num == currentVal ? FontWeight.Bold : FontWeight.Normal,
             };
-            btn.Click += (_, _) =>
-            {
-                Text = num.ToString();
-                popup.IsOpen = false;
-            };
-            wrapPanel.Children.Add(btn);
+            item.Click += (_, _) => Text = num.ToString();
+            menu.Items.Add(item);
         }
 
-        popup.Child = new Border
-        {
-            Child = new ScrollViewer { Content = wrapPanel, MaxHeight = 250 },
-            Background = new SolidColorBrush(Color.Parse("#1E1B26")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#33FFFFFF")),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(6),
-        };
-
-        if (_chip.Parent is Avalonia.Controls.Panel panel)
-        {
-            panel.Children.Add(popup);
-            popup.IsOpen = true;
-            popup.Closed += (_, _) => panel.Children.Remove(popup);
-        }
+        menu.Open(_chip);
     }
 }

@@ -321,8 +321,8 @@
                                     </Button>
                                     <!-- Upload custom -->
                                     <Button Grid.Column="1" Margin="6,0,0,0"
-                                            Background="#22FFFFFF"
-                                            BorderThickness="1" BorderBrush="#33FFFFFF"
+                                            Background="{StaticResource CardBgBrush}"
+                                            BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}"
                                             CornerRadius="6" Padding="12,6" Cursor="Hand"
                                             ToolTip.Tip="Upload custom PNG icon (coming soon)">
                                         <TextBlock Text="Upload PNG" FontSize="11"
@@ -344,8 +344,7 @@
                                 <TextBlock Text="{Binding LblStatuses, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBox Text="{Binding EditStatusOnEquip}" FontSize="12" Padding="8,4"
-                                             Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                    <ctrl:ChipListEditor Text="{Binding EditStatusOnEquip}" ChipColor="#E67E22" />
                                     <Button Grid.Column="1" Content="+" FontSize="12" FontWeight="Bold"
                                             Padding="8,4" Margin="4,0,0,0" CornerRadius="4"
                                             Background="{StaticResource CardBgBrush}"
@@ -357,8 +356,7 @@
                                 <TextBlock Text="{Binding LblSpells, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBox Text="{Binding EditSpellsOnEquip}" FontSize="12" Padding="8,4"
-                                             Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                    <ctrl:ChipListEditor Text="{Binding EditSpellsOnEquip}" ChipColor="#9B59B6" />
                                     <Button Grid.Column="1" Content="+" FontSize="12" FontWeight="Bold"
                                             Padding="8,4" Margin="4,0,0,0" CornerRadius="4"
                                             Background="{StaticResource CardBgBrush}"
@@ -566,7 +564,7 @@
 
                 <!-- Tooltip preview (inline editable) -->
                 <ScrollViewer Grid.Row="4" IsVisible="{Binding IsArtifactSelected}" Margin="4">
-                    <Border Background="#221E2A" CornerRadius="10"
+                    <Border Background="{StaticResource AppBgBrush}" CornerRadius="10"
                             BorderBrush="{Binding RarityColor}"
                             BorderThickness="3,0,0,0"
                             DataContext="{Binding SelectedArtifact}">
@@ -595,7 +593,7 @@
                                 </Border>
                             </Grid>
 
-                            <Border Height="1" Background="#33FFFFFF" Margin="12,10" />
+                            <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="12,10" />
 
                             <!-- Boosts (display) -->
                             <TextBlock Text="{Binding EditBoosts}" FontSize="12"
@@ -631,7 +629,7 @@
                             </ItemsControl>
 
                             <!-- Separator -->
-                            <Border Height="1" Background="#33FFFFFF" Margin="12,6"
+                            <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="12,6"
                                     IsVisible="{Binding HasDescription}" />
 
                             <!-- Description / lore (editable) -->
@@ -653,18 +651,18 @@
     </Grid>
     <!-- Icon browser popup overlay -->
     <Border IsVisible="{Binding IconBrowser.IsOpen}"
-            Background="#DD000000"
+            Background="#CC000000"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-        <Border Background="#1E1B26"
+        <Border Background="{StaticResource PanelBgBrush}"
                 CornerRadius="14"
                 Margin="40,20"
                 MaxWidth="900" MaxHeight="700"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                BorderBrush="#33FFFFFF" BorderThickness="1">
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
                 <!-- Header bar with separator -->
-                <Border Grid.Row="0" Padding="20,14" BorderBrush="#22FFFFFF" BorderThickness="0,0,0,1">
+                <Border Grid.Row="0" Padding="20,14" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <!-- Current icon mini -->
                         <Border Width="40" Height="40" CornerRadius="6" ClipToBounds="True">
@@ -678,7 +676,7 @@
                         </StackPanel>
                         <Button Grid.Column="2"
                                 Command="{Binding IconBrowser.CloseCommand}"
-                                Background="#22FFFFFF" Foreground="{StaticResource TextSecondaryBrush}"
+                                Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextSecondaryBrush}"
                                 FontSize="12" Padding="10,6" CornerRadius="6"
                                 BorderThickness="0" Cursor="Hand"
                                 Content="Close" />
@@ -701,7 +699,7 @@
                                         Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).IconBrowser.SelectTabCommand}"
                                         CommandParameter="{Binding}"
                                         FontSize="11" Padding="12,6" CornerRadius="8"
-                                        Background="#22FFFFFF"
+                                        Background="{StaticResource CardBgBrush}"
                                         Foreground="{StaticResource TextSecondaryBrush}"
                                         BorderThickness="0" Cursor="Hand" />
                             </DataTemplate>
@@ -710,12 +708,12 @@
                 </ScrollViewer>
 
                 <!-- Search + count + separator -->
-                <Border Grid.Row="2" Padding="16,8,16,8" BorderBrush="#22FFFFFF" BorderThickness="0,0,0,1">
+                <Border Grid.Row="2" Padding="16,8,16,8" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBox Text="{Binding IconBrowser.SearchText}"
                                  Watermark="Search icons by name..."
                                  FontSize="12" Padding="10,8" CornerRadius="8"
-                                 Background="#15FFFFFF" />
+                                 Background="{StaticResource InputBgBrush}" />
                         <TextBlock Grid.Column="1"
                                    Text="{Binding IconBrowser.IconCount, StringFormat='{}{0} icons'}"
                                    FontSize="11" Foreground="{StaticResource TextMutedBrush}"

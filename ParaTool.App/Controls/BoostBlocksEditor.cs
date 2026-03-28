@@ -35,10 +35,10 @@ public class BoostBlocksEditor : UserControl
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal };
     private bool _updating;
 
-    private static readonly SolidColorBrush BgDefault = new(Color.Parse("#252330"));
-    private static readonly SolidColorBrush FgMuted = new(Color.Parse("#8A8494"));
-    private static readonly SolidColorBrush FgLight = new(Color.Parse("#E0DDE6"));
-    private static readonly SolidColorBrush InputBg = new(Color.Parse("#1A1820"));
+    private static SolidColorBrush BgDefault => Themes.ThemeBrushes.InputBg;
+    private static SolidColorBrush FgMuted => Themes.ThemeBrushes.TextMuted;
+    private static SolidColorBrush FgLight => Themes.ThemeBrushes.TextPrimary;
+    private static SolidColorBrush InputBg => Themes.ThemeBrushes.CardBg;
 
     public BoostBlocksEditor()
     {
@@ -450,9 +450,15 @@ public class BoostBlocksEditor : UserControl
                 var defaultArgs = d.Params.Select(p => p.Type switch
                 {
                     "number" => "1",
+                    "float" => "1",
                     "dice" => "1d6",
-                    "enum" => p.EnumValues?.FirstOrDefault() ?? "",
-                    _ => ""
+                    "formula" => "1",
+                    "bool" => "true",
+                    "enum" => p.EnumValues?.FirstOrDefault() ?? "None",
+                    "string" => p.Name.Contains("Status") ? "YOURSTATUS" :
+                                p.Name.Contains("Spell") ? "YourSpell" :
+                                p.Name.Contains("Resource") ? "ActionPoint" : "Value",
+                    _ => "0"
                 }).ToArray();
                 var newBoost = defaultArgs.Length > 0 ? $"{d.FuncName}({string.Join(",", defaultArgs)})" : d.FuncName;
                 var current = Text ?? "";

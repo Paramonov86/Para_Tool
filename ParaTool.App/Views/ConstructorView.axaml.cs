@@ -249,7 +249,7 @@ public partial class ConstructorView : UserControl
         {
             Watermark = "Search...",
             FontSize = 12, Padding = new Avalonia.Thickness(8, 6),
-            Background = new SolidColorBrush(Color.Parse("#252330")),
+            Background = Themes.ThemeBrushes.InputBg,
             Margin = new Avalonia.Thickness(0, 0, 0, 4),
         };
 
@@ -271,12 +271,12 @@ public partial class ConstructorView : UserControl
                     || e.id.Contains(q, StringComparison.OrdinalIgnoreCase));
 
             // Custom option first
-            var customBtn = new ListBoxItem { Content = "Custom (type your own)...", FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#6C5CE7")) };
+            var customBtn = new ListBoxItem { Content = "Custom (type your own)...", FontSize = 11, Foreground = Themes.ThemeBrushes.Accent };
             listBox.Items.Add(customBtn);
 
             foreach (var (id, display) in source2)
             {
-                var item = new ListBoxItem { Content = display, Tag = id, FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#C8B8DB")) };
+                var item = new ListBoxItem { Content = display, Tag = id, FontSize = 11, Foreground = Themes.ThemeBrushes.TextSecondary };
                 listBox.Items.Add(item);
             }
         }
@@ -314,8 +314,8 @@ public partial class ConstructorView : UserControl
         popup.Child = new Border
         {
             Child = panel,
-            Background = new SolidColorBrush(Color.Parse("#1E1B26")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#33FFFFFF")),
+            Background = Themes.ThemeBrushes.PanelBg,
+            BorderBrush = Themes.ThemeBrushes.BorderSubtle,
             BorderThickness = new Avalonia.Thickness(1),
             CornerRadius = new Avalonia.CornerRadius(8),
             Padding = new Avalonia.Thickness(8),
@@ -355,7 +355,7 @@ public partial class ConstructorView : UserControl
         {
             Watermark = "Search...", FontSize = 12,
             Padding = new Avalonia.Thickness(8, 6),
-            Background = new SolidColorBrush(Color.Parse("#252330")),
+            Background = Themes.ThemeBrushes.InputBg,
             Margin = new Avalonia.Thickness(0, 0, 0, 4),
         };
 
@@ -371,7 +371,7 @@ public partial class ConstructorView : UserControl
                 ? entries
                 : entries.Where(e => e.Contains(q!.Trim(), StringComparison.OrdinalIgnoreCase));
             foreach (var e in source2)
-                listBox.Items.Add(new ListBoxItem { Content = e, Tag = e, FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#C8B8DB")) });
+                listBox.Items.Add(new ListBoxItem { Content = e, Tag = e, FontSize = 11, Foreground = Themes.ThemeBrushes.TextSecondary });
         }
 
         searchBox.TextChanged += (_, _) => Filter(searchBox.Text ?? "");
@@ -388,8 +388,8 @@ public partial class ConstructorView : UserControl
         popup.Child = new Border
         {
             Child = new StackPanel { Children = { searchBox, listBox } },
-            Background = new SolidColorBrush(Color.Parse("#1E1B26")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#33FFFFFF")),
+            Background = Themes.ThemeBrushes.PanelBg,
+            BorderBrush = Themes.ThemeBrushes.BorderSubtle,
             BorderThickness = new Avalonia.Thickness(1),
             CornerRadius = new Avalonia.CornerRadius(8),
             Padding = new Avalonia.Thickness(8),
@@ -558,7 +558,7 @@ public partial class ConstructorView : UserControl
                 Background = isSelected ? ThemeSelectedBg : ChipDefaultBg,
                 Foreground = isSelected ? ChipTextSelected : ChipTextDefault,
                 BorderThickness = new Thickness(isSelected ? 1.5 : 1),
-                BorderBrush = isSelected ? new SolidColorBrush(Color.Parse("#6C5CE7")) : new SolidColorBrush(Color.Parse("#3D3A4D")),
+                BorderBrush = isSelected ? Themes.ThemeBrushes.Accent : new SolidColorBrush(Color.Parse("#3D3A4D")),
             };
             btn.Click += (_, _) => { vm.ToggleThemeCommand.Execute(btn.Tag as string); RebuildChips(); };
             panel.Children.Add(btn);

@@ -404,7 +404,7 @@ public static class BoostMapping
 
     // Keep old names for backward compat
     public static readonly string[] WeaponProperties = WeaponFlags;
-    public static readonly string[] ProficiencyTypes = ["LightArmor", "MediumArmor", "HeavyArmor", "Shields", "SimpleMeleeWeapon", "SimpleRangedWeapon", "MartialMeleeWeapon", "MartialRangedWeapon"];
+    public static readonly string[] ProficiencyTypes = ["", "LightArmor", "MediumArmor", "HeavyArmor", "Shields", "SimpleMeleeWeapon", "SimpleRangedWeapon", "MartialMeleeWeapon", "MartialRangedWeapon"];
     public static readonly string[] Skills = SkillType;
     public static readonly string[] ActionResources = ["ActionPoint", "BonusActionPoint", "Movement", "SpellSlot", "KiPoint", "Rage", "SorceryPoint", "BardicInspiration", "SuperiorityDie", "ChannelDivinity", "LayOnHandsCharge", "WildShape", "NaturalRecovery"];
 

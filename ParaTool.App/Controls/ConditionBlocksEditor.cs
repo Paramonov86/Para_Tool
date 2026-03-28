@@ -31,8 +31,8 @@ public class ConditionBlocksEditor : UserControl
     private static readonly SolidColorBrush FgOp = new(Color.Parse("#F1C40F"));
     private static readonly SolidColorBrush BgNot = new(Color.Parse("#1AE74C3C"));
     private static readonly SolidColorBrush FgNot = new(Color.Parse("#E74C3C"));
-    private static readonly SolidColorBrush BgDefault = new(Color.Parse("#252330"));
-    private static readonly SolidColorBrush FgMuted = new(Color.Parse("#8A8494"));
+    private static SolidColorBrush BgDefault => Themes.ThemeBrushes.InputBg;
+    private static SolidColorBrush FgMuted => Themes.ThemeBrushes.TextMuted;
 
     public ConditionBlocksEditor()
     {

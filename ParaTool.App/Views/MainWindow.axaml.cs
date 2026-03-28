@@ -42,9 +42,14 @@ public partial class MainWindow : Window
     private void OnFontSizeChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (sender is ComboBox cb && cb.SelectedItem is ComboBoxItem item
-            && item.Tag is string sizeStr && int.TryParse(sizeStr, out var size))
+            && item.Tag is string sizeStr && double.TryParse(sizeStr, out var size))
         {
+            // Scale all text by changing the window's default font size
+            // This propagates to children that don't have explicit FontSize
             FontSize = size;
+            // Also set on Application level for new controls
+            if (Application.Current != null)
+                Application.Current.Resources["DefaultFontSize"] = size;
         }
     }
 }
