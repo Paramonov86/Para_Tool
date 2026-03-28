@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ParaTool.App.Localization;
+using ParaTool.Core.Localization;
 using ParaTool.Core.Models;
+using ParaTool.Core.Services;
 
 namespace ParaTool.App.ViewModels;
 
@@ -31,9 +33,12 @@ public partial class ItemVM : ObservableObject
 {
     private readonly ItemEntry _entry;
 
-    public ItemVM(ItemEntry entry)
+    private readonly LocaService? _locaService;
+
+    public ItemVM(ItemEntry entry, LocaService? locaService = null)
     {
         _entry = entry;
+        _locaService = locaService;
         _enabled = entry.Enabled;
         _selectedPool = PoolOptions.First(o => o.Value == entry.EffectivePool);
         _selectedRarity = RarityOptions.First(o => o.Value == entry.EffectiveRarity);
@@ -44,21 +49,32 @@ public partial class ItemVM : ObservableObject
 
     private void OnLanguageChanged()
     {
-        // Update Display on each LabeledOption — triggers PropertyChanged via ObservableObject
         foreach (var o in PoolOptions) o.Display = Loc.Instance.PoolName(o.Value);
         foreach (var o in RarityOptions) o.Display = Loc.Instance.RarityName(o.Value);
 
+        OnPropertyChanged(nameof(ItemLabel));
         OnPropertyChanged(nameof(ThemesDisplay));
     }
 
     public string StatId => _entry.StatId;
     public string StatType => _entry.StatType;
     public string? DisplayName => _entry.DisplayName;
-    public string ItemLabel => _entry.DisplayName
-        ?? ParaTool.Core.Services.VanillaLocaService.GetDisplayName(_entry.StatId, Localization.Loc.Instance.Lang)
-        ?? _entry.StatId;
+    public string ItemLabel
+    {
+        get
+        {
+            var lang = Loc.Instance.Lang;
+            if (_locaService != null && !string.IsNullOrEmpty(_entry.DisplayNameHandle))
+            {
+                var resolved = _locaService.ResolveHandle(_entry.DisplayNameHandle, lang);
+                if (resolved != null) return BbCode.FromBg3Xml(resolved);
+            }
+            return VanillaLocaService.GetDisplayName(_entry.StatId, lang)
+                ?? _entry.DisplayName ?? _entry.StatId;
+        }
+    }
     public bool HasDisplayName => _entry.DisplayName != null
-        || ParaTool.Core.Services.VanillaLocaService.GetDisplayName(_entry.StatId, "en") != null;
+        || VanillaLocaService.GetDisplayName(_entry.StatId, "en") != null;
     public string DetectedPool => _entry.DetectedPool ?? "?";
     public string DetectedRarity => _entry.DetectedRarity ?? "?";
     public ItemEntry Entry => _entry;

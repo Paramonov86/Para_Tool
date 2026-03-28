@@ -246,7 +246,7 @@ public partial class ArtifactItemVM : ObservableObject
 
     // === Preview ===
 
-    public string PreviewName => !string.IsNullOrEmpty(GetLocalizedName()) ? GetLocalizedName() : Artifact.StatId;
+    public string PreviewName => !string.IsNullOrEmpty(GetPreviewName()) ? GetPreviewName() : Artifact.StatId;
     public string PreviewRarityText => Loc.Instance.RarityName(Artifact.Rarity);
     public string PreviewSlot => Artifact.LootPool != null ? Loc.Instance.PoolName(Artifact.LootPool) : Artifact.StatType;
     public string PreviewSubtitle => $"{PreviewRarityText} · {PreviewSlot}";
@@ -278,6 +278,15 @@ public partial class ArtifactItemVM : ObservableObject
     private string GetLocalizedName()
     {
         var lang = Loc.Instance.Lang;
+        if (Artifact.DisplayName.TryGetValue(lang, out var n) && !string.IsNullOrEmpty(n)) return n;
+        if (Artifact.DisplayName.TryGetValue("en", out var en) && !string.IsNullOrEmpty(en)) return en;
+        return "";
+    }
+
+    /// <summary>Name for preview — uses editing language (preview selector), not UI language.</summary>
+    private string GetPreviewName()
+    {
+        var lang = EditLang;
         if (Artifact.DisplayName.TryGetValue(lang, out var n) && !string.IsNullOrEmpty(n)) return n;
         if (Artifact.DisplayName.TryGetValue("en", out var en) && !string.IsNullOrEmpty(en)) return en;
         return "";

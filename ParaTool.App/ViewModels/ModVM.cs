@@ -3,17 +3,18 @@ using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ParaTool.App.Themes;
 using ParaTool.Core.Models;
+using ParaTool.Core.Services;
 
 namespace ParaTool.App.ViewModels;
 
 public partial class ModVM : ObservableObject
 {
-    public ModVM(ModInfo mod)
+    public ModVM(ModInfo mod, LocaService? locaService = null)
     {
         ModInfo = mod;
         Name = mod.Name;
         Items = new ObservableCollection<ItemVM>(
-            mod.Items.Select(i => new ItemVM(i)));
+            mod.Items.Select(i => new ItemVM(i, locaService)));
         _enabled = true;
     }
 

@@ -1060,6 +1060,33 @@ public sealed class ModScanner
             }
         }
 
+        // Reverse-lookup: for items with DisplayName but no handle, find handle in masterLocaMap
+        // This enables multi-language resolution later
+        if (masterLocaMap.Count > 0)
+        {
+            // Build reverse map: text → handle (only for items missing handles)
+            var reverseMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (handle, text) in masterLocaMap)
+            {
+                if (!string.IsNullOrEmpty(text))
+                    reverseMap.TryAdd(text, handle);
+            }
+
+            foreach (var item in allItems)
+            {
+                if (item.DisplayNameHandle == null && item.DisplayName != null)
+                {
+                    if (reverseMap.TryGetValue(item.DisplayName, out var foundHandle))
+                        item.DisplayNameHandle = foundHandle;
+                }
+                if (item.DescriptionHandle == null && item.Description != null)
+                {
+                    if (reverseMap.TryGetValue(item.Description, out var foundHandle))
+                        item.DescriptionHandle = foundHandle;
+                }
+            }
+        }
+
         return (resolver, masterLocaMap);
     }
 }

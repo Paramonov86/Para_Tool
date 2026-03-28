@@ -133,12 +133,11 @@ public class ConditionBlocksEditor : UserControl
     {
         DragDrop.SetAllowDrop(element, true);
 
-        element.PointerPressed += async (s, e) =>
+        element.PointerPressed += (s, e) =>
         {
             if (!e.GetCurrentPoint(element).Properties.IsLeftButtonPressed) return;
             if (s is not Control ctrl) return;
 
-            // Wait for small move to start drag
             var startPos = e.GetPosition(_panel);
             bool dragging = false;
 
@@ -146,7 +145,7 @@ public class ConditionBlocksEditor : UserControl
             {
                 if (dragging) return;
                 var pos = me.GetPosition(_panel);
-                if (Math.Abs(pos.X - startPos.X) > 10 || Math.Abs(pos.Y - startPos.Y) > 10)
+                if (Math.Abs(pos.X - startPos.X) > 12 || Math.Abs(pos.Y - startPos.Y) > 12)
                 {
                     dragging = true;
                     ctrl.PointerMoved -= onMove;
@@ -156,35 +155,35 @@ public class ConditionBlocksEditor : UserControl
                     {
                         var data = new DataObject();
                         data.Set("CondIdx", tokenIdx.ToString());
-                        _ = DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
+                        DragDrop.DoDragDrop(e, data, DragDropEffects.Move);
                     }
-                    catch { /* Avalonia DnD can throw on some platforms */ }
+                    catch { }
                     ctrl.Opacity = 1;
                     _dragFromIdx = -1;
                 }
             }
             ctrl.PointerMoved += onMove;
-            ctrl.PointerReleased += (_, _) => { ctrl.PointerMoved -= onMove; };
+            ctrl.PointerReleased += (_, _) => ctrl.PointerMoved -= onMove;
         };
 
-        element.AddHandler(DragDrop.DragOverEvent, (_, e) => { e.DragEffects = DragDropEffects.Move; });
-
+        element.AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = DragDropEffects.Move);
         element.AddHandler(DragDrop.DropEvent, (_, e) =>
         {
-            var fromStr = e.Data.Get("CondIdx") as string;
-            if (fromStr == null || !int.TryParse(fromStr, out var fromIdx)) return;
-            var toIdx = tokenIdx;
-            if (fromIdx == toIdx || fromIdx < 0 || fromIdx >= _tokens.Count || toIdx < 0 || toIdx >= _tokens.Count) return;
+            if (e.Data.Get("CondIdx") is not string fromStr || !int.TryParse(fromStr, out var fromIdx)) return;
+            if (fromIdx == tokenIdx || fromIdx < 0 || fromIdx >= _tokens.Count) return;
 
+            // Move token (not copy!)
             var moved = _tokens[fromIdx];
             _tokens.RemoveAt(fromIdx);
-            var insertAt = toIdx > fromIdx ? toIdx - 1 : toIdx;
+            var insertAt = tokenIdx > fromIdx ? tokenIdx - 1 : tokenIdx;
             insertAt = Math.Clamp(insertAt, 0, _tokens.Count);
             _tokens.Insert(insertAt, moved);
+
+            // Fix: ensure valid AND/OR between all conditions
+            NormalizeTokens(_tokens);
             SyncFromTokens(_tokens);
         });
 
-        // Also keep context menu move as fallback
         var moveLeft = new MenuItem { Header = "← Move Left" };
         moveLeft.Click += (_, _) =>
         {
@@ -264,11 +263,14 @@ public class ConditionBlocksEditor : UserControl
 
             if (param?.Type == "enum" && param.EnumValues != null)
             {
-                // For entity params, display localized short names
                 var isRuParam = Localization.Loc.Instance.Lang == "ru";
                 var isEntity = param.EnumValues == ConditionSchema.EntityTargetsEn || param.EnumValues == ConditionSchema.EntityTargetsRu;
-                var displayVal = isEntity ? ConditionSchema.EntityFromRaw(argVal, isRuParam) : argVal;
 
+                // Skip entity param if it's the default (context.Target) — only show if context.Source
+                if (isEntity && (argVal == "context.Target" || argVal == "" || argVal == "context.Target"))
+                    continue;
+
+                var displayVal = isEntity ? ConditionSchema.EntityFromRaw(argVal, isRuParam) : argVal;
                 var tumblerItems = isEntity ? ConditionSchema.GetEntityTargets(isRuParam) : param.EnumValues;
                 var enumTumbler = new TumblerChipEditor
                 {
@@ -325,10 +327,18 @@ public class ConditionBlocksEditor : UserControl
             }
         }
 
-        // "+" button to add optional params if def has more than current args
+        // "+" button to add optional params — skip entity defaults, only offer context.Source
         if (def != null && argCount < paramCount)
         {
             var nextParam = def.Params[argCount];
+            // Skip if next param is entity and default (most users don't need it)
+            var isEntityNext = nextParam.EnumValues == ConditionSchema.EntityTargetsEn;
+            // Only show +source button if explicitly useful
+            if (isEntityNext) nextParam = new ConditionParam
+            {
+                Name = "source", Type = "enum",
+                EnumValues = ConditionSchema.EntityTargetsEn
+            };
             var addArgBtn = new Button
             {
                 Content = $"+{nextParam.Name}", FontSize = 9,
@@ -557,6 +567,51 @@ public class ConditionBlocksEditor : UserControl
 
     // ── Token removal ──────────────────────────────────────────
 
+    /// <summary>Ensure valid token sequence: no double operators, no leading/trailing operators,
+    /// AND inserted between adjacent conditions.</summary>
+    private static void NormalizeTokens(List<CondToken> tokens)
+    {
+        // Remove empty groups
+        tokens.RemoveAll(t => t.Type == CondToken.Kind.Group && (t.Children == null || t.Children.Count == 0));
+
+        // Normalize children of groups recursively
+        foreach (var t in tokens)
+            if (t.Type == CondToken.Kind.Group && t.Children != null)
+                NormalizeTokens(t.Children);
+
+        // Remove leading operators
+        while (tokens.Count > 0 && tokens[0].Type is CondToken.Kind.And or CondToken.Kind.Or)
+            tokens.RemoveAt(0);
+
+        // Remove trailing operators
+        while (tokens.Count > 0 && tokens[^1].Type is CondToken.Kind.And or CondToken.Kind.Or)
+            tokens.RemoveAt(tokens.Count - 1);
+
+        // Remove double operators + insert AND between adjacent conditions
+        for (int i = tokens.Count - 1; i >= 0; i--)
+        {
+            var cur = tokens[i];
+            if (i > 0)
+            {
+                var prev = tokens[i - 1];
+                // Two operators in a row → remove one
+                if (cur.Type is CondToken.Kind.And or CondToken.Kind.Or &&
+                    prev.Type is CondToken.Kind.And or CondToken.Kind.Or)
+                {
+                    tokens.RemoveAt(i);
+                    continue;
+                }
+                // Two conditions in a row → insert AND between
+                bool curIsCond = cur.Type is CondToken.Kind.Func or CondToken.Kind.Group;
+                bool prevIsCond = prev.Type is CondToken.Kind.Func or CondToken.Kind.Group;
+                if (curIsCond && prevIsCond)
+                {
+                    tokens.Insert(i, new CondToken { Type = CondToken.Kind.And });
+                }
+            }
+        }
+    }
+
     private static void RemoveToken(List<CondToken> tokens, int idx)
     {
         if (idx < 0 || idx >= tokens.Count) return;
@@ -580,7 +635,8 @@ public class ConditionBlocksEditor : UserControl
 
     private void SyncFromTokens(List<CondToken> tokens)
     {
-        // Save current state for undo
+        NormalizeTokens(tokens);
+
         var oldText = Text ?? "";
         if (!string.IsNullOrEmpty(oldText))
             _undoStack.Push(oldText);

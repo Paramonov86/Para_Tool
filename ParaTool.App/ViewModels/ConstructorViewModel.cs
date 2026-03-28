@@ -30,11 +30,24 @@ public partial class BaseItemVM : ObservableObject
                 if (resolved != null) return BbCode.FromBg3Xml(resolved);
             }
             // Try vanilla loca
-            return VanillaLocaService.GetDisplayName(Entry.StatId, lang)
-                ?? Entry.DisplayName
-                ?? Entry.StatId;
+            var vanilla = VanillaLocaService.GetDisplayName(Entry.StatId, lang);
+            if (vanilla != null) return vanilla;
+
+            // Debug: log items that can't resolve to current lang
+            if (_debugLogOnce == null) _debugLogOnce = new();
+            if (!_debugLogOnce.Contains(Entry.StatId))
+            {
+                _debugLogOnce.Add(Entry.StatId);
+                try { System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "paratool_label_debug.txt"),
+                    $"{Entry.StatId}: lang={lang}, handle={Entry.DisplayNameHandle ?? "NULL"}, scanName={Entry.DisplayName ?? "NULL"}\n"); } catch { }
+            }
+
+            // Fallback to scan name (may be in scan language)
+            return Entry.DisplayName ?? Entry.StatId;
         }
     }
+    private HashSet<string>? _debugLogOnce;
 
     private LocaService? _locaService;
 
@@ -88,6 +101,12 @@ public partial class ConstructorViewModel : ViewModelBase
 
     private readonly StatsResolver? _resolver;
     private readonly LocaService? _locaService;
+
+    /// <summary>All status names for SearchPickerChip.</summary>
+    public string[] AllStatuses => _cachedStatuses ??= GetStatsOfType("StatusData").ToArray();
+    /// <summary>All spell names for SearchPickerChip.</summary>
+    public string[] AllSpells => _cachedSpells ??= GetStatsOfType("SpellData").ToArray();
+    private string[]? _cachedStatuses, _cachedSpells;
     private readonly IconService? _iconService;
 
     public bool HasSavedArtifacts => SavedArtifacts.Count > 0;

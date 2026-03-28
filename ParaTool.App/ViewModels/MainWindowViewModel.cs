@@ -191,15 +191,15 @@ public partial class MainWindowViewModel : ObservableObject
 
         // Add AMP mod first if it has items
         if (result.AmpMod != null)
-            editor.Mods.Add(new ModVM(result.AmpMod));
+            editor.Mods.Add(new ModVM(result.AmpMod, _locaService));
 
         foreach (var mod in result.Mods)
-            editor.Mods.Add(new ModVM(mod));
+            editor.Mods.Add(new ModVM(mod, _locaService));
 
         // Add saved artifacts as virtual mod
         var artifactsMod = BuildArtifactsMod();
         if (artifactsMod != null)
-            editor.Mods.Add(new ModVM(artifactsMod));
+            editor.Mods.Add(new ModVM(artifactsMod, _locaService));
 
         editor.RefreshCounts();
 
@@ -290,7 +290,7 @@ public partial class MainWindowViewModel : ObservableObject
         // Add fresh
         var artifactsMod = BuildArtifactsMod();
         if (artifactsMod != null)
-            _patcherView.Mods.Add(new ModVM(artifactsMod));
+            _patcherView.Mods.Add(new ModVM(artifactsMod, _locaService));
 
         _patcherView.RefreshCounts();
     }

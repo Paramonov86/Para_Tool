@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using ParaTool.Core.Schema;
 
 namespace ParaTool.App.Controls;
@@ -26,6 +27,14 @@ public class BoostBlocksEditor : UserControl
         set => SetValue(TextProperty, value);
     }
 
+    public static readonly StyledProperty<string[]?> StatusListProperty =
+        AvaloniaProperty.Register<BoostBlocksEditor, string[]?>(nameof(StatusList));
+    public static readonly StyledProperty<string[]?> SpellListProperty =
+        AvaloniaProperty.Register<BoostBlocksEditor, string[]?>(nameof(SpellList));
+
+    public string[]? StatusList { get => GetValue(StatusListProperty); set => SetValue(StatusListProperty, value); }
+    public string[]? SpellList { get => GetValue(SpellListProperty); set => SetValue(SpellListProperty, value); }
+
     public bool IsFunctorMode
     {
         get => GetValue(IsFunctorModeProperty);
@@ -45,8 +54,34 @@ public class BoostBlocksEditor : UserControl
         Content = _panel;
         ClipToBounds = false;
         PropertyChanged += OnPropertyChanged;
-        // Rebuild when UI language changes
         Localization.Loc.Instance.PropertyChanged += (_, _) => { if (!_updating) Rebuild(); };
+        // Auto-populate Status/Spell lists from ConstructorViewModel when attached
+        AttachedToVisualTree += (_, _) => TryLoadPickerLists();
+    }
+
+    /// <summary>Global status/spell lists, set once by ConstructorViewModel.</summary>
+    public static string[]? GlobalStatusList { get; set; }
+    public static string[]? GlobalSpellList { get; set; }
+
+    private void TryLoadPickerLists()
+    {
+        StatusList ??= GlobalStatusList;
+        SpellList ??= GlobalSpellList;
+        if (StatusList != null && SpellList != null) return;
+        // Walk up visual tree to find ConstructorViewModel
+        Control? parent = this;
+        while (parent != null)
+        {
+            if (parent.DataContext is ViewModels.ConstructorViewModel cvm)
+            {
+                StatusList ??= cvm.AllStatuses;
+                SpellList ??= cvm.AllSpells;
+                GlobalStatusList ??= StatusList;
+                GlobalSpellList ??= SpellList;
+                return;
+            }
+            parent = parent.GetVisualParent() as Control;
+        }
     }
 
     private void OnPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -233,21 +268,46 @@ public class BoostBlocksEditor : UserControl
             }
             else
             {
-                // String/guid — editable TextBox
-                var tb = new TextBox
+                // String params: use SearchPickerChip for Status/Spell if list available
+                var isStatus = param.Name.Contains("Status", StringComparison.OrdinalIgnoreCase);
+                var isSpell = param.Name.Contains("Spell", StringComparison.OrdinalIgnoreCase)
+                              || param.Name.Contains("Resource", StringComparison.OrdinalIgnoreCase);
+                var pickerItems = isStatus ? StatusList : isSpell ? SpellList : null;
+
+                if (pickerItems is { Length: > 0 })
                 {
-                    Text = value, FontSize = 11,
-                    Padding = new Thickness(4, 1), MinWidth = 60,
-                    Background = InputBg, CornerRadius = new CornerRadius(4),
-                    VerticalAlignment = VerticalAlignment.Center,
-                };
-                tb.Tag = (rawBoost, paramIdx);
-                tb.LostFocus += (s, _) =>
+                    var picker = new SearchPickerChip
+                    {
+                        Text = value,
+                        Items = pickerItems,
+                        Watermark = isStatus ? "Search status..." : "Search...",
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+                    picker.Tag = (rawBoost, paramIdx);
+                    picker.PropertyChanged += (s, e2) =>
+                    {
+                        if (e2.Property.Name == "Text" && s is SearchPickerChip sp && sp.Tag is (string rb, int pi) && !_updating)
+                            UpdateParam(rb, pi, sp.Text ?? "");
+                    };
+                    stack.Children.Add(picker);
+                }
+                else
                 {
-                    if (s is TextBox t && t.Tag is (string rb2, int pi2))
-                        UpdateParam(rb2, pi2, t.Text ?? "");
-                };
-                stack.Children.Add(tb);
+                    var tb = new TextBox
+                    {
+                        Text = value, FontSize = 11,
+                        Padding = new Thickness(4, 1), MinWidth = 60,
+                        Background = InputBg, CornerRadius = new CornerRadius(4),
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+                    tb.Tag = (rawBoost, paramIdx);
+                    tb.LostFocus += (s, _) =>
+                    {
+                        if (s is TextBox t && t.Tag is (string rb2, int pi2))
+                            UpdateParam(rb2, pi2, t.Text ?? "");
+                    };
+                    stack.Children.Add(tb);
+                }
             }
         }
 
