@@ -607,7 +607,7 @@
                 Padding="16"
                 MaxWidth="800" MaxHeight="600"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
                 <!-- Header + close -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
                     <TextBlock Text="Choose Icon" FontSize="16" FontWeight="Bold"
@@ -699,6 +699,32 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+
+                <!-- Pagination -->
+                <Grid Grid.Row="5" ColumnDefinitions="Auto,*,Auto" Margin="0,6,0,0">
+                    <Button Grid.Column="0" Content="&#x25C0;"
+                            Command="{Binding IconBrowser.PrevPageCommand}"
+                            FontSize="12" Padding="10,4" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            BorderThickness="0" Cursor="Hand" />
+                    <TextBlock Grid.Column="1" FontSize="11"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0} / {1}">
+                                <Binding Path="IconBrowser.CurrentPage" Converter="{x:Static vm:PlusOneConverter.Instance}" />
+                                <Binding Path="IconBrowser.TotalPages" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <Button Grid.Column="2" Content="&#x25B6;"
+                            Command="{Binding IconBrowser.NextPageCommand}"
+                            FontSize="12" Padding="10,4" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            BorderThickness="0" Cursor="Hand" />
+                </Grid>
             </Grid>
         </Border>
     </Border>
