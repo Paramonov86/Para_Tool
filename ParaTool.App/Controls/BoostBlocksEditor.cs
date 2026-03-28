@@ -139,20 +139,20 @@ public class BoostBlocksEditor : UserControl
             }
             else if (param.Type is "number" or "float")
             {
-                // Compact number chip with popup grid
-                var chip = new NumberChipEditor
+                // Tumbler drum chip for number parameters
+                var chip = new TumblerChipEditor
                 {
                     Text = value,
-                    Label = param.Label,
+                    Step = param.Type == "float" ? 0.1 : 1,
                     MinValue = 0,
-                    MaxValue = param.Type == "float" ? 30 : 99,
+                    MaxValue = param.Type == "float" ? 999 : 999,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 chip.Tag = (rawBoost, paramIdx);
                 chip.PropertyChanged += (s, e2) =>
                 {
-                    if (e2.Property.Name == "Text" && s is NumberChipEditor nc && nc.Tag is (string rb, int pi))
-                        UpdateParam(rb, pi, nc.Text ?? "");
+                    if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, tc.Text ?? "");
                 };
                 stack.Children.Add(chip);
             }

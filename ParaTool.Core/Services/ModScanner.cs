@@ -755,7 +755,33 @@ public sealed class ModScanner
             {
                 continue; // Don't let StatusData/PassiveData overwrite Armor/Weapon
             }
-            resolver.AddEntries(new[] { entry });
+
+            // Fix self-referencing using: BG3 skeleton pattern where entry.Using == entry.Name.
+            // Preserve the using from the existing (vanilla) entry so the inheritance chain stays intact.
+            var fixedUsing = entry.Using;
+            if (fixedUsing != null && fixedUsing.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))
+                fixedUsing = existing?.Using;
+
+            // Merge data: existing fields as base, new entry overrides
+            Dictionary<string, string> mergedData;
+            if (existing != null)
+            {
+                mergedData = new Dictionary<string, string>(existing.Data, StringComparer.OrdinalIgnoreCase);
+                foreach (var kvp in entry.Data)
+                    mergedData[kvp.Key] = kvp.Value;
+            }
+            else
+            {
+                mergedData = entry.Data;
+            }
+
+            resolver.AddEntries(new[] { new Parsing.StatsEntry
+            {
+                Name = entry.Name,
+                Type = entry.Type,
+                Using = fixedUsing ?? existing?.Using,
+                Data = mergedData
+            }});
         }
     }
 

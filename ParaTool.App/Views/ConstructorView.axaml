@@ -233,8 +233,8 @@
                                 <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Text="Armor Class" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"
                                                IsVisible="{Binding ShowArmorClass}" />
-                                    <ctrl:NumberChipEditor Grid.Column="1" Text="{Binding EditArmorClass}" Label="AC"
-                                                           MinValue="0" MaxValue="30"
+                                    <ctrl:TumblerChipEditor Grid.Column="1" Text="{Binding EditArmorClass}"
+                                                           Step="1" MinValue="0" MaxValue="30"
                                                            IsVisible="{Binding ShowArmorClass}"
                                                            HorizontalAlignment="Left" />
 
@@ -249,8 +249,8 @@
                                               FontSize="12" Padding="8,4" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
 
                                     <TextBlock Grid.Row="3" Text="Weight" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:WeightChipEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditWeight}"
-                                                           Step="0.05" Margin="0,6,0,0" HorizontalAlignment="Left" />
+                                    <ctrl:TumblerChipEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditWeight}"
+                                                           Step="0.01" Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                 </Grid>
                                 <CheckBox Content="Unique (not recommended)" Foreground="#E67E22"
@@ -283,8 +283,8 @@
                                                                     Options="{x:Static vm:ArtifactItemVM.WeaponPropertyOptions}" Margin="0,6,0,0" />
 
                                     <TextBlock Grid.Row="4" Text="Weight" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:WeightChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditWeight}"
-                                                           Step="0.05" Margin="0,6,0,0" HorizontalAlignment="Left" />
+                                    <ctrl:TumblerChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditWeight}"
+                                                           Step="0.01" Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                 </Grid>
                                 <CheckBox Content="Unique (not recommended)" Foreground="#E67E22"

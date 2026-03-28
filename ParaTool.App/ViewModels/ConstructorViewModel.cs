@@ -110,6 +110,15 @@ public partial class ConstructorViewModel : ViewModelBase
         SavedArtifacts.Clear();
         foreach (var art in ArtifactStore.LoadAll())
         {
+            // Backfill Weight from resolver for older .art files that don't have it
+            if (art.Weight < 0 && _resolver != null && !string.IsNullOrEmpty(art.UsingBase))
+            {
+                var wStr = _resolver.Resolve(art.UsingBase, "Weight");
+                if (wStr != null && double.TryParse(wStr, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var wd))
+                    art.Weight = wd;
+            }
+
             var vm = new ArtifactItemVM(art) { IsPersisted = true, SourceStatId = art.UsingBase, GetEditingLang = () => EditingLang };
             vm.LoadPassivesFromArtifact();
             SavedArtifacts.Add(vm);
