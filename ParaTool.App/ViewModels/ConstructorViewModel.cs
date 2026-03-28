@@ -551,7 +551,9 @@ public partial class ConstructorViewModel : ViewModelBase
     [RelayCommand]
     private void OpenIconBrowser()
     {
-        IconBrowser?.Open();
+        var currentName = SelectedArtifact?.Artifact.AtlasIconMapKey;
+        var currentBitmap = SelectedArtifact?.IconBitmap;
+        IconBrowser?.Open(currentName, currentBitmap);
     }
 
     private void OnIconSelected(string iconName)

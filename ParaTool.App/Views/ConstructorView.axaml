@@ -595,11 +595,10 @@
                 Padding="16"
                 MaxWidth="800" MaxHeight="600"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Grid RowDefinitions="Auto,Auto,*,Auto">
-                <!-- Header -->
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+                <!-- Header + close -->
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                    <TextBlock Text="{Binding LblIconBrowser, Source={x:Static loc:Loc.Instance}}"
-                               FontSize="16" FontWeight="Bold"
+                    <TextBlock Text="Choose Icon" FontSize="16" FontWeight="Bold"
                                Foreground="{StaticResource TextPrimaryBrush}" />
                     <Button Grid.Column="1" Content="X"
                             Command="{Binding IconBrowser.CloseCommand}"
@@ -607,15 +606,32 @@
                             FontSize="14" Padding="8,4" BorderThickness="0" Cursor="Hand" />
                 </Grid>
 
+                <!-- Current icon display -->
+                <Border Grid.Row="1" Background="{StaticResource CardBgBrush}" CornerRadius="6"
+                        Padding="10,8" Margin="0,0,0,8">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Border Width="48" Height="48" CornerRadius="4" ClipToBounds="True"
+                                Background="{StaticResource InputBgBrush}">
+                            <Image Source="{Binding IconBrowser.CurrentIconBitmap}" Stretch="Uniform" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Current:" FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                            <TextBlock Text="{Binding IconBrowser.CurrentIconName, FallbackValue='None'}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- Search -->
-                <TextBox Grid.Row="1" Text="{Binding IconBrowser.SearchText}"
-                         Watermark="{Binding NavSearch, Source={x:Static loc:Loc.Instance}}"
+                <TextBox Grid.Row="2" Text="{Binding IconBrowser.SearchText}"
+                         Watermark="Search icons by name..."
                          FontSize="12" Padding="8,6" CornerRadius="6" Margin="0,0,0,8"
                          Background="{StaticResource InputBgBrush}" />
 
-                <!-- Icon grid -->
-                <ScrollViewer Grid.Row="2">
-                    <ItemsControl ItemsSource="{Binding IconBrowser.FilteredIcons}">
+                <!-- Icon grid (page) -->
+                <ScrollViewer Grid.Row="3">
+                    <ItemsControl ItemsSource="{Binding IconBrowser.PageIcons}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel />
@@ -646,10 +662,31 @@
                     </ItemsControl>
                 </ScrollViewer>
 
-                <!-- Bottom bar -->
-                <TextBlock Grid.Row="3" Margin="0,8,0,0"
-                           FontSize="11" Foreground="{StaticResource TextMutedBrush}"
-                           Text="{Binding IconBrowser.FilteredIcons.Count, StringFormat='Icons: {0}'}" />
+                <!-- Pagination -->
+                <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0">
+                    <Button Grid.Column="0" Content="&#x25C0; Prev"
+                            Command="{Binding IconBrowser.PrevPageCommand}"
+                            FontSize="11" Padding="10,4" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            BorderThickness="0" Cursor="Hand" />
+                    <TextBlock Grid.Column="1"
+                               FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="Page {0} / {1}">
+                                <Binding Path="IconBrowser.CurrentPage" Converter="{x:Static vm:PlusOneConverter.Instance}" />
+                                <Binding Path="IconBrowser.TotalPages" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                    <Button Grid.Column="2" Content="Next &#x25B6;"
+                            Command="{Binding IconBrowser.NextPageCommand}"
+                            FontSize="11" Padding="10,4" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}"
+                            Foreground="{StaticResource TextSecondaryBrush}"
+                            BorderThickness="0" Cursor="Hand" />
+                </Grid>
             </Grid>
         </Border>
     </Border>

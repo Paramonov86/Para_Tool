@@ -18,7 +18,6 @@ public partial class IconEntryVM : ObservableObject
     [ObservableProperty] private WriteableBitmap? _thumbnail;
     [ObservableProperty] private bool _isLoaded;
 
-    // For vanilla atlas icons
     public VanillaIconAtlasService.AtlasIcon? VanillaIcon { get; init; }
     public VanillaIconAtlasService? VanillaService { get; init; }
 
@@ -36,27 +35,23 @@ public partial class IconEntryVM : ObservableObject
         if (IsLoaded) return;
         IsLoaded = true;
 
-        // Vanilla atlas icon → extract from atlas
         if (VanillaIcon != null && VanillaService != null)
         {
             var rgba = VanillaService.ExtractIcon(VanillaIcon);
             if (rgba != null)
             {
                 var (w, h) = VanillaService.GetTileSize(VanillaIcon);
-                Thumbnail = RgbaToBitmap(rgba, w, h);
+                Thumbnail = RgbaToBitmapStatic(rgba, w, h);
             }
             return;
         }
 
-        // AMP/mod icon → load from DDS
         var dds = _service.LoadIconData(Info);
         if (dds != null)
             Thumbnail = DdsBitmapConverter.ToAvaloniaBitmap(dds);
     }
 
-    public static WriteableBitmap? RgbaToBitmapStatic(byte[] rgba, int w, int h) => RgbaToBitmap(rgba, w, h);
-
-    private static WriteableBitmap? RgbaToBitmap(byte[] rgba, int w, int h)
+    public static WriteableBitmap? RgbaToBitmapStatic(byte[] rgba, int w, int h)
     {
         if (w <= 0 || h <= 0 || rgba.Length < w * h * 4) return null;
         try
@@ -72,20 +67,24 @@ public partial class IconEntryVM : ObservableObject
     }
 }
 
-/// <summary>
-/// Icon browser popup state — shows grid of icons with search.
-/// </summary>
 public partial class IconBrowserVM : ObservableObject
 {
     private readonly IconService _iconService;
     private readonly VanillaIconAtlasService _vanillaService = new();
-    private readonly List<IconEntryVM> _allEntries = [];
+    private List<IconEntryVM> _allEntries = [];
+    private List<IconEntryVM> _filteredEntries = [];
 
-    public ObservableCollection<IconEntryVM> FilteredIcons { get; } = [];
+    public ObservableCollection<IconEntryVM> PageIcons { get; } = [];
 
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private bool _isOpen;
     [ObservableProperty] private IconEntryVM? _selectedIcon;
+    [ObservableProperty] private int _currentPage;
+    [ObservableProperty] private int _totalPages;
+    [ObservableProperty] private string _currentIconName = "";
+    [ObservableProperty] private WriteableBitmap? _currentIconBitmap;
+
+    private const int PageSize = 20;
 
     public event Action<string>? IconSelected;
 
@@ -94,11 +93,16 @@ public partial class IconBrowserVM : ObservableObject
         _iconService = iconService;
     }
 
-    public void Open()
+    public void Open(string? currentIcon = null, WriteableBitmap? currentBitmap = null)
     {
+        CurrentIconName = currentIcon ?? "";
+        CurrentIconBitmap = currentBitmap;
+
         if (_allEntries.Count == 0)
             LoadAllIcons();
+
         IsOpen = true;
+        CurrentPage = 0;
         ApplyFilter();
     }
 
@@ -107,19 +111,37 @@ public partial class IconBrowserVM : ObservableObject
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
+    [RelayCommand]
+    private void NextPage()
+    {
+        if (CurrentPage < TotalPages - 1)
+        {
+            CurrentPage++;
+            ShowPage();
+        }
+    }
+
+    [RelayCommand]
+    private void PrevPage()
+    {
+        if (CurrentPage > 0)
+        {
+            CurrentPage--;
+            ShowPage();
+        }
+    }
+
     private void LoadAllIcons()
     {
-        _allEntries.Clear();
+        _allEntries = [];
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // AMP/mod icons first
         foreach (var info in _iconService.GetAllIcons())
         {
             _allEntries.Add(new IconEntryVM(info, _iconService));
             seen.Add(info.Name);
         }
 
-        // Vanilla atlas icons (embedded)
         foreach (var icon in _vanillaService.LoadIconList())
         {
             if (seen.Contains(icon.Name)) continue;
@@ -135,17 +157,36 @@ public partial class IconBrowserVM : ObservableObject
 
     private void ApplyFilter()
     {
-        FilteredIcons.Clear();
         var query = SearchText.Trim();
-        var source = string.IsNullOrEmpty(query)
-            ? _allEntries
-            : _allEntries.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+        _filteredEntries = string.IsNullOrEmpty(query)
+            ? _allEntries.ToList()
+            : _allEntries.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
 
-        foreach (var icon in source)
+        TotalPages = Math.Max(1, (_filteredEntries.Count + PageSize - 1) / PageSize);
+
+        // Try to jump to page with current icon
+        if (!string.IsNullOrEmpty(CurrentIconName) && CurrentPage == 0 && string.IsNullOrEmpty(query))
+        {
+            var idx = _filteredEntries.FindIndex(i => i.Name.Equals(CurrentIconName, StringComparison.OrdinalIgnoreCase));
+            if (idx >= 0)
+                CurrentPage = idx / PageSize;
+        }
+
+        CurrentPage = Math.Min(CurrentPage, TotalPages - 1);
+        ShowPage();
+    }
+
+    private void ShowPage()
+    {
+        PageIcons.Clear();
+        var skip = CurrentPage * PageSize;
+        var pageItems = _filteredEntries.Skip(skip).Take(PageSize);
+
+        foreach (var icon in pageItems)
         {
             icon.EnsureThumbnail();
-            if (icon.Thumbnail == null) continue; // Skip failed icons
-            FilteredIcons.Add(icon);
+            if (icon.Thumbnail != null)
+                PageIcons.Add(icon);
         }
     }
 
@@ -155,5 +196,4 @@ public partial class IconBrowserVM : ObservableObject
         IconSelected?.Invoke(icon.Name);
         Close();
     }
-
 }
