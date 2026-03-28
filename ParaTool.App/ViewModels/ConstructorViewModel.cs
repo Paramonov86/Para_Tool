@@ -98,6 +98,9 @@ public partial class ConstructorViewModel : ViewModelBase
     [ObservableProperty] private ArtifactItemVM? _selectedArtifact;
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private string _editingLang = Localization.Loc.Instance.Lang;
+    [ObservableProperty] private bool _isCodeView;
+    public bool IsPreviewView => !IsCodeView;
+    partial void OnIsCodeViewChanged(bool value) => OnPropertyChanged(nameof(IsPreviewView));
 
     private readonly StatsResolver? _resolver;
     private readonly LocaService? _locaService;

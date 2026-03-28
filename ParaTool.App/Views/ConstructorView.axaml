@@ -614,14 +614,20 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="vm:PassiveVM">
                                         <StackPanel Margin="0,0,0,8">
-                                            <!-- Passive name (always editable) -->
+                                            <!-- Passive name (editable in code mode, display in preview) -->
                                             <TextBox Text="{Binding EditDisplayName}"
                                                      Watermark="Passive name"
                                                      FontSize="12" FontWeight="Bold"
                                                      Foreground="#C8A96E"
                                                      Background="Transparent" BorderThickness="0"
-                                                     Padding="0" Name="LocaPassiveName" />
-                                            <!-- Passive description (always editable, BB-code rendered inline) -->
+                                                     Padding="0" />
+                                            <!-- Passive desc: preview mode = rendered BB-code -->
+                                            <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
+                                                     FontSize="12"
+                                                     Foreground="{StaticResource TextSecondaryBrush}"
+                                                     TextWrapping="Wrap"
+                                                     IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                            <!-- Passive desc: code mode = raw TextBox -->
                                             <TextBox Text="{Binding EditDescription}"
                                                      Watermark="Passive description (BB-code)"
                                                      FontSize="12"
@@ -629,7 +635,7 @@
                                                      Background="Transparent" BorderThickness="0"
                                                      Padding="0" TextWrapping="Wrap"
                                                      AcceptsReturn="True"
-                                                     Name="LocaPassiveDesc" />
+                                                     IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -640,12 +646,12 @@
                                     IsVisible="{Binding HasDescription}" />
 
                             <!-- Description / lore -->
-                            <ctrl:BbCodeTextBlock Name="LorePreview" BbText="{Binding EditDescription}"
+                            <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
                                      FontSize="12" FontStyle="Italic"
                                      Foreground="{StaticResource TextSecondaryBrush}"
                                      TextWrapping="Wrap"
                                      Margin="16,0,16,8"
-                                     IsVisible="{Binding HasDescription}" />
+                                     IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                             <TextBox Name="LocaDescription"
                                      Text="{Binding EditDescription}"
                                      Watermark="Description / lore (BB-code)"
@@ -655,7 +661,7 @@
                                      Background="{StaticResource InputBgBrush}"
                                      CornerRadius="4" Padding="8,4"
                                      Margin="16,0,16,8"
-                                     IsVisible="False" />
+                                     IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
 
                             <Border Height="8" />
                         </StackPanel>

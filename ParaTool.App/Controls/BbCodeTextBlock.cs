@@ -36,6 +36,7 @@ public class BbCodeTextBlock : TextBlock
             if (e.Property == BbTextProperty)
                 RenderBbCode();
         };
+        AttachedToVisualTree += (_, _) => RenderBbCode();
     }
 
     private void RenderBbCode()
