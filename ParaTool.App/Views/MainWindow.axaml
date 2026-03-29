@@ -61,7 +61,8 @@
                 IsVisible="{Binding ShowTabBar}"
                 Background="{StaticResource PanelBgBrush}"
                 CornerRadius="8,8,0,0"
-                Padding="0,4,0,4">
+                Padding="0,4,0,4"
+                BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="0,1,0,0">
             <Grid ColumnDefinitions="*,Auto,*">
                 <!-- Version (left) -->
                 <TextBlock Grid.Column="0"
@@ -78,37 +79,37 @@
                             Spacing="4">
                     <!-- PATCHER tab -->
                     <Button Command="{Binding SwitchToPatcherCommand}"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            Padding="0"
-                            Cursor="Hand">
-                        <Border Padding="36,10"
-                                CornerRadius="6"
+                            Background="Transparent" BorderThickness="0"
+                            CornerRadius="6" Padding="0" Cursor="Hand">
+                        <Border Padding="36,10" CornerRadius="6"
                                 BorderThickness="0,3,0,0"
                                 BorderBrush="{Binding PatcherTabBrush}">
-                            <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
-                                       Foreground="{Binding PatcherTabForeground}"
-                                       LetterSpacing="1" />
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Name="PinPatcherIcon" Text="📌" FontSize="9" Opacity="0.25"
+                                           VerticalAlignment="Top" Margin="0,-2,4,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
+                                           Foreground="{Binding PatcherTabForeground}"
+                                           LetterSpacing="1" />
+                            </Grid>
                         </Border>
                     </Button>
 
                     <!-- CONSTRUCTOR tab -->
                     <Button Command="{Binding SwitchToConstructorCommand}"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            CornerRadius="6"
-                            Padding="0"
-                            Cursor="Hand">
-                        <Border Padding="36,10"
-                                CornerRadius="6"
+                            Background="Transparent" BorderThickness="0"
+                            CornerRadius="6" Padding="0" Cursor="Hand">
+                        <Border Padding="36,10" CornerRadius="6"
                                 BorderThickness="0,3,0,0"
                                 BorderBrush="{Binding ConstructorTabBrush}">
-                            <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
-                                       Foreground="{Binding ConstructorTabForeground}"
-                                       LetterSpacing="1" />
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Name="PinConstructorIcon" Text="📌" FontSize="9" Opacity="0.25"
+                                           VerticalAlignment="Top" Margin="0,-2,4,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
+                                           Foreground="{Binding ConstructorTabForeground}"
+                                           LetterSpacing="1" />
+                            </Grid>
                         </Border>
                     </Button>
                 </StackPanel>
@@ -125,6 +126,14 @@
                         <ComboBoxItem Content="A  0%" />
                         <ComboBoxItem Content="A  +50%" />
                     </ComboBox>
+
+                    <!-- Fullscreen toggle -->
+                    <Button Name="FullscreenBtn" Click="OnFullscreenClick"
+                            Background="Transparent" BorderThickness="0"
+                            Padding="6,3" Cursor="Hand" FontSize="16"
+                            ToolTip.Tip="Fullscreen (F11)">
+                        <TextBlock Name="FullscreenIcon" Text="&#x26F6;" />
+                    </Button>
 
                     <!-- Theme -->
                     <ComboBox Name="ThemeSelector"

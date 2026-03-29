@@ -30,6 +30,7 @@ public static class ThemeManager
         Color Accent, Color AccentLight, Color Gold,
         Color Success, Color Warning, Color Error, Color Info,
         Color BorderSubtle,
+        Color? BorderPanel = null,
         bool IsLight = false)
     {
         public Color RarityCommon => IsLight ? LightCommon : DefCommon;
@@ -47,7 +48,7 @@ public static class ThemeManager
         Accent: Color.Parse("#6C5CE7"), AccentLight: Color.Parse("#8A7FC1"), Gold: Color.Parse("#C8A96E"),
         Success: Color.Parse("#2ECC71"), Warning: Color.Parse("#F39C12"),
         Error: Color.Parse("#E74C5B"), Info: Color.Parse("#3498DB"),
-        BorderSubtle: Color.Parse("#3D3A4D"));
+        BorderSubtle: Color.Parse("#3D3A4D"), BorderPanel: Color.Parse("#4A4660"));
 
     public static readonly ThemeDef Light = new("Light",
         AppBg: Color.Parse("#F0EFF4"), PanelBg: Color.Parse("#FFFFFF"), CardBg: Color.Parse("#F5F4F8"),
@@ -57,7 +58,7 @@ public static class ThemeManager
         Accent: Color.Parse("#6C5CE7"), AccentLight: Color.Parse("#5A4BD6"), Gold: Color.Parse("#B8962E"),
         Success: Color.Parse("#27AE60"), Warning: Color.Parse("#E67E22"),
         Error: Color.Parse("#E74C3C"), Info: Color.Parse("#2980B9"),
-        BorderSubtle: Color.Parse("#D8D6E0"),
+        BorderSubtle: Color.Parse("#D8D6E0"), BorderPanel: Color.Parse("#C4C0D0"),
         IsLight: true);
 
     public static readonly ThemeDef Dota2 = new("Dota 2",
@@ -68,7 +69,7 @@ public static class ThemeManager
         Accent: Color.Parse("#C9302C"), AccentLight: Color.Parse("#E04438"), Gold: Color.Parse("#E2B53E"),
         Success: Color.Parse("#5EC45E"), Warning: Color.Parse("#E2B53E"),
         Error: Color.Parse("#C9302C"), Info: Color.Parse("#6CB4DC"),
-        BorderSubtle: Color.Parse("#2E2A3A"));
+        BorderSubtle: Color.Parse("#2E2A3A"), BorderPanel: Color.Parse("#3A3548"));
 
     // ── Cyberpunk — neon yellow / cyan on deep dark ──────────
     public static readonly ThemeDef Cyberpunk = new("Cyberpunk",
@@ -79,7 +80,7 @@ public static class ThemeManager
         Accent: Color.Parse("#F7D731"), AccentLight: Color.Parse("#FFE95C"), Gold: Color.Parse("#F7D731"),
         Success: Color.Parse("#00FF9C"), Warning: Color.Parse("#FF9C00"),
         Error: Color.Parse("#FF3860"), Info: Color.Parse("#00D4FF"),
-        BorderSubtle: Color.Parse("#2A2A44"));
+        BorderSubtle: Color.Parse("#2A2A44"), BorderPanel: Color.Parse("#353558"));
 
     // ── WoW — Alliance blue & gold with a touch of Horde red ──
     public static readonly ThemeDef Wow = new("WoW",
@@ -90,7 +91,7 @@ public static class ThemeManager
         Accent: Color.Parse("#1E70BF"), AccentLight: Color.Parse("#3A90E0"), Gold: Color.Parse("#D4A520"),
         Success: Color.Parse("#4CAF50"), Warning: Color.Parse("#D4A520"),
         Error: Color.Parse("#8C1616"), Info: Color.Parse("#4A9AD4"),
-        BorderSubtle: Color.Parse("#263450"));
+        BorderSubtle: Color.Parse("#263450"), BorderPanel: Color.Parse("#304060"));
 
     // ── Nord — cool arctic blue-gray ──────────────────────────
     public static readonly ThemeDef Nord = new("Nord",
@@ -101,7 +102,7 @@ public static class ThemeManager
         Accent: Color.Parse("#88C0D0"), AccentLight: Color.Parse("#8FBCBB"), Gold: Color.Parse("#EBCB8B"),
         Success: Color.Parse("#A3BE8C"), Warning: Color.Parse("#EBCB8B"),
         Error: Color.Parse("#BF616A"), Info: Color.Parse("#81A1C1"),
-        BorderSubtle: Color.Parse("#4C566A"));
+        BorderSubtle: Color.Parse("#4C566A"), BorderPanel: Color.Parse("#5A6478"));
 
     // ── Synthwave — hot pink / magenta neon on deep blue ──────
     public static readonly ThemeDef Synthwave = new("Synthwave",
@@ -112,7 +113,7 @@ public static class ThemeManager
         Accent: Color.Parse("#FF2E97"), AccentLight: Color.Parse("#FF6EB4"), Gold: Color.Parse("#FFD700"),
         Success: Color.Parse("#72F1B8"), Warning: Color.Parse("#FEDE5D"),
         Error: Color.Parse("#FE4450"), Info: Color.Parse("#36F9F6"),
-        BorderSubtle: Color.Parse("#2A1E55"));
+        BorderSubtle: Color.Parse("#2A1E55"), BorderPanel: Color.Parse("#3A2870"));
 
     // ── BG3 — warm amber/gold, matches the game UI ─────────────
     public static readonly ThemeDef Bg3 = new("BG3",
@@ -123,7 +124,7 @@ public static class ThemeManager
         Accent: Color.Parse("#C8963E"), AccentLight: Color.Parse("#E0B05A"), Gold: Color.Parse("#C8A96E"),
         Success: Color.Parse("#5A9E4B"), Warning: Color.Parse("#D4903A"),
         Error: Color.Parse("#B03030"), Info: Color.Parse("#4A8AB5"),
-        BorderSubtle: Color.Parse("#3A3228"));
+        BorderSubtle: Color.Parse("#3A3228"), BorderPanel: Color.Parse("#4A4030"));
 
     // ── Pinky — warm pastel pink, cozy & cute ──────────────────
     public static readonly ThemeDef Pinky = new("Pinky",
@@ -134,7 +135,7 @@ public static class ThemeManager
         Accent: Color.Parse("#E8789A"), AccentLight: Color.Parse("#F09AB4"), Gold: Color.Parse("#D4A06A"),
         Success: Color.Parse("#7BC8A4"), Warning: Color.Parse("#E8A862"),
         Error: Color.Parse("#E06070"), Info: Color.Parse("#82AAD4"),
-        BorderSubtle: Color.Parse("#EADCE0"),
+        BorderSubtle: Color.Parse("#EADCE0"), BorderPanel: Color.Parse("#E0C8D0"),
         IsLight: true);
 
     // ── Hacker — acid green on black, 90s terminal rave ─────────
@@ -146,7 +147,7 @@ public static class ThemeManager
         Accent: Color.Parse("#00FF41"), AccentLight: Color.Parse("#33FF66"), Gold: Color.Parse("#CCFF00"),
         Success: Color.Parse("#00FF41"), Warning: Color.Parse("#CCFF00"),
         Error: Color.Parse("#FF0040"), Info: Color.Parse("#00CCFF"),
-        BorderSubtle: Color.Parse("#1A1A1A"));
+        BorderSubtle: Color.Parse("#1A1A1A"), BorderPanel: Color.Parse("#0A3A0A"));
 
     // ── Clown — chaotic circus madness ───────────────────────────
     public static readonly ThemeDef Clown = new("Clown",
@@ -157,7 +158,7 @@ public static class ThemeManager
         Accent: Color.Parse("#FF2020"), AccentLight: Color.Parse("#FF5050"), Gold: Color.Parse("#FFD700"),
         Success: Color.Parse("#00FF88"), Warning: Color.Parse("#FF8C00"),
         Error: Color.Parse("#FF1493"), Info: Color.Parse("#00FFFF"),
-        BorderSubtle: Color.Parse("#4A1870"));
+        BorderSubtle: Color.Parse("#4A1870"), BorderPanel: Color.Parse("#5A2088"));
 
     // ── Gov — generic government website, sterile blue-gray ────
     public static readonly ThemeDef Gov = new("Gov",
@@ -168,7 +169,7 @@ public static class ThemeManager
         Accent: Color.Parse("#0D4CD3"), AccentLight: Color.Parse("#2E6AE6"), Gold: Color.Parse("#B8860B"),
         Success: Color.Parse("#2E7D32"), Warning: Color.Parse("#E65100"),
         Error: Color.Parse("#C62828"), Info: Color.Parse("#0D4CD3"),
-        BorderSubtle: Color.Parse("#C8D4E0"),
+        BorderSubtle: Color.Parse("#C8D4E0"), BorderPanel: Color.Parse("#B0BCC8"),
         IsLight: true);
 
     // ── Nature — warm wood & amber, cozy cabin vibes ───────────
@@ -180,7 +181,7 @@ public static class ThemeManager
         Accent: Color.Parse("#C89840"), AccentLight: Color.Parse("#E0B050"), Gold: Color.Parse("#D4A830"),
         Success: Color.Parse("#7AAC56"), Warning: Color.Parse("#D4A030"),
         Error: Color.Parse("#B85040"), Info: Color.Parse("#6A9EB0"),
-        BorderSubtle: Color.Parse("#443626"));
+        BorderSubtle: Color.Parse("#443626"), BorderPanel: Color.Parse("#524030"));
 
     public static readonly ThemeDef[] AllThemes = [Paramonov, Light, Dota2, Cyberpunk, Wow, Nord, Synthwave, Bg3, Pinky, Hacker, Clown, Gov, Nature];
 
@@ -203,6 +204,7 @@ public static class ThemeManager
         SetBrush(app, "ErrorBrush", theme.Error);
         SetBrush(app, "InfoBrush", theme.Info);
         SetBrush(app, "BorderSubtleBrush", theme.BorderSubtle);
+        SetBrush(app, "BorderPanelBrush", theme.BorderPanel ?? theme.BorderSubtle);
 
         // Also update Color resources
         SetColor(app, "AppBg", theme.AppBg);

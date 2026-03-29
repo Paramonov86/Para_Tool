@@ -15,7 +15,7 @@ public class ItemSearchTest
         var header = PakReader.ReadHeader(fs);
         var entries = PakReader.ReadFileList(fs, header);
 
-        var targets = new[] { "MAG_Ring35_1", "AMP_RusMage_Dagger_1", "AMP_Test_06" };
+        var targets = new[] { "AMP_Void_Pendant" };
         var output = "";
 
         var statEntries = entries.Where(e => e.Path.EndsWith(".txt") &&

@@ -56,6 +56,7 @@
     <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource Info}" />
 
     <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource BorderSubtle}" />
+    <SolidColorBrush x:Key="BorderPanelBrush" Color="#4A4660" />
 
     <SolidColorBrush x:Key="RarityUncommonBrush" Color="{StaticResource RarityUncommon}" />
     <SolidColorBrush x:Key="RarityRareBrush" Color="{StaticResource RarityRare}" />

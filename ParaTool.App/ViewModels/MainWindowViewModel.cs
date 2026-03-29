@@ -9,6 +9,7 @@ using ParaTool.Core.Artifacts;
 using ParaTool.Core.Models;
 using ParaTool.Core.Patching;
 using ParaTool.Core.Services;
+using ParaTool.App.Services;
 
 namespace ParaTool.App.ViewModels;
 
@@ -58,8 +59,17 @@ public partial class MainWindowViewModel : ObservableObject
 
     public MainWindowViewModel()
     {
-        var defaultCode = Loc.Instance.Lang;
-        _selectedLanguage = Languages.FirstOrDefault(l => l.Code == defaultCode) ?? Languages.First();
+        // Restore saved language
+        var savedLang = UiSettingsService.Load().Language;
+        if (!string.IsNullOrEmpty(savedLang) && Languages.Any(l => l.Code == savedLang))
+        {
+            Loc.Instance.SetLanguage(savedLang);
+            _selectedLanguage = Languages.FirstOrDefault(l => l.Code == savedLang);
+        }
+        else
+        {
+            _selectedLanguage = Languages.FirstOrDefault(l => l.Code == Loc.Instance.Lang) ?? Languages.First();
+        }
 
         Initialize();
 
@@ -70,7 +80,12 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnSelectedLanguageChanged(LangInfo? value)
     {
         if (value != null)
+        {
             Loc.Instance.SetLanguage(value.Code);
+            var settings = UiSettingsService.Load();
+            settings.Language = value.Code;
+            UiSettingsService.Save(settings);
+        }
     }
 
     partial void OnActiveTabChanged(string value)
@@ -233,9 +248,17 @@ public partial class MainWindowViewModel : ObservableObject
             foreach (var item in result.AmpMod.Items) _existingStatIds.Add(item.StatId);
         foreach (var mod in result.Mods)
             foreach (var item in mod.Items) _existingStatIds.Add(item.StatId);
-        ActiveTab = "Patcher";
         ShowTabBar = true;
-        CurrentView = editor;
+
+        // Open default tab from settings
+        var defaultTab = UiSettingsService.Load().DefaultTab;
+        if (defaultTab == "Constructor")
+            SwitchToConstructor();
+        else
+        {
+            ActiveTab = "Patcher";
+            CurrentView = editor;
+        }
     }
 
     private const string ArtifactsModUuid = "paratool-artifacts-virtual-mod";

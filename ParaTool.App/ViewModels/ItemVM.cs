@@ -92,7 +92,8 @@ public partial class ItemVM : ObservableObject
         }
     }
     public bool HasDisplayName => _entry.DisplayName != null
-        || VanillaLocaService.GetDisplayName(_entry.StatId, "en") != null;
+        || VanillaLocaService.GetDisplayName(_entry.StatId, "en") != null
+        || (_entry.LocaAncestorId != null && VanillaLocaService.GetDisplayName(_entry.LocaAncestorId, "en") != null);
     public string DetectedPool => _entry.DetectedPool ?? "?";
     public string DetectedRarity => _entry.DetectedRarity ?? "?";
     public ItemEntry Entry => _entry;

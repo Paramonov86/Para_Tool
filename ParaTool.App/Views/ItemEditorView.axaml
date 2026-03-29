@@ -57,7 +57,8 @@
                             Background="{StaticResource PanelBgBrush}"
                             CornerRadius="6"
                             Padding="8,4"
-                            Margin="0,0,0,4">
+                            Margin="0,0,0,4"
+                            BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <Button Content="{Binding SortByName, Source={x:Static loc:Loc.Instance}}"
                                     Command="{Binding SetSortCommand}" CommandParameter="Name"
@@ -229,7 +230,8 @@
                     <!-- Profile bar -->
                     <Border Background="{StaticResource PanelBgBrush}"
                             CornerRadius="6"
-                            Padding="12,8">
+                            Padding="12,8"
+                            BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                         <StackPanel Spacing="6">
                             <TextBlock Text="{Binding ProfileLabel, Source={x:Static loc:Loc.Instance}}"
                                        FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
@@ -308,7 +310,8 @@
                     <!-- Instructions -->
                     <Border Background="{StaticResource PanelBgBrush}"
                             CornerRadius="6"
-                            Padding="16,12">
+                            Padding="16,12"
+                            BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                         <StackPanel Spacing="8">
                             <TextBlock Text="{Binding Instructions, Source={x:Static loc:Loc.Instance}}"
                                        FontSize="{DynamicResource FontSize16}" FontWeight="SemiBold"
@@ -333,6 +336,7 @@
                             Background="{StaticResource PanelBgBrush}"
                             CornerRadius="6"
                             Padding="12,8"
+                            BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1"
                             IsVisible="False">
                         <StackPanel Spacing="4">
                             <TextBlock Name="ThemePopupTitle"

@@ -223,12 +223,17 @@ public class ChipListEditor : UserControl
         var colorBrush = new SolidColorBrush(color);
 
         var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        var textBlock = new TextBlock
+        var textBlock = new TextBox
         {
             Text = value,
             FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = colorBrush,
             VerticalAlignment = VerticalAlignment.Center,
+            IsReadOnly = true,
+            Background = Avalonia.Media.Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            MinHeight = 0,
             Cursor = new Cursor(StandardCursorType.Hand),
         };
 

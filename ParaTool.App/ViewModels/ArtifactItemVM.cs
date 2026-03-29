@@ -72,8 +72,27 @@ public partial class ArtifactItemVM : ObservableObject
                 EndPoint = new Avalonia.RelativePoint(0, 1, Avalonia.RelativeUnit.Relative),
                 GradientStops =
                 {
-                    new GradientStop(Color.FromArgb(100, c.R, c.G, c.B), 0),
+                    new GradientStop(Color.FromArgb(140, c.R, c.G, c.B), 0),
+                    new GradientStop(Color.FromArgb(50, c.R, c.G, c.B), 0.5),
                     new GradientStop(Color.FromArgb(0, c.R, c.G, c.B), 1),
+                }
+            };
+        }
+    }
+
+    public LinearGradientBrush RarityGlowBottom
+    {
+        get
+        {
+            var c = GetRarityColor(Artifact.Rarity);
+            return new LinearGradientBrush
+            {
+                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+                EndPoint = new Avalonia.RelativePoint(0, 1, Avalonia.RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Color.FromArgb(0, c.R, c.G, c.B), 0),
+                    new GradientStop(Color.FromArgb(60, c.R, c.G, c.B), 1),
                 }
             };
         }
@@ -356,7 +375,7 @@ public partial class ArtifactItemVM : ObservableObject
     public void RefreshAll()
     {
         OnPropertyChanged(nameof(DisplayLabel));
-        OnPropertyChanged(nameof(RarityColor)); OnPropertyChanged(nameof(RarityGradient));
+        OnPropertyChanged(nameof(RarityColor)); OnPropertyChanged(nameof(RarityGradient)); OnPropertyChanged(nameof(RarityGlowBottom));
         OnPropertyChanged(nameof(PreviewName));
         OnPropertyChanged(nameof(PreviewRarityText));
         OnPropertyChanged(nameof(PreviewSlot));
@@ -447,8 +466,9 @@ public partial class PassiveVM : ObservableObject
                 Passive.Name = parts.Length > 0
                     ? "Passive_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + (p.Length > 1 ? p[1..] : "")))
                     : "Passive_" + Guid.NewGuid().ToString("N")[..8];
-                OnPropertyChanged(nameof(Name));
             }
+            OnPropertyChanged(nameof(Name));
+            OnPropertyChanged(nameof(HasVisibleLoca));
             OnPropertyChanged();
         }
     }

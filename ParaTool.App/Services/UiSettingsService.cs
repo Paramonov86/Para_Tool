@@ -7,6 +7,8 @@ public sealed class UiSettings
 {
     public string Theme { get; set; } = "Paramonov";
     public int FontSizeIndex { get; set; } = 1; // 0=S, 1=M, 2=L
+    public string DefaultTab { get; set; } = "Patcher"; // "Patcher" or "Constructor"
+    public string? Language { get; set; } // null = system default
 }
 
 public static class UiSettingsService

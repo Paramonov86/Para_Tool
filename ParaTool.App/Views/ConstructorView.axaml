@@ -11,7 +11,8 @@
 
         <!-- ═══════ LEFT: NAVIGATOR ═══════ -->
         <Border Grid.Column="0" Background="{StaticResource PanelBgBrush}"
-                CornerRadius="8" MinWidth="180">
+                CornerRadius="8" MinWidth="180"
+                BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
                 <TextBlock Grid.Row="0"
                            Text="{Binding NavTitle, Source={x:Static loc:Loc.Instance}}"
@@ -203,7 +204,8 @@
 
         <!-- ═══════ CENTER: EDITOR ═══════ -->
         <Border Grid.Column="2" Background="{StaticResource PanelBgBrush}"
-                CornerRadius="8" MinWidth="300">
+                CornerRadius="8" MinWidth="300"
+                BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
             <Grid RowDefinitions="Auto,*,Auto">
                 <TextBlock Grid.Row="0"
                            Text="{Binding ConstructorEditorTitle, Source={x:Static loc:Loc.Instance}}"
@@ -226,7 +228,7 @@
                 <ScrollViewer Grid.Row="1" IsVisible="{Binding IsArtifactSelected}" Margin="8,4,8,8">
                     <StackPanel Spacing="12" DataContext="{Binding SelectedArtifact}">
                         <!-- Rarity -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding FieldRarity, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
@@ -234,7 +236,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Slot -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding ChipSlot, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
@@ -242,7 +244,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Themes -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding ChipThemes, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
@@ -320,7 +322,7 @@
                         </Border>
 
                         <!-- Icon selector -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding LblIcon, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
@@ -356,7 +358,7 @@
                         </Border>
 
                         <!-- Mechanics -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding CardMechanics, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"
@@ -447,7 +449,7 @@
                             </StackPanel>
                         </Border>
                         <!-- Create new artifact -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding LblCreateNewItem, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
@@ -510,7 +512,9 @@
 
         <!-- ═══════ RIGHT: PREVIEW / LOCA EDITOR ═══════ -->
         <Border Grid.Column="4" Background="{StaticResource PanelBgBrush}"
-                CornerRadius="8" Padding="8" MinWidth="240">
+                CornerRadius="8" Padding="8" MinWidth="240"
+                BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1"
+                Focusable="True">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
                 <TextBlock Grid.Row="0"
                            Text="{Binding ConstructorPreviewTitle, Source={x:Static loc:Loc.Instance}}"
@@ -592,6 +596,7 @@
                     <Border Background="{DynamicResource AppBgBrush}" CornerRadius="10"
                             BorderBrush="{Binding RarityColor}"
                             BorderThickness="3,0,0,0"
+                            VerticalAlignment="Top"
                             DataContext="{Binding SelectedArtifact}">
                         <StackPanel>
                             <!-- Top: Icon (right) + Name (left) + rarity gradient -->
@@ -609,11 +614,12 @@
                                         <TextBlock Text="{Binding PreviewSubtitle}" FontSize="{DynamicResource FontSize12}"
                                                    Foreground="{Binding RarityColor}" Margin="0,2,0,0" />
                                     </StackPanel>
-                                    <!-- Icon (large) -->
+                                    <!-- Icon (large, pushed into top-right corner) -->
                                     <Border Grid.Column="1" Width="200" Height="200"
-                                            CornerRadius="8" ClipToBounds="True"
+                                            ClipToBounds="True"
                                             Background="Transparent"
-                                            Margin="8,0,0,0"
+                                            Margin="0,-14,-14,0"
+                                            VerticalAlignment="Top"
                                             IsVisible="{Binding HasIcon}">
                                         <Image Source="{Binding IconBitmap}" Stretch="Uniform" />
                                     </Border>
@@ -633,7 +639,15 @@
                                           IsVisible="{Binding HasPassives}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="vm:PassiveVM">
-                                        <StackPanel Margin="0,0,0,6" IsVisible="{Binding HasVisibleLoca}">
+                                        <Border Margin="0,0,0,6" CornerRadius="6" Padding="10,6"
+                                                IsVisible="{Binding HasVisibleLoca}">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="#20C8A882" Offset="0" />
+                                                    <GradientStop Color="#10A08060" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                        <StackPanel>
                                             <TextBox Text="{Binding EditDisplayName}"
                                                      Watermark="{Binding WmPassiveName, Source={x:Static loc:Loc.Instance}}"
                                                      FontSize="{DynamicResource FontSize12}" FontWeight="Bold"
@@ -661,6 +675,7 @@
                                                      ChipColor="#E67E22"
                                                      IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                         </StackPanel>
+                                        </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -687,7 +702,9 @@
                                      Margin="16,0,16,8"
                                      IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
 
-                            <Border Height="8" />
+                            <!-- Bottom rarity glow -->
+                            <Border Height="24" CornerRadius="0,0,10,10"
+                                    Background="{Binding RarityGlowBottom}" />
                         </StackPanel>
                     </Border>
                 </ScrollViewer>
@@ -704,7 +721,7 @@
                 MaxWidth="900" MaxHeight="700"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
                 BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1">
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+            <Grid RowDefinitions="Auto,Auto,Auto,*">
 
                 <!-- Header bar with separator -->
                 <Border Grid.Row="0" Padding="20,14" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
@@ -728,38 +745,26 @@
                     </Grid>
                 </Border>
 
-                <!-- Atlas tabs -->
-                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto"
-                              VerticalScrollBarVisibility="Disabled"
-                              Padding="16,8,16,0">
-                    <ItemsControl ItemsSource="{Binding IconBrowser.Tabs}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="6" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="vm:AtlasTabVM">
-                                <Button Content="{Binding Name}"
-                                        Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).IconBrowser.SelectTabCommand}"
-                                        CommandParameter="{Binding}"
-                                        FontSize="{DynamicResource FontSize11}" Padding="12,6" CornerRadius="8"
-                                        Background="{StaticResource CardBgBrush}"
-                                        Foreground="{StaticResource TextSecondaryBrush}"
-                                        BorderThickness="0" Cursor="Hand" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-
-                <!-- Search + count + separator -->
-                <Border Grid.Row="2" Padding="16,8,16,8" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBox Text="{Binding IconBrowser.SearchText}"
+                <!-- Atlas selector + Search + count -->
+                <Border Grid.Row="1" Padding="16,8,16,8" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0">
+                        <ComboBox Grid.Column="0"
+                                  ItemsSource="{Binding IconBrowser.Tabs}"
+                                  SelectedItem="{Binding IconBrowser.SelectedTab}"
+                                  FontSize="{DynamicResource FontSize11}" Padding="8,6" MinWidth="140"
+                                  CornerRadius="8" Margin="0,0,8,0">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="vm:AtlasTabVM">
+                                    <TextBlock Text="{Binding Name}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding IconBrowser.SearchText}"
                                  Watermark="{Binding WmSearchIcons, Source={x:Static loc:Loc.Instance}}"
                                  FontSize="{DynamicResource FontSize12}" Padding="10,8" CornerRadius="8"
                                  Background="{StaticResource InputBgBrush}" />
-                        <TextBlock Grid.Column="1"
+                        <TextBlock Grid.Column="2"
                                    Text="{Binding IconBrowser.IconCount, StringFormat='{}{0} icons'}"
                                    FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}"
                                    VerticalAlignment="Center" Margin="10,0,0,0" />
@@ -767,7 +772,7 @@
                 </Border>
 
                 <!-- Loading indicator -->
-                <Border Grid.Row="3" IsVisible="{Binding IconBrowser.IsLoading}"
+                <Border Grid.Row="2" IsVisible="{Binding IconBrowser.IsLoading}"
                         Padding="16,12">
                     <StackPanel HorizontalAlignment="Center" Spacing="6">
                         <ProgressBar IsIndeterminate="True" Width="200" Height="4"
@@ -779,7 +784,7 @@
                 </Border>
 
                 <!-- Icon grid -->
-                <ListBox Grid.Row="4"
+                <ListBox Grid.Row="3"
                          ItemsSource="{Binding IconBrowser.DisplayIcons}"
                          Background="Transparent" BorderThickness="0"
                          Padding="12,4"
@@ -799,12 +804,16 @@
                                 <StackPanel Width="100" Spacing="3">
                                     <Image Source="{Binding Thumbnail}" Stretch="Uniform"
                                            Width="72" Height="72" />
-                                    <TextBlock Text="{Binding Name}"
-                                               FontSize="{DynamicResource FontSize10}"
-                                               Foreground="{StaticResource TextMutedBrush}"
-                                               TextWrapping="Wrap"
-                                               TextAlignment="Center"
-                                               MaxHeight="30" />
+                                    <Border Height="16" ClipToBounds="True">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="{DynamicResource FontSize10}"
+                                                   Foreground="{StaticResource TextMutedBrush}"
+                                                   HorizontalAlignment="Center">
+                                            <TextBlock.RenderTransform>
+                                                <TranslateTransform />
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
+                                    </Border>
                                 </StackPanel>
                             </Button>
                         </DataTemplate>

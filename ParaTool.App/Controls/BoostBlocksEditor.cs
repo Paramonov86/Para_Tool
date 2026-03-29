@@ -162,6 +162,9 @@ public class BoostBlocksEditor : UserControl
 
         var defs = IsFunctorMode ? BoostMapping.Functors : BoostMapping.Boosts;
         var def = defs.FirstOrDefault(d => d.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase));
+        // Fallback: StatsFunctors can also use Boost functions
+        def ??= (IsFunctorMode ? BoostMapping.Boosts : BoostMapping.Functors)
+            .FirstOrDefault(d => d.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase));
 
         if (def == null)
             return CreateRawBlock(rawBoost);
@@ -533,7 +536,7 @@ public class BoostBlocksEditor : UserControl
         var capturedEffect = effect;
         var functorEditor = new BoostBlocksEditor
         {
-            IsFunctorMode = true,
+            IsFunctorMode = IsFunctorMode,
             Margin = new Thickness(12, 0, 0, 0),
             ClipToBounds = false,
         };

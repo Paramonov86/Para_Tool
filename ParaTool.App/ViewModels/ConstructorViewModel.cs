@@ -29,25 +29,15 @@ public partial class BaseItemVM : ObservableObject
                 var resolved = _locaService.ResolveHandle(Entry.DisplayNameHandle, lang);
                 if (resolved != null) return BbCode.FromBg3Xml(resolved);
             }
-            // Try vanilla loca
-            var vanilla = VanillaLocaService.GetDisplayName(Entry.StatId, lang);
+            // Try vanilla loca (direct StatId + ancestor from using-chain)
+            var vanilla = VanillaLocaService.GetDisplayName(Entry.StatId, lang)
+                ?? (Entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(Entry.LocaAncestorId, lang) : null);
             if (vanilla != null) return vanilla;
-
-            // Debug: log items that can't resolve to current lang
-            if (_debugLogOnce == null) _debugLogOnce = new();
-            if (!_debugLogOnce.Contains(Entry.StatId))
-            {
-                _debugLogOnce.Add(Entry.StatId);
-                try { System.IO.File.AppendAllText(
-                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "paratool_label_debug.txt"),
-                    $"{Entry.StatId}: lang={lang}, handle={Entry.DisplayNameHandle ?? "NULL"}, scanName={Entry.DisplayName ?? "NULL"}\n"); } catch { }
-            }
 
             // Fallback to scan name (may be in scan language)
             return Entry.DisplayName ?? Entry.StatId;
         }
     }
-    private HashSet<string>? _debugLogOnce;
 
     private LocaService? _locaService;
 
@@ -292,42 +282,70 @@ public partial class ConstructorViewModel : ViewModelBase
         var lang = EditingLang;
         var art = artVm.Artifact;
 
-        // Item DisplayName — always resolve from handle for requested language
+        // Item DisplayName — resolve from handle only if no custom text set
         if (!string.IsNullOrEmpty(art.DisplayNameHandle))
         {
-            var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
-            if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
+            var hasCustomName = art.DisplayName.TryGetValue(lang, out var curName) && !string.IsNullOrEmpty(curName);
+            if (!hasCustomName)
+            {
+                var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
+                if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
+            }
         }
 
-        // Item Description
+        // Item Description — resolve from handle only if no custom text set
         if (!string.IsNullOrEmpty(art.DescriptionHandle))
         {
-            var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
-            if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
+            var hasCustomDesc = art.Description.TryGetValue(lang, out var curDesc) && !string.IsNullOrEmpty(curDesc);
+            if (!hasCustomDesc)
+            {
+                var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
+                if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
+            }
         }
 
-        // Passives — always resolve for current language
+        // Passives — resolve from vanilla handles only if passive has no custom text
         foreach (var passive in art.Passives)
         {
-
             var pFields = _resolver?.ResolveAll(passive.Name);
             if (pFields == null) continue;
 
+            // Only overwrite from vanilla handle if the passive has a matching handle
+            // (i.e. user hasn't set a custom name/description different from vanilla)
             if (pFields.TryGetValue("DisplayName", out var dnHandle))
             {
-                var text = _locaService?.ResolveHandle(dnHandle, lang);
-                if (text != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(text);
+                var hasCustomName = !string.IsNullOrEmpty(passive.DisplayNameHandle)
+                    ? passive.DisplayNameHandle != dnHandle  // user set a different handle
+                    : passive.DisplayName.TryGetValue(lang, out var cur) && !string.IsNullOrEmpty(cur);
+                if (!hasCustomName)
+                {
+                    var text = _locaService?.ResolveHandle(dnHandle, lang);
+                    if (text != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(text);
+                }
             }
             if (pFields.TryGetValue("Description", out var descHandle))
             {
-                var text = _locaService?.ResolveHandle(descHandle, lang);
-                if (text != null) passive.Description[lang] = BbCode.FromBg3Xml(text);
+                var hasCustomDesc = !string.IsNullOrEmpty(passive.DescriptionHandle)
+                    ? passive.DescriptionHandle != descHandle
+                    : passive.Description.TryGetValue(lang, out var cur) && !string.IsNullOrEmpty(cur);
+                if (!hasCustomDesc)
+                {
+                    var text = _locaService?.ResolveHandle(descHandle, lang);
+                    if (text != null) passive.Description[lang] = BbCode.FromBg3Xml(text);
+                }
             }
         }
     }
 
     partial void OnSelectedArtifactChanged(ArtifactItemVM? oldValue, ArtifactItemVM? newValue)
     {
+        // Auto-save dirty artifact when switching away
+        if (oldValue is { IsDirty: true, IsPersisted: true })
+        {
+            oldValue.Artifact.Passives = oldValue.PassiveVMs.Select(p => p.Passive).ToList();
+            ArtifactStore.Save(oldValue.Artifact);
+            oldValue.IsDirty = false;
+        }
         if (oldValue != null) oldValue.IsSelected = false;
         if (newValue != null)
         {
@@ -856,6 +874,30 @@ public partial class ConstructorViewModel : ViewModelBase
         if (_iconService == null) return;
 
         var _vanillaAtlas = _vanillaAtlasLazy.Value;
+
+        // 0. Try user-selected icon (saved in .art file)
+        if (!string.IsNullOrEmpty(vm.Artifact.AtlasIconMapKey))
+        {
+            var userDds = _iconService.GetIconDds(vm.Artifact.AtlasIconMapKey);
+            if (userDds != null)
+            {
+                vm.IconBitmap = DdsBitmapConverter.ToAvaloniaBitmap(userDds);
+                if (vm.IconBitmap != null) return;
+            }
+            // Try vanilla atlas
+            var userVanilla = _vanillaAtlas.LoadIconList()
+                .FirstOrDefault(i => i.Name.Equals(vm.Artifact.AtlasIconMapKey, StringComparison.OrdinalIgnoreCase));
+            if (userVanilla != null)
+            {
+                var rgba = _vanillaAtlas.ExtractIcon(userVanilla);
+                if (rgba != null)
+                {
+                    var (w, h) = _vanillaAtlas.GetTileSize(userVanilla);
+                    vm.IconBitmap = IconEntryVM.RgbaToBitmapStatic(rgba, w, h);
+                    if (vm.IconBitmap != null) return;
+                }
+            }
+        }
 
         // 1. Try AMP DDS by StatId / using-chain
         var iconName = _iconService.FindIconName(vm.Artifact.StatId, _resolver);

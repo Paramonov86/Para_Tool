@@ -95,6 +95,7 @@ public partial class IconBrowserVM : ObservableObject
 
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private bool _isOpen;
+    [ObservableProperty] private bool _isExpanded;
     [ObservableProperty] private AtlasTabVM? _selectedTab;
     [ObservableProperty] private string _currentIconName = "";
     [ObservableProperty] private WriteableBitmap? _currentIconBitmap;
@@ -130,6 +131,9 @@ public partial class IconBrowserVM : ObservableObject
 
     [RelayCommand]
     public void Close() => IsOpen = false;
+
+    [RelayCommand]
+    public void ToggleExpand() => IsExpanded = !IsExpanded;
 
     partial void OnSearchTextChanged(string value) => RefreshDisplay();
     partial void OnSelectedTabChanged(AtlasTabVM? value) => RefreshDisplay();

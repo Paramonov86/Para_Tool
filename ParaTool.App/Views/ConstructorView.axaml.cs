@@ -9,6 +9,7 @@ using ParaTool.App.Controls;
 using ParaTool.App.ViewModels;
 using ParaTool.App.Localization;
 using ParaTool.App.Services;
+using Avalonia.VisualTree;
 
 namespace ParaTool.App.Views;
 
@@ -39,8 +40,11 @@ public partial class ConstructorView : UserControl
     };
 
     private TextBox? _lastFocusedLocaBox;
+    private int _lastSelStart, _lastSelEnd;
     private string _currentLocaLang = "en";
     private ConstructorViewModel? _subscribedVm;
+
+    private readonly Dictionary<TextBlock, System.Threading.CancellationTokenSource> _marqueeTokens = new();
 
     public ConstructorView()
     {
@@ -50,7 +54,10 @@ public partial class ConstructorView : UserControl
         Loc.Instance.PropertyChanged += (_, _) => RebuildChips();
         FontScale.ScaleChanged += RebuildChips;
         AddHandler(GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
-        AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
+        AddHandler(Avalonia.Input.InputElement.PointerPressedEvent, OnPointerPressedTunnel, RoutingStrategies.Tunnel);
+        AddHandler(PointerEnteredEvent, OnIconPointerEntered, RoutingStrategies.Tunnel);
+        AddHandler(PointerExitedEvent, OnIconPointerExited, RoutingStrategies.Tunnel);
 
         // Setup language selector
         var langSelector = this.FindControl<TumblerChipEditor>("LocaLangSelector");
@@ -120,11 +127,28 @@ public partial class ConstructorView : UserControl
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        // Enter in single-line TextBox → lose focus
+        // Enter in single-line TextBox → lose focus (but not inside ChipListEditor — it uses Enter to add chips)
         if (e.Key == Key.Enter && e.Source is TextBox tb && !tb.AcceptsReturn)
         {
-            this.Focus();
+            // Skip if TextBox is inside ChipListEditor (Enter adds chip there)
+            var parent = (tb as Avalonia.Visual)?.GetVisualParent();
+            while (parent != null)
+            {
+                if (parent is ChipListEditor) return; // let ChipListEditor handle Enter
+                parent = parent.GetVisualParent();
+            }
+            (TopLevel.GetTopLevel(this) as Window)?.FocusManager?.ClearFocus();
             e.Handled = true;
+        }
+    }
+
+    private void OnPointerPressedTunnel(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        // When clicking a BB button, save current TextBox selection before focus changes
+        if (_lastFocusedLocaBox != null && _lastFocusedLocaBox.IsFocused)
+        {
+            _lastSelStart = _lastFocusedLocaBox.SelectionStart;
+            _lastSelEnd = _lastFocusedLocaBox.SelectionEnd;
         }
     }
 
@@ -134,8 +158,23 @@ public partial class ConstructorView : UserControl
         if (e.Source is TextBox tb)
         {
             var name = tb.Name;
-            if (name is "LocaDisplayName" or "LocaDescription" or "LocaPassiveName" or "LocaPassiveDesc")
+            // Named loca boxes
+            if (name is "LocaDisplayName" or "LocaDescription")
+            {
                 _lastFocusedLocaBox = tb;
+                return;
+            }
+            // Unnamed TextBox inside preview/loca section (passive name/desc in DataTemplate)
+            if (string.IsNullOrEmpty(name) && tb.AcceptsReturn == false
+                && tb.Background == Avalonia.Media.Brushes.Transparent && tb.BorderThickness == new Thickness(0))
+            {
+                _lastFocusedLocaBox = tb;
+                return;
+            }
+            // AcceptsReturn TextBox = description editor
+            if (tb.AcceptsReturn)
+                _lastFocusedLocaBox = tb;
+
         }
     }
 
@@ -387,10 +426,16 @@ public partial class ConstructorView : UserControl
 
             var id = selected.Tag.ToString()!;
             var text = targetBox.Text ?? "";
-            var pos = Math.Max(0, targetBox.SelectionStart);
-            var insert = $"[{bbTag}={id}]{id}[/{bbTag}]";
-            targetBox.Text = text[..pos] + insert + text[pos..];
-            targetBox.CaretIndex = pos + insert.Length;
+            var start = Math.Min(_lastSelStart, _lastSelEnd);
+            var end = Math.Max(_lastSelStart, _lastSelEnd);
+            if (start < 0) start = 0;
+            if (end > text.Length) end = text.Length;
+            var selText = start != end ? text[start..end] : id;
+            var insert = $"[{bbTag}={id}]{selText}[/{bbTag}]";
+            targetBox.Text = start != end
+                ? text[..start] + insert + text[end..]
+                : text[..start] + insert + text[start..];
+            targetBox.CaretIndex = start + insert.Length;
             targetBox.Focus();
         };
 
@@ -493,12 +538,14 @@ public partial class ConstructorView : UserControl
 
     private void InsertBbCode(TextBox tb, string tag)
     {
-        var selStart = tb.SelectionStart;
-        var selEnd = tb.SelectionEnd;
+        // Use saved selection (live selection resets when BB button clicked)
+        var selStart = _lastSelStart;
+        var selEnd = _lastSelEnd;
         var text = tb.Text ?? "";
         var selected = "";
 
-        if (selStart != selEnd && selStart >= 0 && selEnd >= 0)
+        if (selStart != selEnd && selStart >= 0 && selEnd >= 0
+            && Math.Min(selStart, selEnd) >= 0 && Math.Max(selStart, selEnd) <= text.Length)
         {
             var start = Math.Min(selStart, selEnd);
             var end = Math.Max(selStart, selEnd);
@@ -651,5 +698,81 @@ public partial class ConstructorView : UserControl
             btn.Click += (_, _) => { vm.ToggleThemeCommand.Execute(btn.Tag as string); RebuildChips(); };
             panel.Children.Add(btn);
         }
+    }
+
+    // === Icon name marquee scroll on hover ===
+
+    private void OnIconPointerEntered(object? sender, PointerEventArgs e)
+    {
+        if (e.Source is not Visual v) return;
+        var btn = v.FindAncestorOfType<Button>();
+        if (btn?.Name != "IconGridBtn") return;
+
+        var tb = FindDescendant<TextBlock>(btn);
+        if (tb == null || tb.RenderTransform is not TranslateTransform tt) return;
+
+        tb.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var textWidth = tb.DesiredSize.Width;
+        var containerWidth = 100.0;
+        if (textWidth <= containerWidth) return;
+
+        var cts = new System.Threading.CancellationTokenSource();
+        _marqueeTokens[tb] = cts;
+        _ = RunMarquee(tb, tt, textWidth, containerWidth, cts.Token);
+    }
+
+    private void OnIconPointerExited(object? sender, PointerEventArgs e)
+    {
+        if (e.Source is not Visual v) return;
+        var btn = v.FindAncestorOfType<Button>();
+        if (btn?.Name != "IconGridBtn") return;
+
+        var tb = FindDescendant<TextBlock>(btn);
+        if (tb == null) return;
+
+        if (_marqueeTokens.Remove(tb, out var cts))
+            cts.Cancel();
+        if (tb.RenderTransform is TranslateTransform tt)
+            tt.X = 0;
+    }
+
+    private static async System.Threading.Tasks.Task RunMarquee(
+        TextBlock tb, TranslateTransform tt, double textWidth, double containerWidth,
+        System.Threading.CancellationToken ct)
+    {
+        var offset = textWidth - containerWidth;
+        var durationMs = (int)(offset * 20); // ~20ms per pixel
+        var steps = Math.Max(1, durationMs / 16);
+        var dx = offset / steps;
+
+        await System.Threading.Tasks.Task.Delay(300, ct); // pause before scroll
+
+        // Scroll left
+        for (int i = 0; i < steps && !ct.IsCancellationRequested; i++)
+        {
+            tt.X = -(i + 1) * dx;
+            await System.Threading.Tasks.Task.Delay(16, ct);
+        }
+
+        if (!ct.IsCancellationRequested)
+            await System.Threading.Tasks.Task.Delay(800, ct); // pause at end
+
+        // Scroll back
+        for (int i = steps - 1; i >= 0 && !ct.IsCancellationRequested; i--)
+        {
+            tt.X = -i * dx;
+            await System.Threading.Tasks.Task.Delay(16, ct);
+        }
+    }
+
+    private static T? FindDescendant<T>(Visual parent) where T : Visual
+    {
+        foreach (var child in parent.GetVisualChildren())
+        {
+            if (child is T match) return match;
+            var found = FindDescendant<T>(child as Visual ?? (Visual)child);
+            if (found != null) return found;
+        }
+        return null;
     }
 }

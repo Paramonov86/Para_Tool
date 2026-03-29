@@ -13,6 +13,8 @@ public partial class MainWindow : Window
     private UiSettings _uiSettings = new();
     private bool _suppressSave; // prevent saving during initial load
 
+    private WindowState _stateBeforeFullscreen;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -25,7 +27,52 @@ public partial class MainWindow : Window
         if (fontSelector != null)
             fontSelector.SelectionChanged += OnFontSizeChanged;
 
+        var pinPatcher = this.FindControl<TextBlock>("PinPatcherIcon");
+        var pinConstructor = this.FindControl<TextBlock>("PinConstructorIcon");
+        if (pinPatcher != null) pinPatcher.PointerPressed += (_, e) => { SetDefaultTab("Patcher"); e.Handled = true; };
+        if (pinConstructor != null) pinConstructor.PointerPressed += (_, e) => { SetDefaultTab("Constructor"); e.Handled = true; };
+
+        // Show which tab is pinned
+        Loaded += (_, _) => UpdatePinIcons();
+
         RestoreUiSettings(themeSelector, fontSelector);
+
+        KeyDown += OnWindowKeyDown;
+    }
+
+    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F11) { ToggleFullscreen(); e.Handled = true; }
+    }
+
+    private void OnFullscreenClick(object? sender, RoutedEventArgs e) => ToggleFullscreen();
+
+    private void SetDefaultTab(string tab)
+    {
+        _uiSettings.DefaultTab = tab;
+        UiSettingsService.Save(_uiSettings);
+        UpdatePinIcons();
+    }
+
+    private void UpdatePinIcons()
+    {
+        var pinPatcher = this.FindControl<TextBlock>("PinPatcherIcon");
+        var pinConstructor = this.FindControl<TextBlock>("PinConstructorIcon");
+        if (pinPatcher != null) pinPatcher.Opacity = _uiSettings.DefaultTab == "Patcher" ? 1.0 : 0.25;
+        if (pinConstructor != null) pinConstructor.Opacity = _uiSettings.DefaultTab == "Constructor" ? 1.0 : 0.25;
+    }
+
+    private void ToggleFullscreen()
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            WindowState = _stateBeforeFullscreen;
+        }
+        else
+        {
+            _stateBeforeFullscreen = WindowState;
+            WindowState = WindowState.Maximized;
+        }
     }
 
     private void RestoreUiSettings(ComboBox? themeSelector, ComboBox? fontSelector)

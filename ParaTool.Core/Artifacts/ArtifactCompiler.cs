@@ -108,6 +108,42 @@ public static class ArtifactCompiler
         stats.AppendLine();
 
         // ─── Passive Definitions ────────────────────────
+        // Rename passives to avoid overwriting originals
+        var passiveRenames = new Dictionary<string, string>();
+        for (int pi = 0; pi < art.Passives.Count; pi++)
+        {
+            var p = art.Passives[pi];
+            var originalName = p.Name;
+            // If passive name doesn't start with artifact StatId, it's inherited — rename
+            if (!originalName.StartsWith(art.StatId, StringComparison.OrdinalIgnoreCase)
+                && p.UsingBase == null)
+            {
+                var newName = $"{art.StatId}_Passive_{pi + 1}";
+                passiveRenames[originalName] = newName;
+                p.UsingBase = originalName; // inherit from original
+                p.Name = newName;
+            }
+        }
+
+        // Update PassivesOnEquip with renamed passives
+        if (passiveRenames.Count > 0 && !string.IsNullOrEmpty(art.PassivesOnEquip))
+        {
+            var poeNames = art.PassivesOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var updated = poeNames.Select(n => passiveRenames.TryGetValue(n, out var renamed) ? renamed : n);
+            art.PassivesOnEquip = string.Join(";", updated);
+            // Re-emit PassivesOnEquip line (was already written — need to replace)
+        }
+
+        // Re-build stats header with updated PassivesOnEquip
+        if (passiveRenames.Count > 0)
+        {
+            var statsText = stats.ToString();
+            foreach (var (oldName, newName) in passiveRenames)
+                statsText = statsText.Replace($"\"{oldName}\"", $"\"{newName}\"");
+            stats.Clear();
+            stats.Append(statsText);
+        }
+
         foreach (var passive in art.Passives)
         {
             stats.AppendLine($"new entry \"{passive.Name}\"");
@@ -122,8 +158,9 @@ public static class ArtifactCompiler
                 stats.AppendLine($"data \"DescriptionParams\" \"{passive.DescriptionParams}\"");
             stats.AppendLine($"data \"Properties\" \"{passive.Properties}\"");
 
-            if (!string.IsNullOrEmpty(passive.Icon))
-                stats.AppendLine($"data \"Icon\" \"{passive.Icon}\"");
+            // Clear icon for inherited passives (stale icon from parent)
+            if (passive.UsingBase != null)
+                stats.AppendLine("data \"Icon\" \"\"");
 
             // Boost-based
             if (!string.IsNullOrEmpty(passive.BoostContext))

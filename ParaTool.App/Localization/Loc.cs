@@ -245,6 +245,7 @@ public partial class Loc : ObservableObject
     public string BbTipLineBreak => this["BbTipLineBreak"];
     public string TipToggleCodePreview => this["TipToggleCodePreview"];
     public string LblCardMechanics => this["LblCardMechanics"];
+    public string TipDefaultTab => this["TipDefaultTab"];
     public string TipFontSize => this["TipFontSize"];
     public string TipColorTheme => this["TipColorTheme"];
     public string WmBrowseIcons => this["WmBrowseIcons"];
