@@ -277,8 +277,8 @@ public sealed class AmpPatcher
 
         foreach (var art in artifacts)
         {
-            var compiled = ArtifactCompiler.Compile(art);
             bool isOverride = existingStatIds.Contains(art.StatId);
+            var compiled = ArtifactCompiler.Compile(art, isOverride);
 
             if (isOverride)
             {
@@ -351,7 +351,13 @@ public sealed class AmpPatcher
         {
             var metadataLsx = FindFile(extractDir, "metadata.lsx");
             if (metadataLsx != null)
+            {
                 PatchIconMetadata(metadataLsx, customIconStatIds);
+                // Remove metadata.lsf so BG3 reads the patched .lsx instead
+                var metadataLsf = Path.ChangeExtension(metadataLsx, ".lsf");
+                if (File.Exists(metadataLsf))
+                    File.Delete(metadataLsf);
+            }
         }
 
         var statFiles = Directory.GetFiles(statsDir, "*.txt")
@@ -601,11 +607,11 @@ public sealed class AmpPatcher
             };
         }
 
-        if (art.AtlasIconMapKey != null || art.IconMainDdsBase64 != null)
+        if (!string.IsNullOrEmpty(art.AtlasIconMapKey))
         {
             goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
             {
-                Value = art.AtlasIconMapKey ?? art.StatId
+                Value = art.AtlasIconMapKey
             };
         }
     }
@@ -629,8 +635,12 @@ public sealed class AmpPatcher
             { Value = art.ParentTemplateUuid };
         goNode.Attributes["Stats"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
             { Value = art.StatId };
-        goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-            { Value = art.AtlasIconMapKey ?? art.StatId };
+        // Only set Icon if custom — otherwise inherit from parent template
+        if (!string.IsNullOrEmpty(art.AtlasIconMapKey))
+        {
+            goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                { Value = art.AtlasIconMapKey };
+        }
         goNode.Attributes["LevelName"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
             { Value = "" };
         goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)

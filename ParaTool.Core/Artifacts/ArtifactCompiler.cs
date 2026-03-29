@@ -35,7 +35,7 @@ public static class ArtifactCompiler
     /// <summary>
     /// Compile a single artifact into BG3-ready content.
     /// </summary>
-    public static CompileResult Compile(ArtifactDefinition art)
+    public static CompileResult Compile(ArtifactDefinition art, bool isOverride = false)
     {
         var stats = new StringBuilder();
         var loca = new Dictionary<string, List<(string, string)>>
@@ -48,7 +48,9 @@ public static class ArtifactCompiler
         stats.AppendLine($"new entry \"{art.StatId}\"");
         stats.AppendLine($"type \"{art.StatType}\"");
         stats.AppendLine($"using \"{art.UsingBase}\"");
-        stats.AppendLine($"data \"RootTemplate\" \"{art.TemplateUuid}\"");
+        // Only set RootTemplate for NEW items — overrides keep the original template UUID
+        if (!isOverride && !string.IsNullOrEmpty(art.TemplateUuid))
+            stats.AppendLine($"data \"RootTemplate\" \"{art.TemplateUuid}\"");
         stats.AppendLine($"data \"Rarity\" \"{art.Rarity}\"");
         stats.AppendLine($"data \"ValueOverride\" \"{art.ValueOverride}\"");
 
