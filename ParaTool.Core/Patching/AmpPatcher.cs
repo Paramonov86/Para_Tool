@@ -271,7 +271,8 @@ public sealed class AmpPatcher
         var newStats = new StringBuilder();
         var allLocaEntries = new Dictionary<string, List<(string handle, string xmlText)>>(StringComparer.OrdinalIgnoreCase);
         var customIconStatIds = new List<string>();
-        var newArtifacts = new List<ArtifactDefinition>(); // need RootTemplate generation
+        var newArtifacts = new List<ArtifactDefinition>();
+        var overrideArtifacts = new List<ArtifactDefinition>();
         int count = 0;
 
         foreach (var art in artifacts)
@@ -282,6 +283,7 @@ public sealed class AmpPatcher
             if (isOverride)
             {
                 overrideStats.Append(compiled.StatsText);
+                overrideArtifacts.Add(art);
             }
             else
             {
@@ -421,9 +423,9 @@ public sealed class AmpPatcher
 
         // TreasureTable for new items is handled by the main TT patching step
 
-        // Generate RootTemplates for new artifacts (not overrides)
-        if (newArtifacts.Count > 0)
-            AddRootTemplates(extractDir, newArtifacts);
+        // Generate/update RootTemplates for artifacts
+        if (newArtifacts.Count > 0 || overrideArtifacts.Count > 0)
+            PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts);
 
         // Write loca XML entries
         if (allLocaEntries.Count > 0)
@@ -490,10 +492,13 @@ public sealed class AmpPatcher
     }
 
     /// <summary>
-    /// Adds RootTemplate GameObjects nodes for new artifacts to _merged.lsf.
-    /// Each new item needs a minimal template so BG3 can spawn it.
+    /// Patches RootTemplates in _merged.lsf:
+    /// - New artifacts: adds GameObjects nodes with minimal fields
+    /// - Override artifacts: updates DisplayName, Description, Icon on existing nodes
     /// </summary>
-    private static void AddRootTemplates(string extractDir, IReadOnlyList<ArtifactDefinition> newArtifacts)
+    private static void PatchRootTemplates(string extractDir,
+        IReadOnlyList<ArtifactDefinition> newArtifacts,
+        IReadOnlyList<ArtifactDefinition> overrideArtifacts)
     {
         var mergedPath = Directory.GetFiles(extractDir, "_merged.lsf", SearchOption.AllDirectories)
             .FirstOrDefault(p => p.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase));
@@ -509,9 +514,51 @@ public sealed class AmpPatcher
                 resource = reader.Read();
             }
 
-            // Find Templates region → Templates node → append GameObjects children
             if (!resource.Regions.TryGetValue("Templates", out var templatesRegion)) return;
 
+            // Build lookup: Stats value → GameObjects node for overrides
+            var overrideMap = overrideArtifacts.ToDictionary(a => a.StatId, StringComparer.OrdinalIgnoreCase);
+
+            if (overrideMap.Count > 0 && templatesRegion.Children.TryGetValue("GameObjects", out var goNodes))
+            {
+                foreach (var goNode in goNodes)
+                {
+                    if (!goNode.Attributes.TryGetValue("Stats", out var statsAttr)) continue;
+                    var statsVal = statsAttr.Value?.ToString();
+                    if (statsVal == null || !overrideMap.TryGetValue(statsVal, out var art)) continue;
+
+                    // Update DisplayName handle
+                    if (!string.IsNullOrEmpty(art.DisplayNameHandle))
+                    {
+                        goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+                        {
+                            Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
+                        };
+                    }
+
+                    // Update Description handle
+                    if (!string.IsNullOrEmpty(art.DescriptionHandle))
+                    {
+                        goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+                        {
+                            Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
+                        };
+                    }
+
+                    // Update Icon if custom
+                    if (art.AtlasIconMapKey != null || art.IconMainDdsBase64 != null)
+                    {
+                        goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                        {
+                            Value = art.AtlasIconMapKey ?? art.StatId
+                        };
+                    }
+
+                    overrideMap.Remove(statsVal);
+                }
+            }
+
+            // Add new artifact templates
             foreach (var art in newArtifacts)
             {
                 var goNode = new LSLib.Node { Name = "GameObjects", Parent = templatesRegion };
@@ -532,19 +579,11 @@ public sealed class AmpPatcher
                     { Value = "" };
                 goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
                 {
-                    Value = new LSLib.TranslatedString
-                    {
-                        Handle = art.DisplayNameHandle,
-                        Version = 1
-                    }
+                    Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
                 };
                 goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
                 {
-                    Value = new LSLib.TranslatedString
-                    {
-                        Handle = art.DescriptionHandle,
-                        Version = 1
-                    }
+                    Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
                 };
 
                 templatesRegion.AppendChild(goNode);
@@ -559,7 +598,7 @@ public sealed class AmpPatcher
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"RootTemplate generation failed: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"RootTemplate patching failed: {ex.Message}");
         }
     }
 
