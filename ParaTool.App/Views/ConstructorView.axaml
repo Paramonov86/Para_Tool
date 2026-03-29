@@ -256,7 +256,7 @@
                                 IsVisible="{Binding IsArmor}">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding LblArmor, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding LblArmorClass, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"
                                                IsVisible="{Binding ShowArmorClass}" />
@@ -292,7 +292,7 @@
                                 IsVisible="{Binding IsWeapon}">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding LblWeapon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding LblDamage, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
                                     <TextBox Grid.Column="1" Text="{Binding EditDamage}" Watermark="1d8"
@@ -361,7 +361,7 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding CardMechanics, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"
+                                           FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1"
                                            ToolTip.Tip="{Binding LblCardMechanics, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding LblBoosts, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
@@ -381,7 +381,14 @@
                                 ClipToBounds="False">
                             <StackPanel Spacing="6" ClipToBounds="False">
                                 <TextBlock Text="{Binding LblPassives, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                <Button Name="AddPassiveBtn"
+                                        Background="{StaticResource InputBgBrush}"
+                                        Foreground="{StaticResource AccentLightBrush}"
+                                        FontSize="{DynamicResource FontSize16}" FontWeight="Bold"
+                                        Content="+" Padding="6,0" CornerRadius="12"
+                                        BorderThickness="0" Cursor="Hand"
+                                        HorizontalAlignment="Left" Margin="0,0,0,4" />
                                 <ItemsControl ItemsSource="{Binding PassiveVMs}" ClipToBounds="False">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="vm:PassiveVM">
@@ -452,7 +459,7 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding LblCreateNewItem, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
 
                                 <!-- Based on -->
                                 <StackPanel Orientation="Horizontal" Spacing="4">

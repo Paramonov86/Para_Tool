@@ -300,6 +300,19 @@ public partial class ArtifactItemVM : ObservableObject
 
     public ObservableCollection<PassiveVM> PassiveVMs { get; } = [];
 
+    public void AddNewPassive()
+    {
+        var passive = new Core.Artifacts.PassiveDefinition
+        {
+            Name = "Passive_New_" + Guid.NewGuid().ToString("N")[..6],
+            Properties = "Highlighted",
+        };
+        Artifact.Passives.Add(passive);
+        PassiveVMs.Add(new PassiveVM(passive, this));
+        IsDirty = true;
+        OnPropertyChanged(nameof(HasPassives));
+    }
+
     public void LoadPassivesFromArtifact()
     {
         PassiveVMs.Clear();

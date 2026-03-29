@@ -385,6 +385,7 @@ public sealed class AmpPatcher
             }
 
             var unresolved = new HashSet<string>(overrideMap.Keys, StringComparer.OrdinalIgnoreCase);
+            Services.AppLogger.Info($"Applying {overrideMap.Count} override(s): {string.Join(", ", overrideMap.Keys)}");
             foreach (var filePath in statFiles)
             {
                 if (unresolved.Count == 0) break;
@@ -400,8 +401,11 @@ public sealed class AmpPatcher
                 {
                     File.WriteAllText(filePath, modified);
                     foreach (var entry in foundEntries) unresolved.Remove(entry);
+                    Services.AppLogger.Info($"Override applied in {Path.GetFileName(filePath)}: {string.Join(", ", foundEntries)}");
                 }
             }
+            if (unresolved.Count > 0)
+                Services.AppLogger.Warn($"Override entries NOT FOUND in any stat file: {string.Join(", ", unresolved)}");
 
             // Append passives/statuses/spells from overrides to last stat file
             var nonItemOverrides = new StringBuilder();
@@ -427,6 +431,9 @@ public sealed class AmpPatcher
         var artifactStatIds = new HashSet<string>(
             artifacts.Where(a => !a.StatId.Equals(a.UsingBase, StringComparison.OrdinalIgnoreCase))
                      .Select(a => a.StatId), StringComparer.OrdinalIgnoreCase);
+        if (artifactStatIds.Count > 0)
+            Services.AppLogger.Info($"Cleanup: removing {artifactStatIds.Count} new artifact entries: {string.Join(", ", artifactStatIds)}");
+        Services.AppLogger.Info($"Cleanup: skipping {artifacts.Count(a => a.StatId.Equals(a.UsingBase, StringComparison.OrdinalIgnoreCase))} override(s)");
         foreach (var sf in statFiles)
         {
             var text = File.ReadAllText(sf);

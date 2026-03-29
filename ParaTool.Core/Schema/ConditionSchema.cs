@@ -175,6 +175,9 @@ public sealed class ConditionSchema
         // 4. AMP conditions
         ParseKhn(schema, asm, "ParaTool.Core.Resources.Schema.amp_conditions.khn", "amp");
 
+        // 5. BG3 built-in conditions not in khn files (used in BoostConditions)
+        RegisterBuiltinConditions(schema);
+
         return schema;
     }
 
@@ -329,6 +332,68 @@ public sealed class ConditionSchema
                 Category = CategorizeCondition(name),
             });
         }
+    }
+
+    /// <summary>Register commonly used BG3 conditions not found in khn files.</summary>
+    private static void RegisterBuiltinConditions(ConditionSchema schema)
+    {
+        var statusParam = new ConditionParam { Name = "statusId", Type = "string" };
+        var entityParam = new ConditionParam { Name = "target", Type = "enum", EnumValues = EntityTargetsEn, IsOptional = true };
+        var intParam = new ConditionParam { Name = "amount", Type = "int" };
+
+        // Status duration conditions: StatusDuration*(statusId, amount, entity)
+        foreach (var name in new[] { "StatusDurationLessThan", "StatusDurationMoreThan",
+            "StatusDurationEqualOrLessThan", "StatusDurationEqualOrMoreThan" })
+        {
+            AddFunc(schema, new ConditionDef
+            {
+                Name = name, Category = "Status", Source = "builtin",
+                Params = [entityParam, statusParam, intParam],
+            });
+        }
+
+        // HasStatusWithGroup(statusGroup, entity)
+        AddFunc(schema, new ConditionDef
+        {
+            Name = "HasStatusWithGroup", Category = "Status", Source = "builtin",
+            Params = [entityParam, new ConditionParam { Name = "statusGroup", Type = "enum", EnumValues = StatusGroups }],
+        });
+
+        // StatusStacksLessThan / MoreThan(statusId, amount, entity)
+        foreach (var name in new[] { "StatusStacksLessThan", "StatusStacksMoreThan",
+            "StatusStacksEqualOrLessThan", "StatusStacksEqualOrMoreThan" })
+        {
+            AddFunc(schema, new ConditionDef
+            {
+                Name = name, Category = "Status", Source = "builtin",
+                Params = [entityParam, statusParam, intParam],
+            });
+        }
+
+        // SpellAttackRollAbove / Below(amount)
+        foreach (var name in new[] { "SpellAttackRollAbove", "SpellAttackRollBelow",
+            "AttackRollAbove", "AttackRollBelow", "SavingThrowRollAbove", "SavingThrowRollBelow" })
+        {
+            AddFunc(schema, new ConditionDef
+            {
+                Name = name, Category = "Roll", Source = "builtin",
+                Params = [intParam],
+            });
+        }
+
+        // WieldingWeaponOfType(weaponType)
+        AddFunc(schema, new ConditionDef
+        {
+            Name = "WieldingWeaponOfType", Category = "Item", Source = "builtin",
+            Params = [new ConditionParam { Name = "weaponType", Type = "enum", EnumValues = BoostMapping.WeaponFlags }],
+        });
+
+        // HasArmorType(armorType)
+        AddFunc(schema, new ConditionDef
+        {
+            Name = "HasArmorType", Category = "Item", Source = "builtin",
+            Params = [new ConditionParam { Name = "armorType", Type = "enum", EnumValues = BoostMapping.ArmorTypes }],
+        });
     }
 
     private static void AddFunc(ConditionSchema schema, ConditionDef func)

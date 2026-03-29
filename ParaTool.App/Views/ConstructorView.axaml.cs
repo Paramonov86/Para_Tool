@@ -211,6 +211,14 @@ public partial class ConstructorView : UserControl
             return;
         }
 
+        // Add new passive
+        if (btn.Name == "AddPassiveBtn" && DataContext is ConstructorViewModel addPVm
+            && addPVm.SelectedArtifact != null)
+        {
+            addPVm.SelectedArtifact.AddNewPassive();
+            return;
+        }
+
         // Create new artifact
         if (btn.Name == "CreateNewArtifactBtn" && DataContext is ConstructorViewModel cvm)
         {

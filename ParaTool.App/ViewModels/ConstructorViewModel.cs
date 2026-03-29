@@ -277,62 +277,48 @@ public partial class ConstructorViewModel : ViewModelBase
     /// Reload localized texts for the artifact from loca data for the current editing language.
     /// Always resolves from handle (overrides cached text for this language).
     /// </summary>
-    private void ReloadLocaForCurrentLang(ArtifactItemVM artVm)
+    private void ReloadLocaForCurrentLang(ArtifactItemVM artVm, bool isLanguageSwitch = false)
     {
         var lang = EditingLang;
         var art = artVm.Artifact;
 
-        // Item DisplayName — resolve from handle only if no custom text set
+        // Item DisplayName
         if (!string.IsNullOrEmpty(art.DisplayNameHandle))
         {
-            var hasCustomName = art.DisplayName.TryGetValue(lang, out var curName) && !string.IsNullOrEmpty(curName);
-            if (!hasCustomName)
-            {
-                var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
-                if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
-            }
+            var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
+            if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
         }
 
-        // Item Description — resolve from handle only if no custom text set
+        // Item Description
         if (!string.IsNullOrEmpty(art.DescriptionHandle))
         {
-            var hasCustomDesc = art.Description.TryGetValue(lang, out var curDesc) && !string.IsNullOrEmpty(curDesc);
-            if (!hasCustomDesc)
-            {
-                var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
-                if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
-            }
+            var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
+            if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
         }
 
-        // Passives — resolve from vanilla handles only if passive has no custom text
+        // Passives — resolve from own handle first, then vanilla handle
         foreach (var passive in art.Passives)
         {
             var pFields = _resolver?.ResolveAll(passive.Name);
-            if (pFields == null) continue;
 
-            // Only overwrite from vanilla handle if the passive has a matching handle
-            // (i.e. user hasn't set a custom name/description different from vanilla)
-            if (pFields.TryGetValue("DisplayName", out var dnHandle))
+            // DisplayName: prefer passive's own handle (custom loca), fallback to vanilla
+            var nameHandle = !string.IsNullOrEmpty(passive.DisplayNameHandle)
+                ? passive.DisplayNameHandle
+                : pFields?.GetValueOrDefault("DisplayName");
+            if (!string.IsNullOrEmpty(nameHandle))
             {
-                var hasCustomName = !string.IsNullOrEmpty(passive.DisplayNameHandle)
-                    ? passive.DisplayNameHandle != dnHandle  // user set a different handle
-                    : passive.DisplayName.TryGetValue(lang, out var cur) && !string.IsNullOrEmpty(cur);
-                if (!hasCustomName)
-                {
-                    var text = _locaService?.ResolveHandle(dnHandle, lang);
-                    if (text != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(text);
-                }
+                var text = _locaService?.ResolveHandle(nameHandle, lang);
+                if (text != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(text);
             }
-            if (pFields.TryGetValue("Description", out var descHandle))
+
+            // Description: same logic
+            var descHandle = !string.IsNullOrEmpty(passive.DescriptionHandle)
+                ? passive.DescriptionHandle
+                : pFields?.GetValueOrDefault("Description");
+            if (!string.IsNullOrEmpty(descHandle))
             {
-                var hasCustomDesc = !string.IsNullOrEmpty(passive.DescriptionHandle)
-                    ? passive.DescriptionHandle != descHandle
-                    : passive.Description.TryGetValue(lang, out var cur) && !string.IsNullOrEmpty(cur);
-                if (!hasCustomDesc)
-                {
-                    var text = _locaService?.ResolveHandle(descHandle, lang);
-                    if (text != null) passive.Description[lang] = BbCode.FromBg3Xml(text);
-                }
+                var text = _locaService?.ResolveHandle(descHandle, lang);
+                if (text != null) passive.Description[lang] = BbCode.FromBg3Xml(text);
             }
         }
     }
@@ -581,7 +567,8 @@ public partial class ConstructorViewModel : ViewModelBase
             if (fields.TryGetValue("PassivesOnEquip", out var passives)) artifact.PassivesOnEquip = passives;
             if (fields.TryGetValue("StatusOnEquip", out var statuses)) artifact.StatusOnEquip = statuses;
             if (fields.TryGetValue("DefaultBoosts", out var defBoosts)) artifact.DefaultBoosts = defBoosts;
-            if (fields.TryGetValue("Rarity", out var rarity)) artifact.Rarity = MapRarity(rarity);
+            // Rarity: already set from baseItem.Rarity (line 555) which includes AMP overrides
+            // Don't use resolver — it walks using-chain and may return vanilla parent's rarity
             if (fields.TryGetValue("ValueOverride", out var val) && int.TryParse(val, out var vi)) artifact.ValueOverride = vi;
             if (fields.TryGetValue("Unique", out var unique)) artifact.Unique = unique == "1";
             if (fields.TryGetValue("Weight", out var w) && double.TryParse(w, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var wd)) artifact.Weight = wd;
