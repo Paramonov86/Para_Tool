@@ -172,6 +172,7 @@ public partial class ConstructorViewModel : ViewModelBase
                     art.Weight = wd;
             }
 
+            FillFromVanillaLoca(art);
             var vm = new ArtifactItemVM(art) { IsPersisted = true, SourceStatId = art.UsingBase, GetEditingLang = () => EditingLang };
             vm.LoadPassivesFromArtifact();
             SavedArtifacts.Add(vm);
@@ -349,6 +350,8 @@ public partial class ConstructorViewModel : ViewModelBase
         var existing = SavedArtifacts.FirstOrDefault(a => a.Artifact.UsingBase == baseItem.StatId);
         if (existing != null)
         {
+            FillFromVanillaLoca(existing.Artifact);
+            existing.LoadPassivesFromArtifact();
             SelectedArtifact = existing;
             return;
         }
@@ -368,8 +371,12 @@ public partial class ConstructorViewModel : ViewModelBase
     [RelayCommand]
     private void SelectSavedArtifact(ArtifactItemVM? item)
     {
-        if (item != null && item.IconBitmap == null)
-            LoadIconForArtifact(item);
+        if (item != null)
+        {
+            if (item.IconBitmap == null) LoadIconForArtifact(item);
+            FillFromVanillaLoca(item.Artifact);
+            item.LoadPassivesFromArtifact();
+        }
         SelectedArtifact = item;
     }
 
@@ -565,22 +572,6 @@ public partial class ConstructorViewModel : ViewModelBase
                         if (EditingLang != scanLang) { var st = ResolveLoca(dn, scanLang); if (st != null) passive.DisplayName[scanLang] = st; }
                         if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dn, "en"); if (en != null) passive.DisplayName["en"] = en; }
                     }
-                    // Fallback: try VanillaLocaService by passive name, then by using chain
-                    if (string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(EditingLang)))
-                    {
-                        var vanillaName = ResolveVanillaPassiveName(pName, pFields);
-                        if (vanillaName != null)
-                        {
-                            foreach (var lang in new[] { EditingLang, scanLang, "en" })
-                            {
-                                if (string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(lang)))
-                                {
-                                    var vt = VanillaLoca.GetDisplayName(vanillaName, lang);
-                                    if (vt != null) passive.DisplayName[lang] = vt;
-                                }
-                            }
-                        }
-                    }
                     // Resolve description
                     if (pFields.TryGetValue("Description", out var dd))
                     {
@@ -599,8 +590,8 @@ public partial class ConstructorViewModel : ViewModelBase
                             {
                                 if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(lang)))
                                 {
-                                    var vd = VanillaLoca.GetDescription(vanillaName, lang);
-                                    if (vd != null) passive.Description[lang] = vd;
+                                    var vDesc = VanillaLoca.GetDescription(vanillaName, lang);
+                                    if (vDesc != null) passive.Description[lang] = vDesc;
                                 }
                             }
                         }
@@ -688,7 +679,7 @@ public partial class ConstructorViewModel : ViewModelBase
     /// <summary>
     /// Fill missing localization from embedded vanilla TSV data.
     /// </summary>
-    private static void FillFromVanillaLoca(ArtifactDefinition artifact)
+    private void FillFromVanillaLoca(ArtifactDefinition artifact)
     {
         var statId = artifact.UsingBase ?? artifact.StatId;
 
@@ -707,19 +698,21 @@ public partial class ConstructorViewModel : ViewModelBase
             }
         }
 
-        // Passive names/descriptions
+        // Passive names/descriptions (walk using chain for inherited passives)
         foreach (var passive in artifact.Passives)
         {
+            var vanillaName = ResolveVanillaPassiveName(passive.Name);
+            if (vanillaName == null) continue;
             foreach (var lang in new[] { "en", "ru" })
             {
                 if (!passive.DisplayName.ContainsKey(lang) || string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(lang)))
                 {
-                    var name = VanillaLoca.GetDisplayName(passive.Name, lang);
+                    var name = VanillaLoca.GetDisplayName(vanillaName, lang);
                     if (name != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(name);
                 }
                 if (!passive.Description.ContainsKey(lang) || string.IsNullOrEmpty(passive.Description.GetValueOrDefault(lang)))
                 {
-                    var desc = VanillaLoca.GetDescription(passive.Name, lang);
+                    var desc = VanillaLoca.GetDescription(vanillaName, lang);
                     if (desc != null) passive.Description[lang] = BbCode.FromBg3Xml(desc);
                 }
             }
