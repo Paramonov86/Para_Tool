@@ -423,10 +423,10 @@ public sealed class AmpPatcher
         }
 
         // Remove old artifact stat entries from stat files (leftovers from previous patches)
-        // ONLY remove the artifact's own StatId — NOT inherited passives/statuses/spells
-        // (those belong to the base item and must not be deleted)
+        // ONLY remove NEW artifacts — NOT overrides (overrides modify existing entries in-place)
         var artifactStatIds = new HashSet<string>(
-            artifacts.Select(a => a.StatId), StringComparer.OrdinalIgnoreCase);
+            artifacts.Where(a => !a.StatId.Equals(a.UsingBase, StringComparison.OrdinalIgnoreCase))
+                     .Select(a => a.StatId), StringComparer.OrdinalIgnoreCase);
         foreach (var sf in statFiles)
         {
             var text = File.ReadAllText(sf);
