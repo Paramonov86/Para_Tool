@@ -1,17 +1,14 @@
 {
   "_name": "Türkçe",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "AppData'da Mods klasörü bulunamadı! Yolu manuel olarak seçin",
   "SelectFolder": "Klasör seç",
-
   "PleaseWait": "Lütfen bekleyin...",
   "ScanningMods": "Eşya içeren modlar analiz ediliyor.",
   "MayTakeTime": "Bu biraz zaman alabilir...",
   "ModsScanned": "Taranan mod:",
   "ModsSelected": "Seçilen mod:",
-
-  "IntegratorTitle": "Ancient Mega Pack Integrator",
+  "IntegratorTitle": "Ancient Mega Pack Entegratörü",
   "EditorTitle": "Entegrasyon için eşyaları inceleyin",
   "AllMods": "Tüm modlar",
   "Instructions": "Talimatlar",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "Mods klasöründe eşya içeren {0} mod bulundu.",
   "ThemesLabel": "Temalar",
   "ModThemes": "Mod temaları",
-
   "PatchingInProgress": "Yama uygulanıyor...",
   "PatchSuccess": "Başarılı!",
   "PatchSuccessMessage": "Yamalanan eşya: {0}",
   "PatchError": "Hata:",
-
   "Slot.Clothes": "Giysi",
   "Slot.Armor": "Zırh",
   "Slot.Shields": "Kalkanlar",
@@ -41,16 +36,14 @@
   "Slot.Weapons": "Silahlar",
   "Slot.Weapons_1H": "Tek el",
   "Slot.Weapons_2H": "Çift el",
-
   "Rarity.Common": "Sıradan",
   "Rarity.Uncommon": "Sıra dışı",
   "Rarity.Rare": "Nadir",
   "Rarity.VeryRare": "Çok nadir",
   "Rarity.Legendary": "Efsanevi",
-
   "Theme.Swamp": "Bataklık",
   "Theme.Aquatic": "Su",
-  "Theme.Shadowfell": "Shadowfell",
+  "Theme.Shadowfell": "Gölge Diyarı",
   "Theme.Arcane": "Büyülü",
   "Theme.Celestial": "İlahi",
   "Theme.Nature": "Doğa",
@@ -58,7 +51,6 @@
   "Theme.War": "Savaş",
   "Theme.Psionic": "Psiyonik",
   "Theme.Primal": "İlkel",
-
   "ProfileLabel": "Profil",
   "ProfileSave": "Kaydet",
   "ProfileSaveAs": "Farklı kaydet",
@@ -68,40 +60,34 @@
   "ProfileSaved": "Profil kaydedildi!",
   "MissingItemsWarning": "Daha önce yamalanan eşyalar bulunamadı:",
   "MissingItemsDismiss": "Kapat",
-
-  "ScanStageMods": "Scanning mods...",
-  "ScanStageAMP": "Scanning AMP items...",
-  "ScanStageResolver": "Building item database...",
-  "ScanStageNames": "Resolving item names...",
-  "ScanStageTemplates": "Reading templates...",
-  "ScanStageLoca": "Loading localization...",
-  "ScanStageDone": "Done!",
-
+  "ScanStageMods": "Modlar taranıyor...",
+  "ScanStageAMP": "AMP eşyaları taranıyor...",
+  "ScanStageResolver": "Eşya veritabanı oluşturuluyor...",
+  "ScanStageNames": "Eşya adları çözümleniyor...",
+  "ScanStageTemplates": "Şablonlar okunuyor...",
+  "ScanStageLoca": "Yerelleştirme yükleniyor...",
+  "ScanStageDone": "Tamamlandı!",
   "SortByName": "Ad",
   "SortByRarity": "Nadirlik",
   "SortByTheme": "Tema",
   "SortBySlot": "Yuva",
-
   "FolderPickerTitle": "BG3 Mods klasörünü seçin",
   "UpdateCheckTooltip": "Güncellemeleri kontrol et",
-  "UpdateCheckingTooltip": "Güncellemeler kontrol ediliyor\u2026",
-  "UpdateAvailableTooltip": "v{0} mevcut \u2014 güncellemek için tıklayın",
-  "UpdateDownloadingTooltip": "İndiriliyor\u2026 {0}%",
+  "UpdateCheckingTooltip": "Güncellemeler kontrol ediliyor…",
+  "UpdateAvailableTooltip": "v{0} mevcut — güncellemek için tıklayın",
+  "UpdateDownloadingTooltip": "İndiriliyor… {0}%",
   "UpdateUpToDateTooltip": "Güncel",
   "UpdateFailedTooltip": "Güncelleme kontrolü başarısız",
   "RestoreAmpTooltip": "Orijinal AMP'yi geri yükle (yamayı geri al)",
   "RestoringAmp": "Geri yükleniyor...",
-
   "TabPatcher": "YAMALAYICI",
   "TabConstructor": "OLUŞTURUCU",
-
   "enum.Strength": "Güç",
   "enum.Dexterity": "Çeviklik",
   "enum.Constitution": "Dayanıklılık",
   "enum.Intelligence": "Zekâ",
   "enum.Wisdom": "Bilgelik",
   "enum.Charisma": "Karizma",
-
   "enum.Acrobatics": "Akrobasi",
   "enum.AnimalHandling": "Hayvan Eğitimi",
   "enum.Arcana": "Büyü Bilgisi",
@@ -120,7 +106,6 @@
   "enum.SleightOfHand": "El Çabukluğu",
   "enum.Stealth": "Gizlilik",
   "enum.Survival": "Hayatta Kalma",
-
   "enum.Slashing": "Kesici",
   "enum.Piercing": "Delici",
   "enum.Bludgeoning": "Ezici",
@@ -136,7 +121,6 @@
   "enum.Force": "Güç Alanı",
   "enum.All": "Tümü",
   "enum.None": "Yok",
-
   "enum.Attack": "Saldırı",
   "enum.Skill": "Beceri",
   "enum.SavingThrow": "Kurtulma Atışı",
@@ -146,18 +130,15 @@
   "enum.RangedWeaponAttack": "Menzilli Saldırı",
   "enum.MeleeSpellAttack": "Yakın Büyü",
   "enum.RangedSpellAttack": "Menzilli Büyü",
-
   "enum.Resistant": "Direnç",
   "enum.Immune": "Bağışıklık",
   "enum.Vulnerable": "Zafiyet",
-
   "enum.LightArmor": "Hafif Zırh",
   "enum.MediumArmor": "Orta Zırh",
   "enum.HeavyArmor": "Ağır Zırh",
   "enum.Shields": "Kalkanlar",
   "enum.SimpleWeapons": "Basit Silahlar",
   "enum.MartialWeapons": "Savaş Silahları",
-
   "boost.AC": "Zırh Sınıfı",
   "boost.Ability": "Yetenek Puanı",
   "boost.RollBonus": "Zar Bonusu",
@@ -178,7 +159,6 @@
   "boost.MinimumRollResult": "Minimum Zar",
   "boost.CriticalHit": "Kritik Vuruş",
   "boost.ReduceCriticalAttackThreshold": "Kritik Eşiğini Düşür",
-
   "LblArmor": "ZIRH",
   "LblWeapon": "SİLAH",
   "LblPassives": "PASİF YETENEKLER",
@@ -227,7 +207,6 @@
   "BbTipLineBreak": "Satır sonu [br]",
   "TipToggleCodePreview": "BB-code düzenleyici / önizleme geçişi",
   "LblCardMechanics": "MEKANİKLER",
-
   "enum.Highlighted": "Vurgula",
   "enum.IsHidden": "Gizli",
   "enum.IsToggled": "Aç/Kapa",
@@ -241,12 +220,10 @@
   "enum.OncePerCombat": "1/Savaş",
   "enum.DisplayBoostInTooltip": "Bonusu göster",
   "enum.Temporary": "Geçici",
-
   "LblAnd": "VE",
   "LblOr": "VEYA",
   "LblNot": "DEĞİL",
   "LblThen": "SONRA",
-
   "NavTitle": "NAVİGATÖR",
   "NavSearch": "Eşya ara...",
   "NavMyItems": "ESERLERİM",
@@ -256,7 +233,6 @@
   "NavDelete": "Sil",
   "ConstructorEditorTitle": "EDİTÖR",
   "ConstructorPreviewTitle": "ÖNİZLEME",
-
   "EditorNoSelection": "Navigatörden bir eşya seçin\nveya bir miras oluşturun",
   "CardIdentity": "KİMLİK",
   "CardArmorProps": "ZIRH ÖZELLİKLERİ",
@@ -274,7 +250,6 @@
   "ChipThemes": "TEMALAR",
   "BtnSave": "KAYDET",
   "BtnReset": "SIFIRLA",
-
   "LblBoosts": "Kalıcı etkiler",
   "LblStatuses": "Uygulanan durumlar",
   "LblSpells": "Verilen büyüler",
@@ -285,7 +260,6 @@
   "LblAction": "Eylem",
   "LblIcon": "SİMGE",
   "LblIconBrowser": "Simge Seç",
-
   "TipFontSize": "Yazı boyutu",
   "TipColorTheme": "Renk teması",
   "WmBrowseIcons": "Simgelere göz at...",
@@ -293,7 +267,6 @@
   "WmDescriptionLore": "Açıklama / hikâye (BB-code)",
   "LblNoIconSelected": "Simge seçilmedi",
   "DlgSelectPng": "PNG simgesi seç",
-
   "enum.SurfaceNone": "Yok",
   "enum.SurfaceWater": "Su",
   "enum.SurfaceWaterElectrified": "Su (Elek.)",

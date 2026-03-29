@@ -1,17 +1,14 @@
 {
   "_name": "Deutsch",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "Mods-Ordner in AppData nicht gefunden! Pfad manuell auswählen",
   "SelectFolder": "Ordner wählen",
-
   "PleaseWait": "Bitte warten...",
   "ScanningMods": "Mods mit Gegenständen werden analysiert.",
   "MayTakeTime": "Dies kann einige Zeit dauern...",
   "ModsScanned": "Mods gescannt:",
   "ModsSelected": "Mods ausgewählt:",
-
-  "IntegratorTitle": "Ancient Mega Pack Integrator",
+  "IntegratorTitle": "Ancient Mega Pack Integrierer",
   "EditorTitle": "Gegenstände für Integration überprüfen",
   "AllMods": "Alle Mods",
   "Instructions": "Anleitung",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "{0} Mods mit Gegenständen im Mods-Ordner gefunden.",
   "ThemesLabel": "Themen",
   "ModThemes": "Mod-Themen",
-
   "PatchingInProgress": "Wird gepatcht...",
   "PatchSuccess": "Erfolgreich!",
   "PatchSuccessMessage": "Gegenstände gepatcht: {0}",
   "PatchError": "Fehler:",
-
   "Slot.Clothes": "Kleidung",
   "Slot.Armor": "Rüstung",
   "Slot.Shields": "Schilde",
@@ -41,13 +36,11 @@
   "Slot.Weapons": "Waffen",
   "Slot.Weapons_1H": "Einhändig",
   "Slot.Weapons_2H": "Zweihändig",
-
   "Rarity.Common": "Gewöhnlich",
   "Rarity.Uncommon": "Ungewöhnlich",
   "Rarity.Rare": "Selten",
   "Rarity.VeryRare": "Sehr selten",
   "Rarity.Legendary": "Legendär",
-
   "Theme.Swamp": "Sumpf",
   "Theme.Aquatic": "Wasser",
   "Theme.Shadowfell": "Schattenfell",
@@ -58,7 +51,6 @@
   "Theme.War": "Krieg",
   "Theme.Psionic": "Psionisch",
   "Theme.Primal": "Urtümlich",
-
   "ProfileLabel": "Profil",
   "ProfileSave": "Speichern",
   "ProfileSaveAs": "Speichern als",
@@ -68,40 +60,34 @@
   "ProfileSaved": "Profil gespeichert!",
   "MissingItemsWarning": "Zuvor gepatchte Gegenstände nicht gefunden:",
   "MissingItemsDismiss": "Schließen",
-
-  "ScanStageMods": "Scanning mods...",
-  "ScanStageAMP": "Scanning AMP items...",
-  "ScanStageResolver": "Building item database...",
-  "ScanStageNames": "Resolving item names...",
-  "ScanStageTemplates": "Reading templates...",
-  "ScanStageLoca": "Loading localization...",
-  "ScanStageDone": "Done!",
-
+  "ScanStageMods": "Mods werden gescannt...",
+  "ScanStageAMP": "AMP-Gegenstände werden gescannt...",
+  "ScanStageResolver": "Gegenstandsdatenbank wird erstellt...",
+  "ScanStageNames": "Gegenstandsnamen werden aufgelöst...",
+  "ScanStageTemplates": "Vorlagen werden gelesen...",
+  "ScanStageLoca": "Lokalisierung wird geladen...",
+  "ScanStageDone": "Fertig!",
   "SortByName": "Name",
   "SortByRarity": "Seltenheit",
   "SortByTheme": "Thema",
   "SortBySlot": "Slot",
-
   "FolderPickerTitle": "BG3 Mods-Ordner auswählen",
   "UpdateCheckTooltip": "Nach Updates suchen",
-  "UpdateCheckingTooltip": "Suche nach Updates\u2026",
-  "UpdateAvailableTooltip": "v{0} verfügbar \u2014 zum Aktualisieren klicken",
-  "UpdateDownloadingTooltip": "Herunterladen\u2026 {0}%",
+  "UpdateCheckingTooltip": "Suche nach Updates…",
+  "UpdateAvailableTooltip": "v{0} verfügbar — zum Aktualisieren klicken",
+  "UpdateDownloadingTooltip": "Herunterladen… {0}%",
   "UpdateUpToDateTooltip": "Aktuell",
   "UpdateFailedTooltip": "Update-Prüfung fehlgeschlagen",
   "RestoreAmpTooltip": "Original-AMP wiederherstellen (Patch rückgängig)",
   "RestoringAmp": "Wiederherstellung...",
-
   "TabPatcher": "PATCHER",
   "TabConstructor": "KONSTRUKTOR",
-
   "enum.Strength": "Stärke",
   "enum.Dexterity": "Geschicklichkeit",
   "enum.Constitution": "Konstitution",
   "enum.Intelligence": "Intelligenz",
   "enum.Wisdom": "Weisheit",
   "enum.Charisma": "Charisma",
-
   "enum.Acrobatics": "Akrobatik",
   "enum.AnimalHandling": "Tierumgang",
   "enum.Arcana": "Arkane Kunde",
@@ -120,7 +106,6 @@
   "enum.SleightOfHand": "Fingerfertigkeit",
   "enum.Stealth": "Heimlichkeit",
   "enum.Survival": "Überlebenskunst",
-
   "enum.Slashing": "Hiebschaden",
   "enum.Piercing": "Stichschaden",
   "enum.Bludgeoning": "Wuchtschaden",
@@ -136,7 +121,6 @@
   "enum.Force": "Energie",
   "enum.All": "Alle",
   "enum.None": "Keine",
-
   "enum.Attack": "Angriff",
   "enum.Skill": "Fertigkeit",
   "enum.SavingThrow": "Rettungswurf",
@@ -146,18 +130,15 @@
   "enum.RangedWeaponAttack": "Fernkampfangriff",
   "enum.MeleeSpellAttack": "Nahkampfzauber",
   "enum.RangedSpellAttack": "Fernkampfzauber",
-
   "enum.Resistant": "Resistenz",
   "enum.Immune": "Immunität",
   "enum.Vulnerable": "Verwundbarkeit",
-
   "enum.LightArmor": "Leichte Rüstung",
   "enum.MediumArmor": "Mittlere Rüstung",
   "enum.HeavyArmor": "Schwere Rüstung",
   "enum.Shields": "Schilde",
   "enum.SimpleWeapons": "Einfache Waffen",
   "enum.MartialWeapons": "Kriegerische Waffen",
-
   "boost.AC": "Rüstungsklasse",
   "boost.Ability": "Attributswert",
   "boost.RollBonus": "Wurfbonus",
@@ -178,7 +159,6 @@
   "boost.MinimumRollResult": "Mindestwurf",
   "boost.CriticalHit": "Kritischer Treffer",
   "boost.ReduceCriticalAttackThreshold": "Krit. Schwelle senken",
-
   "LblArmor": "RÜSTUNG",
   "LblWeapon": "WAFFE",
   "LblPassives": "PASSIVE FÄHIGKEITEN",
@@ -227,7 +207,6 @@
   "BbTipLineBreak": "Zeilenumbruch [br]",
   "TipToggleCodePreview": "BB-Code-Editor / Vorschau umschalten",
   "LblCardMechanics": "MECHANIKEN",
-
   "enum.Highlighted": "Hervorheben",
   "enum.IsHidden": "Versteckt",
   "enum.IsToggled": "Umschalten",
@@ -241,12 +220,10 @@
   "enum.OncePerCombat": "1/Kampf",
   "enum.DisplayBoostInTooltip": "Bonus zeigen",
   "enum.Temporary": "Temporär",
-
   "LblAnd": "UND",
   "LblOr": "ODER",
   "LblNot": "NICHT",
   "LblThen": "DANN",
-
   "NavTitle": "NAVIGATOR",
   "NavSearch": "Gegenstände suchen...",
   "NavMyItems": "MEINE ARTEFAKTE",
@@ -256,7 +233,6 @@
   "NavDelete": "Löschen",
   "ConstructorEditorTitle": "EDITOR",
   "ConstructorPreviewTitle": "VORSCHAU",
-
   "EditorNoSelection": "Wählen Sie einen Gegenstand im Navigator\noder erstellen Sie einen Erben",
   "CardIdentity": "IDENTITÄT",
   "CardArmorProps": "RÜSTUNGSEIGENSCHAFTEN",
@@ -274,7 +250,6 @@
   "ChipThemes": "THEMEN",
   "BtnSave": "SPEICHERN",
   "BtnReset": "ZURÜCKSETZEN",
-
   "LblBoosts": "Permanente Effekte",
   "LblStatuses": "Angewandte Status",
   "LblSpells": "Gewährte Zauber",
@@ -285,7 +260,6 @@
   "LblAction": "Aktion",
   "LblIcon": "SYMBOL",
   "LblIconBrowser": "Symbol wählen",
-
   "TipFontSize": "Schriftgröße",
   "TipColorTheme": "Farbthema",
   "WmBrowseIcons": "Symbole durchsuchen...",
@@ -293,7 +267,6 @@
   "WmDescriptionLore": "Beschreibung / Hintergrund (BB-Code)",
   "LblNoIconSelected": "Kein Symbol ausgewählt",
   "DlgSelectPng": "PNG-Symbol auswählen",
-
   "enum.SurfaceNone": "Keine",
   "enum.SurfaceWater": "Wasser",
   "enum.SurfaceWaterElectrified": "Wasser (Elek.)",

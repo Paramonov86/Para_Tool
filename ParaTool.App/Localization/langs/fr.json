@@ -1,17 +1,14 @@
 {
   "_name": "Français",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "Dossier Mods introuvable dans AppData ! Sélectionnez le chemin manuellement",
   "SelectFolder": "Choisir un dossier",
-
   "PleaseWait": "Veuillez patienter...",
   "ScanningMods": "Analyse des mods contenant des objets.",
   "MayTakeTime": "Cela peut prendre un certain temps...",
   "ModsScanned": "Mods analysés :",
   "ModsSelected": "Mods sélectionnés :",
-
-  "IntegratorTitle": "Ancient Mega Pack Integrator",
+  "IntegratorTitle": "Intégrateur Ancient Mega Pack",
   "EditorTitle": "Vérifiez les objets à intégrer",
   "AllMods": "Tous les mods",
   "Instructions": "Instructions",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "{0} mods avec objets trouvés dans le dossier Mods.",
   "ThemesLabel": "Thèmes",
   "ModThemes": "Thèmes du mod",
-
   "PatchingInProgress": "Patch en cours...",
   "PatchSuccess": "Succès !",
   "PatchSuccessMessage": "Objets patchés : {0}",
   "PatchError": "Erreur :",
-
   "Slot.Clothes": "Vêtements",
   "Slot.Armor": "Armure",
   "Slot.Shields": "Boucliers",
@@ -41,24 +36,21 @@
   "Slot.Weapons": "Armes",
   "Slot.Weapons_1H": "Une main",
   "Slot.Weapons_2H": "Deux mains",
-
   "Rarity.Common": "Commun",
   "Rarity.Uncommon": "Peu commun",
   "Rarity.Rare": "Rare",
   "Rarity.VeryRare": "Très rare",
   "Rarity.Legendary": "Légendaire",
-
   "Theme.Swamp": "Marais",
   "Theme.Aquatic": "Aquatique",
-  "Theme.Shadowfell": "Shadowfell",
-  "Theme.Arcane": "Arcane",
+  "Theme.Shadowfell": "Ombreterre",
+  "Theme.Arcane": "Arcanique",
   "Theme.Celestial": "Céleste",
   "Theme.Nature": "Nature",
   "Theme.Destructive": "Destruction",
   "Theme.War": "Guerre",
   "Theme.Psionic": "Psionique",
   "Theme.Primal": "Primitif",
-
   "ProfileLabel": "Profil",
   "ProfileSave": "Enregistrer",
   "ProfileSaveAs": "Enregistrer sous",
@@ -68,40 +60,34 @@
   "ProfileSaved": "Profil enregistré !",
   "MissingItemsWarning": "Objets précédemment patchés introuvables :",
   "MissingItemsDismiss": "Fermer",
-
-  "ScanStageMods": "Scanning mods...",
-  "ScanStageAMP": "Scanning AMP items...",
-  "ScanStageResolver": "Building item database...",
-  "ScanStageNames": "Resolving item names...",
-  "ScanStageTemplates": "Reading templates...",
-  "ScanStageLoca": "Loading localization...",
-  "ScanStageDone": "Done!",
-
+  "ScanStageMods": "Analyse des mods...",
+  "ScanStageAMP": "Analyse des objets AMP...",
+  "ScanStageResolver": "Construction de la base d'objets...",
+  "ScanStageNames": "Résolution des noms d'objets...",
+  "ScanStageTemplates": "Lecture des modèles...",
+  "ScanStageLoca": "Chargement de la localisation...",
+  "ScanStageDone": "Terminé !",
   "SortByName": "Nom",
   "SortByRarity": "Rareté",
   "SortByTheme": "Thème",
   "SortBySlot": "Emplacement",
-
   "FolderPickerTitle": "Sélectionner le dossier Mods de BG3",
   "UpdateCheckTooltip": "Vérifier les mises à jour",
-  "UpdateCheckingTooltip": "Vérification des mises à jour\u2026",
-  "UpdateAvailableTooltip": "v{0} disponible \u2014 cliquez pour mettre à jour",
-  "UpdateDownloadingTooltip": "Téléchargement\u2026 {0}%",
+  "UpdateCheckingTooltip": "Vérification des mises à jour…",
+  "UpdateAvailableTooltip": "v{0} disponible — cliquez pour mettre à jour",
+  "UpdateDownloadingTooltip": "Téléchargement… {0}%",
   "UpdateUpToDateTooltip": "À jour",
   "UpdateFailedTooltip": "Échec de la vérification",
   "RestoreAmpTooltip": "Restaurer l'AMP original (annuler le patch)",
   "RestoringAmp": "Restauration...",
-
   "TabPatcher": "PATCHEUR",
   "TabConstructor": "CONSTRUCTEUR",
-
   "enum.Strength": "Force",
   "enum.Dexterity": "Dextérité",
   "enum.Constitution": "Constitution",
   "enum.Intelligence": "Intelligence",
   "enum.Wisdom": "Sagesse",
   "enum.Charisma": "Charisme",
-
   "enum.Acrobatics": "Acrobaties",
   "enum.AnimalHandling": "Dressage",
   "enum.Arcana": "Arcanes",
@@ -120,7 +106,6 @@
   "enum.SleightOfHand": "Escamotage",
   "enum.Stealth": "Discrétion",
   "enum.Survival": "Survie",
-
   "enum.Slashing": "Tranchant",
   "enum.Piercing": "Perforant",
   "enum.Bludgeoning": "Contondant",
@@ -136,7 +121,6 @@
   "enum.Force": "Force",
   "enum.All": "Tous",
   "enum.None": "Aucun",
-
   "enum.Attack": "Attaque",
   "enum.Skill": "Compétence",
   "enum.SavingThrow": "Jet de sauvegarde",
@@ -146,18 +130,15 @@
   "enum.RangedWeaponAttack": "Attaque à distance",
   "enum.MeleeSpellAttack": "Sort de mêlée",
   "enum.RangedSpellAttack": "Sort à distance",
-
   "enum.Resistant": "Résistance",
   "enum.Immune": "Immunité",
   "enum.Vulnerable": "Vulnérabilité",
-
   "enum.LightArmor": "Armure légère",
   "enum.MediumArmor": "Armure intermédiaire",
   "enum.HeavyArmor": "Armure lourde",
   "enum.Shields": "Boucliers",
   "enum.SimpleWeapons": "Armes courantes",
   "enum.MartialWeapons": "Armes de guerre",
-
   "boost.AC": "Classe d'armure",
   "boost.Ability": "Valeur de caractéristique",
   "boost.RollBonus": "Bonus au jet",
@@ -178,7 +159,6 @@
   "boost.MinimumRollResult": "Résultat minimum",
   "boost.CriticalHit": "Coup critique",
   "boost.ReduceCriticalAttackThreshold": "Réduire le seuil critique",
-
   "LblArmor": "ARMURE",
   "LblWeapon": "ARME",
   "LblPassives": "PASSIFS",
@@ -227,7 +207,6 @@
   "BbTipLineBreak": "Saut de ligne [br]",
   "TipToggleCodePreview": "Basculer éditeur BB-code / aperçu",
   "LblCardMechanics": "MÉCANIQUES",
-
   "enum.Highlighted": "Surbrillance",
   "enum.IsHidden": "Masqué",
   "enum.IsToggled": "Bascule",
@@ -241,12 +220,10 @@
   "enum.OncePerCombat": "1/Combat",
   "enum.DisplayBoostInTooltip": "Afficher bonus",
   "enum.Temporary": "Temporaire",
-
   "LblAnd": "ET",
   "LblOr": "OU",
   "LblNot": "NON",
   "LblThen": "ALORS",
-
   "NavTitle": "NAVIGATEUR",
   "NavSearch": "Rechercher des objets...",
   "NavMyItems": "MES ARTEFACTS",
@@ -256,7 +233,6 @@
   "NavDelete": "Supprimer",
   "ConstructorEditorTitle": "ÉDITEUR",
   "ConstructorPreviewTitle": "APERÇU",
-
   "EditorNoSelection": "Sélectionnez un objet dans le navigateur\nou créez un héritier",
   "CardIdentity": "IDENTITÉ",
   "CardArmorProps": "PROPRIÉTÉS D'ARMURE",
@@ -274,7 +250,6 @@
   "ChipThemes": "THÈMES",
   "BtnSave": "ENREGISTRER",
   "BtnReset": "RÉINITIALISER",
-
   "LblBoosts": "Effets permanents",
   "LblStatuses": "Statuts appliqués",
   "LblSpells": "Sorts accordés",
@@ -285,7 +260,6 @@
   "LblAction": "Action",
   "LblIcon": "ICÔNE",
   "LblIconBrowser": "Choisir une icône",
-
   "TipFontSize": "Taille de police",
   "TipColorTheme": "Thème de couleur",
   "WmBrowseIcons": "Parcourir les icônes...",
@@ -293,7 +267,6 @@
   "WmDescriptionLore": "Description / histoire (BB-code)",
   "LblNoIconSelected": "Aucune icône sélectionnée",
   "DlgSelectPng": "Sélectionner une icône PNG",
-
   "enum.SurfaceNone": "Aucune",
   "enum.SurfaceWater": "Eau",
   "enum.SurfaceWaterElectrified": "Eau (Élec.)",

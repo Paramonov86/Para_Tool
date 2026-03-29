@@ -1,17 +1,14 @@
 {
   "_name": "Українська",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "Папку Mods не знайдено в AppData! Вкажіть шлях вручну",
   "SelectFolder": "Обрати папку",
-
   "PleaseWait": "Зачекайте...",
   "ScanningMods": "Аналіз модів з предметами.",
   "MayTakeTime": "Це може зайняти деякий час...",
   "ModsScanned": "Модів проскановано:",
   "ModsSelected": "Модів обрано:",
-
-  "IntegratorTitle": "Ancient Mega Pack Integrator",
+  "IntegratorTitle": "Інтегратор Ancient Mega Pack",
   "EditorTitle": "Перевірте предмети для інтеграції",
   "AllMods": "Усі моди",
   "Instructions": "Інструкція",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "У папці Mods знайдено {0} модів з предметами.",
   "ThemesLabel": "Тематики",
   "ModThemes": "Тематики мода",
-
   "PatchingInProgress": "Патчимо...",
   "PatchSuccess": "Успішно!",
   "PatchSuccessMessage": "Пропатчено предметів: {0}",
   "PatchError": "Помилка:",
-
   "Slot.Clothes": "Одяг",
   "Slot.Armor": "Броня",
   "Slot.Shields": "Щити",
@@ -41,13 +36,11 @@
   "Slot.Weapons": "Зброя",
   "Slot.Weapons_1H": "Одноручна",
   "Slot.Weapons_2H": "Дворучна",
-
   "Rarity.Common": "Звичайне",
   "Rarity.Uncommon": "Незвичайне",
   "Rarity.Rare": "Рідкісне",
   "Rarity.VeryRare": "Дуже рідкісне",
   "Rarity.Legendary": "Легендарне",
-
   "Theme.Swamp": "Болото",
   "Theme.Aquatic": "Вода",
   "Theme.Shadowfell": "Тіньопад",
@@ -58,7 +51,6 @@
   "Theme.War": "Війна",
   "Theme.Psionic": "Псіоніка",
   "Theme.Primal": "Первісне",
-
   "ProfileLabel": "Профіль",
   "ProfileSave": "Зберегти",
   "ProfileSaveAs": "Зберегти як",
@@ -68,40 +60,34 @@
   "ProfileSaved": "Профіль збережено!",
   "MissingItemsWarning": "Раніше пропатчені предмети не знайдені:",
   "MissingItemsDismiss": "Закрити",
-
-  "ScanStageMods": "Scanning mods...",
-  "ScanStageAMP": "Scanning AMP items...",
-  "ScanStageResolver": "Building item database...",
-  "ScanStageNames": "Resolving item names...",
-  "ScanStageTemplates": "Reading templates...",
-  "ScanStageLoca": "Loading localization...",
-  "ScanStageDone": "Done!",
-
+  "ScanStageMods": "Сканування модів...",
+  "ScanStageAMP": "Сканування предметів AMP...",
+  "ScanStageResolver": "Побудова бази предметів...",
+  "ScanStageNames": "Визначення назв предметів...",
+  "ScanStageTemplates": "Читання шаблонів...",
+  "ScanStageLoca": "Завантаження локалізації...",
+  "ScanStageDone": "Готово!",
   "SortByName": "Назва",
   "SortByRarity": "Рідкісність",
   "SortByTheme": "Тематика",
   "SortBySlot": "Слот",
-
   "FolderPickerTitle": "Оберіть папку Mods BG3",
   "UpdateCheckTooltip": "Перевірити оновлення",
-  "UpdateCheckingTooltip": "Перевірка оновлень\u2026",
-  "UpdateAvailableTooltip": "v{0} доступна \u2014 натисніть для оновлення",
-  "UpdateDownloadingTooltip": "Завантаження\u2026 {0}%",
+  "UpdateCheckingTooltip": "Перевірка оновлень…",
+  "UpdateAvailableTooltip": "v{0} доступна — натисніть для оновлення",
+  "UpdateDownloadingTooltip": "Завантаження… {0}%",
   "UpdateUpToDateTooltip": "Актуальна версія",
   "UpdateFailedTooltip": "Помилка перевірки оновлень",
   "RestoreAmpTooltip": "Відновити оригінальний AMP (скасувати патч)",
   "RestoringAmp": "Відновлення...",
-
   "TabPatcher": "ПАТЧЕР",
   "TabConstructor": "КОНСТРУКТОР",
-
   "enum.Strength": "Сила",
   "enum.Dexterity": "Спритність",
   "enum.Constitution": "Витривалість",
   "enum.Intelligence": "Інтелект",
   "enum.Wisdom": "Мудрість",
   "enum.Charisma": "Харизма",
-
   "enum.Acrobatics": "Акробатика",
   "enum.AnimalHandling": "Догляд за тваринами",
   "enum.Arcana": "Аркана",
@@ -120,7 +106,6 @@
   "enum.SleightOfHand": "Спритність рук",
   "enum.Stealth": "Непомітність",
   "enum.Survival": "Виживання",
-
   "enum.Slashing": "Рубаний",
   "enum.Piercing": "Колотий",
   "enum.Bludgeoning": "Дробильний",
@@ -136,7 +121,6 @@
   "enum.Force": "Силове поле",
   "enum.All": "Все",
   "enum.None": "Немає",
-
   "enum.Attack": "Атака",
   "enum.Skill": "Навичка",
   "enum.SavingThrow": "Рятівний кидок",
@@ -146,18 +130,15 @@
   "enum.RangedWeaponAttack": "Дальня атака",
   "enum.MeleeSpellAttack": "Ближнє закляття",
   "enum.RangedSpellAttack": "Дальнє закляття",
-
   "enum.Resistant": "Стійкість",
   "enum.Immune": "Імунітет",
   "enum.Vulnerable": "Вразливість",
-
   "enum.LightArmor": "Легка броня",
   "enum.MediumArmor": "Середня броня",
   "enum.HeavyArmor": "Важка броня",
   "enum.Shields": "Щити",
   "enum.SimpleWeapons": "Проста зброя",
   "enum.MartialWeapons": "Військова зброя",
-
   "boost.AC": "Клас броні",
   "boost.Ability": "Показник здібності",
   "boost.RollBonus": "Бонус до кидка",
@@ -178,7 +159,6 @@
   "boost.MinimumRollResult": "Мінімальний кидок",
   "boost.CriticalHit": "Критичний удар",
   "boost.ReduceCriticalAttackThreshold": "Знизити поріг крита",
-
   "LblArmor": "БРОНЯ",
   "LblWeapon": "ЗБРОЯ",
   "LblPassives": "ПАСИВНІ",
@@ -227,7 +207,6 @@
   "BbTipLineBreak": "Розрив рядка [br]",
   "TipToggleCodePreview": "Перемкнути редактор BB-коду / попередній перегляд",
   "LblCardMechanics": "МЕХАНІКИ",
-
   "enum.Highlighted": "Підсвітка",
   "enum.IsHidden": "Прихована",
   "enum.IsToggled": "Вкл/Вимк",
@@ -241,12 +220,10 @@
   "enum.OncePerCombat": "1/Бій",
   "enum.DisplayBoostInTooltip": "Показ. бонус",
   "enum.Temporary": "Тимчасова",
-
   "LblAnd": "І",
   "LblOr": "АБО",
   "LblNot": "НЕ",
   "LblThen": "ТОДІ",
-
   "NavTitle": "НАВІГАТОР",
   "NavSearch": "Пошук предметів...",
   "NavMyItems": "МОЇ АРТЕФАКТИ",
@@ -256,7 +233,6 @@
   "NavDelete": "Видалити",
   "ConstructorEditorTitle": "РЕДАКТОР",
   "ConstructorPreviewTitle": "ПОПЕРЕДНІЙ ПЕРЕГЛЯД",
-
   "EditorNoSelection": "Оберіть предмет у навігаторі\nабо створіть спадкоємця",
   "CardIdentity": "ІДЕНТИФІКАЦІЯ",
   "CardArmorProps": "ВЛАСТИВОСТІ БРОНІ",
@@ -274,7 +250,6 @@
   "ChipThemes": "ТЕМАТИКИ",
   "BtnSave": "ЗБЕРЕГТИ",
   "BtnReset": "СКИНУТИ",
-
   "LblBoosts": "Постійні ефекти",
   "LblStatuses": "Застосовані статуси",
   "LblSpells": "Надані закляття",
@@ -285,7 +260,6 @@
   "LblAction": "Дія",
   "LblIcon": "ІКОНКА",
   "LblIconBrowser": "Обрати іконку",
-
   "TipFontSize": "Розмір шрифту",
   "TipColorTheme": "Кольорова тема",
   "WmBrowseIcons": "Переглянути іконки...",
@@ -293,7 +267,6 @@
   "WmDescriptionLore": "Опис / лор (BB-код)",
   "LblNoIconSelected": "Іконку не обрано",
   "DlgSelectPng": "Обрати PNG іконку",
-
   "enum.SurfaceNone": "Немає",
   "enum.SurfaceWater": "Вода",
   "enum.SurfaceWaterElectrified": "Вода (Ел.)",

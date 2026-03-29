@@ -1,17 +1,14 @@
 {
   "_name": "Español",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "¡Carpeta Mods no encontrada en AppData! Seleccione la ruta manualmente",
   "SelectFolder": "Elegir carpeta",
-
   "PleaseWait": "Por favor espere...",
   "ScanningMods": "Analizando mods con objetos.",
   "MayTakeTime": "Esto puede tardar un momento...",
   "ModsScanned": "Mods escaneados:",
   "ModsSelected": "Mods seleccionados:",
-
-  "IntegratorTitle": "Ancient Mega Pack Integrator",
+  "IntegratorTitle": "Integrador de Ancient Mega Pack",
   "EditorTitle": "Revise los objetos para integración",
   "AllMods": "Todos los mods",
   "Instructions": "Instrucciones",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "Se encontraron {0} mods con objetos en la carpeta Mods.",
   "ThemesLabel": "Temas",
   "ModThemes": "Temas del mod",
-
   "PatchingInProgress": "Parcheando...",
   "PatchSuccess": "¡Éxito!",
   "PatchSuccessMessage": "Objetos parcheados: {0}",
   "PatchError": "Error:",
-
   "Slot.Clothes": "Ropa",
   "Slot.Armor": "Armadura",
   "Slot.Shields": "Escudos",
@@ -41,16 +36,14 @@
   "Slot.Weapons": "Armas",
   "Slot.Weapons_1H": "Una mano",
   "Slot.Weapons_2H": "Dos manos",
-
   "Rarity.Common": "Común",
   "Rarity.Uncommon": "Poco común",
   "Rarity.Rare": "Raro",
   "Rarity.VeryRare": "Muy raro",
   "Rarity.Legendary": "Legendario",
-
   "Theme.Swamp": "Pantano",
   "Theme.Aquatic": "Acuático",
-  "Theme.Shadowfell": "Shadowfell",
+  "Theme.Shadowfell": "Sombralúgubre",
   "Theme.Arcane": "Arcano",
   "Theme.Celestial": "Celestial",
   "Theme.Nature": "Naturaleza",
@@ -58,7 +51,6 @@
   "Theme.War": "Guerra",
   "Theme.Psionic": "Psiónico",
   "Theme.Primal": "Primigenio",
-
   "ProfileLabel": "Perfil",
   "ProfileSave": "Guardar",
   "ProfileSaveAs": "Guardar como",
@@ -68,40 +60,34 @@
   "ProfileSaved": "Perfil guardado!",
   "MissingItemsWarning": "Objetos previamente parcheados no encontrados:",
   "MissingItemsDismiss": "Cerrar",
-
-  "ScanStageMods": "Scanning mods...",
-  "ScanStageAMP": "Scanning AMP items...",
-  "ScanStageResolver": "Building item database...",
-  "ScanStageNames": "Resolving item names...",
-  "ScanStageTemplates": "Reading templates...",
-  "ScanStageLoca": "Loading localization...",
-  "ScanStageDone": "Done!",
-
+  "ScanStageMods": "Escaneando mods...",
+  "ScanStageAMP": "Escaneando objetos AMP...",
+  "ScanStageResolver": "Creando base de datos de objetos...",
+  "ScanStageNames": "Resolviendo nombres de objetos...",
+  "ScanStageTemplates": "Leyendo plantillas...",
+  "ScanStageLoca": "Cargando localización...",
+  "ScanStageDone": "¡Listo!",
   "SortByName": "Nombre",
   "SortByRarity": "Rareza",
   "SortByTheme": "Tema",
   "SortBySlot": "Ranura",
-
   "FolderPickerTitle": "Seleccionar carpeta Mods de BG3",
   "UpdateCheckTooltip": "Buscar actualizaciones",
-  "UpdateCheckingTooltip": "Buscando actualizaciones\u2026",
-  "UpdateAvailableTooltip": "v{0} disponible \u2014 haz clic para actualizar",
-  "UpdateDownloadingTooltip": "Descargando\u2026 {0}%",
+  "UpdateCheckingTooltip": "Buscando actualizaciones…",
+  "UpdateAvailableTooltip": "v{0} disponible — haz clic para actualizar",
+  "UpdateDownloadingTooltip": "Descargando… {0}%",
   "UpdateUpToDateTooltip": "Actualizado",
   "UpdateFailedTooltip": "Error al buscar actualizaciones",
   "RestoreAmpTooltip": "Restaurar AMP original (deshacer parche)",
   "RestoringAmp": "Restaurando...",
-
   "TabPatcher": "PARCHEAR",
   "TabConstructor": "CONSTRUCTOR",
-
   "enum.Strength": "Fuerza",
   "enum.Dexterity": "Destreza",
   "enum.Constitution": "Constitución",
   "enum.Intelligence": "Inteligencia",
   "enum.Wisdom": "Sabiduría",
   "enum.Charisma": "Carisma",
-
   "enum.Acrobatics": "Acrobacias",
   "enum.AnimalHandling": "Trato con animales",
   "enum.Arcana": "Arcanos",
@@ -120,7 +106,6 @@
   "enum.SleightOfHand": "Juego de manos",
   "enum.Stealth": "Sigilo",
   "enum.Survival": "Supervivencia",
-
   "enum.Slashing": "Cortante",
   "enum.Piercing": "Perforante",
   "enum.Bludgeoning": "Contundente",
@@ -136,7 +121,6 @@
   "enum.Force": "Fuerza",
   "enum.All": "Todos",
   "enum.None": "Ninguno",
-
   "enum.Attack": "Ataque",
   "enum.Skill": "Habilidad",
   "enum.SavingThrow": "Tirada de salvación",
@@ -146,18 +130,15 @@
   "enum.RangedWeaponAttack": "Ataque a distancia",
   "enum.MeleeSpellAttack": "Hechizo cuerpo a cuerpo",
   "enum.RangedSpellAttack": "Hechizo a distancia",
-
   "enum.Resistant": "Resistencia",
   "enum.Immune": "Inmunidad",
   "enum.Vulnerable": "Vulnerabilidad",
-
   "enum.LightArmor": "Armadura ligera",
   "enum.MediumArmor": "Armadura media",
   "enum.HeavyArmor": "Armadura pesada",
   "enum.Shields": "Escudos",
   "enum.SimpleWeapons": "Armas sencillas",
   "enum.MartialWeapons": "Armas marciales",
-
   "boost.AC": "Clase de armadura",
   "boost.Ability": "Puntuación de característica",
   "boost.RollBonus": "Bonificación a la tirada",
@@ -178,7 +159,6 @@
   "boost.MinimumRollResult": "Tirada mínima",
   "boost.CriticalHit": "Golpe crítico",
   "boost.ReduceCriticalAttackThreshold": "Reducir umbral de crítico",
-
   "LblArmor": "ARMADURA",
   "LblWeapon": "ARMA",
   "LblPassives": "PASIVAS",
@@ -227,7 +207,6 @@
   "BbTipLineBreak": "Salto de línea [br]",
   "TipToggleCodePreview": "Alternar editor de BB-code / vista previa",
   "LblCardMechanics": "MECÁNICAS",
-
   "enum.Highlighted": "Resaltar",
   "enum.IsHidden": "Oculta",
   "enum.IsToggled": "Alternar",
@@ -241,12 +220,10 @@
   "enum.OncePerCombat": "1/Combate",
   "enum.DisplayBoostInTooltip": "Mostrar bonus",
   "enum.Temporary": "Temporal",
-
   "LblAnd": "Y",
   "LblOr": "O",
   "LblNot": "NO",
   "LblThen": "ENTONCES",
-
   "NavTitle": "NAVEGADOR",
   "NavSearch": "Buscar objetos...",
   "NavMyItems": "MIS ARTEFACTOS",
@@ -256,7 +233,6 @@
   "NavDelete": "Eliminar",
   "ConstructorEditorTitle": "EDITOR",
   "ConstructorPreviewTitle": "VISTA PREVIA",
-
   "EditorNoSelection": "Seleccione un objeto del navegador\no cree un heredero",
   "CardIdentity": "IDENTIDAD",
   "CardArmorProps": "PROPIEDADES DE ARMADURA",
@@ -274,7 +250,6 @@
   "ChipThemes": "TEMAS",
   "BtnSave": "GUARDAR",
   "BtnReset": "RESTABLECER",
-
   "LblBoosts": "Efectos permanentes",
   "LblStatuses": "Estados aplicados",
   "LblSpells": "Hechizos otorgados",
@@ -285,7 +260,6 @@
   "LblAction": "Acción",
   "LblIcon": "ICONO",
   "LblIconBrowser": "Elegir icono",
-
   "TipFontSize": "Tamaño de fuente",
   "TipColorTheme": "Tema de color",
   "WmBrowseIcons": "Explorar iconos...",
@@ -293,7 +267,6 @@
   "WmDescriptionLore": "Descripción / trasfondo (BB-code)",
   "LblNoIconSelected": "Ningún icono seleccionado",
   "DlgSelectPng": "Seleccionar icono PNG",
-
   "enum.SurfaceNone": "Ninguno",
   "enum.SurfaceWater": "Agua",
   "enum.SurfaceWaterElectrified": "Agua (Elec.)",

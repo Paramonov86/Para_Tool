@@ -1,17 +1,14 @@
 {
   "_name": "简体中文",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "在AppData中未找到Mods文件夹！请手动选择路径",
   "SelectFolder": "选择文件夹",
-
   "PleaseWait": "请稍候...",
   "ScanningMods": "正在分析含有物品的模组。",
   "MayTakeTime": "这可能需要一些时间...",
   "ModsScanned": "已扫描模组：",
   "ModsSelected": "已选择模组：",
-
-  "IntegratorTitle": "Ancient Mega Pack Integrator",
+  "IntegratorTitle": "Ancient Mega Pack 整合工具",
   "EditorTitle": "检查待整合的物品",
   "AllMods": "所有模组",
   "Instructions": "使用说明",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "在Mods文件夹中找到{0}个含物品的模组。",
   "ThemesLabel": "主题",
   "ModThemes": "模组主题",
-
   "PatchingInProgress": "正在应用补丁...",
   "PatchSuccess": "成功！",
   "PatchSuccessMessage": "已修补物品数：{0}",
   "PatchError": "错误：",
-
   "Slot.Clothes": "服装",
   "Slot.Armor": "护甲",
   "Slot.Shields": "盾牌",
@@ -41,13 +36,11 @@
   "Slot.Weapons": "武器",
   "Slot.Weapons_1H": "单手",
   "Slot.Weapons_2H": "双手",
-
   "Rarity.Common": "普通",
   "Rarity.Uncommon": "精良",
   "Rarity.Rare": "稀有",
   "Rarity.VeryRare": "史诗",
   "Rarity.Legendary": "传说",
-
   "Theme.Swamp": "沼泽",
   "Theme.Aquatic": "水系",
   "Theme.Shadowfell": "暗影荒原",
@@ -58,7 +51,6 @@
   "Theme.War": "战争",
   "Theme.Psionic": "灵能",
   "Theme.Primal": "原始",
-
   "ProfileLabel": "配置",
   "ProfileSave": "保存",
   "ProfileSaveAs": "另存为",
@@ -68,40 +60,34 @@
   "ProfileSaved": "配置已保存！",
   "MissingItemsWarning": "未找到之前修补的物品：",
   "MissingItemsDismiss": "关闭",
-
-  "ScanStageMods": "Scanning mods...",
-  "ScanStageAMP": "Scanning AMP items...",
-  "ScanStageResolver": "Building item database...",
-  "ScanStageNames": "Resolving item names...",
-  "ScanStageTemplates": "Reading templates...",
-  "ScanStageLoca": "Loading localization...",
-  "ScanStageDone": "Done!",
-
+  "ScanStageMods": "正在扫描模组...",
+  "ScanStageAMP": "正在扫描AMP物品...",
+  "ScanStageResolver": "正在构建物品数据库...",
+  "ScanStageNames": "正在解析物品名称...",
+  "ScanStageTemplates": "正在读取模板...",
+  "ScanStageLoca": "正在加载本地化...",
+  "ScanStageDone": "完成！",
   "SortByName": "名称",
   "SortByRarity": "稀有度",
   "SortByTheme": "主题",
   "SortBySlot": "栏位",
-
   "FolderPickerTitle": "选择BG3 Mods文件夹",
   "UpdateCheckTooltip": "检查更新",
-  "UpdateCheckingTooltip": "正在检查更新\u2026",
-  "UpdateAvailableTooltip": "v{0}可用 \u2014 点击更新",
-  "UpdateDownloadingTooltip": "下载中\u2026 {0}%",
+  "UpdateCheckingTooltip": "正在检查更新…",
+  "UpdateAvailableTooltip": "v{0}可用 — 点击更新",
+  "UpdateDownloadingTooltip": "下载中… {0}%",
   "UpdateUpToDateTooltip": "已是最新版本",
   "UpdateFailedTooltip": "检查更新失败",
   "RestoreAmpTooltip": "恢复原始AMP（撤销补丁）",
   "RestoringAmp": "恢复中...",
-
   "TabPatcher": "修补工具",
   "TabConstructor": "构造器",
-
   "enum.Strength": "力量",
   "enum.Dexterity": "敏捷",
   "enum.Constitution": "体质",
   "enum.Intelligence": "智力",
   "enum.Wisdom": "感知",
   "enum.Charisma": "魅力",
-
   "enum.Acrobatics": "特技",
   "enum.AnimalHandling": "驯兽",
   "enum.Arcana": "奥秘",
@@ -120,7 +106,6 @@
   "enum.SleightOfHand": "巧手",
   "enum.Stealth": "隐匿",
   "enum.Survival": "求生",
-
   "enum.Slashing": "挥砍",
   "enum.Piercing": "穿刺",
   "enum.Bludgeoning": "钝击",
@@ -136,7 +121,6 @@
   "enum.Force": "力场",
   "enum.All": "全部",
   "enum.None": "无",
-
   "enum.Attack": "攻击",
   "enum.Skill": "技能",
   "enum.SavingThrow": "豁免检定",
@@ -146,18 +130,15 @@
   "enum.RangedWeaponAttack": "远程攻击",
   "enum.MeleeSpellAttack": "近战法术",
   "enum.RangedSpellAttack": "远程法术",
-
   "enum.Resistant": "抗性",
   "enum.Immune": "免疫",
   "enum.Vulnerable": "易伤",
-
   "enum.LightArmor": "轻甲",
   "enum.MediumArmor": "中甲",
   "enum.HeavyArmor": "重甲",
   "enum.Shields": "盾牌",
   "enum.SimpleWeapons": "简易武器",
   "enum.MartialWeapons": "军用武器",
-
   "boost.AC": "护甲等级",
   "boost.Ability": "属性值",
   "boost.RollBonus": "骰值加成",
@@ -178,7 +159,6 @@
   "boost.MinimumRollResult": "最低骰值",
   "boost.CriticalHit": "暴击",
   "boost.ReduceCriticalAttackThreshold": "降低暴击阈值",
-
   "LblArmor": "护甲",
   "LblWeapon": "武器",
   "LblPassives": "被动能力",
@@ -227,7 +207,6 @@
   "BbTipLineBreak": "换行 [br]",
   "TipToggleCodePreview": "切换 BB-code 编辑器 / 预览",
   "LblCardMechanics": "机制",
-
   "enum.Highlighted": "高亮",
   "enum.IsHidden": "隐藏",
   "enum.IsToggled": "切换",
@@ -241,12 +220,10 @@
   "enum.OncePerCombat": "1/战斗",
   "enum.DisplayBoostInTooltip": "显示加成",
   "enum.Temporary": "临时",
-
   "LblAnd": "且",
   "LblOr": "或",
   "LblNot": "非",
   "LblThen": "则",
-
   "NavTitle": "导航器",
   "NavSearch": "搜索物品...",
   "NavMyItems": "我的神器",
@@ -256,7 +233,6 @@
   "NavDelete": "删除",
   "ConstructorEditorTitle": "编辑器",
   "ConstructorPreviewTitle": "预览",
-
   "EditorNoSelection": "从导航器选择物品\n或创建继承者",
   "CardIdentity": "身份",
   "CardArmorProps": "护甲属性",
@@ -274,7 +250,6 @@
   "ChipThemes": "主题",
   "BtnSave": "保存",
   "BtnReset": "重置",
-
   "LblBoosts": "永久效果",
   "LblStatuses": "施加状态",
   "LblSpells": "赋予法术",
@@ -285,7 +260,6 @@
   "LblAction": "行动",
   "LblIcon": "图标",
   "LblIconBrowser": "选择图标",
-
   "TipFontSize": "字体大小",
   "TipColorTheme": "配色方案",
   "WmBrowseIcons": "浏览图标...",
@@ -293,7 +267,6 @@
   "WmDescriptionLore": "描述 / 背景故事（BB代码）",
   "LblNoIconSelected": "未选择图标",
   "DlgSelectPng": "选择PNG图标",
-
   "enum.SurfaceNone": "无",
   "enum.SurfaceWater": "水",
   "enum.SurfaceWaterElectrified": "水（带电）",
