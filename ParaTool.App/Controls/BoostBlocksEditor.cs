@@ -211,10 +211,14 @@ public class BoostBlocksEditor : UserControl
                 continue;
             }
 
-            // RollBonus: 3rd param (AbilityOrSkill) only needed for SavingThrow/SkillCheck/RawAbility
-            // Always show as optional for these, skip for attack types
+            // RollBonus: 3rd param only needed for SavingThrow/SkillCheck/RawAbility
             if (def.FuncName == "RollBonus" && i == 2 && args.Length > 0
                 && args[0].Trim() is not ("SavingThrow" or "SkillCheck" or "RawAbility"))
+                continue;
+
+            // Advantage/Disadvantage: 2nd param only needed for specific ability/skill/save
+            if (def.FuncName is "Advantage" or "Disadvantage" && i == 1 && args.Length > 0
+                && args[0].Trim() is not ("SavingThrow" or "Ability" or "Skill"))
                 continue;
             else if (param.Type == "int")
             {
@@ -555,6 +559,19 @@ public class BoostBlocksEditor : UserControl
         if (idx >= 0)
             parts[idx] = newIf;
         SyncText(string.Join(";", parts));
+    }
+
+    /// <summary>Remove unnecessary trailing args from a boost call.</summary>
+    private void CleanTrailingArgs(string rawBoost, string funcName, string[] args, int fromIndex)
+    {
+        var cleanArgs = args[..fromIndex];
+        // Trim trailing empty
+        while (cleanArgs.Length > 0 && string.IsNullOrEmpty(cleanArgs[^1]))
+            cleanArgs = cleanArgs[..^1];
+        var newBoost = cleanArgs.Length > 0 ? $"{funcName}({string.Join(",", cleanArgs)})" : funcName;
+        var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        var idx = parts.IndexOf(rawBoost);
+        if (idx >= 0) { parts[idx] = newBoost; SyncText(string.Join(";", parts)); }
     }
 
     /// <summary>Simplify condition text for display.</summary>

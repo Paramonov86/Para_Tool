@@ -103,6 +103,44 @@ public static class StatsFileEditor
         return text;
     }
 
+    /// <summary>
+    /// Remove all stat entries whose names match the given set.
+    /// Each entry block starts with 'new entry "Name"' and ends at the next 'new entry' or EOF.
+    /// </summary>
+    public static string RemoveEntries(string text, HashSet<string> names)
+    {
+        if (names.Count == 0) return text;
+
+        var lines = text.Split('\n');
+        var result = new System.Text.StringBuilder();
+        bool skipping = false;
+
+        foreach (var line in lines)
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("new entry ", StringComparison.OrdinalIgnoreCase))
+            {
+                // Extract entry name
+                var q1 = trimmed.IndexOf('"');
+                var q2 = q1 >= 0 ? trimmed.IndexOf('"', q1 + 1) : -1;
+                if (q1 >= 0 && q2 > q1)
+                {
+                    var entryName = trimmed[(q1 + 1)..q2];
+                    skipping = names.Contains(entryName);
+                }
+                else
+                {
+                    skipping = false;
+                }
+            }
+
+            if (!skipping)
+                result.AppendLine(line.TrimEnd('\r'));
+        }
+
+        return result.ToString();
+    }
+
     private static string ExtractQuoted(string line)
     {
         int first = line.IndexOf('"');

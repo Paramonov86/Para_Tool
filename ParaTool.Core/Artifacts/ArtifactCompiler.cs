@@ -48,7 +48,6 @@ public static class ArtifactCompiler
         stats.AppendLine($"new entry \"{art.StatId}\"");
         stats.AppendLine($"type \"{art.StatType}\"");
         stats.AppendLine($"using \"{art.UsingBase}\"");
-        // Only set RootTemplate for NEW items — overrides keep the original template UUID
         if (!isOverride && !string.IsNullOrEmpty(art.TemplateUuid))
             stats.AppendLine($"data \"RootTemplate\" \"{art.TemplateUuid}\"");
         stats.AppendLine($"data \"Rarity\" \"{art.Rarity}\"");

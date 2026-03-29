@@ -125,6 +125,10 @@ public sealed class AmpPatcher
                         File.Delete(oldPath);
                 }
 
+                // Debug: log enabledModItems
+                File.WriteAllText(Path.Combine(Path.GetTempPath(), "paratool_moditems_debug.txt"),
+                    $"enabledModItems: {enabledModItems.Count}\n" +
+                    string.Join("\n", enabledModItems.Select(i => $"  {i.StatId} (Enabled={i.Enabled})")));
                 await Task.Run(() => ApplyStatOverrides(statsDir, modifiedAmpItems, enabledModItems), ct);
             }
 
@@ -354,18 +358,12 @@ public sealed class AmpPatcher
             }
         }
 
-        // Update GUI/metadata.lsx with custom icon entries
+        // Update GUI/metadata.lsf with custom icon entries
         if (customIconStatIds.Count > 0)
         {
-            var metadataLsx = FindFile(extractDir, "metadata.lsx");
-            if (metadataLsx != null)
-            {
-                PatchIconMetadata(metadataLsx, customIconStatIds);
-                // Remove metadata.lsf so BG3 reads the patched .lsx instead
-                var metadataLsf = Path.ChangeExtension(metadataLsx, ".lsf");
-                if (File.Exists(metadataLsf))
-                    File.Delete(metadataLsf);
-            }
+            var metadataLsf = FindFile(extractDir, "metadata.lsf");
+            if (metadataLsf != null)
+                PatchIconMetadataLsf(metadataLsf, customIconStatIds);
         }
 
         var statFiles = Directory.GetFiles(statsDir, "*.txt")
@@ -426,6 +424,18 @@ public sealed class AmpPatcher
                 var lastFile = statFiles[^1];
                 File.AppendAllText(lastFile, "\n" + nonItemOverrides);
             }
+        }
+
+        // Remove old artifact stat entries from stat files (leftovers from previous patches)
+        // ONLY remove the artifact's own StatId — NOT inherited passives/statuses/spells
+        // (those belong to the base item and must not be deleted)
+        var artifactStatIds = new HashSet<string>(
+            artifacts.Select(a => a.StatId), StringComparer.OrdinalIgnoreCase);
+        foreach (var sf in statFiles)
+        {
+            var text = File.ReadAllText(sf);
+            var cleaned = StatsFileEditor.RemoveEntries(text, artifactStatIds);
+            if (cleaned != text) File.WriteAllText(sf, cleaned);
         }
 
         // Append new item stats to last stat file
@@ -636,6 +646,15 @@ public sealed class AmpPatcher
     private static void CreateTemplateLsf(string lsfPath, ArtifactDefinition art)
     {
         var resource = new LSLib.Resource();
+        // Set metadata to match BG3 Patch 3 format (same as AMP)
+        resource.Metadata = new LSLib.LSMetadata
+        {
+            MajorVersion = 4,
+            MinorVersion = 8,
+            Revision = 0,
+            BuildNumber = 500
+        };
+        resource.MetadataFormat = LSLib.LSFMetadataFormat.KeysAndAdjacency;
         var region = new LSLib.Region { Name = "Templates", RegionName = "Templates" };
         resource.Regions["Templates"] = region;
 
@@ -676,77 +695,93 @@ public sealed class AmpPatcher
     }
 
     /// <summary>
-    /// Adds custom icon entries to GUI/metadata.lsx for each artifact with a custom PNG icon.
+    /// Adds custom icon entries to GUI/metadata.lsf (binary) for each artifact with a custom PNG icon.
     /// Each icon gets two entries: 144×144 items_png + 380×380 Tooltips/ItemIcons.
     /// </summary>
-    private static void PatchIconMetadata(string metadataPath, IReadOnlyList<string> statIds)
+    private static void PatchIconMetadataLsf(string metadataLsfPath, IReadOnlyList<string> statIds)
     {
-        var text = File.ReadAllText(metadataPath);
-
-        // Collect existing MapKey values to avoid duplicates
-        var existingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (System.Text.RegularExpressions.Match m in
-            System.Text.RegularExpressions.Regex.Matches(text, @"value=""([^""]+)"""))
+        try
         {
-            if (m.Groups[1].Value.Contains("/"))
-                existingKeys.Add(m.Groups[1].Value);
-        }
-
-        var sb = new StringBuilder();
-
-        foreach (var statId in statIds)
-        {
-            // 144×144 console icon
-            var consolePath = $"Assets/ControllerUIIcons/items_png/{statId}.png";
-            if (!existingKeys.Contains(consolePath))
+            LSLib.Resource resource;
+            using (var fs = File.OpenRead(metadataLsfPath))
             {
-                sb.AppendLine($"\t\t\t\t\t\t<node id=\"Object\">");
-                sb.AppendLine($"\t\t\t\t\t\t\t<attribute id=\"MapKey\" type=\"FixedString\" value=\"{consolePath}\" />");
-                sb.AppendLine($"\t\t\t\t\t\t\t<children>");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t<node id=\"entries\">");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"h\" type=\"int16\" value=\"144\" />");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"mipcount\" type=\"int8\" value=\"8\" />");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"w\" type=\"int16\" value=\"144\" />");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t</node>");
-                sb.AppendLine($"\t\t\t\t\t\t\t</children>");
-                sb.AppendLine($"\t\t\t\t\t\t</node>");
+                var reader = new LSLib.LSFReader(fs);
+                resource = reader.Read();
             }
 
-            // 380×380 tooltip icon
-            var tooltipPath = $"Assets/Tooltips/ItemIcons/{statId}.png";
-            if (!existingKeys.Contains(tooltipPath))
+            if (!resource.Regions.TryGetValue("config", out var configRegion)) return;
+
+            // Collect existing MapKeys to avoid duplicates
+            var existingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (configRegion.Children.TryGetValue("entries", out var entriesNodes))
             {
-                sb.AppendLine($"\t\t\t\t\t\t<node id=\"Object\">");
-                sb.AppendLine($"\t\t\t\t\t\t\t<attribute id=\"MapKey\" type=\"FixedString\" value=\"{tooltipPath}\" />");
-                sb.AppendLine($"\t\t\t\t\t\t\t<children>");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t<node id=\"entries\">");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"h\" type=\"int16\" value=\"380\" />");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"mipcount\" type=\"int8\" value=\"9\" />");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"w\" type=\"int16\" value=\"380\" />");
-                sb.AppendLine($"\t\t\t\t\t\t\t\t</node>");
-                sb.AppendLine($"\t\t\t\t\t\t\t</children>");
-                sb.AppendLine($"\t\t\t\t\t\t</node>");
+                foreach (var entriesNode in entriesNodes)
+                {
+                    if (entriesNode.Children.TryGetValue("Object", out var objects))
+                    {
+                        foreach (var obj in objects)
+                        {
+                            if (obj.Attributes.TryGetValue("MapKey", out var mk))
+                                existingKeys.Add(mk.Value?.ToString() ?? "");
+                        }
+                    }
+                }
+            }
+
+            // Find the entries node to add children to
+            var targetEntries = entriesNodes?.FirstOrDefault();
+            if (targetEntries == null) return;
+
+            bool modified = false;
+            foreach (var statId in statIds)
+            {
+                // 144×144 console icon
+                var consolePath = $"Assets/ControllerUIIcons/items_png/{statId}.png";
+                if (!existingKeys.Contains(consolePath))
+                {
+                    AddMetadataObject(targetEntries, consolePath, 144, 8);
+                    modified = true;
+                }
+
+                // 380×380 tooltip icon
+                var tooltipPath = $"Assets/Tooltips/ItemIcons/{statId}.png";
+                if (!existingKeys.Contains(tooltipPath))
+                {
+                    AddMetadataObject(targetEntries, tooltipPath, 380, 9);
+                    modified = true;
+                }
+            }
+
+            if (!modified) return;
+
+            using (var outFs = File.Create(metadataLsfPath))
+            {
+                var writer = new LSLib.LSFWriter(outFs);
+                writer.Write(resource);
             }
         }
-
-        if (sb.Length == 0) return;
-
-        // Insert before the last </children> in the entries node
-        // Find the marker: </children>\n\t\t\t\t</node>\n\t\t\t</children>
-        var insertMarker = "</children>\n\t\t\t\t</node>\n\t\t\t</children>";
-        var insertIdx = text.LastIndexOf(insertMarker, StringComparison.Ordinal);
-        if (insertIdx < 0)
+        catch (Exception ex)
         {
-            // Try with \r\n
-            insertMarker = "</children>\r\n\t\t\t\t</node>\r\n\t\t\t</children>";
-            insertIdx = text.LastIndexOf(insertMarker, StringComparison.Ordinal);
+            System.Diagnostics.Debug.WriteLine($"metadata.lsf patch failed: {ex.Message}");
         }
+    }
 
-        if (insertIdx >= 0)
-        {
-            text = text.Insert(insertIdx, sb.ToString());
-            File.WriteAllText(metadataPath, text);
-        }
+    private static void AddMetadataObject(LSLib.Node parentEntries, string mapKey, int size, int mipcount)
+    {
+        var objNode = new LSLib.Node { Name = "Object", Parent = parentEntries };
+        objNode.Attributes["MapKey"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+            { Value = mapKey };
+
+        var dataNode = new LSLib.Node { Name = "entries", Parent = objNode };
+        dataNode.Attributes["h"] = new LSLib.NodeAttribute(LSLib.AttributeType.Short)
+            { Value = (short)size };
+        dataNode.Attributes["mipcount"] = new LSLib.NodeAttribute(LSLib.AttributeType.Int8)
+            { Value = (sbyte)mipcount };
+        dataNode.Attributes["w"] = new LSLib.NodeAttribute(LSLib.AttributeType.Short)
+            { Value = (short)size };
+
+        objNode.AppendChild(dataNode);
+        parentEntries.AppendChild(objNode);
     }
 
     private static string? FindFile(string dir, string fileName)
