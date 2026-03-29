@@ -105,7 +105,9 @@ public partial class ConstructorViewModel : ViewModelBase
     public string[] AllStatuses => _cachedStatuses ??= GetStatsOfType("StatusData").ToArray();
     /// <summary>All spell names for SearchPickerChip.</summary>
     public string[] AllSpells => _cachedSpells ??= GetStatsOfType("SpellData").ToArray();
-    private string[]? _cachedStatuses, _cachedSpells;
+    /// <summary>All passive names for SearchPickerChip.</summary>
+    public string[] AllPassives => _cachedPassives ??= GetStatsOfType("PassiveData").ToArray();
+    private string[]? _cachedStatuses, _cachedSpells, _cachedPassives;
     private readonly IconService? _iconService;
 
     public bool HasSavedArtifacts => SavedArtifacts.Count > 0;
@@ -460,6 +462,22 @@ public partial class ConstructorViewModel : ViewModelBase
         clone.StatId += "_Copy";
         clone.DisplayNameHandle = "";
         clone.DescriptionHandle = "";
+        // Clear loca handles on passives/statuses/spells to avoid collision with original
+        foreach (var p in clone.Passives)
+        {
+            p.DisplayNameHandle = "";
+            p.DescriptionHandle = "";
+        }
+        foreach (var s in clone.Statuses)
+        {
+            s.DisplayNameHandle = "";
+            s.DescriptionHandle = "";
+        }
+        foreach (var sp in clone.Spells)
+        {
+            sp.DisplayNameHandle = "";
+            sp.DescriptionHandle = "";
+        }
         ArtifactStore.Save(clone);
         var vm = new ArtifactItemVM(clone) { IsPersisted = true, SourceStatId = clone.UsingBase, GetEditingLang = () => EditingLang };
         vm.LoadPassivesFromArtifact();
@@ -559,6 +577,7 @@ public partial class ConstructorViewModel : ViewModelBase
                     if (pFields.TryGetValue("StatsFunctorContext", out var sfc)) passive.StatsFunctorContext = sfc;
                     if (pFields.TryGetValue("Conditions", out var cond)) passive.Conditions = cond;
                     if (pFields.TryGetValue("StatsFunctors", out var sf)) passive.StatsFunctors = sf;
+                    if (pFields.TryGetValue("Properties", out var props)) passive.Properties = props;
 
                     artifact.Passives.Add(passive);
                 }

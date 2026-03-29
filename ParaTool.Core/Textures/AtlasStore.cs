@@ -65,17 +65,18 @@ public static class AtlasStore
             var existing = meta.Icons.FindIndex(e => e.Name == iconName);
             if (existing >= 0)
             {
-                // Replace existing icon in atlas
                 var atlasRgba = LoadOrCreateAtlasRgba(dir, idx, meta);
-                WriteIconTile(atlasRgba, existing, rgba144);
+                WriteIconTile(atlasRgba, meta.Icons[existing].Slot, rgba144);
                 SaveAtlas(dir, idx, meta, atlasRgba);
                 return iconName;
             }
 
             if (meta.Icons.Count < MaxIcons)
             {
-                // Add to this atlas
-                var slot = meta.Icons.Count;
+                // Find first free slot (may have gaps from removals)
+                var usedSlots = new HashSet<int>(meta.Icons.Select(e => e.Slot));
+                var slot = 0;
+                while (usedSlots.Contains(slot)) slot++;
                 meta.Icons.Add(new AtlasIconEntry { Name = iconName, Slot = slot });
 
                 var atlasRgba = LoadOrCreateAtlasRgba(dir, idx, meta);
@@ -102,12 +103,14 @@ public static class AtlasStore
             var found = meta.Icons.FindIndex(e => e.Name == iconName);
             if (found >= 0)
             {
+                var slot = meta.Icons[found].Slot;
                 meta.Icons.RemoveAt(found);
-                // Re-index slots
-                for (int i = 0; i < meta.Icons.Count; i++)
-                    meta.Icons[i].Slot = i;
-                // Rebuild atlas
-                RebuildAtlas(dir, idx, meta);
+
+                // Clear pixels at the freed slot in DDS
+                var atlasRgba = LoadOrCreateAtlasRgba(dir, idx, meta);
+                var emptyTile = new byte[TileSize * TileSize * 4];
+                WriteIconTile(atlasRgba, slot, emptyTile);
+                SaveAtlas(dir, idx, meta, atlasRgba);
                 return;
             }
         }
@@ -192,14 +195,6 @@ public static class AtlasStore
         var metaPath = Path.Combine(dir, $"{AtlasPrefix}{idx}{MetaExt}");
 
         File.WriteAllBytes(ddsPath, DdsWriter.Encode(atlasRgba, AtlasPixelSize, AtlasPixelSize));
-        File.WriteAllText(metaPath, JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
-    }
-
-    private static void RebuildAtlas(string dir, int idx, AtlasMeta meta)
-    {
-        // Can't rebuild from metadata alone — just save with holes
-        // Icons that were removed leave black gaps, which is fine
-        var metaPath = Path.Combine(dir, $"{AtlasPrefix}{idx}{MetaExt}");
         File.WriteAllText(metaPath, JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
     }
 

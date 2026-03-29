@@ -254,7 +254,7 @@ public sealed class AmpPatcher
     /// </summary>
     private static int ApplyArtifacts(string extractDir, string? statsDir, string ampPakPath)
     {
-        var artifacts = ArtifactStore.LoadAll();
+        var artifacts = ArtifactStore.LoadAll().Where(a => a.PatchEnabled).ToList();
         if (artifacts.Count == 0 || statsDir == null) return 0;
 
         // Load existing stat IDs to distinguish overrides vs new items
@@ -270,7 +270,8 @@ public sealed class AmpPatcher
         var overrideStats = new StringBuilder();
         var newStats = new StringBuilder();
         var allLocaEntries = new Dictionary<string, List<(string handle, string xmlText)>>(StringComparer.OrdinalIgnoreCase);
-        var customIconStatIds = new List<string>(); // items with custom PNG icons
+        var customIconStatIds = new List<string>();
+        var newArtifacts = new List<ArtifactDefinition>(); // need RootTemplate generation
         int count = 0;
 
         foreach (var art in artifacts)
@@ -280,14 +281,12 @@ public sealed class AmpPatcher
 
             if (isOverride)
             {
-                // Override: apply compiled stats as in-place modification
                 overrideStats.Append(compiled.StatsText);
             }
             else
             {
-                // New item: append to stats + schedule for TT insertion
                 newStats.Append(compiled.StatsText);
-                // TT integration handled via virtual mod in patcher UI
+                newArtifacts.Add(art);
             }
 
             // Merge loca entries
@@ -421,7 +420,10 @@ public sealed class AmpPatcher
         }
 
         // TreasureTable for new items is handled by the main TT patching step
-        // (artifacts appear as items in the virtual "My Artifacts" mod)
+
+        // Generate RootTemplates for new artifacts (not overrides)
+        if (newArtifacts.Count > 0)
+            AddRootTemplates(extractDir, newArtifacts);
 
         // Write loca XML entries
         if (allLocaEntries.Count > 0)
@@ -484,6 +486,80 @@ public sealed class AmpPatcher
                 var content = ArtifactCompiler.GenerateLocaXml(locaEntries);
                 File.WriteAllText(newPath, content);
             }
+        }
+    }
+
+    /// <summary>
+    /// Adds RootTemplate GameObjects nodes for new artifacts to _merged.lsf.
+    /// Each new item needs a minimal template so BG3 can spawn it.
+    /// </summary>
+    private static void AddRootTemplates(string extractDir, IReadOnlyList<ArtifactDefinition> newArtifacts)
+    {
+        var mergedPath = Directory.GetFiles(extractDir, "_merged.lsf", SearchOption.AllDirectories)
+            .FirstOrDefault(p => p.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase));
+
+        if (mergedPath == null) return;
+
+        try
+        {
+            LSLib.Resource resource;
+            using (var fs = File.OpenRead(mergedPath))
+            {
+                var reader = new LSLib.LSFReader(fs);
+                resource = reader.Read();
+            }
+
+            // Find Templates region → Templates node → append GameObjects children
+            if (!resource.Regions.TryGetValue("Templates", out var templatesRegion)) return;
+
+            foreach (var art in newArtifacts)
+            {
+                var goNode = new LSLib.Node { Name = "GameObjects", Parent = templatesRegion };
+
+                goNode.Attributes["MapKey"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                    { Value = art.TemplateUuid };
+                goNode.Attributes["Name"] = new LSLib.NodeAttribute(LSLib.AttributeType.LSString)
+                    { Value = art.StatId };
+                goNode.Attributes["Type"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                    { Value = "item" };
+                goNode.Attributes["ParentTemplateId"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                    { Value = art.ParentTemplateUuid };
+                goNode.Attributes["Stats"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                    { Value = art.StatId };
+                goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                    { Value = art.AtlasIconMapKey ?? art.StatId };
+                goNode.Attributes["LevelName"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                    { Value = "" };
+                goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+                {
+                    Value = new LSLib.TranslatedString
+                    {
+                        Handle = art.DisplayNameHandle,
+                        Version = 1
+                    }
+                };
+                goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+                {
+                    Value = new LSLib.TranslatedString
+                    {
+                        Handle = art.DescriptionHandle,
+                        Version = 1
+                    }
+                };
+
+                templatesRegion.AppendChild(goNode);
+            }
+
+            // Write back
+            using (var outFs = File.Create(mergedPath))
+            {
+                var writer = new LSLib.LSFWriter(outFs);
+                writer.Write(resource);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"RootTemplate generation failed: {ex.Message}");
         }
     }
 

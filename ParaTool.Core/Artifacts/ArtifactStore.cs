@@ -63,9 +63,11 @@ public static class ArtifactStore
         }
 
         var path = GetArtifactPath(artifact.ArtifactId);
+        var tmpPath = path + ".tmp";
         var json = JsonSerializer.Serialize(artifact, JsonOptions);
         var encrypted = Encrypt(Encoding.UTF8.GetBytes(json));
-        File.WriteAllBytes(path, encrypted);
+        File.WriteAllBytes(tmpPath, encrypted);
+        File.Move(tmpPath, path, overwrite: true);
     }
 
     /// <summary>

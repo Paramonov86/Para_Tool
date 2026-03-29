@@ -77,15 +77,21 @@ public static class ArtifactCompiler
         if (art.WeaponProperties != null)
             stats.AppendLine($"data \"Weapon Properties\" \"{art.WeaponProperties}\"");
 
-        // Mechanics
+        // Mechanics — merge Boosts + SpellsOnEquip into single "Boosts" line
+        var allBoosts = new List<string>();
         if (!string.IsNullOrEmpty(art.Boosts))
-            stats.AppendLine($"data \"Boosts\" \"{art.Boosts}\"");
+            allBoosts.Add(art.Boosts);
+        if (!string.IsNullOrEmpty(art.SpellsOnEquip))
+        {
+            foreach (var spell in art.SpellsOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                allBoosts.Add($"UnlockSpell({spell})");
+        }
+        if (allBoosts.Count > 0)
+            stats.AppendLine($"data \"Boosts\" \"{string.Join(";", allBoosts)}\"");
         if (!string.IsNullOrEmpty(art.PassivesOnEquip))
             stats.AppendLine($"data \"PassivesOnEquip\" \"{art.PassivesOnEquip}\"");
         if (!string.IsNullOrEmpty(art.StatusOnEquip))
             stats.AppendLine($"data \"StatusOnEquip\" \"{art.StatusOnEquip}\"");
-        if (!string.IsNullOrEmpty(art.SpellsOnEquip))
-            stats.AppendLine($"data \"Boosts\" \"UnlockSpell({art.SpellsOnEquip})\"");
 
         stats.AppendLine();
 

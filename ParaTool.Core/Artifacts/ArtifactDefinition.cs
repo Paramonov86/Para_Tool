@@ -146,6 +146,11 @@ public sealed class ArtifactDefinition
     /// </summary>
     public string? AtlasIconMapKey { get; set; }
 
+    // ─── Patching ────────────────────────────────────────────
+
+    /// <summary>Whether this artifact should be patched into the game at all.</summary>
+    public bool PatchEnabled { get; set; } = true;
+
     // ─── Loot Integration ───────────────────────────────────
 
     /// <summary>Whether this artifact should be added to AMP loot tables.</summary>
