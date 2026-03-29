@@ -228,6 +228,14 @@ public partial class ConstructorView : UserControl
             return;
         }
 
+        // Remove passive
+        if (btn.Name == "RemovePassiveBtn" && btn.Tag is PassiveVM removePvm
+            && DataContext is ConstructorViewModel rmVm && rmVm.SelectedArtifact != null)
+        {
+            rmVm.SelectedArtifact.RemovePassive(removePvm);
+            return;
+        }
+
         // Add new empty passive
         if (btn.Name == "AddPassiveBtn" && DataContext is ConstructorViewModel addPVm
             && addPVm.SelectedArtifact != null)

@@ -334,6 +334,14 @@ public partial class ArtifactItemVM : ObservableObject
         OnPropertyChanged(nameof(HasPassives));
     }
 
+    public void RemovePassive(PassiveVM pvm)
+    {
+        Artifact.Passives.Remove(pvm.Passive);
+        PassiveVMs.Remove(pvm);
+        IsDirty = true;
+        OnPropertyChanged(nameof(HasPassives));
+    }
+
     public void AddNewPassive()
     {
         var passive = new Core.Artifacts.PassiveDefinition

@@ -400,17 +400,25 @@
                                             <Border Background="{StaticResource InputBgBrush}" CornerRadius="4"
                                                     Padding="8,6" Margin="0,2" ClipToBounds="False">
                                                 <StackPanel Spacing="4" ClipToBounds="False">
-                                                    <Button Background="Transparent" BorderThickness="0"
-                                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                                            Padding="0" Cursor="Hand" Name="PassiveToggleBtn" Tag="{Binding}">
-                                                        <Grid ColumnDefinitions="Auto,*">
-                                                            <TextBlock Text="▸" FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource AccentLightBrush}"
-                                                                       VerticalAlignment="Center" Margin="0,0,6,0" Width="12" />
-                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
-                                                                       Foreground="{StaticResource GoldBrush}"
-                                                                       ToolTip.Tip="{Binding StatName}" />
-                                                        </Grid>
-                                                    </Button>
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <Button Background="Transparent" BorderThickness="0"
+                                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                                Padding="0" Cursor="Hand" Name="PassiveToggleBtn" Tag="{Binding}">
+                                                            <Grid ColumnDefinitions="Auto,*">
+                                                                <TextBlock Text="▸" FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource AccentLightBrush}"
+                                                                           VerticalAlignment="Center" Margin="0,0,6,0" Width="12" />
+                                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
+                                                                           Foreground="{StaticResource GoldBrush}"
+                                                                           ToolTip.Tip="{Binding StatName}" />
+                                                            </Grid>
+                                                        </Button>
+                                                        <Button Grid.Column="1" Name="RemovePassiveBtn" Tag="{Binding}"
+                                                                Background="Transparent" BorderThickness="0"
+                                                                Foreground="{StaticResource TextMutedBrush}"
+                                                                FontSize="{DynamicResource FontSize11}" Padding="4,0"
+                                                                Cursor="Hand" Content="×" Opacity="0.5"
+                                                                ToolTip.Tip="Remove passive" />
+                                                    </Grid>
                                                     <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0" ClipToBounds="False">
                                                         <!-- Properties toggle chips -->
                                                         <ctrl:ToggleChipsEditor Text="{Binding EditProperties}"
