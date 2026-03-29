@@ -246,6 +246,17 @@ public partial class Loc : ObservableObject
     public string TipToggleCodePreview => this["TipToggleCodePreview"];
     public string LblCardMechanics => this["LblCardMechanics"];
 
+    /// <summary>Get display labels for enum values, using loca with EnumLabels fallback.</summary>
+    public string[] GetEnumDisplayLabels(string[] values)
+    {
+        return values.Select(v =>
+        {
+            var key = $"enum.{v}";
+            if (_strings.TryGetValue(key, out var locaVal)) return locaVal;
+            return ParaTool.Core.Schema.EnumLabels.GetLabel(v, _lang);
+        }).ToArray();
+    }
+
     // === Dynamic lookups ===
 
     public string PoolName(string pool)

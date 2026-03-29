@@ -269,19 +269,36 @@ public class ConditionBlocksEditor : UserControl
 
             if (param?.Type == "flags" && param.EnumValues != null)
             {
+                // Strip enum prefix from each flag value (e.g. "SpellFlags.Concentration" → "Concentration")
+                var flagPrefix = "";
+                var cleanFlags = argVal;
+                if (argVal.Contains('.'))
+                {
+                    var flagParts = argVal.Split(';').Select(f =>
+                    {
+                        var dot = f.IndexOf('.');
+                        if (dot > 0) { flagPrefix = f[..(dot + 1)]; return f[(dot + 1)..]; }
+                        return f;
+                    });
+                    cleanFlags = string.Join(";", flagParts);
+                }
+                var capturedFlagPrefix = flagPrefix;
                 var lang = Localization.Loc.Instance.Lang;
                 var flagsPicker = new ChecklistPickerChip
                 {
-                    Text = argVal,
+                    Text = cleanFlags,
                     Options = param.EnumValues,
-                    Labels = EnumLabels.GetDisplayLabels(param.EnumValues, lang),
+                    Labels = Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues),
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 flagsPicker.PropertyChanged += (s, e) =>
                 {
                     if (e.Property.Name == "Text" && s is ChecklistPickerChip cp)
                     {
-                        token.Args[paramIdx] = cp.Text ?? "";
+                        var val = cp.Text ?? "";
+                        if (!string.IsNullOrEmpty(capturedFlagPrefix))
+                            val = string.Join(";", val.Split(';').Select(f => capturedFlagPrefix + f));
+                        token.Args[paramIdx] = val;
                         SyncFromTokens(tokens);
                     }
                 };
@@ -290,13 +307,26 @@ public class ConditionBlocksEditor : UserControl
             else if (param?.Type == "enum" && param.EnumValues != null)
             {
                 var isRuParam = Localization.Loc.Instance.Lang == "ru";
-                var isEntity = param.EnumValues == ConditionSchema.EntityTargetsEn
+                var isComplexExpr = argVal.Contains('(') && !argVal.StartsWith("context.");
+                var isEntity = !isComplexExpr && (param.EnumValues == ConditionSchema.EntityTargetsEn
                     || param.EnumValues == ConditionSchema.EntityTargetsRu
-                    || argVal.StartsWith("context.", StringComparison.OrdinalIgnoreCase);
+                    || argVal.StartsWith("context.", StringComparison.OrdinalIgnoreCase));
 
-                // Skip entity param if it's the default (context.Target) — only show if context.Source
-                if (isEntity && (argVal == "context.Target" || argVal == ""))
+                // Skip entity param only if it's empty (not explicitly set)
+                if (isEntity && argVal == "")
                     continue;
+
+                // Complex expressions like GetAttackWeapon(Source) → read-only text
+                if (isComplexExpr)
+                {
+                    stack.Children.Add(new TextBlock
+                    {
+                        Text = argVal, FontSize = FontScale.Of(10),
+                        Foreground = FgMuted, VerticalAlignment = VerticalAlignment.Center,
+                        Background = InputBg, Padding = new Thickness(4, 1),
+                    });
+                    continue;
+                }
 
                 // Strip enum prefix (e.g. "DamageType.Fire" → "Fire")
                 var enumPrefix = "";
@@ -312,7 +342,7 @@ public class ConditionBlocksEditor : UserControl
                 var displayVal = isEntity ? ConditionSchema.EntityFromRaw(argVal, isRuParam) : cleanVal;
                 var tumblerItems = isEntity ? ConditionSchema.GetEntityTargets(isRuParam) : param.EnumValues;
                 var tumblerDisplayItems = isEntity ? null
-                    : param.DisplayValues ?? (param.EnumValues != null ? EnumLabels.GetDisplayLabels(param.EnumValues, lang) : null);
+                    : param.DisplayValues ?? (param.EnumValues != null ? Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues) : null);
                 var capturedPrefix = enumPrefix;
                 var enumTumbler = new TumblerChipEditor
                 {
@@ -350,8 +380,7 @@ public class ConditionBlocksEditor : UserControl
             }
             else if (argVal.StartsWith("context.", StringComparison.OrdinalIgnoreCase))
             {
-                // Entity value in a non-entity param — skip if default Target
-                if (argVal == "context.Target") continue;
+                // Entity value in a non-entity param — always show if explicitly set
                 var isRuEntity = Localization.Loc.Instance.Lang == "ru";
                 var entityTumbler = new TumblerChipEditor
                 {
@@ -371,23 +400,56 @@ public class ConditionBlocksEditor : UserControl
             }
             else
             {
-                // String/unknown — small TextBox
-                var tb = new TextBox
+                // Check if this string param has a searchable list
+                var paramLower = param?.Name?.ToLowerInvariant() ?? "";
+                string[]? searchItems = paramLower switch
                 {
-                    Text = argVal, FontSize = FontScale.Of(10),
-                    Padding = new Thickness(4, 1), MinWidth = 60,
-                    Background = InputBg, CornerRadius = new CornerRadius(4),
-                    VerticalAlignment = VerticalAlignment.Center,
+                    "statusid" or "status" => BoostBlocksEditor.GlobalStatusList,
+                    "spellid" or "spell" => BoostBlocksEditor.GlobalSpellList,
+                    "passivename" or "passive" => BoostBlocksEditor.GlobalPassiveList,
+                    _ => null,
                 };
-                tb.LostFocus += (s, _) =>
+
+                if (searchItems is { Length: > 0 })
                 {
-                    if (s is TextBox t)
+                    // SearchPickerChip for status/spell
+                    var picker = new SearchPickerChip
                     {
-                        token.Args[paramIdx] = $"'{t.Text}'";
-                        SyncFromTokens(tokens);
-                    }
-                };
-                stack.Children.Add(tb);
+                        Text = argVal,
+                        Items = searchItems,
+                        Watermark = Localization.Loc.Instance.WmSearch,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+                    picker.PropertyChanged += (s, e2) =>
+                    {
+                        if (e2.Property.Name == "Text" && s is SearchPickerChip sp)
+                        {
+                            token.Args[paramIdx] = $"'{sp.Text}'";
+                            SyncFromTokens(tokens);
+                        }
+                    };
+                    stack.Children.Add(picker);
+                }
+                else
+                {
+                    // String/unknown — small TextBox
+                    var tb = new TextBox
+                    {
+                        Text = argVal, FontSize = FontScale.Of(10),
+                        Padding = new Thickness(4, 1), MinWidth = 60,
+                        Background = InputBg, CornerRadius = new CornerRadius(4),
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+                    tb.LostFocus += (s, _) =>
+                    {
+                        if (s is TextBox t)
+                        {
+                            token.Args[paramIdx] = $"'{t.Text}'";
+                            SyncFromTokens(tokens);
+                        }
+                    };
+                    stack.Children.Add(tb);
+                }
             }
         }
 

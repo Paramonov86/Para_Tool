@@ -99,9 +99,10 @@ public class TumblerChipEditor : UserControl
         PropertyChanged += (_, e) =>
         {
             if (e.Property == TextProperty) UpdateChipText();
-            if (e.Property == ItemsProperty) UpdateMinWidthFromItems();
+            if (e.Property == ItemsProperty) { UpdateMinWidthFromItems(); UpdateChipText(); }
         };
         FontScale.ScaleChanged += OnFontScaleChanged;
+        AttachedToVisualTree += (_, _) => UpdateChipText();
         UpdateChipText();
     }
 

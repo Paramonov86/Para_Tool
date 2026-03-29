@@ -284,5 +284,6 @@
 
   "LblAnd": "AND",
   "LblOr": "OR",
-  "LblNot": "NOT"
+  "LblNot": "NOT",
+  "LblThen": "THEN"
 }

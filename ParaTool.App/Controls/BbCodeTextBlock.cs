@@ -244,6 +244,13 @@ public class BbCodeTextBlock : TextBlock
             return $"[heal]{FormatDice(inner)} hit points[/heal]";
         }
 
+        // GainTemporaryHitPoints(amount) → teal heal color
+        if (param.StartsWith("GainTemporaryHitPoints(", StringComparison.OrdinalIgnoreCase))
+        {
+            var inner = param["GainTemporaryHitPoints(".Length..].TrimEnd(')');
+            return $"[heal]{FormatDice(inner)} temporary hit points[/heal]";
+        }
+
         // Distance(n)
         if (param.StartsWith("Distance(", StringComparison.OrdinalIgnoreCase))
         {

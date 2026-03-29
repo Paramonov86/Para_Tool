@@ -557,21 +557,53 @@ public partial class ConstructorViewModel : ViewModelBase
                     if (pFields.Count == 0) continue;
 
                     var passive = new PassiveDefinition { Name = pName };
+                    // Resolve display name: mod loca → vanilla loca (by name, then using chain)
                     if (pFields.TryGetValue("DisplayName", out var dn))
                     {
-                        // Load for editing language
                         var t = ResolveLoca(dn, EditingLang);
                         if (t != null) passive.DisplayName[EditingLang] = t;
-                        // Also load scan language and English
                         if (EditingLang != scanLang) { var st = ResolveLoca(dn, scanLang); if (st != null) passive.DisplayName[scanLang] = st; }
                         if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dn, "en"); if (en != null) passive.DisplayName["en"] = en; }
                     }
+                    // Fallback: try VanillaLocaService by passive name, then by using chain
+                    if (string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(EditingLang)))
+                    {
+                        var vanillaName = ResolveVanillaPassiveName(pName, pFields);
+                        if (vanillaName != null)
+                        {
+                            foreach (var lang in new[] { EditingLang, scanLang, "en" })
+                            {
+                                if (string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(lang)))
+                                {
+                                    var vt = VanillaLoca.GetDisplayName(vanillaName, lang);
+                                    if (vt != null) passive.DisplayName[lang] = vt;
+                                }
+                            }
+                        }
+                    }
+                    // Resolve description
                     if (pFields.TryGetValue("Description", out var dd))
                     {
                         var t = ResolveLoca(dd, EditingLang);
                         if (t != null) passive.Description[EditingLang] = t;
                         if (EditingLang != scanLang) { var st = ResolveLoca(dd, scanLang); if (st != null) passive.Description[scanLang] = st; }
                         if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dd, "en"); if (en != null) passive.Description["en"] = en; }
+                    }
+                    // Fallback: vanilla description
+                    if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(EditingLang)))
+                    {
+                        var vanillaName = ResolveVanillaPassiveName(pName, pFields);
+                        if (vanillaName != null)
+                        {
+                            foreach (var lang in new[] { EditingLang, scanLang, "en" })
+                            {
+                                if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(lang)))
+                                {
+                                    var vd = VanillaLoca.GetDescription(vanillaName, lang);
+                                    if (vd != null) passive.Description[lang] = vd;
+                                }
+                            }
+                        }
                     }
                     if (pFields.TryGetValue("DescriptionParams", out var dp)) passive.DescriptionParams = dp;
                     if (pFields.TryGetValue("Icon", out var icon)) passive.Icon = icon;
@@ -697,6 +729,24 @@ public partial class ConstructorViewModel : ViewModelBase
     /// <summary>
     /// Resolve handle → text, then convert BG3 XML to BB-code for editor display.
     /// </summary>
+    /// <summary>Find the vanilla passive name by walking the using chain.</summary>
+    private string? ResolveVanillaPassiveName(string name, Dictionary<string, string>? _ = null)
+    {
+        // Try current name
+        if (VanillaLoca.GetPassive(name) != null) return name;
+        // Walk using chain via raw entries
+        if (_resolver == null) return null;
+        var current = name;
+        for (int depth = 0; depth < 10; depth++)
+        {
+            if (!_resolver.AllEntries.TryGetValue(current, out var entry) || string.IsNullOrEmpty(entry.Using))
+                break;
+            current = entry.Using;
+            if (VanillaLoca.GetPassive(current) != null) return current;
+        }
+        return null;
+    }
+
     private string? ResolveLoca(string handleField, string? langOverride = null)
     {
         var raw = _locaService?.ResolveHandle(handleField, langOverride ?? EditingLang);

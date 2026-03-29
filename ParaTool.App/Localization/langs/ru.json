@@ -284,5 +284,6 @@
 
   "LblAnd": "И",
   "LblOr": "ИЛИ",
-  "LblNot": "НЕ"
+  "LblNot": "НЕ",
+  "LblThen": "ТОГДА"
 }

@@ -8,6 +8,7 @@ using Avalonia.VisualTree;
 using ParaTool.Core.Schema;
 using ParaTool.App.Services;
 using ParaTool.App.Themes;
+using ParaTool.App.Localization;
 
 namespace ParaTool.App.Controls;
 
@@ -47,6 +48,14 @@ public class BoostBlocksEditor : UserControl
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;
 
+    private static string GetBlockLabel(ParaTool.Core.Schema.BoostMapping.BlockDef def)
+    {
+        var locaKey = $"boost.{def.FuncName}";
+        var locaVal = Localization.Loc.Instance[locaKey];
+        if (locaVal != locaKey) return locaVal;
+        return Localization.Loc.Instance.Lang == "ru" ? def.LabelRu : def.Label;
+    }
+
     private static SolidColorBrush BgDefault => Themes.ThemeBrushes.InputBg;
     private static SolidColorBrush FgMuted => Themes.ThemeBrushes.TextMuted;
     private static SolidColorBrush FgLight => Themes.ThemeBrushes.TextPrimary;
@@ -63,25 +72,27 @@ public class BoostBlocksEditor : UserControl
         AttachedToVisualTree += (_, _) => TryLoadPickerLists();
     }
 
-    /// <summary>Global status/spell lists, set once by ConstructorViewModel.</summary>
+    /// <summary>Global status/spell/passive lists, set once by ConstructorViewModel.</summary>
     public static string[]? GlobalStatusList { get; set; }
     public static string[]? GlobalSpellList { get; set; }
+    public static string[]? GlobalPassiveList { get; set; }
 
     private void TryLoadPickerLists()
     {
         StatusList ??= GlobalStatusList;
         SpellList ??= GlobalSpellList;
-        if (StatusList != null && SpellList != null) return;
+        if (StatusList != null && SpellList != null && GlobalPassiveList != null) return;
         // Walk up visual tree to find ConstructorViewModel
         Control? parent = this;
         while (parent != null)
         {
             if (parent.DataContext is ViewModels.ConstructorViewModel cvm)
             {
-                StatusList ??= cvm.AllStatuses;
+                StatusList ??= [..ConditionSchema.StatusGroups, ..cvm.AllStatuses];
                 SpellList ??= cvm.AllSpells;
                 GlobalStatusList ??= StatusList;
                 GlobalSpellList ??= SpellList;
+                GlobalPassiveList ??= cvm.AllPassives;
                 return;
             }
             parent = parent.GetVisualParent() as Control;
@@ -161,7 +172,7 @@ public class BoostBlocksEditor : UserControl
         // Label
         stack.Children.Add(new TextBlock
         {
-            Text = def.Label,
+            Text = GetBlockLabel(def),
             FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = colorBrush,
             VerticalAlignment = VerticalAlignment.Center,
@@ -201,12 +212,12 @@ public class BoostBlocksEditor : UserControl
             }
             else if (param.Type == "int")
             {
-                // Integer tumbler chip
+                // Integer tumbler chip (allow -1 for infinite duration etc.)
                 var chip = new TumblerChipEditor
                 {
                     Text = value,
                     Step = 1,
-                    MinValue = 0,
+                    MinValue = -1,
                     MaxValue = 999,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
@@ -225,7 +236,7 @@ public class BoostBlocksEditor : UserControl
                 {
                     Text = value,
                     Options = param.EnumValues,
-                    Labels = EnumLabels.GetDisplayLabels(param.EnumValues, lang),
+                    Labels = Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues),
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 picker.Tag = (rawBoost, paramIdx);
@@ -244,8 +255,8 @@ public class BoostBlocksEditor : UserControl
                     ? new[] { "—" }.Concat(param.EnumValues).ToArray()
                     : param.EnumValues;
                 var displayItems = isOptional || string.IsNullOrEmpty(value)
-                    ? new[] { "—" }.Concat(EnumLabels.GetDisplayLabels(param.EnumValues, lang)).ToArray()
-                    : EnumLabels.GetDisplayLabels(param.EnumValues, lang);
+                    ? new[] { "—" }.Concat(Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues)).ToArray()
+                    : Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues);
                 var chip = new TumblerChipEditor
                 {
                     Text = string.IsNullOrEmpty(value) ? "—" : value,
@@ -332,7 +343,11 @@ public class BoostBlocksEditor : UserControl
                 var isStatus = param.Name.Contains("Status", StringComparison.OrdinalIgnoreCase);
                 var isSpell = param.Name.Contains("Spell", StringComparison.OrdinalIgnoreCase)
                               || param.Name.Contains("Resource", StringComparison.OrdinalIgnoreCase);
-                var pickerItems = isStatus ? StatusList : isSpell ? SpellList : null;
+                var isPassive = param.Name.Contains("Passive", StringComparison.OrdinalIgnoreCase);
+                var pickerItems = isStatus ? (StatusList ?? GlobalStatusList)
+                    : isSpell ? (SpellList ?? GlobalSpellList)
+                    : isPassive ? GlobalPassiveList
+                    : null;
 
                 if (pickerItems is { Length: > 0 })
                 {
@@ -482,19 +497,21 @@ public class BoostBlocksEditor : UserControl
         // Row 3: "THEN" label
         outer.Children.Add(new TextBlock
         {
-            Text = "THEN", FontSize = FontScale.Of(10), FontWeight = FontWeight.SemiBold,
+            Text = Loc.Instance["LblThen"], FontSize = FontScale.Of(10), FontWeight = FontWeight.SemiBold,
             Foreground = new SolidColorBrush(ifColor, 0.6),
             Margin = new Thickness(12, 2, 0, 0),
         });
 
         // Row 4: Embedded functor editor (live chip blocks)
+        var capturedEffect = effect;
         var functorEditor = new BoostBlocksEditor
         {
-            Text = effect,
             IsFunctorMode = true,
             Margin = new Thickness(12, 0, 0, 0),
             ClipToBounds = false,
         };
+        // Set Text after IsFunctorMode to ensure correct parsing
+        functorEditor.Text = capturedEffect;
         functorEditor.PropertyChanged += (s, e2) =>
         {
             if (e2.Property.Name == "Text" && s is BoostBlocksEditor be && !_updating)
@@ -672,7 +689,7 @@ public class BoostBlocksEditor : UserControl
 
         foreach (var def in defs)
         {
-            var item = new MenuItem { Header = def.Label, Tag = def };
+            var item = new MenuItem { Header = GetBlockLabel(def), Tag = def };
             item.Click += (_, _) =>
             {
                 var d = (BoostMapping.BlockDef)item.Tag!;
