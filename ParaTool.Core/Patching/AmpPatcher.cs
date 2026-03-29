@@ -438,11 +438,37 @@ public sealed class AmpPatcher
             if (cleaned != text) File.WriteAllText(sf, cleaned);
         }
 
-        // Append new item stats to last stat file
+        // Append new artifact stats to the SAME file where UsingBase is defined
+        // (BG3 may not resolve "using" across different stat files)
         if (newStats.Length > 0 && statFiles.Length > 0)
         {
-            var lastFile = statFiles[^1];
-            File.AppendAllText(lastFile, "\n" + newStats);
+            // Build index: StatId → which file it's in
+            var statIdToFile = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var sf in statFiles)
+            {
+                var parsed = Parsing.StatsParser.Parse(File.ReadAllText(sf));
+                foreach (var entry in parsed)
+                    statIdToFile.TryAdd(entry.Name, sf);
+            }
+
+            // Group new artifacts by target file
+            var byFile = new Dictionary<string, StringBuilder>();
+            foreach (var art in newArtifacts)
+            {
+                var compiled = ArtifactCompiler.Compile(art, false);
+                string targetFile = statIdToFile.TryGetValue(art.UsingBase, out var baseFile)
+                    ? baseFile : statFiles[^1];
+
+                if (!byFile.TryGetValue(targetFile, out var sb))
+                {
+                    sb = new StringBuilder();
+                    byFile[targetFile] = sb;
+                }
+                sb.Append(compiled.StatsText);
+            }
+
+            foreach (var (file, content) in byFile)
+                File.AppendAllText(file, "\n" + content);
         }
 
         // TreasureTable for new items is handled by the main TT patching step
@@ -642,42 +668,98 @@ public sealed class AmpPatcher
         }
     }
 
-    /// <summary>Create an individual {uuid}.lsf file for a new artifact.</summary>
+    /// <summary>
+    /// Create an individual {uuid}.lsf by cloning the parent template and replacing key fields.
+    /// This preserves Equipment/Slot/Visuals from the parent.
+    /// </summary>
     private static void CreateTemplateLsf(string lsfPath, ArtifactDefinition art)
     {
-        var resource = new LSLib.Resource();
-        // Set metadata to match BG3 Patch 3 format (same as AMP)
-        resource.Metadata = new LSLib.LSMetadata
+        // Find parent template LSF to clone from
+        var rtDir = Path.GetDirectoryName(lsfPath)!;
+        var parentLsfPath = Path.Combine(rtDir, $"{art.ParentTemplateUuid}.lsf");
+
+        LSLib.Resource resource;
+        LSLib.Node? goNode = null;
+
+        if (File.Exists(parentLsfPath))
         {
-            MajorVersion = 4,
-            MinorVersion = 8,
-            Revision = 0,
-            BuildNumber = 500
-        };
-        resource.MetadataFormat = LSLib.LSFMetadataFormat.KeysAndAdjacency;
-        var region = new LSLib.Region { Name = "Templates", RegionName = "Templates" };
-        resource.Regions["Templates"] = region;
+            // Clone parent template
+            using (var fs = File.OpenRead(parentLsfPath))
+            {
+                var reader = new LSLib.LSFReader(fs);
+                resource = reader.Read();
+            }
 
-        var goNode = new LSLib.Node { Name = "GameObjects", Parent = region };
+            // Find the GameObjects node
+            if (resource.Regions.TryGetValue("Templates", out var region) &&
+                region.Children.TryGetValue("GameObjects", out var nodes) && nodes.Count > 0)
+            {
+                goNode = nodes[0];
+            }
+        }
+        else
+        {
+            // Try _merged.lsf
+            var mergedPath = Path.Combine(rtDir, "_merged.lsf");
+            if (File.Exists(mergedPath))
+            {
+                using var fs = File.OpenRead(mergedPath);
+                var reader = new LSLib.LSFReader(fs);
+                var mergedRes = reader.Read();
 
+                if (mergedRes.Regions.TryGetValue("Templates", out var region) &&
+                    region.Children.TryGetValue("GameObjects", out var nodes))
+                {
+                    goNode = nodes.FirstOrDefault(n =>
+                        n.Attributes.TryGetValue("MapKey", out var mk) &&
+                        art.ParentTemplateUuid.Equals(mk.Value?.ToString(), StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            // Create minimal resource with cloned node
+            resource = new LSLib.Resource();
+            resource.Metadata = new LSLib.LSMetadata
+            {
+                MajorVersion = 4, MinorVersion = 8, Revision = 0, BuildNumber = 500
+            };
+            resource.MetadataFormat = LSLib.LSFMetadataFormat.KeysAndAdjacency;
+
+            var newRegion = new LSLib.Region { Name = "Templates", RegionName = "Templates" };
+            resource.Regions["Templates"] = newRegion;
+
+            if (goNode != null)
+            {
+                goNode.Parent = newRegion;
+                newRegion.AppendChild(goNode);
+            }
+        }
+
+        if (goNode == null)
+        {
+            // Fallback: create minimal node (no Equipment — slot may be wrong)
+            resource = new LSLib.Resource();
+            resource.Metadata = new LSLib.LSMetadata
+            {
+                MajorVersion = 4, MinorVersion = 8, Revision = 0, BuildNumber = 500
+            };
+            resource.MetadataFormat = LSLib.LSFMetadataFormat.KeysAndAdjacency;
+            var fallbackRegion = new LSLib.Region { Name = "Templates", RegionName = "Templates" };
+            resource.Regions["Templates"] = fallbackRegion;
+            goNode = new LSLib.Node { Name = "GameObjects", Parent = fallbackRegion };
+            goNode.Attributes["Type"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString) { Value = "item" };
+            goNode.Attributes["LevelName"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString) { Value = "" };
+            fallbackRegion.AppendChild(goNode);
+        }
+
+        // Override key fields on the cloned node
         goNode.Attributes["MapKey"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
             { Value = art.TemplateUuid };
         goNode.Attributes["Name"] = new LSLib.NodeAttribute(LSLib.AttributeType.LSString)
             { Value = art.StatId };
-        goNode.Attributes["Type"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-            { Value = "item" };
         goNode.Attributes["ParentTemplateId"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
             { Value = art.ParentTemplateUuid };
         goNode.Attributes["Stats"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
             { Value = art.StatId };
-        // Only set Icon if custom — otherwise inherit from parent template
-        if (!string.IsNullOrEmpty(art.AtlasIconMapKey))
-        {
-            goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                { Value = art.AtlasIconMapKey };
-        }
-        goNode.Attributes["LevelName"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-            { Value = "" };
         goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
         {
             Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
@@ -686,8 +768,11 @@ public sealed class AmpPatcher
         {
             Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
         };
-
-        region.AppendChild(goNode);
+        if (!string.IsNullOrEmpty(art.AtlasIconMapKey))
+        {
+            goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                { Value = art.AtlasIconMapKey };
+        }
 
         using var outFs = File.Create(lsfPath);
         var writer = new LSLib.LSFWriter(outFs);

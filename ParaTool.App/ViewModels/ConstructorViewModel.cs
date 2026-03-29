@@ -568,6 +568,12 @@ public partial class ConstructorViewModel : ViewModelBase
             if (fields.TryGetValue("Weapon Properties", out var wp)) artifact.WeaponProperties = wp;
             if (fields.TryGetValue("Spells", out var spells)) artifact.SpellsOnEquip = spells;
 
+            // Auto-calculate price from pool + rarity
+            var pool = baseItem.Entry.EffectivePool;
+            artifact.LootPool = pool;
+            var priceCat = Core.Models.PricingGrid.GetSlotCategory(pool);
+            artifact.ValueOverride = Core.Models.PricingGrid.GetPrice(priceCat, artifact.Rarity);
+
             // Resolve passives
             if (!string.IsNullOrEmpty(artifact.PassivesOnEquip))
             {

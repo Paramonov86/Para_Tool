@@ -51,7 +51,15 @@ public static class ArtifactCompiler
         if (!isOverride && !string.IsNullOrEmpty(art.TemplateUuid))
             stats.AppendLine($"data \"RootTemplate\" \"{art.TemplateUuid}\"");
         stats.AppendLine($"data \"Rarity\" \"{art.Rarity}\"");
-        stats.AppendLine($"data \"ValueOverride\" \"{art.ValueOverride}\"");
+        // Ensure price matches rarity via PricingGrid (final safety net)
+        var pool = art.LootPool ?? "Armor";
+        var priceCat = Models.PricingGrid.GetSlotCategory(pool);
+        var correctPrice = Models.PricingGrid.GetPrice(priceCat, art.Rarity);
+        var price = art.ValueOverride > 0 ? art.ValueOverride : correctPrice;
+        // If price looks like a default/stale value, use grid price
+        if (price <= 200 && art.Rarity is "Rare" or "VeryRare" or "Legendary")
+            price = correctPrice;
+        stats.AppendLine($"data \"ValueOverride\" \"{price}\"");
 
         if (art.Unique)
             stats.AppendLine("data \"Unique\" \"1\"");
@@ -60,12 +68,12 @@ public static class ArtifactCompiler
         if (art.Weight >= 0)
             stats.AppendLine($"data \"Weight\" \"{art.Weight.ToString(System.Globalization.CultureInfo.InvariantCulture)}\"");
 
-        // Armor-specific
+        // Armor-specific — skip inherited defaults to not break slot/using chain
         if (art.ArmorClass >= 0)
             stats.AppendLine($"data \"ArmorClass\" \"{art.ArmorClass}\"");
-        if (art.ArmorType != null)
+        if (!string.IsNullOrEmpty(art.ArmorType) && art.ArmorType != "None")
             stats.AppendLine($"data \"ArmorType\" \"{art.ArmorType}\"");
-        if (art.ProficiencyGroup != null)
+        if (!string.IsNullOrEmpty(art.ProficiencyGroup) && art.ProficiencyGroup != "None")
             stats.AppendLine($"data \"Proficiency Group\" \"{art.ProficiencyGroup}\"");
 
         // Weapon-specific

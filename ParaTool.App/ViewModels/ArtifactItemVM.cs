@@ -105,7 +105,21 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditRarity
     {
         get => Artifact.Rarity;
-        set { if (Artifact.Rarity == value) return; Artifact.Rarity = value; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(RarityColor)); OnPropertyChanged(nameof(RarityGradient)); OnPropertyChanged(nameof(PreviewRarityText)); }
+        set
+        {
+            if (Artifact.Rarity == value) return;
+            Artifact.Rarity = value;
+            // Auto-recalculate price based on rarity + pool
+            var pool = Artifact.LootPool ?? "Armor";
+            var cat = ParaTool.Core.Models.PricingGrid.GetSlotCategory(pool);
+            Artifact.ValueOverride = ParaTool.Core.Models.PricingGrid.GetPrice(cat, value);
+            MarkDirty();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(RarityColor));
+            OnPropertyChanged(nameof(RarityGradient));
+            OnPropertyChanged(nameof(PreviewRarityText));
+            OnPropertyChanged(nameof(EditValueOverride));
+        }
     }
 
     public string EditUsingBase => Artifact.UsingBase;
@@ -113,7 +127,16 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditPool
     {
         get => Artifact.LootPool ?? "";
-        set { Artifact.LootPool = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); }
+        set
+        {
+            Artifact.LootPool = string.IsNullOrWhiteSpace(value) ? null : value;
+            // Auto-recalculate price
+            var cat = ParaTool.Core.Models.PricingGrid.GetSlotCategory(value ?? "Armor");
+            Artifact.ValueOverride = ParaTool.Core.Models.PricingGrid.GetPrice(cat, Artifact.Rarity);
+            MarkDirty();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(EditValueOverride));
+        }
     }
 
     public bool IsThemeSelected(string theme) => Artifact.LootThemes.Contains(theme);
