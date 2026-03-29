@@ -231,7 +231,7 @@ public static class AtlasStore
             var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<AtlasMeta>(json) ?? new AtlasMeta();
         }
-        catch { return new AtlasMeta(); }
+        catch (Exception ex) { Services.AppLogger.Warn($"AtlasStore: failed to load meta: {ex.Message}"); return new AtlasMeta(); }
     }
 
     private static byte[] MD5Hash(string input)

@@ -94,12 +94,14 @@ public class ChipListEditor : UserControl
             if (e.Property == SearchItemsProperty)
                 UpdateInputVisibility();
         };
-        FontScale.ScaleChanged += () =>
+        Action scaleHandler = () =>
         {
             _input.FontSize = FontScale.Of(12);
             _addBtn.FontSize = FontScale.Of(14);
             if (!_updating) Rebuild();
         };
+        FontScale.ScaleChanged += scaleHandler;
+        DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= scaleHandler;
 
         UpdateInputVisibility();
     }

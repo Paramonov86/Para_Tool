@@ -16,6 +16,7 @@ public sealed class IconInfo
 /// <summary>
 /// Lazy icon loader and browser — extracts DDS icons from pak files.
 /// Supports individual ItemIcons and atlas slicing.
+/// Caches PAK entry lists to avoid re-reading the same PAK multiple times.
 /// </summary>
 public sealed class IconService
 {
@@ -24,6 +25,9 @@ public sealed class IconService
     private List<IconInfo>? _allIcons;
     private bool _allIconsLoaded;
     private HashSet<string>? _allIconNames;
+
+    // Cached PAK entry lists: pakPath → (entries, iconEntryIndex)
+    private readonly ConcurrentDictionary<string, IReadOnlyList<FileEntry>> _pakEntries = new(StringComparer.OrdinalIgnoreCase);
 
     public IconService(string[] pakPaths)
     {
@@ -58,9 +62,7 @@ public sealed class IconService
             if (!File.Exists(pakPath)) continue;
             try
             {
-                using var fs = File.OpenRead(pakPath);
-                var header = PakReader.ReadHeader(fs);
-                var entries = PakReader.ReadFileList(fs, header);
+                var entries = GetEntries(pakPath);
 
                 var pakName = Path.GetFileNameWithoutExtension(pakPath);
                 var source = pakName.Contains("REL_Full_Ancient", StringComparison.OrdinalIgnoreCase) ? "AMP" : pakName;
@@ -79,7 +81,10 @@ public sealed class IconService
                     _allIcons.Add(new IconInfo { Name = name, Source = source });
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"IconService.GetAllIcons failed for {pakPath}", ex);
+            }
         }
 
         _allIcons.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
@@ -140,6 +145,18 @@ public sealed class IconService
         return _allIconNames.Contains(name);
     }
 
+    /// <summary>Read and cache PAK entry list (avoids re-reading header+filelist for each icon).</summary>
+    private IReadOnlyList<FileEntry> GetEntries(string pakPath)
+    {
+        if (_pakEntries.TryGetValue(pakPath, out var cached)) return cached;
+
+        using var fs = File.OpenRead(pakPath);
+        var header = PakReader.ReadHeader(fs);
+        var entries = PakReader.ReadFileList(fs, header);
+        _pakEntries[pakPath] = entries;
+        return entries;
+    }
+
     private byte[]? LoadSingleIcon(string iconName)
     {
         foreach (var pakPath in _pakPaths)
@@ -147,9 +164,7 @@ public sealed class IconService
             if (!File.Exists(pakPath)) continue;
             try
             {
-                using var fs = File.OpenRead(pakPath);
-                var header = PakReader.ReadHeader(fs);
-                var entries = PakReader.ReadFileList(fs, header);
+                var entries = GetEntries(pakPath);
 
                 // Prefer 380x380 (ItemIcons) for quality, fallback to 144x144 (items_png)
                 var entry = entries.FirstOrDefault(e =>
@@ -163,11 +178,15 @@ public sealed class IconService
 
                 if (entry.Path != null)
                 {
+                    using var fs = File.OpenRead(pakPath);
                     var data = PakReader.ExtractFileData(fs, entry);
                     if (data.Length > 0) return data;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"IconService.LoadSingleIcon failed for {iconName} in {pakPath}", ex);
+            }
         }
         return null;
     }

@@ -101,7 +101,7 @@ public static class ArtifactStore
                 if (artifact != null)
                     result.Add(artifact);
             }
-            catch { /* skip corrupt files */ }
+            catch (Exception ex) { Services.AppLogger.Warn($"Skipping corrupt .art file {file}: {ex.Message}"); }
         }
 
         return result.OrderBy(a => a.StatId).ToList();

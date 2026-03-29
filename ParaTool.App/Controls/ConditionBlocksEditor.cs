@@ -1,4 +1,5 @@
 
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -38,6 +39,9 @@ public class ConditionBlocksEditor : UserControl
     private static SolidColorBrush FgMuted => Themes.ThemeBrushes.TextMuted;
     private static SolidColorBrush InputBg => Themes.ThemeBrushes.InputBg;
 
+    private readonly PropertyChangedEventHandler _locHandler;
+    private readonly Action _scaleHandler;
+
     public ConditionBlocksEditor()
     {
         Content = _panel;
@@ -48,9 +52,16 @@ public class ConditionBlocksEditor : UserControl
             if (e.Property == TextProperty && !_updating) Rebuild();
         };
         // Rebuild chips when UI language changes (labels need to update)
-        Loc.Instance.PropertyChanged += (_, _) => { if (!_updating) Rebuild(); };
-        FontScale.ScaleChanged += () => { if (!_updating) Rebuild(); };
-        KeyDown += (_, e) =>
+        _locHandler = (_, _) => { if (!_updating) Rebuild(); };
+        _scaleHandler = () => { if (!_updating) Rebuild(); };
+        Loc.Instance.PropertyChanged += _locHandler;
+        FontScale.ScaleChanged += _scaleHandler;
+        DetachedFromVisualTree += (_, _) =>
+        {
+            Loc.Instance.PropertyChanged -= _locHandler;
+            FontScale.ScaleChanged -= _scaleHandler;
+        };
+        AddHandler(KeyDownEvent, (_, e) =>
         {
             if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control) && _undoStack.Count > 0)
             {
@@ -60,7 +71,7 @@ public class ConditionBlocksEditor : UserControl
                 Rebuild();
                 e.Handled = true;
             }
-        };
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
     }
 
     // ── Parsed token model ─────────────────────────────────────

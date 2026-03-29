@@ -65,7 +65,9 @@ public class ChecklistPickerChip : UserControl
 
         Content = _chip;
         PropertyChanged += (_, e) => { if (e.Property == TextProperty) UpdateDisplay(); };
-        FontScale.ScaleChanged += () => _valueText.FontSize = FontScale.Of(11);
+        Action scaleHandler = () => _valueText.FontSize = FontScale.Of(11);
+        FontScale.ScaleChanged += scaleHandler;
+        DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= scaleHandler;
         UpdateDisplay();
     }
 

@@ -1,4 +1,5 @@
 
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -61,15 +62,25 @@ public class BoostBlocksEditor : UserControl
     private static SolidColorBrush FgLight => Themes.ThemeBrushes.TextPrimary;
     private static SolidColorBrush InputBg => Themes.ThemeBrushes.CardBg;
 
+    private readonly PropertyChangedEventHandler _locHandler;
+    private readonly Action _scaleHandler;
+
     public BoostBlocksEditor()
     {
         Content = _panel;
         ClipToBounds = false;
         PropertyChanged += OnPropertyChanged;
-        Localization.Loc.Instance.PropertyChanged += (_, _) => { if (!_updating) Rebuild(); };
-        FontScale.ScaleChanged += () => { if (!_updating) Rebuild(); };
+        _locHandler = (_, _) => { if (!_updating) Rebuild(); };
+        _scaleHandler = () => { if (!_updating) Rebuild(); };
+        Localization.Loc.Instance.PropertyChanged += _locHandler;
+        FontScale.ScaleChanged += _scaleHandler;
         // Auto-populate Status/Spell lists from ConstructorViewModel when attached
         AttachedToVisualTree += (_, _) => TryLoadPickerLists();
+        DetachedFromVisualTree += (_, _) =>
+        {
+            Localization.Loc.Instance.PropertyChanged -= _locHandler;
+            FontScale.ScaleChanged -= _scaleHandler;
+        };
     }
 
     /// <summary>Global status/spell/passive lists, set once by ConstructorViewModel.</summary>

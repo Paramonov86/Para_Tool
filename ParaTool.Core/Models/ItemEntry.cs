@@ -32,6 +32,9 @@ public sealed class ItemEntry
     public string? DisplayNameHandle { get; set; }
     public string? DescriptionHandle { get; set; }
 
+    // StatId of the ancestor that provided the display name (for using-chain loca resolution)
+    public string? LocaAncestorId { get; set; }
+
     // AMP item flag (native AMP items from AMP pak)
     public bool IsAmpItem { get; set; }
 

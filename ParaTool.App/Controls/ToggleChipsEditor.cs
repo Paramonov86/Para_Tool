@@ -43,6 +43,8 @@ public class ToggleChipsEditor : UserControl
     private static SolidColorBrush OnBorder => Themes.ThemeBrushes.Accent;
     private static SolidColorBrush OffBorder => Themes.ThemeBrushes.BorderSubtle;
 
+    private readonly Action _scaleHandler;
+
     public ToggleChipsEditor()
     {
         Content = _panel;
@@ -51,7 +53,9 @@ public class ToggleChipsEditor : UserControl
             if ((e.Property == TextProperty || e.Property == OptionsProperty) && !_updating)
                 Rebuild();
         };
-        FontScale.ScaleChanged += () => { if (!_updating) Rebuild(); };
+        _scaleHandler = () => { if (!_updating) Rebuild(); };
+        FontScale.ScaleChanged += _scaleHandler;
+        DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= _scaleHandler;
     }
 
     private void Rebuild()

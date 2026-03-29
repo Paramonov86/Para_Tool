@@ -125,10 +125,6 @@ public sealed class AmpPatcher
                         File.Delete(oldPath);
                 }
 
-                // Debug: log enabledModItems
-                File.WriteAllText(Path.Combine(Path.GetTempPath(), "paratool_moditems_debug.txt"),
-                    $"enabledModItems: {enabledModItems.Count}\n" +
-                    string.Join("\n", enabledModItems.Select(i => $"  {i.StatId} (Enabled={i.Enabled})")));
                 await Task.Run(() => ApplyStatOverrides(statsDir, modifiedAmpItems, enabledModItems), ct);
             }
 

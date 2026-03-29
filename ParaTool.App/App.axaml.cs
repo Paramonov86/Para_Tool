@@ -15,6 +15,9 @@ public class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        ParaTool.Core.Services.AppLogger.Init();
+        ParaTool.Core.Services.AppLogger.Info("ParaTool started");
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow

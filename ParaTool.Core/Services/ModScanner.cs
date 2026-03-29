@@ -181,7 +181,7 @@ public sealed class ModScanner
             var (whitelist, themes, rarities) = ParseTreasureTableInfo(ttData);
             return (whitelist, rarities, themes);
         }
-        catch { return (new(), new(), new()); }
+        catch (Exception ex) { AppLogger.Error("ScanTreasureTable failed", ex); return (new(), new(), new()); }
     }
 
     private ModInfo? ScanAmpPak(string ampPakPath)
@@ -818,7 +818,7 @@ public sealed class ModScanner
                 AddEntriesSafe(resolver, Parsing.StatsParser.Parse(text));
             }
         }
-        catch { }
+        catch (Exception ex) { AppLogger.Error("Failed to load AMP stats entries", ex); }
 
         // Add mod stats entries
         foreach (var mod in mods)
@@ -837,7 +837,7 @@ public sealed class ModScanner
                     AddEntriesSafe(resolver, Parsing.StatsParser.Parse(text));
                 }
             }
-            catch { }
+            catch (Exception ex) { AppLogger.Warn($"Failed to load mod stats from {mod.PakPath}: {ex.Message}"); }
         }
 
         progress?.Report(new ScanProgress { Stage = "ResolveTemplates", Percent = 65 });
@@ -880,12 +880,11 @@ public sealed class ModScanner
 
         progress?.Report(new ScanProgress { Stage = "ScanTemplates", Percent = 70 });
 
-        // Resolve UUID → display name + description from AMP pak (also get handles)
-        var (resolved, resolvedDescs) = ItemNameResolver.ResolveFromPakExtended(ampPakPath, uuidToStatIds, langCode);
+        // Resolve UUID → display name + description + handles from AMP pak
+        var (resolved, resolvedDescs, nameHandlesMap, descHandlesMap) =
+            ItemNameResolver.ResolveFromPakFull(ampPakPath, uuidToStatIds, langCode);
 
-        // Also get the raw handles for on-demand multi-lang resolution
-        Dictionary<string, string> nameHandlesMap = new(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, string> descHandlesMap = new(StringComparer.OrdinalIgnoreCase);
+        // Extract icon names from RootTemplates (separate pass — needs LSF parsing)
         Dictionary<string, string> iconNamesMap = new(StringComparer.OrdinalIgnoreCase);
         try
         {
@@ -900,16 +899,12 @@ public sealed class ModScanner
             foreach (var rtFile in rtFiles)
             {
                 var data = PakReader.ExtractFileData(hfs, rtFile);
-                var (nh, dh) = Parsing.LsfScanner.FindHandlesForUuidsEx(data, uuidsSet);
-                foreach (var (k, v) in nh) nameHandlesMap.TryAdd(k, v);
-                foreach (var (k, v) in dh) descHandlesMap.TryAdd(k, v);
-                // Extract Icon names using full LSF parser
                 var icons = RootTemplateIconExtractor.ExtractFromLsf(data);
                 foreach (var (k, v) in icons)
                     if (uuidsSet.Contains(k)) iconNamesMap.TryAdd(k, v);
             }
         }
-        catch { }
+        catch (Exception ex) { AppLogger.Error("Failed to scan AMP templates/icons", ex); }
 
         // Collect all loca entries from AMP pak
         var ampLoca = ItemNameResolver.ReadAllLocalization(ampPakPath, langCode);
@@ -934,7 +929,7 @@ public sealed class ModScanner
                 if (remainingMap.Count == 0) break;
                 try
                 {
-                    var (modNames, modDescs) = ItemNameResolver.ResolveFromPakExtended(pakPath, remainingMap, langCode);
+                    var (modNames, modDescs, modNh, modDh) = ItemNameResolver.ResolveFromPakFull(pakPath, remainingMap, langCode);
                     foreach (var (uuid, name) in modNames)
                     {
                         resolved[uuid] = name;
@@ -942,8 +937,10 @@ public sealed class ModScanner
                     }
                     foreach (var (uuid, desc) in modDescs)
                         resolvedDescs.TryAdd(uuid, desc);
+                    foreach (var (k2, v2) in modNh) nameHandlesMap.TryAdd(k2, v2);
+                    foreach (var (k2, v2) in modDh) descHandlesMap.TryAdd(k2, v2);
 
-                    // Collect mod handles
+                    // Collect mod icons
                     try
                     {
                         using var mfs = File.OpenRead(pakPath);
@@ -956,22 +953,19 @@ public sealed class ModScanner
                         foreach (var rtf in mRtFiles)
                         {
                             var rtData = PakReader.ExtractFileData(mfs, rtf);
-                            var (mnh, mdh) = Parsing.LsfScanner.FindHandlesForUuidsEx(rtData, mUuids);
-                            foreach (var (k2, v2) in mnh) nameHandlesMap.TryAdd(k2, v2);
-                            foreach (var (k2, v2) in mdh) descHandlesMap.TryAdd(k2, v2);
                             var mIcons = RootTemplateIconExtractor.ExtractFromLsf(rtData);
                             foreach (var (k2, v2) in mIcons)
                                 if (mUuids.Contains(k2)) iconNamesMap.TryAdd(k2, v2);
                         }
                     }
-                    catch { }
+                    catch (Exception ex) { AppLogger.Warn($"Failed to scan mod icons: {ex.Message}"); }
 
                     // Collect mod loca
                     var modLoca = ItemNameResolver.ReadAllLocalization(pakPath, langCode);
                     foreach (var (k, v) in modLoca)
                         masterLocaMap.TryAdd(k, v);
                 }
-                catch { }
+                catch (Exception ex) { AppLogger.Warn($"Failed to resolve mod pak {pakPath}: {ex.Message}"); }
             }
         }
 
@@ -1015,6 +1009,7 @@ public sealed class ModScanner
                         var entry = resolver.Get(current);
                         if (entry == null) break;
                         name = VanillaLocaService.GetDisplayName(entry.Name, langCode);
+                        if (name != null) item.LocaAncestorId = entry.Name;
                         current = entry.Using;
                         depth++;
                     }
@@ -1064,29 +1059,62 @@ public sealed class ModScanner
         // This enables multi-language resolution later
         if (masterLocaMap.Count > 0)
         {
-            // Build reverse map: text → handle (only for items missing handles)
+            // Build reverse maps: raw text → handle AND stripped text → handle
+            // Loca files contain <LSTag> markup that VanillaLocaService TSV doesn't have
             var reverseMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var reverseMapStripped = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var (handle, text) in masterLocaMap)
             {
                 if (!string.IsNullOrEmpty(text))
+                {
                     reverseMap.TryAdd(text, handle);
+                    var stripped = StripLsTags(text);
+                    if (stripped != text)
+                        reverseMapStripped.TryAdd(stripped, handle);
+                }
             }
 
             foreach (var item in allItems)
             {
                 if (item.DisplayNameHandle == null && item.DisplayName != null)
                 {
-                    if (reverseMap.TryGetValue(item.DisplayName, out var foundHandle))
+                    if (reverseMap.TryGetValue(item.DisplayName, out var foundHandle)
+                        || reverseMapStripped.TryGetValue(item.DisplayName, out foundHandle))
                         item.DisplayNameHandle = foundHandle;
                 }
                 if (item.DescriptionHandle == null && item.Description != null)
                 {
-                    if (reverseMap.TryGetValue(item.Description, out var foundHandle))
+                    if (reverseMap.TryGetValue(item.Description, out var foundHandle)
+                        || reverseMapStripped.TryGetValue(item.Description, out foundHandle))
                         item.DescriptionHandle = foundHandle;
                 }
             }
         }
 
+        // Diagnostic: handle coverage
+        int withHandle = allItems.Count(i => i.DisplayNameHandle != null);
+        int withName = allItems.Count(i => i.DisplayName != null);
+        int noHandleNoName = allItems.Count(i => i.DisplayNameHandle == null && i.DisplayName == null);
+        int noHandleWithName = allItems.Count(i => i.DisplayNameHandle == null && i.DisplayName != null);
+        AppLogger.Info($"Loca stats: {allItems.Count} items, {withHandle} with handle, {withName} with name, " +
+            $"{noHandleWithName} name-only (no handle), {noHandleNoName} neither");
+        // Log first few items without handles + check why reverse failed
+        foreach (var item in allItems.Where(i => i.DisplayNameHandle == null && i.DisplayName != null).Take(5))
+        {
+            var inMap = masterLocaMap.Values.Any(v => v != null &&
+                v.Equals(item.DisplayName, StringComparison.OrdinalIgnoreCase));
+            var partial = !inMap ? masterLocaMap.Values
+                .FirstOrDefault(v => v != null && v.Contains(item.DisplayName, StringComparison.OrdinalIgnoreCase)) : null;
+            AppLogger.Debug($"  No handle: {item.StatId} name=\"{item.DisplayName}\" inLocaMap={inMap} partial=\"{partial?[..Math.Min(partial?.Length ?? 0, 60)]}\"");
+        }
+
         return (resolver, masterLocaMap);
+    }
+
+    /// <summary>Strip BG3 LSTag markup from loca text, e.g. "&lt;LSTag Tooltip="..."&gt;text&lt;/LSTag&gt;" → "text"</summary>
+    private static string StripLsTags(string text)
+    {
+        if (!text.Contains('<')) return text;
+        return System.Text.RegularExpressions.Regex.Replace(text, @"<[^>]+>", "");
     }
 }

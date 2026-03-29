@@ -99,13 +99,6 @@ public static class ArtifactCompiler
         {
             var boostsStr = string.Join(";", allBoosts);
             stats.AppendLine($"data \"Boosts\" \"{boostsStr}\"");
-            File.AppendAllText(Path.Combine(Path.GetTempPath(), "paratool_compile_debug.txt"),
-                $"[{art.StatId}] Boosts={boostsStr}\n");
-        }
-        else
-        {
-            File.AppendAllText(Path.Combine(Path.GetTempPath(), "paratool_compile_debug.txt"),
-                $"[{art.StatId}] NO BOOSTS (art.Boosts=\"{art.Boosts}\", art.SpellsOnEquip=\"{art.SpellsOnEquip}\")\n");
         }
         if (!string.IsNullOrEmpty(art.PassivesOnEquip))
             stats.AppendLine($"data \"PassivesOnEquip\" \"{art.PassivesOnEquip}\"");

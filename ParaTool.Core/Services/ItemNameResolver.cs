@@ -65,7 +65,7 @@ public sealed class ItemNameResolver
                     result[uuid] = name;
             }
         }
-        catch { }
+        catch (Exception ex) { AppLogger.Error("ItemNameResolver failed", ex); }
 
         return result;
     }
@@ -76,9 +76,22 @@ public sealed class ItemNameResolver
     public static (Dictionary<string, string> names, Dictionary<string, string> descriptions)
         ResolveFromPakExtended(string pakPath, Dictionary<string, List<string>> uuidToStatIds, string langCode)
     {
+        var (names, descs, _, _) = ResolveFromPakFull(pakPath, uuidToStatIds, langCode);
+        return (names, descs);
+    }
+
+    /// <summary>
+    /// Full resolve returning names, descriptions, AND raw loca handles (for multi-language support).
+    /// </summary>
+    public static (Dictionary<string, string> names, Dictionary<string, string> descriptions,
+                    Dictionary<string, string> nameHandles, Dictionary<string, string> descHandles)
+        ResolveFromPakFull(string pakPath, Dictionary<string, List<string>> uuidToStatIds, string langCode)
+    {
         var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var descs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (uuidToStatIds.Count == 0) return (names, descs);
+        var nhOut = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var dhOut = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (uuidToStatIds.Count == 0) return (names, descs, nhOut, dhOut);
 
         try
         {
@@ -88,6 +101,10 @@ public sealed class ItemNameResolver
 
             var uuidsToFind = new HashSet<string>(uuidToStatIds.Keys, StringComparer.OrdinalIgnoreCase);
             var (nameHandles, descHandles) = ScanTemplatesForUuidsEx(fs, entries, uuidsToFind);
+
+            // Export raw handles
+            foreach (var (k, v) in nameHandles) nhOut.TryAdd(k, v);
+            foreach (var (k, v) in descHandles) dhOut.TryAdd(k, v);
 
             // Collect ALL handles to resolve
             var allHandles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -104,9 +121,9 @@ public sealed class ItemNameResolver
                 if (locaMap.TryGetValue(handle, out var desc) && !string.IsNullOrWhiteSpace(desc))
                     descs[uuid] = desc;
         }
-        catch { }
+        catch (Exception ex) { AppLogger.Error("ItemNameResolver failed", ex); }
 
-        return (names, descs);
+        return (names, descs, nhOut, dhOut);
     }
 
     /// <summary>
@@ -143,7 +160,7 @@ public sealed class ItemNameResolver
                     result.TryAdd(uid, text);
             }
         }
-        catch { }
+        catch (Exception ex) { AppLogger.Error("ItemNameResolver failed", ex); }
         return result;
     }
 

@@ -190,7 +190,7 @@ public partial class ConstructorViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SetSort(string mode) => CurrentSort = Enum.Parse<SortMode>(mode);
+    private void SetSort(string mode) { if (Enum.TryParse<SortMode>(mode, out var m)) CurrentSort = m; }
 
     [RelayCommand]
     private void ToggleSortDirection() => SortDescending = !SortDescending;
@@ -227,9 +227,11 @@ public partial class ConstructorViewModel : ViewModelBase
             var list = sorted.ToList();
             for (int i = 0; i < list.Count; i++)
             {
-                int oldIdx = group.Items.IndexOf(list[i]);
-                if (oldIdx != i)
-                    group.Items.Move(oldIdx, i);
+                if (group.Items[i] != list[i])
+                {
+                    int oldIdx = group.Items.IndexOf(list[i]);
+                    if (oldIdx > i) group.Items.Move(oldIdx, i);
+                }
             }
         }
 
@@ -467,6 +469,7 @@ public partial class ConstructorViewModel : ViewModelBase
         if (item.IsPersisted)
             ArtifactStore.Delete(item.Artifact.ArtifactId);
         SavedArtifacts.Remove(item);
+        item.Detach();
         if (SelectedArtifact == item)
             SelectedArtifact = null;
     }
@@ -475,8 +478,13 @@ public partial class ConstructorViewModel : ViewModelBase
     private void DuplicateArtifact(ArtifactItemVM? item)
     {
         if (item == null) return;
-        var json = System.Text.Json.JsonSerializer.Serialize(item.Artifact);
-        var clone = System.Text.Json.JsonSerializer.Deserialize<ArtifactDefinition>(json);
+        ArtifactDefinition? clone;
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(item.Artifact);
+            clone = System.Text.Json.JsonSerializer.Deserialize<ArtifactDefinition>(json);
+        }
+        catch { clone = null; }
         if (clone == null) return;
         clone.ArtifactId = Guid.NewGuid().ToString();
         clone.TemplateUuid = Guid.NewGuid().ToString();

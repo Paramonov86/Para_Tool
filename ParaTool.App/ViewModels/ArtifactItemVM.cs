@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -36,11 +37,16 @@ public partial class ArtifactItemVM : ObservableObject
 
     private string EditLang => GetEditingLang?.Invoke() ?? Loc.Instance.Lang;
 
+    private readonly PropertyChangedEventHandler _langHandler;
+
     public ArtifactItemVM(ArtifactDefinition artifact)
     {
         Artifact = artifact;
-        Loc.Instance.PropertyChanged += (_, _) => RefreshAll();
+        _langHandler = (_, _) => RefreshAll();
+        Loc.Instance.PropertyChanged += _langHandler;
     }
+
+    public void Detach() => Loc.Instance.PropertyChanged -= _langHandler;
 
     // === Navigator display ===
 
@@ -280,7 +286,6 @@ public partial class ArtifactItemVM : ObservableObject
         PassiveVMs.Clear();
         foreach (var p in Artifact.Passives ?? [])
         {
-            if (p?.Properties?.Contains("IsHidden", StringComparison.OrdinalIgnoreCase) ?? false) continue;
             if (p != null)
                 PassiveVMs.Add(new PassiveVM(p, this));
         }
@@ -439,11 +444,10 @@ public partial class PassiveVM : ObservableObject
             {
                 var cleaned = System.Text.RegularExpressions.Regex.Replace((value ?? "").Trim(), @"[^a-zA-Z0-9\s]", "");
                 var parts = cleaned.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length > 0)
-                {
-                    Passive.Name = "Passive_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + (p.Length > 1 ? p[1..] : "")));
-                    OnPropertyChanged(nameof(Name));
-                }
+                Passive.Name = parts.Length > 0
+                    ? "Passive_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + (p.Length > 1 ? p[1..] : "")))
+                    : "Passive_" + Guid.NewGuid().ToString("N")[..8];
+                OnPropertyChanged(nameof(Name));
             }
             OnPropertyChanged();
         }

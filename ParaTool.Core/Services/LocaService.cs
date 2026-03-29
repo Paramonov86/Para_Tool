@@ -63,7 +63,7 @@ public sealed class LocaService
                 foreach (var (handle, text) in loca)
                     combined.TryAdd(handle, text);
             }
-            catch { /* skip broken paks */ }
+            catch (Exception ex) { AppLogger.Warn($"LocaService: skipping pak {pakPath}: {ex.Message}"); }
         }
 
         if (combined.Count == 0)

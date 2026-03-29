@@ -119,9 +119,11 @@ public partial class ItemEditorViewModel : ViewModelBase
             var list = sorted.ToList();
             for (int i = 0; i < list.Count; i++)
             {
-                int oldIdx = mod.Items.IndexOf(list[i]);
-                if (oldIdx != i)
-                    mod.Items.Move(oldIdx, i);
+                if (mod.Items[i] != list[i])
+                {
+                    int oldIdx = mod.Items.IndexOf(list[i]);
+                    if (oldIdx > i) mod.Items.Move(oldIdx, i);
+                }
             }
         }
     }

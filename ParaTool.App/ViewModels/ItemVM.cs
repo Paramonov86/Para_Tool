@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ParaTool.App.Localization;
@@ -35,18 +36,22 @@ public partial class ItemVM : ObservableObject
     private readonly ItemEntry _entry;
 
     private readonly LocaService? _locaService;
+    private readonly PropertyChangedEventHandler _langHandler;
 
     public ItemVM(ItemEntry entry, LocaService? locaService = null)
     {
         _entry = entry;
         _locaService = locaService;
         _enabled = entry.Enabled;
-        _selectedPool = PoolOptions.First(o => o.Value == entry.EffectivePool);
-        _selectedRarity = RarityOptions.First(o => o.Value == entry.EffectiveRarity);
+        _selectedPool = PoolOptions.FirstOrDefault(o => o.Value == entry.EffectivePool) ?? PoolOptions[0];
+        _selectedRarity = RarityOptions.FirstOrDefault(o => o.Value == entry.EffectiveRarity) ?? RarityOptions[0];
         _selectedThemes = new ObservableCollection<string>(entry.EffectiveThemes);
 
-        Loc.Instance.PropertyChanged += (_, _) => OnLanguageChanged();
+        _langHandler = (_, _) => OnLanguageChanged();
+        Loc.Instance.PropertyChanged += _langHandler;
     }
+
+    public void Detach() => Loc.Instance.PropertyChanged -= _langHandler;
 
     private void OnLanguageChanged()
     {
@@ -67,18 +72,21 @@ public partial class ItemVM : ObservableObject
         get
         {
             var lang = Loc.Instance.Lang;
-            string name;
+            string? name = null;
+
+            // 1. Try dynamic resolve via loca handle
             if (_locaService != null && !string.IsNullOrEmpty(_entry.DisplayNameHandle))
             {
                 var resolved = _locaService.ResolveHandle(_entry.DisplayNameHandle, lang);
-                name = resolved != null ? BbCode.FromBg3Xml(resolved) : null!;
+                if (resolved != null) name = BbCode.FromBg3Xml(resolved);
             }
-            else
-            {
-                name = null!;
-            }
+
+            // 2. Try embedded vanilla loca (en/ru) — by StatId or ancestor in using-chain
             name ??= VanillaLocaService.GetDisplayName(_entry.StatId, lang)
-                ?? _entry.DisplayName ?? _entry.StatId;
+                  ?? (_entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(_entry.LocaAncestorId, lang) : null);
+
+            // 3. Static DisplayName from scan (fallback)
+            name ??= _entry.DisplayName ?? _entry.StatId;
 
             return _entry.HasArtifactOverride ? $"\U0001f527 {name}" : name;
         }

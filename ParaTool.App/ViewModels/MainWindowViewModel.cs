@@ -179,6 +179,13 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
+        _statsResolver = result.Resolver;
+        _locaMap = result.LocaMap;
+
+        // Build loca service BEFORE creating ModVMs (they need it for dynamic name resolution)
+        _locaService = new LocaService(result.PakPaths);
+        _locaService.SeedCache(Loc.Instance.Lang, result.LocaMap);
+
         var editor = new ItemEditorViewModel
         {
             AmpPakPath = result.AmpPakPath
@@ -215,12 +222,6 @@ public partial class MainWindowViewModel : ObservableObject
 
         _patcherView = editor;
         _constructorView = null; // reset on rescan
-        _statsResolver = result.Resolver;
-        _locaMap = result.LocaMap;
-
-        // Build loca service with all pak paths, seed with scan results
-        _locaService = new LocaService(result.PakPaths);
-        _locaService.SeedCache(Loc.Instance.Lang, result.LocaMap);
         // English loaded on-demand — scan LocaMap contains UI language texts only
 
         // Icon service for lazy DDS loading

@@ -102,6 +102,7 @@ public class TumblerChipEditor : UserControl
             if (e.Property == ItemsProperty) { UpdateMinWidthFromItems(); UpdateChipText(); }
         };
         FontScale.ScaleChanged += OnFontScaleChanged;
+        DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= OnFontScaleChanged;
         AttachedToVisualTree += (_, _) => UpdateChipText();
         UpdateChipText();
     }
