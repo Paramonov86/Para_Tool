@@ -468,4 +468,7 @@
   "enum.WeaponActionDC": "Weapon Action DC",
 
   "TipDefaultTab": "Set current tab as default on startup"
+,
+  "WmSearchPassive": "Add existing passive...",
+  "LblAddEmptyPassive": "Add empty passive"
 }

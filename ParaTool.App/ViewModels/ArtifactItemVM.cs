@@ -300,6 +300,39 @@ public partial class ArtifactItemVM : ObservableObject
 
     public ObservableCollection<PassiveVM> PassiveVMs { get; } = [];
 
+    public void AddExistingPassive(string passiveName, Core.Parsing.StatsResolver? resolver)
+    {
+        // Check if already added
+        if (PassiveVMs.Any(p => p.Name.Equals(passiveName, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        var passive = new Core.Artifacts.PassiveDefinition
+        {
+            Name = passiveName,
+            UsingBase = passiveName,
+            Properties = "Highlighted",
+        };
+
+        // Resolve fields from stats
+        if (resolver != null)
+        {
+            var fields = resolver.ResolveAll(passiveName);
+            if (fields.TryGetValue("Properties", out var props)) passive.Properties = props;
+            if (fields.TryGetValue("Boosts", out var boosts)) passive.Boosts = boosts;
+            if (fields.TryGetValue("BoostContext", out var ctx)) passive.BoostContext = ctx;
+            if (fields.TryGetValue("BoostConditions", out var cond)) passive.BoostConditions = cond;
+            if (fields.TryGetValue("StatsFunctors", out var sf)) passive.StatsFunctors = sf;
+            if (fields.TryGetValue("StatsFunctorContext", out var sfc)) passive.StatsFunctorContext = sfc;
+            if (fields.TryGetValue("Conditions", out var conditions)) passive.Conditions = conditions;
+            if (fields.TryGetValue("Icon", out var icon)) passive.Icon = icon;
+        }
+
+        Artifact.Passives.Add(passive);
+        PassiveVMs.Add(new PassiveVM(passive, this));
+        IsDirty = true;
+        OnPropertyChanged(nameof(HasPassives));
+    }
+
     public void AddNewPassive()
     {
         var passive = new Core.Artifacts.PassiveDefinition

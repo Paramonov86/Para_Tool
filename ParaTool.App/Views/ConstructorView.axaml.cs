@@ -59,6 +59,23 @@ public partial class ConstructorView : UserControl
         AddHandler(PointerEnteredEvent, OnIconPointerEntered, RoutingStrategies.Tunnel);
         AddHandler(PointerExitedEvent, OnIconPointerExited, RoutingStrategies.Tunnel);
 
+        // Passive picker — add existing passive when selected
+        var passivePicker = this.FindControl<SearchPickerChip>("PassivePickerChip");
+        if (passivePicker != null)
+        {
+            passivePicker.PropertyChanged += (s, e) =>
+            {
+                if (e.Property.Name != "Text" || s is not SearchPickerChip picker) return;
+                var name = picker.Text?.Trim();
+                if (string.IsNullOrEmpty(name)) return;
+                if (DataContext is ConstructorViewModel vm && vm.SelectedArtifact != null)
+                {
+                    vm.SelectedArtifact.AddExistingPassive(name, vm.StatsResolver);
+                    picker.Text = "";
+                }
+            };
+        }
+
         // Setup language selector
         var langSelector = this.FindControl<TumblerChipEditor>("LocaLangSelector");
         if (langSelector != null)
@@ -211,13 +228,16 @@ public partial class ConstructorView : UserControl
             return;
         }
 
-        // Add new passive
+        // Add new empty passive
         if (btn.Name == "AddPassiveBtn" && DataContext is ConstructorViewModel addPVm
             && addPVm.SelectedArtifact != null)
         {
             addPVm.SelectedArtifact.AddNewPassive();
             return;
         }
+
+        // Passive picker — add existing passive by name
+        if (btn.Name == "PassivePickerChip") return; // handled via PropertyChanged below
 
         // Create new artifact
         if (btn.Name == "CreateNewArtifactBtn" && DataContext is ConstructorViewModel cvm)

@@ -495,5 +495,7 @@
   "WmPassiveDesc": "Описание пассивки (BB-код)",
   "WmDescriptionLore": "Описание / лор (BB-код)",
   "LblNoIconSelected": "Иконка не выбрана",
-  "DlgSelectPng": "Выбрать PNG иконку"
+  "DlgSelectPng": "Выбрать PNG иконку",
+  "WmSearchPassive": "Добавить пассивку...",
+  "LblAddEmptyPassive": "Добавить пустую пассивку"
 }

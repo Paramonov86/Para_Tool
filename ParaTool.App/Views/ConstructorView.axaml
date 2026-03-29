@@ -382,13 +382,18 @@
                             <StackPanel Spacing="6" ClipToBounds="False">
                                 <TextBlock Text="{Binding LblPassives, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
-                                <Button Name="AddPassiveBtn"
-                                        Background="{StaticResource InputBgBrush}"
-                                        Foreground="{StaticResource AccentLightBrush}"
-                                        FontSize="{DynamicResource FontSize16}" FontWeight="Bold"
-                                        Content="+" Padding="6,0" CornerRadius="12"
-                                        BorderThickness="0" Cursor="Hand"
-                                        HorizontalAlignment="Left" Margin="0,0,0,4" />
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
+                                    <ctrl:SearchPickerChip Name="PassivePickerChip"
+                                        Items="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).AllPassives}"
+                                        Watermark="{Binding WmSearchPassive, Source={x:Static loc:Loc.Instance}}" />
+                                    <Button Name="AddPassiveBtn"
+                                            Background="{StaticResource InputBgBrush}"
+                                            Foreground="{StaticResource AccentLightBrush}"
+                                            FontSize="{DynamicResource FontSize16}" FontWeight="Bold"
+                                            Content="+" Padding="6,0" CornerRadius="12"
+                                            BorderThickness="0" Cursor="Hand"
+                                            ToolTip.Tip="{Binding LblAddEmptyPassive, Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
                                 <ItemsControl ItemsSource="{Binding PassiveVMs}" ClipToBounds="False">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="vm:PassiveVM">

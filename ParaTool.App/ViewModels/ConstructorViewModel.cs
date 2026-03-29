@@ -88,6 +88,7 @@ public partial class ConstructorViewModel : ViewModelBase
     partial void OnCurrentSortChanged(SortMode value) => ApplySort();
     partial void OnSortDescendingChanged(bool value) => ApplySort();
 
+    public StatsResolver? StatsResolver => _resolver;
     private readonly StatsResolver? _resolver;
     private readonly LocaService? _locaService;
 

@@ -253,6 +253,8 @@ public partial class Loc : ObservableObject
     public string WmDescriptionLore => this["WmDescriptionLore"];
     public string LblNoIconSelected => this["LblNoIconSelected"];
     public string DlgSelectPng => this["DlgSelectPng"];
+    public string WmSearchPassive => this["WmSearchPassive"];
+    public string LblAddEmptyPassive => this["LblAddEmptyPassive"];
 
     /// <summary>Get display labels for enum values, using loca with EnumLabels fallback.</summary>
     public string[] GetEnumDisplayLabels(string[] values)
