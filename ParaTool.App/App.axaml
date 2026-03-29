@@ -47,6 +47,18 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="/Themes/Colors.axaml" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- Default font sizes (scale 1.0); updated at runtime by MainWindow -->
+            <x:Double x:Key="FontSize10">10</x:Double>
+            <x:Double x:Key="FontSize11">11</x:Double>
+            <x:Double x:Key="FontSize12">12</x:Double>
+            <x:Double x:Key="FontSize13">13</x:Double>
+            <x:Double x:Key="FontSize14">14</x:Double>
+            <x:Double x:Key="FontSize16">16</x:Double>
+            <x:Double x:Key="FontSize18">18</x:Double>
+            <x:Double x:Key="FontSize20">20</x:Double>
+            <x:Double x:Key="FontSize22">22</x:Double>
+            <x:Double x:Key="FontSize24">24</x:Double>
+            <x:Double x:Key="DefaultFontSize">14</x:Double>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

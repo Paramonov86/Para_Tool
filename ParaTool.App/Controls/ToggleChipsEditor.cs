@@ -1,8 +1,10 @@
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using ParaTool.App.Services;
 
 namespace ParaTool.App.Controls;
 
@@ -48,6 +50,7 @@ public class ToggleChipsEditor : UserControl
             if ((e.Property == TextProperty || e.Property == OptionsProperty) && !_updating)
                 Rebuild();
         };
+        FontScale.ScaleChanged += () => { if (!_updating) Rebuild(); };
     }
 
     private void Rebuild()
@@ -67,7 +70,7 @@ public class ToggleChipsEditor : UserControl
             {
                 Content = opt,
                 Tag = opt,
-                FontSize = 11,
+                FontSize = FontScale.Of(11),
                 Padding = new Thickness(10, 4),
                 Margin = new Thickness(0, 0, 4, 4),
                 CornerRadius = new CornerRadius(10),

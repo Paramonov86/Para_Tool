@@ -1,3 +1,4 @@
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -5,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using ParaTool.App.Themes;
+using ParaTool.App.Services;
 
 namespace ParaTool.App.Controls;
 
@@ -37,7 +39,7 @@ public class SearchPickerChip : UserControl
     {
         _valueText = new TextBlock
         {
-            FontSize = 11, FontWeight = FontWeight.SemiBold,
+            FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = ThemeBrushes.TextPrimary,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
@@ -63,6 +65,7 @@ public class SearchPickerChip : UserControl
         Content = _chip;
 
         PropertyChanged += (_, e) => { if (e.Property == TextProperty) UpdateDisplay(); };
+        FontScale.ScaleChanged += () => _valueText.FontSize = FontScale.Of(11);
         UpdateDisplay();
     }
 
@@ -74,7 +77,7 @@ public class SearchPickerChip : UserControl
             ? ThemeBrushes.TextMuted : ThemeBrushes.TextPrimary;
     }
 
-    private void OpenPicker()
+    public void OpenPicker()
     {
         if (_overlay != null) return;
         if (TopLevel.GetTopLevel(this) is not Window w || w.Content is not Panel rootPanel) return;
@@ -84,8 +87,8 @@ public class SearchPickerChip : UserControl
         // Search box
         var searchBox = new TextBox
         {
-            Watermark = Watermark ?? "Search...",
-            FontSize = 13, Padding = new Thickness(10, 8),
+            Watermark = Watermark ?? Localization.Loc.Instance.WmSearch,
+            FontSize = FontScale.Of(13), Padding = new Thickness(10, 8),
             Background = ThemeBrushes.InputBg,
             Foreground = ThemeBrushes.TextPrimary,
             CornerRadius = new CornerRadius(6),

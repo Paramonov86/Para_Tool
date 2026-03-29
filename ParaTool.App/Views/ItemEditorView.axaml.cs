@@ -1,3 +1,4 @@
+
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
@@ -5,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using ParaTool.App.Localization;
 using ParaTool.App.ViewModels;
+using ParaTool.App.Services;
 
 namespace ParaTool.App.Views;
 
@@ -137,7 +139,7 @@ public partial class ItemEditorView : UserControl
             {
                 Content = Loc.Instance.ThemeName(theme),
                 IsChecked = isChecked(theme),
-                FontSize = 12,
+                FontSize = FontScale.Of(12),
                 Tag = theme
             };
             cb.IsCheckedChanged += OnThemeCheckedChanged;

@@ -7,13 +7,13 @@
 
     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16" MinWidth="400">
         <TextBlock Text="{Binding PleaseWait, Source={x:Static loc:Loc.Instance}}"
-                   FontSize="22" FontWeight="SemiBold"
+                   FontSize="{DynamicResource FontSize22}" FontWeight="SemiBold"
                    Foreground="{StaticResource GoldBrush}"
                    HorizontalAlignment="Center" />
 
         <!-- Stage text -->
         <TextBlock Text="{Binding StageText}"
-                   FontSize="14"
+                   FontSize="{DynamicResource FontSize14}"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    HorizontalAlignment="Center" />
 
@@ -30,7 +30,7 @@
                              Foreground="{StaticResource AccentBrush}"
                              Background="Transparent" />
                 <TextBlock Text="{Binding Percent, StringFormat={}{0}%}"
-                           FontSize="11" FontWeight="SemiBold"
+                           FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                            Foreground="{StaticResource TextPrimaryBrush}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center" />
@@ -41,15 +41,15 @@
         <StackPanel Spacing="4" HorizontalAlignment="Center" Margin="0,8,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
                 <TextBlock Text="{Binding ModsScanned, Source={x:Static loc:Loc.Instance}}"
-                           Foreground="{StaticResource TextMutedBrush}" FontSize="14" />
+                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize14}" />
                 <TextBlock Text="{Binding ScannedPaks}"
-                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="14" FontWeight="Bold" />
+                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="{DynamicResource FontSize14}" FontWeight="Bold" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
                 <TextBlock Text="{Binding ModsSelected, Source={x:Static loc:Loc.Instance}}"
-                           Foreground="{StaticResource SuccessBrush}" FontSize="14" />
+                           Foreground="{StaticResource SuccessBrush}" FontSize="{DynamicResource FontSize14}" />
                 <TextBlock Text="{Binding ModsFound}"
-                           Foreground="{StaticResource SuccessBrush}" FontSize="14" FontWeight="Bold" />
+                           Foreground="{StaticResource SuccessBrush}" FontSize="{DynamicResource FontSize14}" FontWeight="Bold" />
             </StackPanel>
         </StackPanel>
     </StackPanel>

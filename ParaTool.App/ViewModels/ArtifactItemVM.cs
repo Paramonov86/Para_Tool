@@ -28,9 +28,7 @@ public partial class ArtifactItemVM : ObservableObject
     /// <summary>Whether this artifact has been saved to disk at least once.</summary>
     public bool IsPersisted { get; set; }
 
-    private static readonly SolidColorBrush SelectedBg = new(Color.Parse("#3D3A4D"));
-    private static readonly SolidColorBrush NormalBg = new(Colors.Transparent);
-    public IBrush SelectionBackground => IsSelected ? SelectedBg : NormalBg;
+    public IBrush SelectionBackground => IsSelected ? Themes.ThemeBrushes.HoverBg : Brushes.Transparent;
     partial void OnIsSelectedChanged(bool value) => OnPropertyChanged(nameof(SelectionBackground));
 
     /// <summary>Reference to parent for editing language.</summary>
@@ -41,6 +39,7 @@ public partial class ArtifactItemVM : ObservableObject
     public ArtifactItemVM(ArtifactDefinition artifact)
     {
         Artifact = artifact;
+        Loc.Instance.PropertyChanged += (_, _) => RefreshAll();
     }
 
     // === Navigator display ===
@@ -55,6 +54,24 @@ public partial class ArtifactItemVM : ObservableObject
     }
 
     public IBrush RarityColor => GetRarityBrush(Artifact.Rarity);
+
+    public LinearGradientBrush RarityGradient
+    {
+        get
+        {
+            var c = GetRarityColor(Artifact.Rarity);
+            return new LinearGradientBrush
+            {
+                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+                EndPoint = new Avalonia.RelativePoint(0, 1, Avalonia.RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Color.FromArgb(50, c.R, c.G, c.B), 0),
+                    new GradientStop(Color.FromArgb(0, c.R, c.G, c.B), 1),
+                }
+            };
+        }
+    }
 
     // === Chip options ===
 
@@ -88,7 +105,7 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditRarity
     {
         get => Artifact.Rarity;
-        set { if (Artifact.Rarity == value) return; Artifact.Rarity = value; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(RarityColor)); OnPropertyChanged(nameof(PreviewRarityText)); }
+        set { if (Artifact.Rarity == value) return; Artifact.Rarity = value; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(RarityColor)); OnPropertyChanged(nameof(RarityGradient)); OnPropertyChanged(nameof(PreviewRarityText)); }
     }
 
     public string EditUsingBase => Artifact.UsingBase;
@@ -194,8 +211,11 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditBoosts
     {
         get => Artifact.Boosts;
-        set { Artifact.Boosts = value ?? ""; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(HasBoosts)); }
+        set { Artifact.Boosts = value ?? ""; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(HasBoosts)); OnPropertyChanged(nameof(PreviewBoostsText)); }
     }
+
+    public string PreviewBoostsText => ParaTool.Core.Schema.BoostMapping.FormatBoostsForPreview(
+        Artifact.Boosts, key => Localization.Loc.Instance[key]);
 
     public string EditPassivesOnEquip
     {
@@ -308,7 +328,7 @@ public partial class ArtifactItemVM : ObservableObject
     public void RefreshAll()
     {
         OnPropertyChanged(nameof(DisplayLabel));
-        OnPropertyChanged(nameof(RarityColor));
+        OnPropertyChanged(nameof(RarityColor)); OnPropertyChanged(nameof(RarityGradient));
         OnPropertyChanged(nameof(PreviewName));
         OnPropertyChanged(nameof(PreviewRarityText));
         OnPropertyChanged(nameof(PreviewSlot));
@@ -326,15 +346,9 @@ public partial class ArtifactItemVM : ObservableObject
         LoadPassivesFromArtifact();
     }
 
-    private static SolidColorBrush GetRarityBrush(string rarity) => rarity switch
-    {
-        "Common" => new(Color.Parse("#8A8494")),
-        "Uncommon" => new(Color.Parse("#2ECC71")),
-        "Rare" => new(Color.Parse("#3498DB")),
-        "VeryRare" => new(Color.Parse("#9B59B6")),
-        "Legendary" => new(Color.Parse("#C8A96E")),
-        _ => new(Color.Parse("#8A8494")),
-    };
+    private static Color GetRarityColor(string rarity) => Themes.ThemeBrushes.GetRarityColor(rarity);
+
+    private static SolidColorBrush GetRarityBrush(string rarity) => Themes.ThemeBrushes.GetRarity(rarity);
 }
 
 /// <summary>

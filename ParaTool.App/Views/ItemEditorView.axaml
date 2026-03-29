@@ -15,11 +15,11 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,12" Spacing="2">
             <TextBlock Text="{Binding IntegratorTitle, Source={x:Static loc:Loc.Instance}}"
-                       FontSize="24" FontWeight="Bold"
-                       Foreground="#B8B5C4"
+                       FontSize="{DynamicResource FontSize24}" FontWeight="Bold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
             <TextBlock Text="{Binding EditorTitle, Source={x:Static loc:Loc.Instance}}"
-                       FontSize="14"
+                       FontSize="{DynamicResource FontSize14}"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
         </StackPanel>
@@ -61,26 +61,26 @@
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <Button Content="{Binding SortByName, Source={x:Static loc:Loc.Instance}}"
                                     Command="{Binding SetSortCommand}" CommandParameter="Name"
-                                    FontSize="11" Padding="8,3" CornerRadius="4"
+                                    FontSize="{DynamicResource FontSize11}" Padding="8,3" CornerRadius="4"
                                     BorderThickness="0"
                                     Name="SortNameBtn" />
                             <Button Content="{Binding SortByRarity, Source={x:Static loc:Loc.Instance}}"
                                     Command="{Binding SetSortCommand}" CommandParameter="Rarity"
-                                    FontSize="11" Padding="8,3" CornerRadius="4"
+                                    FontSize="{DynamicResource FontSize11}" Padding="8,3" CornerRadius="4"
                                     BorderThickness="0"
                                     Name="SortRarityBtn" />
                             <Button Content="{Binding SortByTheme, Source={x:Static loc:Loc.Instance}}"
                                     Command="{Binding SetSortCommand}" CommandParameter="Theme"
-                                    FontSize="11" Padding="8,3" CornerRadius="4"
+                                    FontSize="{DynamicResource FontSize11}" Padding="8,3" CornerRadius="4"
                                     BorderThickness="0"
                                     Name="SortThemeBtn" />
                             <Button Content="{Binding SortBySlot, Source={x:Static loc:Loc.Instance}}"
                                     Command="{Binding SetSortCommand}" CommandParameter="Slot"
-                                    FontSize="11" Padding="8,3" CornerRadius="4"
+                                    FontSize="{DynamicResource FontSize11}" Padding="8,3" CornerRadius="4"
                                     BorderThickness="0"
                                     Name="SortSlotBtn" />
                             <Button Command="{Binding ToggleSortDirectionCommand}"
-                                    FontSize="13" Padding="6,2" CornerRadius="4"
+                                    FontSize="{DynamicResource FontSize13}" Padding="6,2" CornerRadius="4"
                                     Background="{StaticResource CardBgBrush}"
                                     Foreground="{StaticResource TextSecondaryBrush}"
                                     BorderThickness="0"
@@ -110,7 +110,7 @@
                                                         Foreground="{StaticResource AccentLightBrush}"
                                                         BorderThickness="0"
                                                         Padding="6,2"
-                                                        FontSize="16"
+                                                        FontSize="{DynamicResource FontSize16}"
                                                         FontWeight="Bold"
                                                         MinWidth="28"
                                                         Name="ExpandBtn"
@@ -124,7 +124,7 @@
                                                 <!-- Mod-level theme button -->
                                                 <Button Grid.Column="3"
                                                         Content="{Binding ThemesLabel, Source={x:Static loc:Loc.Instance}}"
-                                                        FontSize="10"
+                                                        FontSize="{DynamicResource FontSize10}"
                                                         Padding="6,2"
                                                         Margin="4,0"
                                                         Background="{StaticResource HoverBgBrush}"
@@ -158,17 +158,17 @@
                                                                           Margin="0,0,6,0" />
                                                                 <TextBlock Grid.Column="1"
                                                                            Text="{Binding ItemLabel}"
-                                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                                           Foreground="{Binding ItemLabelForeground}"
                                                                            FontWeight="{Binding HasDisplayName, Converter={x:Static conv:BoolToFontWeightConverter.Instance}}"
                                                                            VerticalAlignment="Center"
                                                                            TextTrimming="CharacterEllipsis"
-                                                                           FontSize="12"
+                                                                           FontSize="{DynamicResource FontSize12}"
                                                                            ToolTip.Tip="{Binding StatId}" />
                                                                 <!-- Pool selector -->
                                                                 <ComboBox Grid.Column="2"
                                                                           ItemsSource="{x:Static vm:ItemVM.PoolOptions}"
                                                                           SelectedItem="{Binding SelectedPool}"
-                                                                          FontSize="11"
+                                                                          FontSize="{DynamicResource FontSize11}"
                                                                           MinWidth="110"
                                                                           Margin="4,0"
                                                                           Padding="6,3">
@@ -183,7 +183,7 @@
                                                                           ItemsSource="{x:Static vm:ItemVM.RarityOptions}"
                                                                           SelectedItem="{Binding SelectedRarity}"
                                                                           Foreground="{Binding RarityColor}"
-                                                                          FontSize="11"
+                                                                          FontSize="{DynamicResource FontSize11}"
                                                                           FontWeight="SemiBold"
                                                                           MinWidth="110"
                                                                           Margin="4,0"
@@ -199,7 +199,7 @@
                                                                 <!-- Theme selector button -->
                                                                 <Button Grid.Column="4"
                                                                         Content="{Binding ThemesDisplay}"
-                                                                        FontSize="10"
+                                                                        FontSize="{DynamicResource FontSize10}"
                                                                         MinWidth="80"
                                                                         Padding="6,3"
                                                                         Margin="4,0"
@@ -232,64 +232,64 @@
                             Padding="12,8">
                         <StackPanel Spacing="6">
                             <TextBlock Text="{Binding ProfileLabel, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="13" FontWeight="SemiBold"
+                                       FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}" />
                             <!-- Existing profiles dropdown -->
                             <ComboBox ItemsSource="{Binding ProfileNames}"
                                       SelectedItem="{Binding SelectedProfile}"
-                                      FontSize="12"
+                                      FontSize="{DynamicResource FontSize12}"
                                       HorizontalAlignment="Stretch" />
                             <!-- New profile name input -->
                             <TextBox Text="{Binding NewProfileName}"
                                      Watermark="{Binding ProfileNewName, Source={x:Static loc:Loc.Instance}}"
-                                     FontSize="12"
+                                     FontSize="{DynamicResource FontSize12}"
                                      HorizontalAlignment="Stretch" />
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <Button Content="{Binding ProfileSave, Source={x:Static loc:Loc.Instance}}"
                                         Command="{Binding SaveProfileCommand}"
-                                        FontSize="11" Padding="10,4"
+                                        FontSize="{DynamicResource FontSize11}" Padding="10,4"
                                         Background="{StaticResource AccentBrush}"
                                         Foreground="White"
                                         CornerRadius="4" />
                                 <Button Content="{Binding ProfileDelete, Source={x:Static loc:Loc.Instance}}"
                                         Command="{Binding DeleteProfileCommand}"
-                                        FontSize="11" Padding="10,4"
-                                        Background="#33E74C3C"
-                                        Foreground="#E74C3C"
+                                        FontSize="{DynamicResource FontSize11}" Padding="10,4"
+                                        Background="#33E74C5B"
+                                        Foreground="{DynamicResource ErrorBrush}"
                                         CornerRadius="4" />
                             </StackPanel>
                             <!-- Toast notification -->
                             <Border IsVisible="{Binding ShowProfileToast}"
                                     Background="#1A2ECC71"
-                                    BorderBrush="#2ECC71"
+                                    BorderBrush="{DynamicResource SuccessBrush}"
                                     BorderThickness="1"
                                     CornerRadius="4"
                                     Padding="8,4">
                                 <TextBlock Text="{Binding ProfileToastText}"
-                                           Foreground="#2ECC71"
-                                           FontSize="11" />
+                                           Foreground="{DynamicResource SuccessBrush}"
+                                           FontSize="{DynamicResource FontSize11}" />
                             </Border>
                         </StackPanel>
                     </Border>
 
                     <!-- Missing items warning -->
                     <Border IsVisible="{Binding HasMissingItems}"
-                            Background="#33E67E22"
-                            BorderBrush="#E67E22"
+                            Background="#33F39C12"
+                            BorderBrush="{DynamicResource WarningBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12,8">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Text="{Binding MissingItemsText}"
-                                       Foreground="#E67E22"
-                                       FontSize="11"
+                                       Foreground="{DynamicResource WarningBrush}"
+                                       FontSize="{DynamicResource FontSize11}"
                                        TextWrapping="Wrap" />
                             <Button Grid.Column="1"
                                     Content="{Binding MissingItemsDismiss, Source={x:Static loc:Loc.Instance}}"
                                     Command="{Binding DismissMissingItemsCommand}"
-                                    FontSize="10" Padding="6,2"
+                                    FontSize="{DynamicResource FontSize10}" Padding="6,2"
                                     Background="Transparent"
-                                    Foreground="#E67E22"
+                                    Foreground="{DynamicResource WarningBrush}"
                                     BorderThickness="0"
                                     VerticalAlignment="Top" />
                         </Grid>
@@ -301,7 +301,7 @@
                             Padding="12,8">
                         <TextBlock Text="{Binding ModsCountText}"
                                    Foreground="White"
-                                   FontSize="12"
+                                   FontSize="{DynamicResource FontSize12}"
                                    TextWrapping="Wrap" />
                     </Border>
 
@@ -311,19 +311,19 @@
                             Padding="16,12">
                         <StackPanel Spacing="8">
                             <TextBlock Text="{Binding Instructions, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="16" FontWeight="SemiBold"
+                                       FontSize="{DynamicResource FontSize16}" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}" />
                             <TextBlock Text="{Binding InstructionStep1, Source={x:Static loc:Loc.Instance}}"
-                                       TextWrapping="Wrap" FontSize="12"
+                                       TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
                                        Foreground="{StaticResource TextSecondaryBrush}" />
                             <TextBlock Text="{Binding InstructionStep2, Source={x:Static loc:Loc.Instance}}"
-                                       TextWrapping="Wrap" FontSize="12"
+                                       TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
                                        Foreground="{StaticResource TextSecondaryBrush}" />
                             <TextBlock Text="{Binding InstructionStep3, Source={x:Static loc:Loc.Instance}}"
-                                       TextWrapping="Wrap" FontSize="12"
+                                       TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
                                        Foreground="{StaticResource TextSecondaryBrush}" />
                             <TextBlock Text="{Binding InstructionStep4, Source={x:Static loc:Loc.Instance}}"
-                                       TextWrapping="Wrap" FontSize="12"
+                                       TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
                                        Foreground="{StaticResource TextSecondaryBrush}" />
                         </StackPanel>
                     </Border>
@@ -336,7 +336,7 @@
                             IsVisible="False">
                         <StackPanel Spacing="4">
                             <TextBlock Name="ThemePopupTitle"
-                                       FontSize="13" FontWeight="SemiBold"
+                                       FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4" />
                             <ItemsControl Name="ThemeCheckboxes" />
                         </StackPanel>
@@ -356,8 +356,8 @@
                     <Button IsVisible="{Binding ShowRestoreButton}"
                             Command="{Binding RestoreAmpCommand}"
                             ToolTip.Tip="{Binding RestoreAmpTooltip, Source={x:Static loc:Loc.Instance}}"
-                            Background="#332ECC71"
-                            BorderBrush="#2ECC71"
+                            Background="#1A2ECC71"
+                            BorderBrush="{DynamicResource SuccessBrush}"
                             BorderThickness="1.5"
                             CornerRadius="8"
                             Padding="10,10"
@@ -374,7 +374,7 @@
                             Command="{Binding PatchCommand}"
                             Background="{StaticResource AccentBrush}"
                             Foreground="White"
-                            FontSize="18" FontWeight="Bold"
+                            FontSize="{DynamicResource FontSize18}" FontWeight="Bold"
                             Padding="40,12"
                             CornerRadius="8" />
                 </StackPanel>
@@ -395,7 +395,7 @@
                         <TextBlock Grid.Row="1"
                                    Text="{Binding PatchStatus}"
                                    Foreground="{StaticResource TextMutedBrush}"
-                                   FontSize="11"
+                                   FontSize="{DynamicResource FontSize11}"
                                    HorizontalAlignment="Center"
                                    Margin="0,4,0,0" />
                     </Grid>
@@ -404,18 +404,18 @@
                 <!-- Success indicator -->
                 <Border IsVisible="{Binding PatchSuccess}"
                         Background="#1A2ECC71"
-                        BorderBrush="#2ECC71"
+                        BorderBrush="{DynamicResource SuccessBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
                         Padding="20,12"
                         HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="&#x2705;"
-                                   FontSize="18"
+                                   FontSize="{DynamicResource FontSize18}"
                                    VerticalAlignment="Center" />
                         <TextBlock Text="{Binding PatchSuccessMessage}"
-                                   Foreground="#2ECC71"
-                                   FontSize="14"
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   FontSize="{DynamicResource FontSize14}"
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center" />
                     </StackPanel>
@@ -423,15 +423,15 @@
 
                 <!-- Error indicator -->
                 <Border IsVisible="{Binding PatchError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                        Background="#1AE74C3C"
-                        BorderBrush="#E74C3C"
+                        Background="#1A2ECC71"
+                        BorderBrush="{DynamicResource ErrorBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
                         Padding="20,12"
                         HorizontalAlignment="Right">
                     <TextBlock Text="{Binding PatchStatus}"
-                               Foreground="#E74C3C"
-                               FontSize="13"
+                               Foreground="{DynamicResource ErrorBrush}"
+                               FontSize="{DynamicResource FontSize13}"
                                FontWeight="SemiBold"
                                TextWrapping="Wrap"
                                MaxWidth="400" />

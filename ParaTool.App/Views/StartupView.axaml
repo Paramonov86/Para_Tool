@@ -13,14 +13,14 @@
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <TextBlock Text="{Binding ErrorMessage}"
                            Foreground="White"
-                           FontSize="14"
+                           FontSize="{DynamicResource FontSize14}"
                            VerticalAlignment="Center" />
                 <Button Name="SelectFolderBtn"
-                        Background="#CC0000"
+                        Background="{StaticResource ErrorBrush}"
                         Foreground="White"
                         CornerRadius="4"
                         Padding="8,4"
-                        FontSize="20"
+                        FontSize="{DynamicResource FontSize20}"
                         Content="&#x1F4C1;"
                         BorderThickness="0" />
             </StackPanel>

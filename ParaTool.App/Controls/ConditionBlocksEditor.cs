@@ -1,3 +1,4 @@
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -5,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using ParaTool.App.Localization;
 using ParaTool.Core.Schema;
+using ParaTool.App.Services;
 
 namespace ParaTool.App.Controls;
 
@@ -26,12 +28,13 @@ public class ConditionBlocksEditor : UserControl
     private List<CondToken> _tokens = [];
     private readonly Stack<string> _undoStack = new(); // for Ctrl+Z
 
-    private static readonly SolidColorBrush FgFunc = new(Color.Parse("#2ECC71"));
-    private static readonly SolidColorBrush BgFunc = new(Color.Parse("#1A2ECC71"));
-    private static readonly SolidColorBrush FgOp = new(Color.Parse("#F1C40F"));
-    private static readonly SolidColorBrush BgOp = new(Color.Parse("#1AF1C40F"));
-    private static readonly SolidColorBrush FgNot = new(Color.Parse("#E74C3C"));
-    private static readonly SolidColorBrush BgNot = new(Color.Parse("#1AE74C3C"));
+    private static SolidColorBrush FgFunc => Themes.ThemeBrushes.Get("SuccessBrush");
+    private static SolidColorBrush BgFunc => new(Themes.ThemeBrushes.Get("SuccessBrush").Color, 0.1);
+    private static readonly Color OpColor = Color.Parse("#F1C40F");
+    private static SolidColorBrush FgOp => new(OpColor);
+    private static SolidColorBrush BgOp => new(OpColor, 0.1);
+    private static SolidColorBrush FgNot => Themes.ThemeBrushes.Get("ErrorBrush");
+    private static SolidColorBrush BgNot => new(Themes.ThemeBrushes.Get("ErrorBrush").Color, 0.1);
     private static SolidColorBrush FgMuted => Themes.ThemeBrushes.TextMuted;
     private static SolidColorBrush InputBg => Themes.ThemeBrushes.InputBg;
 
@@ -46,6 +49,7 @@ public class ConditionBlocksEditor : UserControl
         };
         // Rebuild chips when UI language changes (labels need to update)
         Loc.Instance.PropertyChanged += (_, _) => { if (!_updating) Rebuild(); };
+        FontScale.ScaleChanged += () => { if (!_updating) Rebuild(); };
         KeyDown += (_, e) =>
         {
             if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control) && _undoStack.Count > 0)
@@ -93,7 +97,7 @@ public class ConditionBlocksEditor : UserControl
                 var connBtn = new Button
                 {
                     Content = connLabel,
-                    FontSize = 10, FontWeight = FontWeight.Bold,
+                    FontSize = FontScale.Of(10), FontWeight = FontWeight.Bold,
                     Foreground = FgOp, Background = BgOp,
                     Padding = new Thickness(6, 2), Margin = new Thickness(2),
                     CornerRadius = new CornerRadius(8),
@@ -229,7 +233,7 @@ public class ConditionBlocksEditor : UserControl
         {
             var notBtn = new Button
             {
-                Content = "NOT", FontSize = 9, FontWeight = FontWeight.Bold,
+                Content = "NOT", FontSize = FontScale.Of(9), FontWeight = FontWeight.Bold,
                 Foreground = FgNot, Background = BgNot,
                 Padding = new Thickness(4, 1), CornerRadius = new CornerRadius(4),
                 BorderThickness = new Thickness(0),
@@ -244,7 +248,7 @@ public class ConditionBlocksEditor : UserControl
         var label = ConditionLabels.GetLabel(token.FuncName, isRu);
         stack.Children.Add(new TextBlock
         {
-            Text = label, FontSize = 11, FontWeight = FontWeight.SemiBold,
+            Text = label, FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = FgFunc, VerticalAlignment = VerticalAlignment.Center,
         });
 
@@ -261,7 +265,27 @@ public class ConditionBlocksEditor : UserControl
             var argVal = pi < argCount ? token.Args[pi].Trim('\'', '"', ' ') : "";
             var paramIdx = pi;
 
-            if (param?.Type == "enum" && param.EnumValues != null)
+            if (param?.Type == "flags" && param.EnumValues != null)
+            {
+                var lang = Localization.Loc.Instance.Lang;
+                var flagsPicker = new ChecklistPickerChip
+                {
+                    Text = argVal,
+                    Options = param.EnumValues,
+                    Labels = EnumLabels.GetDisplayLabels(param.EnumValues, lang),
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                flagsPicker.PropertyChanged += (s, e) =>
+                {
+                    if (e.Property.Name == "Text" && s is ChecklistPickerChip cp)
+                    {
+                        token.Args[paramIdx] = cp.Text ?? "";
+                        SyncFromTokens(tokens);
+                    }
+                };
+                stack.Children.Add(flagsPicker);
+            }
+            else if (param?.Type == "enum" && param.EnumValues != null)
             {
                 var isRuParam = Localization.Loc.Instance.Lang == "ru";
                 var isEntity = param.EnumValues == ConditionSchema.EntityTargetsEn || param.EnumValues == ConditionSchema.EntityTargetsRu;
@@ -270,11 +294,15 @@ public class ConditionBlocksEditor : UserControl
                 if (isEntity && (argVal == "context.Target" || argVal == "" || argVal == "context.Target"))
                     continue;
 
+                var lang = Localization.Loc.Instance.Lang;
                 var displayVal = isEntity ? ConditionSchema.EntityFromRaw(argVal, isRuParam) : argVal;
                 var tumblerItems = isEntity ? ConditionSchema.GetEntityTargets(isRuParam) : param.EnumValues;
+                var tumblerDisplayItems = isEntity ? null
+                    : param.DisplayValues ?? (param.EnumValues != null ? EnumLabels.GetDisplayLabels(param.EnumValues, lang) : null);
                 var enumTumbler = new TumblerChipEditor
                 {
                     Text = displayVal, Items = tumblerItems,
+                    DisplayItems = tumblerDisplayItems,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 enumTumbler.PropertyChanged += (s, e) =>
@@ -310,7 +338,7 @@ public class ConditionBlocksEditor : UserControl
                 // String/unknown — small TextBox
                 var tb = new TextBox
                 {
-                    Text = argVal, FontSize = 10,
+                    Text = argVal, FontSize = FontScale.Of(10),
                     Padding = new Thickness(4, 1), MinWidth = 60,
                     Background = InputBg, CornerRadius = new CornerRadius(4),
                     VerticalAlignment = VerticalAlignment.Center,
@@ -341,7 +369,7 @@ public class ConditionBlocksEditor : UserControl
             };
             var addArgBtn = new Button
             {
-                Content = $"+{nextParam.Name}", FontSize = 9,
+                Content = $"+{nextParam.Name}", FontSize = FontScale.Of(9),
                 Padding = new Thickness(4, 1),
                 Background = Brushes.Transparent, Foreground = FgMuted,
                 BorderThickness = new Thickness(1), BorderBrush = FgMuted,
@@ -355,6 +383,7 @@ public class ConditionBlocksEditor : UserControl
                 var defaultVal = nextParam.Type switch
                 {
                     "enum" => nextParam.EnumValues?.FirstOrDefault() ?? "context.Target",
+                    "flags" => nextParam.EnumValues?.FirstOrDefault() ?? "",
                     "int" => "1",
                     "bool" => "true",
                     _ => "context.Target"
@@ -373,7 +402,7 @@ public class ConditionBlocksEditor : UserControl
             var argsText = string.Join(", ", token.Args);
             stack.Children.Add(new TextBlock
             {
-                Text = $"({argsText})", FontSize = 10,
+                Text = $"({argsText})", FontSize = FontScale.Of(10),
                 Foreground = FgMuted, VerticalAlignment = VerticalAlignment.Center,
             });
         }
@@ -388,7 +417,7 @@ public class ConditionBlocksEditor : UserControl
         // × remove button
         var removeBtn = new Button
         {
-            Content = "×", FontSize = 10,
+            Content = "×", FontSize = FontScale.Of(10),
             Padding = new Thickness(3, 0),
             Background = Brushes.Transparent, Foreground = FgMuted,
             BorderThickness = new Thickness(0),
@@ -419,12 +448,12 @@ public class ConditionBlocksEditor : UserControl
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         header.Children.Add(new TextBlock
         {
-            Text = "( )", FontSize = 11, FontWeight = FontWeight.Bold,
+            Text = "( )", FontSize = FontScale.Of(11), FontWeight = FontWeight.Bold,
             Foreground = FgMuted, VerticalAlignment = VerticalAlignment.Center,
         });
         var removeBtn = new Button
         {
-            Content = "×", FontSize = 10,
+            Content = "×", FontSize = FontScale.Of(10),
             Padding = new Thickness(3, 0),
             Background = Brushes.Transparent, Foreground = FgMuted,
             BorderThickness = new Thickness(0),
@@ -456,7 +485,7 @@ public class ConditionBlocksEditor : UserControl
         {
             Child = stack,
             Background = new SolidColorBrush(Themes.ThemeBrushes.BorderSubtle.Color, 0.35),
-            BorderBrush = new SolidColorBrush(Color.Parse("#8A8494")),
+            BorderBrush = Themes.ThemeBrushes.TextMuted,
             BorderThickness = new Thickness(2),
             CornerRadius = new CornerRadius(10),
             Padding = new Thickness(8, 6), Margin = new Thickness(2),
@@ -470,7 +499,7 @@ public class ConditionBlocksEditor : UserControl
     {
         var addBtn = new Button
         {
-            Content = "+", FontSize = 12, FontWeight = FontWeight.Bold,
+            Content = "+", FontSize = FontScale.Of(12), FontWeight = FontWeight.Bold,
             Padding = new Thickness(6, 2), Margin = new Thickness(2),
             CornerRadius = new CornerRadius(8),
             Background = InputBg, Foreground = FgFunc,
@@ -550,6 +579,7 @@ public class ConditionBlocksEditor : UserControl
         var args = def.Params.Select(p => p.Type switch
         {
             "enum" => $"'{p.EnumValues?.FirstOrDefault() ?? "None"}'",
+            "flags" => $"'{p.EnumValues?.FirstOrDefault() ?? "None"}'",
             "int" => "1",
             "float" => "1",
             "bool" => "true",

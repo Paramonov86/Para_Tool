@@ -12,21 +12,46 @@
         <!-- ═══════ LEFT: NAVIGATOR ═══════ -->
         <Border Grid.Column="0" Background="{StaticResource PanelBgBrush}"
                 CornerRadius="8" MinWidth="180">
-            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
                 <TextBlock Grid.Row="0"
                            Text="{Binding NavTitle, Source={x:Static loc:Loc.Instance}}"
-                           FontSize="13" FontWeight="SemiBold"
+                           FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                            Foreground="{StaticResource TextMutedBrush}"
                            HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
                 <TextBox Grid.Row="1" Text="{Binding SearchText}"
                          Watermark="{Binding NavSearch, Source={x:Static loc:Loc.Instance}}"
-                         FontSize="12" Margin="8,0,8,8" Padding="8,6" CornerRadius="6"
+                         FontSize="{DynamicResource FontSize12}" Margin="8,0,8,4" Padding="8,6" CornerRadius="6"
                          Background="{StaticResource InputBgBrush}" />
 
+                <!-- Sort bar -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="8,0,8,4" Spacing="2"
+                            HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                    <Button Content="{Binding SortByName, Source={x:Static loc:Loc.Instance}}"
+                            Command="{Binding SetSortCommand}" CommandParameter="Name"
+                            FontSize="{DynamicResource FontSize10}" Padding="6,2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextMutedBrush}"
+                            BorderThickness="0" Cursor="Hand" />
+                    <Button Content="{Binding SortByRarity, Source={x:Static loc:Loc.Instance}}"
+                            Command="{Binding SetSortCommand}" CommandParameter="Rarity"
+                            FontSize="{DynamicResource FontSize10}" Padding="6,2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextMutedBrush}"
+                            BorderThickness="0" Cursor="Hand" />
+                    <Button Content="{Binding SortBySlot, Source={x:Static loc:Loc.Instance}}"
+                            Command="{Binding SetSortCommand}" CommandParameter="Slot"
+                            FontSize="{DynamicResource FontSize10}" Padding="6,2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextMutedBrush}"
+                            BorderThickness="0" Cursor="Hand" />
+                    <Button Command="{Binding ToggleSortDirectionCommand}"
+                            FontSize="{DynamicResource FontSize10}" Padding="6,2" CornerRadius="4"
+                            Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextMutedBrush}"
+                            BorderThickness="0" Cursor="Hand"
+                            Content="↕" />
+                </StackPanel>
+
                 <!-- Saved artifacts -->
-                <StackPanel Grid.Row="2" IsVisible="{Binding HasSavedArtifacts}">
+                <StackPanel Grid.Row="3" IsVisible="{Binding HasSavedArtifacts}">
                     <TextBlock Text="{Binding NavMyItems, Source={x:Static loc:Loc.Instance}}"
-                               FontSize="11" FontWeight="SemiBold"
+                               FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                Foreground="{StaticResource AccentLightBrush}"
                                Margin="12,4,8,4" LetterSpacing="1" />
                     <ItemsControl ItemsSource="{Binding SavedArtifacts}" Margin="4,0">
@@ -52,11 +77,11 @@
                                             BorderThickness="0,0,3,0" BorderBrush="{Binding RarityColor}"
                                             Background="{Binding SelectionBackground}">
                                         <Grid RowDefinitions="Auto,Auto">
-                                            <TextBlock Text="{Binding DisplayLabel}" FontSize="13"
+                                            <TextBlock Text="{Binding DisplayLabel}" FontSize="{DynamicResource FontSize13}"
                                                        FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextPrimaryBrush}"
                                                        TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Row="1" Text="{Binding EditUsingBase}" FontSize="10"
+                                            <TextBlock Grid.Row="1" Text="{Binding EditUsingBase}" FontSize="{DynamicResource FontSize10}"
                                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
                                         </Grid>
                                     </Border>
@@ -68,7 +93,7 @@
                 </StackPanel>
 
                 <!-- Items: grouped when no search, flat when searching -->
-                <ScrollViewer Grid.Row="3">
+                <ScrollViewer Grid.Row="4">
                     <StackPanel>
                         <!-- Grouped view (no search) -->
                         <ItemsControl ItemsSource="{Binding NavGroups}" Margin="4,0"
@@ -83,9 +108,9 @@
                                                 Name="NavGroupToggle" Tag="{Binding}">
                                             <Grid ColumnDefinitions="Auto,*,Auto">
                                                 <TextBlock Text="▸"
-                                                           FontSize="12" Foreground="{StaticResource AccentLightBrush}"
+                                                           FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource AccentLightBrush}"
                                                            VerticalAlignment="Center" Width="16" />
-                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13"
+                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource FontSize13}"
                                                            FontWeight="SemiBold"
                                                            Foreground="{StaticResource TextPrimaryBrush}"
                                                            TextTrimming="CharacterEllipsis"
@@ -93,7 +118,7 @@
                                                 <Border Grid.Column="2" Background="{StaticResource CardBgBrush}"
                                                         CornerRadius="8" Padding="6,2" Margin="6,0,0,0">
                                                     <TextBlock Text="{Binding Count}"
-                                                               FontSize="10" Foreground="{StaticResource TextMutedBrush}"
+                                                               FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}"
                                                                VerticalAlignment="Center" />
                                                 </Border>
                                             </Grid>
@@ -112,7 +137,7 @@
                                                                 BorderThickness="3,0,0,0"
                                                                 BorderBrush="{Binding RarityColor}"
                                                                 Background="{StaticResource InputBgBrush}">
-                                                            <TextBlock Text="{Binding Label}" FontSize="12"
+                                                            <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FontSize12}"
                                                                        Foreground="{StaticResource TextSecondaryBrush}"
                                                                        TextWrapping="Wrap"
                                                                        ToolTip.Tip="{Binding FullLabel}" />
@@ -141,11 +166,11 @@
                                                 BorderBrush="{Binding RarityColor}"
                                                 Background="{StaticResource InputBgBrush}">
                                             <Grid RowDefinitions="Auto,Auto">
-                                                <TextBlock Text="{Binding Label}" FontSize="12"
+                                                <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FontSize12}"
                                                            Foreground="{StaticResource TextSecondaryBrush}"
                                                            TextWrapping="Wrap"
                                                            ToolTip.Tip="{Binding FullLabel}" />
-                                                <TextBlock Grid.Row="1" Text="{Binding ModName}" FontSize="10"
+                                                <TextBlock Grid.Row="1" Text="{Binding ModName}" FontSize="{DynamicResource FontSize10}"
                                                            Foreground="{StaticResource TextMutedBrush}"
                                                            Margin="0,2,0,0" />
                                             </Grid>
@@ -158,16 +183,16 @@
                 </ScrollViewer>
 
                 <!-- Support link -->
-                <Border Grid.Row="4" Background="{StaticResource CardBgBrush}"
+                <Border Grid.Row="5" Background="{StaticResource CardBgBrush}"
                         CornerRadius="6" Padding="8,6" Margin="8,6,8,8">
                     <Button Background="Transparent" BorderThickness="0"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                             Padding="0" Cursor="Hand"
                             Name="BoostyLink">
-                        <TextBlock FontSize="10" TextAlignment="Center"
+                        <TextBlock FontSize="{DynamicResource FontSize10}" TextAlignment="Center"
                                    Foreground="{StaticResource TextMutedBrush}"
                                    TextWrapping="Wrap">
-                            <Run Text="Made with " /><Run Text="&#x2764;" Foreground="#E74C3C" /><Run Text=" Support this tool" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" TextDecorations="Underline" />
+                            <Run Text="{Binding LblMadeWith, Source={x:Static loc:Loc.Instance}}" /><Run Text="&#x2764;" Foreground="{DynamicResource ErrorBrush}" /><Run Text="{Binding LblSupportTool, Source={x:Static loc:Loc.Instance}}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" TextDecorations="Underline" />
                         </TextBlock>
                     </Button>
                 </Border>
@@ -182,7 +207,7 @@
             <Grid RowDefinitions="Auto,*,Auto">
                 <TextBlock Grid.Row="0"
                            Text="{Binding ConstructorEditorTitle, Source={x:Static loc:Loc.Instance}}"
-                           FontSize="13" FontWeight="SemiBold"
+                           FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                            Foreground="{StaticResource TextMutedBrush}"
                            HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
 
@@ -192,7 +217,7 @@
                     <TextBlock Text="&#x1F4E6;" FontSize="40"
                                HorizontalAlignment="Center" Opacity="0.3" />
                     <TextBlock Text="{Binding EditorNoSelection, Source={x:Static loc:Loc.Instance}}"
-                               Foreground="{StaticResource TextMutedBrush}" FontSize="14"
+                               Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize14}"
                                HorizontalAlignment="Center"
                                TextAlignment="Center" Opacity="0.5"
                                LineHeight="22" />
@@ -204,7 +229,7 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding FieldRarity, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <WrapPanel Name="RarityChips" />
                             </StackPanel>
                         </Border>
@@ -212,7 +237,7 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding ChipSlot, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <WrapPanel Name="PoolChips" />
                             </StackPanel>
                         </Border>
@@ -220,7 +245,7 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding ChipThemes, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <WrapPanel Name="ThemeChips" />
                             </StackPanel>
                         </Border>
@@ -228,34 +253,34 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
                                 IsVisible="{Binding IsArmor}">
                             <StackPanel Spacing="6">
-                                <TextBlock Text="ARMOR" FontSize="11" FontWeight="SemiBold"
+                                <TextBlock Text="{Binding LblArmor, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
                                 <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-                                    <TextBlock Text="Armor Class" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"
+                                    <TextBlock Text="{Binding LblArmorClass, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"
                                                IsVisible="{Binding ShowArmorClass}" />
                                     <ctrl:TumblerChipEditor Grid.Column="1" Text="{Binding EditArmorClass}"
                                                            Step="1" MinValue="0" MaxValue="30"
                                                            IsVisible="{Binding ShowArmorClass}"
                                                            HorizontalAlignment="Left" />
 
-                                    <TextBlock Grid.Row="1" Text="Armor Type" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="1" Text="{Binding LblArmorType, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:TumblerChipEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditArmorType}"
                                                            Items="{x:Static vm:ArtifactItemVM.ArmorTypeOptions}"
                                                            Margin="0,6,0,0" HorizontalAlignment="Left" />
 
-                                    <TextBlock Grid.Row="2" Text="Proficiency" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="2" Text="{Binding LblProficiency, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:TumblerChipEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditProficiencyGroup}"
                                                            Items="{x:Static vm:ArtifactItemVM.ProficiencyOptions}"
                                                            Margin="0,6,0,0" HorizontalAlignment="Left" />
 
-                                    <TextBlock Grid.Row="3" Text="Weight" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="3" Text="{Binding LblWeight, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:TumblerChipEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditWeight}"
                                                            Step="0.01" Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                 </Grid>
-                                <CheckBox Content="Unique (not recommended)" Foreground="#E67E22"
-                                          IsChecked="{Binding EditUnique}" FontSize="12"
-                                          ToolTip.Tip="Unique items drop only once per playthrough. Not recommended for most items."
+                                <CheckBox Content="{Binding LblUnique, Source={x:Static loc:Loc.Instance}}" Foreground="{DynamicResource WarningBrush}"
+                                          IsChecked="{Binding EditUnique}" FontSize="{DynamicResource FontSize12}"
+                                          ToolTip.Tip="{Binding TipUnique, Source={x:Static loc:Loc.Instance}}"
                                           Margin="0,4,0,0" />
                             </StackPanel>
                         </Border>
@@ -264,32 +289,32 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
                                 IsVisible="{Binding IsWeapon}">
                             <StackPanel Spacing="6">
-                                <TextBlock Text="WEAPON" FontSize="11" FontWeight="SemiBold"
+                                <TextBlock Text="{Binding LblWeapon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
                                 <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-                                    <TextBlock Text="Damage" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding LblDamage, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
                                     <TextBox Grid.Column="1" Text="{Binding EditDamage}" Watermark="1d8"
-                                             FontSize="12" Padding="8,4" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                             FontSize="{DynamicResource FontSize12}" Padding="8,4" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
 
-                                    <TextBlock Grid.Row="1" Text="Versatile" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="1" Text="{Binding LblVersatile, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EditVersatileDamage}" Watermark="1d10"
-                                             FontSize="12" Padding="8,4" Margin="0,6,0,0" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                             FontSize="{DynamicResource FontSize12}" Padding="8,4" Margin="0,6,0,0" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
 
-                                    <TextBlock Grid.Row="2" Text="Default Boosts" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="2" Text="{Binding LblDefaultBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:BoostBlocksEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditDefaultBoosts}" Margin="0,6,0,0" />
 
-                                    <TextBlock Grid.Row="3" Text="Properties" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="3" Text="{Binding LblProperties, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:ToggleChipsEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditWeaponProperties}"
                                                                     Options="{x:Static vm:ArtifactItemVM.WeaponPropertyOptions}" Margin="0,6,0,0" />
 
-                                    <TextBlock Grid.Row="4" Text="Weight" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="4" Text="{Binding LblWeight, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:TumblerChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditWeight}"
                                                            Step="0.01" Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                 </Grid>
-                                <CheckBox Content="Unique (not recommended)" Foreground="#E67E22"
-                                          IsChecked="{Binding EditUnique}" FontSize="12"
-                                          ToolTip.Tip="Unique items drop only once per playthrough. Not recommended for most items."
+                                <CheckBox Content="{Binding LblUnique, Source={x:Static loc:Loc.Instance}}" Foreground="{DynamicResource WarningBrush}"
+                                          IsChecked="{Binding EditUnique}" FontSize="{DynamicResource FontSize12}"
+                                          ToolTip.Tip="{Binding TipUnique, Source={x:Static loc:Loc.Instance}}"
                                           Margin="0,4,0,0" />
                             </StackPanel>
                         </Border>
@@ -298,7 +323,7 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="8">
                                 <TextBlock Text="{Binding LblIcon, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="12" FontWeight="SemiBold"
+                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
                                 <Grid ColumnDefinitions="*,Auto">
                                     <!-- Browse existing -->
@@ -313,7 +338,7 @@
                                                 <Image Source="{Binding IconBitmap}" Stretch="UniformToFill" />
                                             </Border>
                                             <TextBlock Text="{Binding Artifact.AtlasIconMapKey, FallbackValue='Browse icons...'}"
-                                                       FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                                                       FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource TextSecondaryBrush}"
                                                        VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
@@ -322,8 +347,8 @@
                                             Background="{StaticResource CardBgBrush}"
                                             BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}"
                                             CornerRadius="6" Padding="12,6" Cursor="Hand"
-                                            ToolTip.Tip="Upload custom PNG icon (coming soon)">
-                                        <TextBlock Text="Upload PNG" FontSize="11"
+                                            ToolTip.Tip="{Binding TipUploadPng, Source={x:Static loc:Loc.Instance}}">
+                                        <TextBlock Text="{Binding LblUploadPng, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}"
                                                    Foreground="{StaticResource TextMutedBrush}" />
                                     </Button>
                                 </Grid>
@@ -334,42 +359,26 @@
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding CardMechanics, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"
-                                           ToolTip.Tip="Boosts, statuses and spells applied when item is equipped" />
+                                           FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1"
+                                           ToolTip.Tip="{Binding LblCardMechanics, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding LblBoosts, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                                           FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
                                 <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
                                 <TextBlock Text="{Binding LblStatuses, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <ctrl:ChipListEditor Text="{Binding EditStatusOnEquip}" ChipColor="#E67E22" />
-                                    <Button Grid.Column="1" Content="+" FontSize="12" FontWeight="Bold"
-                                            Padding="8,4" Margin="4,0,0,0" CornerRadius="4"
-                                            Background="{StaticResource CardBgBrush}"
-                                            Foreground="{StaticResource AccentLightBrush}"
-                                            BorderThickness="0" Cursor="Hand"
-                                            Name="AddStatusBtn"
-                                            ToolTip.Tip="Browse statuses" />
-                                </Grid>
+                                           FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
+                                <ctrl:ChipListEditor Text="{Binding EditStatusOnEquip}" ChipColor="#E67E22"
+                                                      SearchItems="{ReflectionBinding DataContext.AllStatuses, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                 <TextBlock Text="{Binding LblSpells, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <ctrl:ChipListEditor Text="{Binding EditSpellsOnEquip}" ChipColor="#9B59B6" />
-                                    <Button Grid.Column="1" Content="+" FontSize="12" FontWeight="Bold"
-                                            Padding="8,4" Margin="4,0,0,0" CornerRadius="4"
-                                            Background="{StaticResource CardBgBrush}"
-                                            Foreground="{StaticResource AccentLightBrush}"
-                                            BorderThickness="0" Cursor="Hand"
-                                            Name="AddSpellBtn"
-                                            ToolTip.Tip="Browse spells" />
-                                </Grid>
+                                           FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
+                                <ctrl:ChipListEditor Text="{Binding EditSpellsOnEquip}" ChipColor="#9B59B6"
+                                                      SearchItems="{ReflectionBinding DataContext.AllSpells, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                             </StackPanel>
                         </Border>
                         <!-- Passives -->
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
                                 ClipToBounds="False">
                             <StackPanel Spacing="6" ClipToBounds="False">
-                                <TextBlock Text="PASSIVES" FontSize="11" FontWeight="SemiBold"
+                                <TextBlock Text="{Binding LblPassives, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
                                 <ItemsControl ItemsSource="{Binding PassiveVMs}" ClipToBounds="False">
                                     <ItemsControl.ItemTemplate>
@@ -381,9 +390,9 @@
                                                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                                                             Padding="0" Cursor="Hand" Name="PassiveToggleBtn" Tag="{Binding}">
                                                         <Grid ColumnDefinitions="Auto,*">
-                                                            <TextBlock Text="▸" FontSize="12" Foreground="{StaticResource AccentLightBrush}"
+                                                            <TextBlock Text="▸" FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource AccentLightBrush}"
                                                                        VerticalAlignment="Center" Margin="0,0,6,0" Width="12" />
-                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"
+                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
                                                                        Foreground="{StaticResource GoldBrush}"
                                                                        ToolTip.Tip="{Binding StatName}" />
                                                         </Grid>
@@ -391,30 +400,30 @@
                                                     <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0" ClipToBounds="False">
                                                         <!-- Permanent boosts section -->
                                                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
-                                                                BorderBrush="#2ECC71" BorderThickness="2,0,0,0">
+                                                                BorderBrush="{DynamicResource SuccessBrush}" BorderThickness="2,0,0,0">
                                                             <StackPanel Spacing="3">
-                                                                <TextBlock Text="Permanent Boosts" FontSize="10" FontWeight="SemiBold" Foreground="#2ECC71" />
+                                                                <TextBlock Text="{Binding LblPermanentBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{DynamicResource SuccessBrush}" />
                                                                 <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
                                                             </StackPanel>
                                                         </Border>
 
                                                         <!-- Trigger-based section -->
                                                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
-                                                                BorderBrush="#E67E22" BorderThickness="2,0,0,0"
+                                                                BorderBrush="{DynamicResource WarningBrush}" BorderThickness="2,0,0,0"
                                                                 ClipToBounds="False">
                                                             <StackPanel Spacing="3" ClipToBounds="False">
-                                                                <TextBlock Text="Trigger → Condition → Action" FontSize="10" FontWeight="SemiBold" Foreground="#E67E22" />
+                                                                <TextBlock Text="{Binding LblTriggerCondAction, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{DynamicResource WarningBrush}" />
                                                                 <Grid ColumnDefinitions="60,*" RowDefinitions="Auto,Auto,Auto" ClipToBounds="False">
-                                                                    <TextBlock Text="When" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                                    <TextBlock Text="{Binding LblWhen, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
                                                                     <ctrl:ChecklistPickerChip Grid.Column="1" Text="{Binding EditStatsFunctorContext}"
                                                                                           Options="{x:Static vm:PassiveVM.TriggerOptions}"
                                                                                           Labels="{x:Static vm:PassiveVM.TriggerLabels}"
                                                                                           Margin="0" />
 
-                                                                    <TextBlock Grid.Row="1" Text="If" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                                                    <TextBlock Grid.Row="1" Text="{Binding LblIf, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
                                                                     <ctrl:ConditionBlocksEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditConditions}" Margin="0,3,0,0" />
 
-                                                                    <TextBlock Grid.Row="2" Text="Do" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                                                    <TextBlock Grid.Row="2" Text="{Binding LblDo, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
                                                                     <ctrl:BoostBlocksEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditStatsFunctors}" IsFunctorMode="True" Margin="0,3,0,0" />
                                                                 </Grid>
                                                             </StackPanel>
@@ -422,8 +431,8 @@
 
                                                         <!-- Context for boosts -->
                                                         <Grid ColumnDefinitions="60,*" IsVisible="{Binding EditBoostContext, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                            <TextBlock Text="Context" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Grid.Column="1" Text="{Binding EditBoostContext}" FontSize="11" Padding="6,3"
+                                                            <TextBlock Text="{Binding LblContext, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Grid.Column="1" Text="{Binding EditBoostContext}" FontSize="{DynamicResource FontSize11}" Padding="6,3"
                                                                      Background="{StaticResource InputBgBrush}" CornerRadius="3" />
                                                         </Grid>
                                                     </StackPanel>
@@ -437,30 +446,30 @@
                         <!-- Create new artifact -->
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12">
                             <StackPanel Spacing="8">
-                                <TextBlock Text="CREATE NEW ITEM" FontSize="11" FontWeight="SemiBold"
+                                <TextBlock Text="{Binding LblCreateNewItem, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextMutedBrush}" LetterSpacing="1" />
 
                                 <!-- Based on -->
                                 <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <TextBlock Text="Based on:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding DisplayLabel}" FontSize="11"
+                                    <TextBlock Text="{Binding LblBasedOn, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding DisplayLabel}" FontSize="{DynamicResource FontSize11}"
                                                Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"
                                                ToolTip.Tip="{Binding EditUsingBase}" />
                                 </StackPanel>
 
                                 <!-- Name input -->
                                 <TextBox Name="NewArtifactNameInput"
-                                         Watermark="Enter name for your new item..."
-                                         FontSize="12" Padding="8,6"
+                                         Watermark="{Binding WmNewItemName, Source={x:Static loc:Loc.Instance}}"
+                                         FontSize="{DynamicResource FontSize12}" Padding="8,6"
                                          Background="{StaticResource InputBgBrush}" CornerRadius="4" />
 
                                 <!-- Create button -->
                                 <Button Background="{StaticResource AccentBrush}" Foreground="White"
-                                        FontSize="13" FontWeight="SemiBold"
+                                        FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                                         Padding="16,8" CornerRadius="6" Cursor="Hand"
                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                         Name="CreateNewArtifactBtn">
-                                    <TextBlock Text="Create as new artifact" />
+                                    <TextBlock Text="{Binding BtnCreateArtifact, Source={x:Static loc:Loc.Instance}}" />
                                 </Button>
                             </StackPanel>
                         </Border>
@@ -472,16 +481,16 @@
                             HorizontalAlignment="Center" Margin="0,8,0,12"
                             IsVisible="{Binding IsArtifactSelected}">
                     <Button Command="{Binding SaveArtifactCommand}"
-                            Background="#2ECC71" Foreground="White"
-                            FontSize="14" FontWeight="Bold"
+                            Background="{DynamicResource SuccessBrush}" Foreground="White"
+                            FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
                             Padding="30,10" CornerRadius="8" Cursor="Hand">
                         <TextBlock Text="{Binding BtnSave, Source={x:Static loc:Loc.Instance}}" />
                     </Button>
                     <Button Command="{Binding ResetArtifactCommand}"
-                            Background="#1AE74C3C" Foreground="#E74C3C"
-                            FontSize="14" FontWeight="Bold"
+                            Background="{DynamicResource ErrorBrush}" Foreground="White"
+                            FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
                             Padding="30,10" CornerRadius="8" Cursor="Hand"
-                            BorderBrush="#55E74C3C" BorderThickness="1.5">
+                            BorderThickness="0">
                         <TextBlock Text="{Binding BtnReset, Source={x:Static loc:Loc.Instance}}" />
                     </Button>
                 </StackPanel>
@@ -496,7 +505,7 @@
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
                 <TextBlock Grid.Row="0"
                            Text="{Binding ConstructorPreviewTitle, Source={x:Static loc:Loc.Instance}}"
-                           FontSize="13" FontWeight="SemiBold"
+                           FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                            Foreground="{StaticResource TextMutedBrush}"
                            HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
 
@@ -504,107 +513,109 @@
                 <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="8,0,8,6">
                     <ctrl:TumblerChipEditor Name="LocaLangSelector" HorizontalAlignment="Left" />
                     <Button Grid.Column="2" Name="ToggleCodeViewBtn"
-                            Content="&lt;/&gt;" FontSize="11" FontWeight="Bold"
+                            FontSize="{DynamicResource FontSize14}"
                             Padding="8,4" CornerRadius="6" Cursor="Hand"
                             Background="{StaticResource CardBgBrush}"
                             Foreground="{StaticResource TextMutedBrush}"
                             BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}"
-                            ToolTip.Tip="Toggle BB-code editor / preview" />
+                            ToolTip.Tip="{Binding TipToggleCodePreview, Source={x:Static loc:Loc.Instance}}" />
                 </Grid>
 
                 <!-- Loca warning -->
                 <Border Grid.Row="2"
                         IsVisible="{Binding LocaWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                        Background="#33E67E22" BorderBrush="#E67E22" BorderThickness="1"
+                        Background="#33F39C12" BorderBrush="{DynamicResource WarningBrush}" BorderThickness="1"
                         CornerRadius="4" Padding="8,4" Margin="8,0,8,4">
-                    <TextBlock Text="{Binding LocaWarning}" FontSize="11" Foreground="#E67E22" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding LocaWarning}" FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" />
                 </Border>
 
                 <!-- BB-code toolbar -->
                 <WrapPanel Grid.Row="3" Name="BbToolbar" Margin="8,0,8,6">
-                    <Button Content="B" Tag="b" Classes="BbBtn" FontSize="11" FontWeight="Bold"
+                    <Button Content="B" Tag="b" Classes="BbBtn" FontSize="{DynamicResource FontSize11}" FontWeight="Bold"
                             Padding="6,3" Margin="2" CornerRadius="4" MinWidth="28"
                             Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextPrimaryBrush}"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Bold text [b]...[/b]" />
-                    <Button Content="I" Tag="i" Classes="BbBtn" FontSize="11" FontStyle="Italic"
+                            ToolTip.Tip="{Binding BbTipBold, Source={x:Static loc:Loc.Instance}}" />
+                    <Button Content="I" Tag="i" Classes="BbBtn" FontSize="{DynamicResource FontSize11}" FontStyle="Italic"
                             Padding="6,3" Margin="2" CornerRadius="4" MinWidth="28"
                             Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextPrimaryBrush}"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Italic text [i]...[/i]" />
-                    <Button Content="Status" Tag="status" Classes="BbBtn" FontSize="10"
+                            ToolTip.Tip="{Binding BbTipItalic, Source={x:Static loc:Loc.Instance}}" />
+                    <Button Content="Status" Tag="status" Classes="BbBtn" FontSize="{DynamicResource FontSize10}"
                             Padding="6,3" Margin="2" CornerRadius="4"
-                            Background="{StaticResource CardBgBrush}" Foreground="#E74C3C"
+                            Background="{StaticResource CardBgBrush}" Foreground="{DynamicResource ErrorBrush}"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Status tooltip. Wraps text as [status=ID]text[/status]" />
-                    <Button Content="Tooltip" Tag="tip" Classes="BbBtn" FontSize="10"
+                            ToolTip.Tip="{Binding BbTipStatus, Source={x:Static loc:Loc.Instance}}" />
+                    <Button Content="Tooltip" Tag="tip" Classes="BbBtn" FontSize="{DynamicResource FontSize10}"
                             Padding="6,3" Margin="2" CornerRadius="4"
-                            Background="{StaticResource CardBgBrush}" Foreground="#87CEEB"
+                            Background="{StaticResource CardBgBrush}" Foreground="{DynamicResource InfoBrush}"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Game tooltip (AC, Saving Throw, etc). Wraps as [tip=Name]text[/tip]" />
-                    <Button Content="Spell" Tag="spell" Classes="BbBtn" FontSize="10"
+                            ToolTip.Tip="{Binding BbTipTooltip, Source={x:Static loc:Loc.Instance}}" />
+                    <Button Content="Spell" Tag="spell" Classes="BbBtn" FontSize="{DynamicResource FontSize10}"
                             Padding="6,3" Margin="2" CornerRadius="4"
-                            Background="{StaticResource CardBgBrush}" Foreground="#9B59B6"
+                            Background="{StaticResource CardBgBrush}" Foreground="{DynamicResource RarityVeryRareBrush}"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Spell/ability link. Wraps as [spell=SpellId]text[/spell]" />
-                    <Button Content="Passive" Tag="passive" Classes="BbBtn" FontSize="10"
+                            ToolTip.Tip="{Binding BbTipSpell, Source={x:Static loc:Loc.Instance}}" />
+                    <Button Content="Passive" Tag="passive" Classes="BbBtn" FontSize="{DynamicResource FontSize10}"
                             Padding="6,3" Margin="2" CornerRadius="4"
-                            Background="{StaticResource CardBgBrush}" Foreground="#2ECC71"
+                            Background="{StaticResource CardBgBrush}" Foreground="{DynamicResource SuccessBrush}"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Passive link. Wraps as [passive=ID]text[/passive]" />
-                    <Button Content="Resource" Tag="resource" Classes="BbBtn" FontSize="10"
+                            ToolTip.Tip="{Binding BbTipPassive, Source={x:Static loc:Loc.Instance}}" />
+                    <Button Content="Resource" Tag="resource" Classes="BbBtn" FontSize="{DynamicResource FontSize10}"
                             Padding="6,3" Margin="2" CornerRadius="4"
                             Background="{StaticResource CardBgBrush}" Foreground="#F1C40F"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Action resource (Ki, Spell Slot, etc). Wraps as [resource=ID]text[/resource]" />
-                    <Button Content="[p]" Tag="p" Classes="BbBtn" FontSize="10"
+                            ToolTip.Tip="{Binding BbTipResource, Source={x:Static loc:Loc.Instance}}" />
+                    <Button Content="[p]" Tag="p" Classes="BbBtn" FontSize="{DynamicResource FontSize10}"
                             Padding="6,3" Margin="2" CornerRadius="4"
-                            Background="{StaticResource CardBgBrush}" Foreground="#E67E22"
+                            Background="{StaticResource CardBgBrush}" Foreground="{DynamicResource WarningBrush}"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Parameter placeholder [p1] — replaced by DescriptionParams value at runtime" />
-                    <Button Content="BR" Tag="br" Classes="BbBtn" FontSize="10"
+                            ToolTip.Tip="{Binding BbTipParam, Source={x:Static loc:Loc.Instance}}" />
+                    <Button Content="BR" Tag="br" Classes="BbBtn" FontSize="{DynamicResource FontSize10}"
                             Padding="6,3" Margin="2" CornerRadius="4"
                             Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextMutedBrush}"
                             BorderThickness="0" Cursor="Hand"
-                            ToolTip.Tip="Line break [br]" />
+                            ToolTip.Tip="{Binding BbTipLineBreak, Source={x:Static loc:Loc.Instance}}" />
                 </WrapPanel>
 
                 <!-- Tooltip preview (inline editable) -->
                 <ScrollViewer Grid.Row="4" IsVisible="{Binding IsArtifactSelected}" Margin="4">
-                    <Border Background="{StaticResource AppBgBrush}" CornerRadius="10"
+                    <Border Background="{DynamicResource AppBgBrush}" CornerRadius="10"
                             BorderBrush="{Binding RarityColor}"
                             BorderThickness="3,0,0,0"
                             DataContext="{Binding SelectedArtifact}">
                         <StackPanel>
-                            <!-- Top: Icon (right) + Name (left) -->
-                            <Grid ColumnDefinitions="*,Auto" Margin="18,14,14,0">
-                                <StackPanel Grid.Column="0" VerticalAlignment="Top">
-                                    <!-- Name (editable) -->
-                                    <TextBox Name="LocaDisplayName"
-                                             Text="{Binding EditDisplayName}" Watermark="Item Name"
-                                             FontSize="18" FontWeight="Bold"
-                                             Foreground="{Binding RarityColor}"
-                                             Background="Transparent" BorderThickness="0"
-                                             Padding="0" TextWrapping="Wrap" />
-                                    <!-- Rarity + Type -->
-                                    <TextBlock Text="{Binding PreviewSubtitle}" FontSize="12"
-                                               Foreground="{Binding RarityColor}" Margin="0,2,0,0" />
-                                </StackPanel>
-                                <!-- Icon (large) -->
-                                <Border Grid.Column="1" Width="160" Height="160"
-                                        CornerRadius="8" ClipToBounds="True"
-                                        Background="Transparent"
-                                        Margin="8,0,0,0"
-                                        IsVisible="{Binding HasIcon}">
-                                    <Image Source="{Binding IconBitmap}" Stretch="Uniform" />
-                                </Border>
-                            </Grid>
+                            <!-- Top: Icon (right) + Name (left) + rarity gradient -->
+                            <Border Background="{Binding RarityGradient}" CornerRadius="10,0,0,0">
+                                <Grid ColumnDefinitions="*,Auto" Margin="18,14,14,0">
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                                        <!-- Name (editable) -->
+                                        <TextBox Name="LocaDisplayName"
+                                                 Text="{Binding EditDisplayName}" Watermark="{Binding WmItemName, Source={x:Static loc:Loc.Instance}}"
+                                                 FontSize="{DynamicResource FontSize18}" FontWeight="Bold"
+                                                 Foreground="{Binding RarityColor}"
+                                                 Background="Transparent" BorderThickness="0"
+                                                 Padding="0" TextWrapping="Wrap" />
+                                        <!-- Rarity + Type -->
+                                        <TextBlock Text="{Binding PreviewSubtitle}" FontSize="{DynamicResource FontSize12}"
+                                                   Foreground="{Binding RarityColor}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                    <!-- Icon (large) -->
+                                    <Border Grid.Column="1" Width="200" Height="200"
+                                            CornerRadius="8" ClipToBounds="True"
+                                            Background="Transparent"
+                                            Margin="8,0,0,0"
+                                            IsVisible="{Binding HasIcon}">
+                                        <Image Source="{Binding IconBitmap}" Stretch="Uniform" />
+                                    </Border>
+                                </Grid>
+                            </Border>
 
-                            <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="12,10" />
+                            <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="12,10" />
 
                             <!-- Boosts (display) -->
-                            <ctrl:BbCodeTextBlock BbText="{Binding EditBoosts}" FontSize="12"
-                                       Foreground="#2ECC71" TextWrapping="Wrap"
+                            <TextBlock Text="{Binding PreviewBoostsText}" FontSize="{DynamicResource FontSize12}"
+                                       Foreground="{DynamicResource SuccessBrush}" TextWrapping="Wrap"
                                        Margin="16,0,16,4" IsVisible="{Binding HasBoosts}" />
 
                             <!-- Passives: each name + description editable -->
@@ -613,28 +624,32 @@
                                           IsVisible="{Binding HasPassives}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="vm:PassiveVM">
-                                        <StackPanel Margin="0,0,0,8">
-                                            <!-- Passive name (editable in code mode, display in preview) -->
+                                        <StackPanel Margin="0,0,0,6">
                                             <TextBox Text="{Binding EditDisplayName}"
-                                                     Watermark="Passive name"
-                                                     FontSize="12" FontWeight="Bold"
-                                                     Foreground="#C8A96E"
+                                                     Watermark="{Binding WmPassiveName, Source={x:Static loc:Loc.Instance}}"
+                                                     FontSize="{DynamicResource FontSize12}" FontWeight="Bold"
+                                                     Foreground="{DynamicResource GoldBrush}"
                                                      Background="Transparent" BorderThickness="0"
-                                                     Padding="0" />
-                                            <!-- Passive desc: preview mode = rendered BB-code -->
+                                                     Padding="0" Margin="0" MinHeight="0" />
+                                            <!-- Passive desc: preview = rendered BB-code with params -->
                                             <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
-                                                     FontSize="12"
-                                                     Foreground="{StaticResource TextSecondaryBrush}"
+                                                     BbParams="{Binding EditDescriptionParams}"
+                                                     FontSize="{DynamicResource FontSize12}"
+                                                     Foreground="{DynamicResource TextSecondaryBrush}"
                                                      TextWrapping="Wrap"
                                                      IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                             <!-- Passive desc: code mode = raw TextBox -->
                                             <TextBox Text="{Binding EditDescription}"
                                                      Watermark="Passive description (BB-code)"
-                                                     FontSize="12"
-                                                     Foreground="{StaticResource TextSecondaryBrush}"
+                                                     FontSize="{DynamicResource FontSize12}"
+                                                     Foreground="{DynamicResource TextSecondaryBrush}"
                                                      Background="Transparent" BorderThickness="0"
                                                      Padding="0" TextWrapping="Wrap"
                                                      AcceptsReturn="True"
+                                                     IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                            <!-- DescriptionParams chips -->
+                                            <ctrl:ChipListEditor Text="{Binding EditDescriptionParams}"
+                                                     ChipColor="#E67E22"
                                                      IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                         </StackPanel>
                                     </DataTemplate>
@@ -642,13 +657,13 @@
                             </ItemsControl>
 
                             <!-- Separator -->
-                            <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="12,6"
+                            <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="12,6"
                                     IsVisible="{Binding HasDescription}" />
 
                             <!-- Description / lore -->
                             <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
-                                     FontSize="12" FontStyle="Italic"
-                                     Foreground="{StaticResource TextSecondaryBrush}"
+                                     FontSize="{DynamicResource FontSize12}" FontStyle="Italic"
+                                     Foreground="{DynamicResource TextMutedBrush}"
                                      TextWrapping="Wrap"
                                      Margin="16,0,16,8"
                                      IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
@@ -656,9 +671,9 @@
                                      Text="{Binding EditDescription}"
                                      Watermark="Description / lore (BB-code)"
                                      TextWrapping="Wrap" AcceptsReturn="True"
-                                     MinHeight="40" FontSize="11"
-                                     Foreground="{StaticResource TextMutedBrush}"
-                                     Background="{StaticResource InputBgBrush}"
+                                     MinHeight="40" FontSize="{DynamicResource FontSize11}"
+                                     Foreground="{DynamicResource TextMutedBrush}"
+                                     Background="{DynamicResource InputBgBrush}"
                                      CornerRadius="4" Padding="8,4"
                                      Margin="16,0,16,8"
                                      IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
@@ -690,17 +705,17 @@
                             <Image Source="{Binding IconBrowser.CurrentIconBitmap}" Stretch="Uniform" />
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
-                            <TextBlock Text="Choose Icon" FontSize="16" FontWeight="Bold"
+                            <TextBlock Text="{Binding LblChooseIcon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize16}" FontWeight="Bold"
                                        Foreground="{StaticResource TextPrimaryBrush}" />
                             <TextBlock Text="{Binding IconBrowser.CurrentIconName, FallbackValue='No icon selected'}"
-                                       FontSize="11" Foreground="{StaticResource TextMutedBrush}" />
+                                       FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" />
                         </StackPanel>
                         <Button Grid.Column="2"
                                 Command="{Binding IconBrowser.CloseCommand}"
                                 Background="{StaticResource CardBgBrush}" Foreground="{StaticResource TextSecondaryBrush}"
-                                FontSize="12" Padding="10,6" CornerRadius="6"
+                                FontSize="{DynamicResource FontSize12}" Padding="10,6" CornerRadius="6"
                                 BorderThickness="0" Cursor="Hand"
-                                Content="Close" />
+                                Content="{Binding BtnClose, Source={x:Static loc:Loc.Instance}}" />
                     </Grid>
                 </Border>
 
@@ -719,7 +734,7 @@
                                 <Button Content="{Binding Name}"
                                         Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).IconBrowser.SelectTabCommand}"
                                         CommandParameter="{Binding}"
-                                        FontSize="11" Padding="12,6" CornerRadius="8"
+                                        FontSize="{DynamicResource FontSize11}" Padding="12,6" CornerRadius="8"
                                         Background="{StaticResource CardBgBrush}"
                                         Foreground="{StaticResource TextSecondaryBrush}"
                                         BorderThickness="0" Cursor="Hand" />
@@ -732,12 +747,12 @@
                 <Border Grid.Row="2" Padding="16,8,16,8" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBox Text="{Binding IconBrowser.SearchText}"
-                                 Watermark="Search icons by name..."
-                                 FontSize="12" Padding="10,8" CornerRadius="8"
+                                 Watermark="{Binding WmSearchIcons, Source={x:Static loc:Loc.Instance}}"
+                                 FontSize="{DynamicResource FontSize12}" Padding="10,8" CornerRadius="8"
                                  Background="{StaticResource InputBgBrush}" />
                         <TextBlock Grid.Column="1"
                                    Text="{Binding IconBrowser.IconCount, StringFormat='{}{0} icons'}"
-                                   FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                                   FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}"
                                    VerticalAlignment="Center" Margin="10,0,0,0" />
                     </Grid>
                 </Border>
@@ -748,7 +763,7 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="6">
                         <ProgressBar IsIndeterminate="True" Width="200" Height="4"
                                      Foreground="{StaticResource AccentBrush}" />
-                        <TextBlock Text="Loading icons..." FontSize="11"
+                        <TextBlock Text="{Binding LblLoadingIcons, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}"
                                    Foreground="{StaticResource TextMutedBrush}"
                                    HorizontalAlignment="Center" />
                     </StackPanel>
@@ -776,7 +791,7 @@
                                     <Image Source="{Binding Thumbnail}" Stretch="Uniform"
                                            Width="72" Height="72" />
                                     <TextBlock Text="{Binding Name}"
-                                               FontSize="10"
+                                               FontSize="{DynamicResource FontSize10}"
                                                Foreground="{StaticResource TextMutedBrush}"
                                                TextWrapping="Wrap"
                                                TextAlignment="Center"

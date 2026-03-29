@@ -1,3 +1,4 @@
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -5,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using ParaTool.App.Themes;
+using ParaTool.App.Services;
 
 namespace ParaTool.App.Controls;
 
@@ -34,6 +36,9 @@ public class TumblerChipEditor : UserControl
     /// <summary>If set, tumbler scrolls through this list instead of numeric range.</summary>
     public string[]? Items { get => GetValue(ItemsProperty); set => SetValue(ItemsProperty, value); }
 
+    /// <summary>Optional short display labels (same length as Items). If null, Items shown as-is.</summary>
+    public string[]? DisplayItems { get; set; }
+
     private bool IsListMode => Items is { Length: > 0 };
 
     private const int SidesCount = 3;
@@ -60,7 +65,7 @@ public class TumblerChipEditor : UserControl
     {
         _valueText = new TextBlock
         {
-            FontSize = 14, FontWeight = FontWeight.SemiBold,
+            FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = ThemeBrushes.TextPrimary,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
@@ -95,7 +100,18 @@ public class TumblerChipEditor : UserControl
             if (e.Property == TextProperty) UpdateChipText();
             if (e.Property == ItemsProperty) UpdateMinWidthFromItems();
         };
+        FontScale.ScaleChanged += OnFontScaleChanged;
         UpdateChipText();
+    }
+
+    private void OnFontScaleChanged()
+    {
+        _valueText.FontSize = FontScale.Of(11);
+        if (_upperLabels != null)
+            foreach (var l in _upperLabels) l.FontSize = FontScale.Of(10);
+        if (_lowerLabels != null)
+            foreach (var l in _lowerLabels) l.FontSize = FontScale.Of(10);
+        UpdateMinWidthFromItems();
     }
 
     private void BuildDrumStrips()
@@ -183,7 +199,7 @@ public class TumblerChipEditor : UserControl
 
     private static TextBlock MakeLabel(double opacity) => new()
     {
-        FontSize = 13, Foreground = ThemeBrushes.TextPrimary,
+        FontSize = FontScale.Of(10), Foreground = ThemeBrushes.TextPrimary,
         Opacity = opacity,
         HorizontalAlignment = HorizontalAlignment.Center,
         TextAlignment = TextAlignment.Center,
@@ -195,8 +211,9 @@ public class TumblerChipEditor : UserControl
     {
         if (Items is not { Length: > 0 }) return;
         // Measure widest item text to set chip width
-        var longest = Items.OrderByDescending(s => s.Length).First();
-        var tb = new TextBlock { Text = longest, FontSize = 14, FontWeight = FontWeight.SemiBold };
+        var displayItems = DisplayItems ?? Items;
+        var longest = displayItems.OrderByDescending(s => s.Length).First();
+        var tb = new TextBlock { Text = longest, FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold };
         tb.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         var w = tb.DesiredSize.Width + 24; // +padding
         _chip.MinWidth = Math.Max(w, 48);
@@ -211,9 +228,22 @@ public class TumblerChipEditor : UserControl
     private void UpdateChipText()
     {
         var val = Text?.Trim() ?? "";
-        _valueText.Text = string.IsNullOrEmpty(val) ? "—" : val;
+        var display = val;
+        if (DisplayItems != null && Items != null)
+        {
+            var idx = Array.IndexOf(Items, val);
+            if (idx >= 0 && idx < DisplayItems.Length) display = DisplayItems[idx];
+        }
+        _valueText.Text = string.IsNullOrEmpty(display) ? "—" : display;
         _valueText.Foreground = string.IsNullOrEmpty(val)
             ? ThemeBrushes.TextMuted : ThemeBrushes.TextPrimary;
+    }
+
+    private string DisplayAt(int idx)
+    {
+        var items = Items!;
+        if (idx < 0 || idx >= items.Length) return "";
+        return DisplayItems != null && idx < DisplayItems.Length ? DisplayItems[idx] : items[idx];
     }
 
     private string Fmt(double v) =>
@@ -494,18 +524,17 @@ public class TumblerChipEditor : UserControl
 
         if (IsListMode)
         {
-            var items = Items!;
             for (int i = 0; i < SidesCount; i++)
             {
                 int idx = _currentIndex - (SidesCount - i);
-                _upperLabels[i].Text = idx >= 0 ? items[idx] : "";
+                _upperLabels[i].Text = idx >= 0 ? DisplayAt(idx) : "";
             }
             for (int i = 0; i < SidesCount; i++)
             {
                 int idx = _currentIndex + i + 1;
-                _lowerLabels[i].Text = idx < items.Length ? items[idx] : "";
+                _lowerLabels[i].Text = DisplayAt(idx);
             }
-            _valueText.Text = items[_currentIndex];
+            _valueText.Text = DisplayAt(_currentIndex);
         }
         else
         {
@@ -527,6 +556,7 @@ public class TumblerChipEditor : UserControl
     }
 
     private double EffectiveStep =>
+        Step >= 1 ? Step :
         _currentValue >= 100 ? Math.Max(Step * 100, 1.0) :
         _currentValue >= 10 ? Math.Max(Step * 10, 0.1) :
         Step;

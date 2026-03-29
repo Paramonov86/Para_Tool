@@ -42,15 +42,10 @@ public partial class MainWindowViewModel : ObservableObject
     public LangInfo[] Languages => Loc.Instance.AvailableLanguages;
 
     // Tab visual state
-    private static readonly SolidColorBrush AccentBrush = new(Color.Parse("#6C5CE7"));
-    private static readonly SolidColorBrush TransparentBrush = new(Colors.Transparent);
-    private static readonly SolidColorBrush TextActiveBrush = new(Color.Parse("#E0DDE6"));
-    private static readonly SolidColorBrush TextInactiveBrush = new(Color.Parse("#8A8494"));
-
-    public IBrush PatcherTabBrush => ActiveTab == "Patcher" ? AccentBrush : TransparentBrush;
-    public IBrush PatcherTabForeground => ActiveTab == "Patcher" ? TextActiveBrush : TextInactiveBrush;
-    public IBrush ConstructorTabBrush => ActiveTab == "Constructor" ? AccentBrush : TransparentBrush;
-    public IBrush ConstructorTabForeground => ActiveTab == "Constructor" ? TextActiveBrush : TextInactiveBrush;
+    public IBrush PatcherTabBrush => ActiveTab == "Patcher" ? Themes.ThemeBrushes.Accent : Brushes.Transparent;
+    public IBrush PatcherTabForeground => ActiveTab == "Patcher" ? Themes.ThemeBrushes.TextPrimary : Themes.ThemeBrushes.TextMuted;
+    public IBrush ConstructorTabBrush => ActiveTab == "Constructor" ? Themes.ThemeBrushes.Accent : Brushes.Transparent;
+    public IBrush ConstructorTabForeground => ActiveTab == "Constructor" ? Themes.ThemeBrushes.TextPrimary : Themes.ThemeBrushes.TextMuted;
 
     public string AppVersion
     {
@@ -291,6 +286,23 @@ public partial class MainWindowViewModel : ObservableObject
         var artifactsMod = BuildArtifactsMod();
         if (artifactsMod != null)
             _patcherView.Mods.Add(new ModVM(artifactsMod, _locaService));
+
+        // Mark patcher items that have artifact overrides
+        var artifactStatIds = new HashSet<string>(
+            ArtifactStore.LoadAll().Select(a => a.StatId),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var mod in _patcherView.Mods)
+        {
+            if (mod.ModInfo.UUID == ArtifactsModUuid) continue;
+            foreach (var item in mod.Items)
+            {
+                var had = item.Entry.HasArtifactOverride;
+                item.Entry.HasArtifactOverride = artifactStatIds.Contains(item.StatId);
+                if (had != item.Entry.HasArtifactOverride)
+                    item.NotifyArtifactOverrideChanged();
+            }
+        }
 
         _patcherView.RefreshCounts();
     }

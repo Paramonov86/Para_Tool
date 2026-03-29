@@ -1,3 +1,4 @@
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -5,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using ParaTool.App.Themes;
+using ParaTool.App.Services;
 
 namespace ParaTool.App.Controls;
 
@@ -37,7 +39,7 @@ public class ChecklistPickerChip : UserControl
     {
         _valueText = new TextBlock
         {
-            FontSize = 11, FontWeight = FontWeight.SemiBold,
+            FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = ThemeBrushes.TextPrimary,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
@@ -62,6 +64,7 @@ public class ChecklistPickerChip : UserControl
 
         Content = _chip;
         PropertyChanged += (_, e) => { if (e.Property == TextProperty) UpdateDisplay(); };
+        FontScale.ScaleChanged += () => _valueText.FontSize = FontScale.Of(11);
         UpdateDisplay();
     }
 
@@ -98,7 +101,7 @@ public class ChecklistPickerChip : UserControl
             {
                 Content = label,
                 IsChecked = selected.Contains(opt),
-                FontSize = 12,
+                FontSize = FontScale.Of(12),
                 Foreground = ThemeBrushes.TextPrimary,
                 Tag = opt,
             };

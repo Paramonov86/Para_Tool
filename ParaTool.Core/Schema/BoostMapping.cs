@@ -10,6 +10,58 @@ public static class BoostMapping
     public record ParamDef(string Name, string Label, string Type, string[]? EnumValues = null);
 
     // ═══════════════════════════════════════════════════════════
+    // ENUM VALUE LISTS (must be BEFORE Boosts/Functors — static init order!)
+    // ═══════════════════════════════════════════════════════════
+
+    public static readonly string[] Abilities = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
+    public static readonly string[] DamageTypes = ["None", "Slashing", "Piercing", "Bludgeoning", "Acid", "Thunder", "Necrotic", "Fire", "Lightning", "Cold", "Psychic", "Poison", "Radiant", "Force"];
+    public static readonly string[] AllOrDamageType = ["All", ..DamageTypes];
+    public static readonly string[] DamageTypesExtended = [..DamageTypes[1..], "MainWeaponDamageType", "OffhandWeaponDamageType", "MainMeleeWeaponDamageType", "OffhandMeleeWeaponDamageType", "MainRangedWeaponDamageType", "OffhandRangedWeaponDamageType", "SourceWeaponDamageType", "ThrownWeaponDamageType"];
+    public static readonly string[] StatsRollType = ["Attack", "MeleeWeaponAttack", "RangedWeaponAttack", "MeleeSpellAttack", "RangedSpellAttack", "MeleeUnarmedAttack", "RangedUnarmedAttack", "MeleeOffHandWeaponAttack", "RangedOffHandWeaponAttack", "SkillCheck", "SavingThrow", "RawAbility", "Damage", "DeathSavingThrow", "MeleeWeaponDamage", "RangedWeaponDamage", "MeleeSpellDamage", "RangedSpellDamage", "MeleeUnarmedDamage", "RangedUnarmedDamage"];
+    public static readonly string[] AdvantageContext = ["AttackRoll", "AttackTarget", "SavingThrow", "AllSavingThrows", "Ability", "AllAbilities", "Skill", "AllSkills", "SourceDialogue", "DeathSavingThrow", "Concentration"];
+    public static readonly string[] SkillType = ["Deception", "Intimidation", "Performance", "Persuasion", "Acrobatics", "SleightOfHand", "Stealth", "Arcana", "History", "Investigation", "Nature", "Religion", "Athletics", "AnimalHandling", "Insight", "Medicine", "Perception", "Survival"];
+    public static readonly string[] AbilityOrSkill = [..Abilities, ..SkillType, ..StatsRollType];
+    public static readonly string[] ResistanceBoostFlags = ["None", "Resistant", "Immune", "Vulnerable", "BelowDamageThreshold", "ResistantToMagical", "ImmuneToMagical", "VulnerableToMagical", "ResistantToNonMagical", "ImmuneToNonMagical", "VulnerableToNonMagical"];
+    public static readonly string[] ProficiencyBonusBoostType = ["AttackRoll", "AttackTarget", "SavingThrow", "AllSavingThrows", "Ability", "AllAbilities", "Skill", "AllSkills", "SourceDialogue", "WeaponActionDC"];
+    public static readonly string[] CriticalHitType = ["AttackTarget", "AttackRoll"];
+    public static readonly string[] CriticalHitResult = ["Success", "Failure"];
+    public static readonly string[] CriticalHitWhen = ["Never", "Always", "ForcedAlways"];
+    public static readonly string[] AttackType = ["DirectHit", "MeleeWeaponAttack", "RangedWeaponAttack", "MeleeOffHandWeaponAttack", "RangedOffHandWeaponAttack", "MeleeSpellAttack", "RangedSpellAttack", "MeleeUnarmedAttack", "RangedUnarmedAttack"];
+    public static readonly string[] DamageReductionType = ["Half", "Flat", "Threshold"];
+    public static readonly string[] WeaponFlags = ["None", "Light", "Ammunition", "Finesse", "Heavy", "Loading", "Range", "Reach", "Lance", "Net", "Thrown", "Twohanded", "Versatile", "Melee", "Dippable", "Torch", "NoDualWield", "Magical", "NeedDualWieldingBoost", "NotSheathable", "Unstowable", "AddToHotbar"];
+    public static readonly string[] ArmorTypes = ["None", "Cloth", "Padded", "Leather", "StuddedLeather", "Hide", "ChainShirt", "ScaleMail", "BreastPlate", "HalfPlate", "RingMail", "ChainMail", "Splint", "Plate"];
+    public static readonly string[] SpellSchool = ["None", "Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
+    public static readonly string[] SpellCooldownType = ["Default", "OncePerTurn", "OncePerCombat", "UntilRest", "OncePerTurnNoRealtime", "UntilShortRest", "UntilPerRestPerItem", "OncePerShortRestPerItem"];
+    public static readonly string[] UnlockSpellType = ["Singular", "AddChildren", "MostPowerful"];
+    public static readonly string[] HealingDirection = ["Incoming", "Outgoing"];
+    public static readonly string[] MovementSpeedType = ["Stroll", "Walk", "Run", "Sprint"];
+    public static readonly string[] SurfaceTypes = ["None", "Water", "WaterElectrified", "WaterFrozen", "Blood", "BloodElectrified", "BloodFrozen", "Poison", "Oil", "Lava", "Grease", "Web", "Deepwater", "Vines", "Fire", "Acid", "Mud", "Alcohol"];
+    public static readonly string[] SurfaceChange = ["None", "Ignite", "Douse", "Electrify", "Deelectrify", "Freeze", "Melt", "Vaporize", "Condense", "DestroyWater", "Clear"];
+    public static readonly string[] ZoneShape = ["Cone", "Square"];
+    public static readonly string[] ForceFunctorOrigin = ["OriginToEntity", "OriginToTarget", "TargetToEntity"];
+    public static readonly string[] ForceFunctorAggression = ["Aggressive", "Friendly", "Neutral"];
+    public static readonly string[] ExecuteWeaponFunctorsType = ["MainHand", "OffHand", "BothHands"];
+    public static readonly string[] StatItemSlot = ["Helmet", "Breast", "Cloak", "MeleeMainHand", "MeleeOffHand", "RangedMainHand", "RangedOffHand", "Ring", "Underwear", "Boots", "Gloves", "Amulet", "Ring2", "Wings", "Horns", "Overhead", "MusicalInstrument", "VanityBody", "VanityBoots", "MainHand", "OffHand"];
+    public static readonly string[] SetStatusDurationType = ["SetMinimum", "ForceSet", "Add", "Multiply"];
+    public static readonly string[] RollAdjustmentType = ["All", "Distribute"];
+    public static readonly string[] AttributeFlags = ["None", "SlippingImmunity", "Torch", "Arrow", "Unbreakable", "Grounded", "Floating", "InventoryBound", "IgnoreClouds", "BackstabImmunity", "ThrownImmunity", "InvisibilityImmunity"];
+    public static readonly string[] ProficiencyGroupFlags = ["LightArmor", "MediumArmor", "HeavyArmor", "Shields", "SimpleMeleeWeapon", "SimpleRangedWeapon", "MartialMeleeWeapon", "MartialRangedWeapon", "HandCrossbows", "Battleaxes", "Flails", "Glaives", "Greataxes", "Greatswords", "Halberds", "Longswords", "Mauls", "Morningstars", "Pikes", "Rapiers", "Scimitars", "Shortswords", "Tridents", "WarPicks", "Warhammers", "Clubs", "Daggers", "Greatclubs", "Handaxes", "Javelins", "LightHammers", "Maces", "Quarterstaffs", "Sickles", "Spears", "LightCrossbows", "Darts", "Shortbows", "Slings", "Longbows", "HeavyCrossbows", "MusicalInstrument"];
+    public static readonly string[] SurfaceLayers = ["Ground", "Cloud"];
+    public static readonly string[] DeathTypes = ["None", "Acid", "Chasm", "DoT", "Electrocution", "Explode", "Falling", "Incinerate", "KnockedDown", "Lifetime", "Narcolepsy", "PetrifiedShattered", "Sentinel"];
+    public static readonly string[] ResurrectTypes = ["Living", "Guaranteed", "Construct", "Undead"];
+    public static readonly string[] SummonDurations = ["UntilLongRest", "Permanent"];
+    public static readonly string[] MagicalFlags = ["Magical", "Nonmagical"];
+    public static readonly string[] NonlethalFlags = ["Lethal", "Nonlethal"];
+    public static readonly string[] SizeCategories = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"];
+    public static readonly string[] EngineStatusTypes = ["DYING", "HEAL", "KNOCKED_DOWN", "TELEPORT_FALLING", "BOOST", "REACTION", "STORY_FROZEN", "SNEAKING", "UNLOCK", "FEAR", "SMELLY", "INVISIBLE", "ROTATE", "MATERIAL", "CLIMBING", "INCAPACITATED", "INSURFACE", "POLYMORPHED", "EFFECT", "DEACTIVATED", "DOWNED"];
+    public static readonly string[] StatusRemoveCause = ["Condition", "TimeOut", "Death"];
+    public static readonly string[] ObscuredState = ["Clear", "BabyBent", "BentQuarters", "ThreeQuarters", "FullCover"];
+    public static readonly string[] WeaponProperties = WeaponFlags;
+    public static readonly string[] ProficiencyTypes = ["", "LightArmor", "MediumArmor", "HeavyArmor", "Shields", "SimpleMeleeWeapon", "SimpleRangedWeapon", "MartialMeleeWeapon", "MartialRangedWeapon"];
+    public static readonly string[] Skills = SkillType;
+    public static readonly string[] ActionResources = ["ActionPoint", "BonusActionPoint", "Movement", "SpellSlot", "KiPoint", "Rage", "SorceryPoint", "BardicInspiration", "SuperiorityDie", "ChannelDivinity", "LayOnHandsCharge", "WildShape", "NaturalRecovery"];
+
+    // ═══════════════════════════════════════════════════════════
     // BOOSTS — Full list from LSLibDefinitions.xml
     // ═══════════════════════════════════════════════════════════
 
@@ -33,40 +85,40 @@ public static class BoostMapping
         new("ProficiencyBonusIncrease", "Prof Bonus Increase", "Увеличить бонус умения", "#2ECC71", [new("Amount", "+", "number")]),
         new("HalveWeaponDamage", "Halve Weapon Damage", "Половинный урон оружием", "#2ECC71", [new("Ability", "Ability", "enum", Abilities)]),
 
-        // ── Attack & Damage (#E74C3C) ──
-        new("RollBonus", "Roll Bonus", "Бонус к броску", "#E74C3C",
-            [new("RollType", "Type", "enum", StatsRollType), new("Bonus", "Bonus", "formula"), new("AbilityOrSkill", "Ability/Skill", "string")]),
-        new("DamageBonus", "Damage Bonus", "Бонус к урону", "#E74C3C",
+        // ── Attack & Damage (#E06040) ──
+        new("RollBonus", "Roll Bonus", "Бонус к броску", "#E06040",
+            [new("RollType", "Type", "enum", StatsRollType), new("Bonus", "Bonus", "formula"), new("AbilityOrSkill", "Ability/Skill", "enum", AbilityOrSkill)]),
+        new("DamageBonus", "Damage Bonus", "Бонус к урону", "#E06040",
             [new("Amount", "Amount", "formula"), new("DamageType", "Type", "enum", DamageTypes)]),
-        new("CharacterWeaponDamage", "Extra Weapon Damage", "Доп. урон оружием", "#E74C3C",
+        new("CharacterWeaponDamage", "Extra Weapon Damage", "Доп. урон оружием", "#E06040",
             [new("Amount", "Amount", "formula"), new("DamageType", "Type", "enum", DamageTypes)]),
-        new("CharacterUnarmedDamage", "Unarmed Damage", "Урон без оружия", "#E74C3C",
+        new("CharacterUnarmedDamage", "Unarmed Damage", "Урон без оружия", "#E06040",
             [new("Damage", "Damage", "formula"), new("DamageType", "Type", "enum", DamageTypes)]),
-        new("WeaponDamage", "Weapon Damage", "Урон оружия", "#E74C3C",
+        new("WeaponDamage", "Weapon Damage", "Урон оружия", "#E06040",
             [new("Amount", "Amount", "formula"), new("DamageType", "Type", "enum", DamageTypes)]),
-        new("WeaponEnchantment", "Weapon Enchantment", "Зачарование оружия", "#E74C3C", [new("Level", "+", "number")]),
-        new("WeaponAttackRollBonus", "Weapon Attack Bonus", "Бонус атаки оружием", "#E74C3C", [new("Amount", "Bonus", "formula")]),
-        new("WeaponProperty", "Weapon Property", "Свойство оружия", "#E74C3C", [new("Flags", "Property", "enum", WeaponFlags)]),
-        new("WeaponAttackTypeOverride", "Attack Type Override", "Тип атаки", "#E74C3C", [new("Type", "Type", "enum", AttackType)]),
-        new("WeaponDamageDieOverride", "Damage Die Override", "Кубик урона", "#E74C3C", [new("Die", "Die", "dice")]),
-        new("WeaponDamageTypeOverride", "Damage Type Override", "Тип урона", "#E74C3C", [new("Type", "Type", "enum", DamageTypes)]),
-        new("WeaponAttackRollAbilityOverride", "Attack Ability Override", "Способн. атаки", "#E74C3C", [new("Ability", "Ability", "string")]),
-        new("WeaponDamageResistance", "Weapon Dmg Resistance", "Сопр. урону оружия", "#E74C3C",
+        new("WeaponEnchantment", "Weapon Enchantment", "Зачарование оружия", "#E06040", [new("Level", "+", "number")]),
+        new("WeaponAttackRollBonus", "Weapon Attack Bonus", "Бонус атаки оружием", "#E06040", [new("Amount", "Bonus", "formula")]),
+        new("WeaponProperty", "Weapon Property", "Свойство оружия", "#E06040", [new("Flags", "Property", "enum", WeaponFlags)]),
+        new("WeaponAttackTypeOverride", "Attack Type Override", "Тип атаки", "#E06040", [new("Type", "Type", "enum", AttackType)]),
+        new("WeaponDamageDieOverride", "Damage Die Override", "Кубик урона", "#E06040", [new("Die", "Die", "dice")]),
+        new("WeaponDamageTypeOverride", "Damage Type Override", "Тип урона", "#E06040", [new("Type", "Type", "enum", DamageTypes)]),
+        new("WeaponAttackRollAbilityOverride", "Attack Ability Override", "Способн. атаки", "#E06040", [new("Ability", "Ability", "enum", Abilities)]),
+        new("WeaponDamageResistance", "Weapon Dmg Resistance", "Сопр. урону оружия", "#E06040",
             [new("Type1", "Type 1", "enum", DamageTypes), new("Type2", "Type 2", "enum", DamageTypes)]),
-        new("EntityThrowDamage", "Throw Damage", "Урон от метания", "#E74C3C", [new("Die", "Die", "dice"), new("Type", "Type", "enum", DamageTypes)]),
-        new("DamageReduction", "Damage Reduction", "Снижение урона", "#E74C3C",
+        new("EntityThrowDamage", "Throw Damage", "Урон от метания", "#E06040", [new("Die", "Die", "dice"), new("Type", "Type", "enum", DamageTypes)]),
+        new("DamageReduction", "Damage Reduction", "Снижение урона", "#E06040",
             [new("DmgType", "Damage", "enum", AllOrDamageType), new("Method", "Method", "enum", DamageReductionType), new("Amount", "Amount", "formula")]),
-        new("DamageTakenBonus", "Damage Taken Bonus", "Бонус получаем. урона", "#E74C3C",
+        new("DamageTakenBonus", "Damage Taken Bonus", "Бонус получаем. урона", "#E06040",
             [new("Amount", "Amount", "formula"), new("Type", "Type", "enum", DamageTypes)]),
 
         // ── Critical Hits (#E74C3C) ──
-        new("CriticalHit", "Critical Hit", "Критический удар", "#E74C3C",
+        new("CriticalHit", "Critical Hit", "Критический удар", "#E06040",
             [new("Type", "Type", "enum", CriticalHitType), new("Result", "Result", "enum", CriticalHitResult), new("When", "When", "enum", CriticalHitWhen)]),
-        new("CriticalHitExtraDice", "Extra Crit Dice", "Доп. кубики крита", "#E74C3C",
+        new("CriticalHitExtraDice", "Extra Crit Dice", "Доп. кубики крита", "#E06040",
             [new("Dice", "Dice", "number"), new("AttackType", "Attack", "enum", AttackType)]),
-        new("ReduceCriticalAttackThreshold", "Lower Crit Threshold", "Снизить порог крита", "#E74C3C",
+        new("ReduceCriticalAttackThreshold", "Lower Crit Threshold", "Снизить порог крита", "#E06040",
             [new("Threshold", "By", "number"), new("StatusId", "Status", "string")]),
-        new("CriticalDamageOnHit", "Crit Damage on Hit", "Крит. урон при попадании", "#E74C3C", []),
+        new("CriticalDamageOnHit", "Crit Damage on Hit", "Крит. урон при попадании", "#E06040", []),
 
         // ── Resistance & Immunity (#F1C40F) ──
         new("Resistance", "Resistance", "Устойчивость", "#F1C40F",
@@ -83,9 +135,9 @@ public static class BoostMapping
 
         // ── Advantage & Rolls (#3498DB) ──
         new("Advantage", "Advantage", "Преимущество", "#3498DB",
-            [new("Type", "On", "enum", AdvantageContext), new("Arg2", "Ability/Skill", "string")]),
+            [new("Type", "On", "enum", AdvantageContext), new("Arg2", "Ability/Skill", "enum", AbilityOrSkill)]),
         new("Disadvantage", "Disadvantage", "Помеха", "#3498DB",
-            [new("Type", "On", "enum", AdvantageContext), new("Arg2", "Ability/Skill", "string")]),
+            [new("Type", "On", "enum", AdvantageContext), new("Arg2", "Ability/Skill", "enum", AbilityOrSkill)]),
         new("Reroll", "Reroll", "Переброс", "#3498DB",
             [new("Type", "Type", "enum", StatsRollType), new("Below", "If ≤", "number"), new("Always", "Always", "bool")]),
         new("MinimumRollResult", "Minimum Roll", "Мин. результат", "#3498DB",
@@ -98,7 +150,7 @@ public static class BoostMapping
         new("Proficiency", "Proficiency", "Умение", "#3498DB",
             [new("Group", "Group", "enum", ProficiencyGroupFlags)]),
         new("ProficiencyBonus", "Proficiency Bonus", "Бонус умения", "#3498DB",
-            [new("Type", "Type", "enum", ProficiencyBonusBoostType), new("Skill", "Skill/Ability", "string")]),
+            [new("Type", "Type", "enum", ProficiencyBonusBoostType), new("Skill", "Skill/Ability", "enum", AbilityOrSkill)]),
         new("ExpertiseBonus", "Expertise", "Мастерство", "#3498DB", [new("Skill", "Skill", "enum", SkillType)]),
         new("Skill", "Skill Bonus", "Бонус к навыку", "#3498DB",
             [new("Skill", "Skill", "enum", SkillType), new("Amount", "+/-", "formula")]),
@@ -116,23 +168,23 @@ public static class BoostMapping
 
         // ── Resources (#9B59B6) ──
         new("ActionResource", "Action Resource", "Ресурс", "#9B59B6",
-            [new("Resource", "Resource", "string"), new("Amount", "Amount", "float"), new("Level", "Level", "number")]),
+            [new("Resource", "Resource", "enum", ActionResources), new("Amount", "Amount", "float"), new("Level", "Level", "number")]),
         new("ActionResourceOverride", "Resource Override", "Переопредел. ресурса", "#9B59B6",
-            [new("Resource", "Resource", "string"), new("Amount", "Amount", "float"), new("Level", "Level", "number")]),
+            [new("Resource", "Resource", "enum", ActionResources), new("Amount", "Amount", "float"), new("Level", "Level", "number")]),
         new("ActionResourceMultiplier", "Resource Multiplier", "Множитель ресурса", "#9B59B6",
-            [new("Resource", "Resource", "string"), new("Mult", "Multiplier", "number"), new("Level", "Level", "number")]),
-        new("ActionResourceBlock", "Block Resource", "Блок ресурса", "#9B59B6", [new("Resource", "Resource", "string")]),
+            [new("Resource", "Resource", "enum", ActionResources), new("Mult", "Multiplier", "number"), new("Level", "Level", "number")]),
+        new("ActionResourceBlock", "Block Resource", "Блок ресурса", "#9B59B6", [new("Resource", "Resource", "enum", ActionResources)]),
 
         // ── HP & Healing (#2ECC71) ──
         new("IncreaseMaxHP", "Increase Max HP", "Увеличить макс. ОЗ", "#2ECC71", [new("Amount", "Amount", "formula")]),
         new("TemporaryHP", "Temporary HP", "Врем. ОЗ", "#2ECC71", [new("Amount", "Amount", "formula")]),
-        new("BlockRegainHP", "Block Healing", "Блок исцеления", "#2ECC71", [new("Type", "Type", "string")]),
+        new("BlockRegainHP", "Block Healing", "Блок исцеления", "#2ECC71", [new("Type", "Type", "enum", ResurrectTypes)]),
         new("MaximizeHealing", "Maximize Healing", "Максим. исцеление", "#2ECC71", [new("Dir", "Direction", "enum", HealingDirection)]),
 
         // ── Movement & Physical (#8A8494) ──
         new("Initiative", "Initiative", "Инициатива", "#8A8494", [new("Bonus", "+/-", "number")]),
         new("ObjectSize", "Size Change", "Размер", "#8A8494", [new("Size", "+/-", "number")]),
-        new("ObjectSizeOverride", "Size Override", "Переопредел. размера", "#8A8494", [new("Size", "Size", "string")]),
+        new("ObjectSizeOverride", "Size Override", "Переопредел. размера", "#8A8494", [new("Size", "Size", "enum", SizeCategories)]),
         new("ScaleMultiplier", "Scale Multiplier", "Множитель масштаба", "#8A8494", [new("Mult", "×", "float")]),
         new("Weight", "Weight", "Вес", "#8A8494", [new("Weight", "kg", "float")]),
         new("CarryCapacityMultiplier", "Carry Capacity", "Грузоподъёмность ×", "#8A8494", [new("Mult", "×", "float")]),
@@ -160,7 +212,7 @@ public static class BoostMapping
 
         // ── Tags & Flags (#8A8494) ──
         new("Tag", "Add Tag", "Добавить тег", "#8A8494", [new("Tag", "Tag", "string")]),
-        new("Attribute", "Attribute Flags", "Флаги атрибута", "#8A8494", [new("Flags", "Flags", "enum", AttributeFlags)]),
+        new("Attribute", "Attribute Flags", "Флаги атрибута", "#8A8494", [new("Flags", "Flags", "flags", AttributeFlags)]),
         new("Lootable", "Lootable", "Можно обыскать", "#8A8494", []),
         new("ItemReturnToOwner", "Item Returns", "Предмет возвращается", "#8A8494", []),
         new("CannotBeDisarmed", "Cannot Disarm", "Нельзя обезоружить", "#8A8494", []),
@@ -191,7 +243,7 @@ public static class BoostMapping
     public static readonly BlockDef[] Functors =
     [
         // ── Damage & Healing ──
-        new("DealDamage", "Deal Damage", "Нанести урон", "#E74C3C",
+        new("DealDamage", "Deal Damage", "Нанести урон", "#E06040",
             [new("Damage", "Damage", "formula"), new("Type", "Type", "enum", DamageTypesExtended)]),
         new("RegainHitPoints", "Heal", "Исцеление", "#2ECC71", [new("HP", "Amount", "formula")]),
         new("GainTemporaryHitPoints", "Gain Temp HP", "Получить врем. ОЗ", "#2ECC71", [new("Amount", "Amount", "formula")]),
@@ -208,9 +260,9 @@ public static class BoostMapping
 
         // ── Resources ──
         new("RestoreResource", "Restore Resource", "Восстановить ресурс", "#9B59B6",
-            [new("Resource", "Resource", "string"), new("Amount", "Amount", "formula"), new("Level", "Level", "number")]),
+            [new("Resource", "Resource", "enum", ActionResources), new("Amount", "Amount", "formula"), new("Level", "Level", "number")]),
         new("UseActionResource", "Use Resource", "Потратить ресурс", "#9B59B6",
-            [new("Resource", "Resource", "string"), new("Amount", "Amount", "string"), new("Level", "Level", "number")]),
+            [new("Resource", "Resource", "enum", ActionResources), new("Amount", "Amount", "string"), new("Level", "Level", "number")]),
 
         // ── Surface & Zone ──
         new("CreateSurface", "Create Surface", "Создать поверхность", "#3498DB",
@@ -232,8 +284,8 @@ public static class BoostMapping
         // ── Spells & Combat ──
         new("UseSpell", "Use Spell", "Использовать заклинание", "#9B59B6",
             [new("SpellId", "Spell", "string"), new("IgnoreHasSpell", "Ignore Check", "bool")]),
-        new("UseAttack", "Use Attack", "Использовать атаку", "#E74C3C", []),
-        new("ExecuteWeaponFunctors", "Execute Weapon Functors", "Функторы оружия", "#E74C3C",
+        new("UseAttack", "Use Attack", "Использовать атаку", "#E06040", []),
+        new("ExecuteWeaponFunctors", "Execute Weapon Functors", "Функторы оружия", "#E06040",
             [new("Type", "Hand", "enum", ExecuteWeaponFunctorsType)]),
         new("Counterspell", "Counterspell", "Контрзаклинание", "#9B59B6", []),
         new("BreakConcentration", "Break Concentration", "Прервать концентрацию", "#9B59B6", []),
@@ -259,10 +311,10 @@ public static class BoostMapping
         // ── Misc ──
         new("Resurrect", "Resurrect", "Воскресить", "#2ECC71", [new("Chance", "%", "float"), new("HP", "HP%", "float")]),
         new("Stabilize", "Stabilize", "Стабилизировать", "#2ECC71", []),
-        new("Kill", "Kill", "Убить", "#E74C3C", []),
+        new("Kill", "Kill", "Убить", "#E06040", []),
         new("Douse", "Douse", "Потушить", "#3498DB", [new("Radius", "Radius", "float")]),
-        new("CreateExplosion", "Create Explosion", "Создать взрыв", "#E74C3C", [new("SpellId", "Spell", "string")]),
-        new("FireProjectile", "Fire Projectile", "Запустить снаряд", "#E74C3C", [new("Template", "Template", "string")]),
+        new("CreateExplosion", "Create Explosion", "Создать взрыв", "#E06040", [new("SpellId", "Spell", "string")]),
+        new("FireProjectile", "Fire Projectile", "Запустить снаряд", "#E06040", [new("Template", "Template", "string")]),
         new("DisarmWeapon", "Disarm Weapon", "Обезоружить", "#E67E22", []),
         new("ShortRest", "Short Rest", "Короткий отдых", "#2ECC71", []),
         new("TriggerRandomCast", "Trigger Random Cast", "Случайный каст", "#9B59B6",
@@ -281,7 +333,7 @@ public static class BoostMapping
         new("SurfaceClearLayer", "Clear Surface Layer", "Очистить слой поверхн.", "#3498DB",
             [new("Layer1", "Layer 1", "enum", SurfaceLayers), new("Layer2", "Layer 2", "enum", SurfaceLayers)]),
         new("CreateWall", "Create Wall", "Создать стену", "#3498DB", []),
-        new("SwitchDeathType", "Switch Death Type", "Тип смерти", "#E74C3C",
+        new("SwitchDeathType", "Switch Death Type", "Тип смерти", "#E06040",
             [new("Type", "Type", "enum", DeathTypes)]),
         new("RegainTemporaryHitPoints", "Regain Temp HP", "Восстановить врем. ОЗ", "#2ECC71",
             [new("Amount", "Amount", "formula")]),
@@ -291,7 +343,7 @@ public static class BoostMapping
         new("Pickup", "Pick Up", "Подобрать", "#8A8494", [new("Effect", "Effect", "string")]),
         new("Drop", "Drop", "Уронить", "#8A8494", [new("Effect", "Effect", "string")]),
         new("ResetCombatTurn", "Reset Turn", "Сбросить ход", "#E67E22", []),
-        new("SpawnExtraProjectiles", "Extra Projectiles", "Доп. снаряды", "#E74C3C",
+        new("SpawnExtraProjectiles", "Extra Projectiles", "Доп. снаряды", "#E06040",
             [new("SpellId", "Spell", "string")]),
         new("CameraWait", "Camera Wait", "Ждать камеру", "#8A8494", [new("Duration", "Sec", "float")]),
         new("TutorialEvent", "Tutorial Event", "Событие туториала", "#8A8494", [new("Event", "Event", "guid")]),
@@ -405,90 +457,7 @@ public static class BoostMapping
     };
 
     // ═══════════════════════════════════════════════════════════
-    // ENUM VALUE LISTS
-    // ═══════════════════════════════════════════════════════════
-
-    public static readonly string[] Abilities = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
-
-    public static readonly string[] DamageTypes = ["None", "Slashing", "Piercing", "Bludgeoning", "Acid", "Thunder", "Necrotic", "Fire", "Lightning", "Cold", "Psychic", "Poison", "Radiant", "Force"];
-
-    public static readonly string[] AllOrDamageType = ["All", "None", "Slashing", "Piercing", "Bludgeoning", "Acid", "Thunder", "Necrotic", "Fire", "Lightning", "Cold", "Psychic", "Poison", "Radiant", "Force"];
-
-    public static readonly string[] DamageTypesExtended = ["Slashing", "Piercing", "Bludgeoning", "Acid", "Thunder", "Necrotic", "Fire", "Lightning", "Cold", "Psychic", "Poison", "Radiant", "Force", "MainWeaponDamageType", "OffhandWeaponDamageType", "MainMeleeWeaponDamageType", "OffhandMeleeWeaponDamageType", "MainRangedWeaponDamageType", "OffhandRangedWeaponDamageType", "SourceWeaponDamageType", "ThrownWeaponDamageType"];
-
-    public static readonly string[] StatsRollType = ["Attack", "MeleeWeaponAttack", "RangedWeaponAttack", "MeleeSpellAttack", "RangedSpellAttack", "MeleeUnarmedAttack", "RangedUnarmedAttack", "MeleeOffHandWeaponAttack", "RangedOffHandWeaponAttack", "SkillCheck", "SavingThrow", "RawAbility", "Damage", "DeathSavingThrow", "MeleeWeaponDamage", "RangedWeaponDamage", "MeleeSpellDamage", "RangedSpellDamage", "MeleeUnarmedDamage", "RangedUnarmedDamage"];
-
-    public static readonly string[] AdvantageContext = ["AttackRoll", "AttackTarget", "SavingThrow", "AllSavingThrows", "Ability", "AllAbilities", "Skill", "AllSkills", "SourceDialogue", "DeathSavingThrow", "Concentration"];
-
-    public static readonly string[] SkillType = ["Deception", "Intimidation", "Performance", "Persuasion", "Acrobatics", "SleightOfHand", "Stealth", "Arcana", "History", "Investigation", "Nature", "Religion", "Athletics", "AnimalHandling", "Insight", "Medicine", "Perception", "Survival"];
-
-    public static readonly string[] ResistanceBoostFlags = ["None", "Resistant", "Immune", "Vulnerable", "BelowDamageThreshold", "ResistantToMagical", "ImmuneToMagical", "VulnerableToMagical", "ResistantToNonMagical", "ImmuneToNonMagical", "VulnerableToNonMagical"];
-
-    public static readonly string[] ProficiencyBonusBoostType = ["AttackRoll", "AttackTarget", "SavingThrow", "AllSavingThrows", "Ability", "AllAbilities", "Skill", "AllSkills", "SourceDialogue", "WeaponActionDC"];
-
-    public static readonly string[] CriticalHitType = ["AttackTarget", "AttackRoll"];
-    public static readonly string[] CriticalHitResult = ["Success", "Failure"];
-    public static readonly string[] CriticalHitWhen = ["Never", "Always", "ForcedAlways"];
-
-    public static readonly string[] AttackType = ["DirectHit", "MeleeWeaponAttack", "RangedWeaponAttack", "MeleeOffHandWeaponAttack", "RangedOffHandWeaponAttack", "MeleeSpellAttack", "RangedSpellAttack", "MeleeUnarmedAttack", "RangedUnarmedAttack"];
-
-    public static readonly string[] DamageReductionType = ["Half", "Flat", "Threshold"];
-
-    public static readonly string[] WeaponFlags = ["None", "Light", "Ammunition", "Finesse", "Heavy", "Loading", "Range", "Reach", "Lance", "Net", "Thrown", "Twohanded", "Versatile", "Melee", "Dippable", "Torch", "NoDualWield", "Magical", "NeedDualWieldingBoost", "NotSheathable", "Unstowable", "AddToHotbar"];
-
-    public static readonly string[] ArmorTypes = ["None", "Cloth", "Padded", "Leather", "StuddedLeather", "Hide", "ChainShirt", "ScaleMail", "BreastPlate", "HalfPlate", "RingMail", "ChainMail", "Splint", "Plate"];
-
-    public static readonly string[] SpellSchool = ["None", "Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"];
-
-    public static readonly string[] SpellCooldownType = ["Default", "OncePerTurn", "OncePerCombat", "UntilRest", "OncePerTurnNoRealtime", "UntilShortRest", "UntilPerRestPerItem", "OncePerShortRestPerItem"];
-
-    public static readonly string[] UnlockSpellType = ["Singular", "AddChildren", "MostPowerful"];
-
-    public static readonly string[] HealingDirection = ["Incoming", "Outgoing"];
-
-    public static readonly string[] MovementSpeedType = ["Stroll", "Walk", "Run", "Sprint"];
-
-    public static readonly string[] SurfaceTypes = ["None", "Water", "WaterElectrified", "WaterFrozen", "Blood", "BloodElectrified", "BloodFrozen", "Poison", "Oil", "Lava", "Grease", "Web", "Deepwater", "Vines", "Fire", "Acid", "Mud", "Alcohol"];
-
-    public static readonly string[] SurfaceChange = ["None", "Ignite", "Douse", "Electrify", "Deelectrify", "Freeze", "Melt", "Vaporize", "Condense", "DestroyWater", "Clear"];
-
-    public static readonly string[] ZoneShape = ["Cone", "Square"];
-
-    public static readonly string[] ForceFunctorOrigin = ["OriginToEntity", "OriginToTarget", "TargetToEntity"];
-    public static readonly string[] ForceFunctorAggression = ["Aggressive", "Friendly", "Neutral"];
-
-    public static readonly string[] ExecuteWeaponFunctorsType = ["MainHand", "OffHand", "BothHands"];
-
-    public static readonly string[] StatItemSlot = ["Helmet", "Breast", "Cloak", "MeleeMainHand", "MeleeOffHand", "RangedMainHand", "RangedOffHand", "Ring", "Underwear", "Boots", "Gloves", "Amulet", "Ring2", "Wings", "Horns", "Overhead", "MusicalInstrument", "VanityBody", "VanityBoots", "MainHand", "OffHand"];
-
-    public static readonly string[] SetStatusDurationType = ["SetMinimum", "ForceSet", "Add", "Multiply"];
-
-    public static readonly string[] RollAdjustmentType = ["All", "Distribute"];
-
-    public static readonly string[] AttributeFlags = ["None", "SlippingImmunity", "Torch", "Arrow", "Unbreakable", "Grounded", "Floating", "InventoryBound", "IgnoreClouds", "BackstabImmunity", "ThrownImmunity", "InvisibilityImmunity"];
-
-    public static readonly string[] ProficiencyGroupFlags = ["LightArmor", "MediumArmor", "HeavyArmor", "Shields", "SimpleMeleeWeapon", "SimpleRangedWeapon", "MartialMeleeWeapon", "MartialRangedWeapon", "HandCrossbows", "Battleaxes", "Flails", "Glaives", "Greataxes", "Greatswords", "Halberds", "Longswords", "Mauls", "Morningstars", "Pikes", "Rapiers", "Scimitars", "Shortswords", "Tridents", "WarPicks", "Warhammers", "Clubs", "Daggers", "Greatclubs", "Handaxes", "Javelins", "LightHammers", "Maces", "Quarterstaffs", "Sickles", "Spears", "LightCrossbows", "Darts", "Shortbows", "Slings", "Longbows", "HeavyCrossbows", "MusicalInstrument"];
-
-    // ── New enums from LSLibDefinitions.xml ──
-    public static readonly string[] SurfaceLayers = ["Ground", "Cloud"];
-    public static readonly string[] DeathTypes = ["None", "Acid", "Chasm", "DoT", "Electrocution", "Explode", "Falling", "Incinerate", "KnockedDown", "Lifetime", "Narcolepsy", "PetrifiedShattered", "Sentinel"];
-    public static readonly string[] ResurrectTypes = ["Living", "Guaranteed", "Construct", "Undead"];
-    public static readonly string[] SummonDurations = ["UntilLongRest", "Permanent"];
-    public static readonly string[] MagicalFlags = ["Magical", "Nonmagical"];
-    public static readonly string[] NonlethalFlags = ["Lethal", "Nonlethal"];
-    public static readonly string[] SizeCategories = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"];
-    public static readonly string[] EngineStatusTypes = ["DYING", "HEAL", "KNOCKED_DOWN", "TELEPORT_FALLING", "BOOST", "REACTION", "STORY_FROZEN", "SNEAKING", "UNLOCK", "FEAR", "SMELLY", "INVISIBLE", "ROTATE", "MATERIAL", "CLIMBING", "INCAPACITATED", "INSURFACE", "POLYMORPHED", "EFFECT", "DEACTIVATED", "DOWNED"];
-    public static readonly string[] StatusRemoveCause = ["Condition", "TimeOut", "Death"];
-    public static readonly string[] ObscuredState = ["Clear", "BabyBent", "BentQuarters", "ThreeQuarters", "FullCover"];
-
-    // Keep old names for backward compat
-    public static readonly string[] WeaponProperties = WeaponFlags;
-    public static readonly string[] ProficiencyTypes = ["", "LightArmor", "MediumArmor", "HeavyArmor", "Shields", "SimpleMeleeWeapon", "SimpleRangedWeapon", "MartialMeleeWeapon", "MartialRangedWeapon"];
-    public static readonly string[] Skills = SkillType;
-    public static readonly string[] ActionResources = ["ActionPoint", "BonusActionPoint", "Movement", "SpellSlot", "KiPoint", "Rage", "SorceryPoint", "BardicInspiration", "SuperiorityDie", "ChannelDivinity", "LayOnHandsCharge", "WildShape", "NaturalRecovery"];
-
-    // ═══════════════════════════════════════════════════════════
-    // PARSING (keep existing methods)
+    // PARSING
     // ═══════════════════════════════════════════════════════════
 
     public static (string funcName, string[] args)? ParseBoostCall(string raw)
@@ -529,7 +498,7 @@ public static class BoostMapping
         }
         if (start < argsStr.Length)
             result.Add(argsStr[start..].Trim());
-        return result.Where(a => a.Length > 0).ToArray();
+        return result.ToArray();
     }
 
     public static BlockDef? FindBoost(string funcName) =>
@@ -537,6 +506,109 @@ public static class BoostMapping
 
     public static BlockDef? FindFunctor(string funcName) =>
         Functors.FirstOrDefault(f => f.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase));
+
+    // ═══════════════════════════════════════════════════════════
+    // PREVIEW FORMATTING — human-readable boost display
+    // ═══════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Converts raw boost string (semicolon-separated) into human-readable lines.
+    /// E.g. "RollBonus(Attack,2,SavingThrow);AC(1)" → "Бонус к броску +2\nКласс брони +1"
+    /// </summary>
+    /// <summary>
+    /// Converts raw boost string into human-readable lines.
+    /// Pass a translate function to resolve enum values and boost labels via loca.
+    /// Key format: "enum.XXX" for enum values, "boost.FuncName" for boost labels.
+    /// </summary>
+    public static string FormatBoostsForPreview(string rawBoosts, Func<string, string>? translate = null)
+    {
+        if (string.IsNullOrWhiteSpace(rawBoosts)) return "";
+        var parts = rawBoosts.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var lines = new List<string>();
+        foreach (var part in parts)
+        {
+            var line = FormatSingleBoost(part, translate);
+            if (!string.IsNullOrEmpty(line))
+                lines.Add(line);
+        }
+        return string.Join("\n", lines);
+    }
+
+    private static string Tr(string key, Func<string, string>? translate)
+    {
+        if (translate == null) return key;
+        var result = translate(key);
+        return result != key ? result : key; // fallback to raw if no translation
+    }
+
+    private static string FormatSingleBoost(string raw, Func<string, string>? translate)
+    {
+        // Skip IF(...) wrappers — show the inner boost
+        if (raw.StartsWith("IF(", StringComparison.OrdinalIgnoreCase))
+            return ""; // complex conditions not shown in simple preview
+
+        var parsed = ParseBoostCall(raw);
+        if (parsed == null) return raw;
+        var (funcName, args) = parsed.Value;
+
+        var def = FindBoost(funcName);
+        if (def == null) return raw; // unknown boost — show raw
+
+        var label = Tr($"boost.{funcName}", translate);
+        // If no translation found, use built-in LabelRu/Label
+        if (label == $"boost.{funcName}")
+            label = translate != null ? def.LabelRu : def.Label;
+
+        var valueParts = new List<string>();
+
+        for (int i = 0; i < def.Params.Length && i < args.Length; i++)
+        {
+            var val = args[i].Trim();
+            if (string.IsNullOrEmpty(val)) continue;
+
+            var param = def.Params[i];
+            if (param.Type == "hidden") continue;
+
+            if (param.Type is "number" or "formula" or "float")
+            {
+                valueParts.Add(FormatNumeric(val));
+            }
+            else if (param.Type == "dice")
+            {
+                valueParts.Add(val);
+            }
+            else if (param.Type == "bool")
+            {
+                // skip
+            }
+            else if (param.Type == "string")
+            {
+                // String IDs (spells, statuses) — skip in display
+            }
+            else // enum
+            {
+                valueParts.Add(Tr($"enum.{val}", translate));
+            }
+        }
+
+        if (valueParts.Count == 0)
+            return label;
+
+        return $"{label} {string.Join(" ", valueParts)}";
+    }
+
+    private static string FormatNumeric(string val)
+    {
+        // Try parse as number for +/- formatting
+        if (double.TryParse(val, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var num))
+        {
+            if (num >= 0) return $"+{val}";
+            return val; // already has minus
+        }
+        // Formula like "ProficiencyBonus" — keep as-is
+        return val;
+    }
 
     // ═══════════════════════════════════════════════════════════
     // LABEL METHODS (keep for UI)

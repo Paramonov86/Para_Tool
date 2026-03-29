@@ -56,13 +56,7 @@ public partial class MainWindow : Window
         {
             var idx = Math.Clamp(_uiSettings.FontSizeIndex, 0, fontSelector.Items.Count - 1);
             fontSelector.SelectedIndex = idx;
-            if (fontSelector.Items[idx] is ComboBoxItem fi
-                && fi.Tag is string sizeStr && double.TryParse(sizeStr, out var size))
-            {
-                FontSize = size;
-                if (Application.Current != null)
-                    Application.Current.Resources["DefaultFontSize"] = size;
-            }
+            ApplyFontScale(ScaleFactors[idx]);
         }
 
         _suppressSave = false;
@@ -91,14 +85,26 @@ public partial class MainWindow : Window
         }
     }
 
+    private static readonly int[] BaseFontSizes = { 10, 11, 12, 13, 14, 16, 18, 20, 22, 24 };
+    private static readonly double[] ScaleFactors = { 0.7, 1.0, 1.5 };
+
+    private void ApplyFontScale(double scale)
+    {
+        Services.FontScale.Factor = scale;
+        FontSize = Math.Round(14 * scale);
+        if (Application.Current == null) return;
+        Application.Current.Resources["DefaultFontSize"] = FontSize;
+        foreach (var bs in BaseFontSizes)
+            Application.Current.Resources[$"FontSize{bs}"] = Math.Round(bs * scale);
+        Services.FontScale.NotifyChanged();
+    }
+
     private void OnFontSizeChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (sender is ComboBox cb && cb.SelectedItem is ComboBoxItem item
-            && item.Tag is string sizeStr && double.TryParse(sizeStr, out var size))
+        if (sender is ComboBox cb && cb.SelectedIndex >= 0
+            && cb.SelectedIndex < ScaleFactors.Length)
         {
-            FontSize = size;
-            if (Application.Current != null)
-                Application.Current.Resources["DefaultFontSize"] = size;
+            ApplyFontScale(ScaleFactors[cb.SelectedIndex]);
 
             if (!_suppressSave)
             {

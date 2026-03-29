@@ -65,15 +65,7 @@ public partial class BaseItemVM : ObservableObject
     public string Rarity => Entry.DetectedRarity ?? "Uncommon";
     public string ModName { get; }
 
-    public IBrush RarityColor => Rarity switch
-    {
-        "Common" => new SolidColorBrush(Avalonia.Media.Color.Parse("#8A8494")),
-        "Uncommon" => new SolidColorBrush(Avalonia.Media.Color.Parse("#2ECC71")),
-        "Rare" => new SolidColorBrush(Avalonia.Media.Color.Parse("#3498DB")),
-        "VeryRare" => new SolidColorBrush(Avalonia.Media.Color.Parse("#9B59B6")),
-        "Legendary" => new SolidColorBrush(Avalonia.Media.Color.Parse("#C8A96E")),
-        _ => new SolidColorBrush(Avalonia.Media.Color.Parse("#8A8494")),
-    };
+    public IBrush RarityColor => Themes.ThemeBrushes.GetRarity(Rarity);
 
     public BaseItemVM(ItemEntry entry, string modName, LocaService? locaService = null)
     {
@@ -99,8 +91,12 @@ public partial class ConstructorViewModel : ViewModelBase
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private string _editingLang = Localization.Loc.Instance.Lang;
     [ObservableProperty] private bool _isCodeView;
+    [ObservableProperty] private SortMode _currentSort = SortMode.Name;
+    [ObservableProperty] private bool _sortDescending;
     public bool IsPreviewView => !IsCodeView;
     partial void OnIsCodeViewChanged(bool value) => OnPropertyChanged(nameof(IsPreviewView));
+    partial void OnCurrentSortChanged(SortMode value) => ApplySort();
+    partial void OnSortDescendingChanged(bool value) => ApplySort();
 
     private readonly StatsResolver? _resolver;
     private readonly LocaService? _locaService;
@@ -190,15 +186,72 @@ public partial class ConstructorViewModel : ViewModelBase
         ApplyFilter();
     }
 
+    [RelayCommand]
+    private void SetSort(string mode) => CurrentSort = Enum.Parse<SortMode>(mode);
+
+    [RelayCommand]
+    private void ToggleSortDirection() => SortDescending = !SortDescending;
+
+    private static readonly Dictionary<string, int> NavRarityOrder = new()
+    {
+        ["Common"] = 0, ["Uncommon"] = 1, ["Rare"] = 2, ["VeryRare"] = 3, ["Legendary"] = 4
+    };
+
+    private static readonly Dictionary<string, int> NavSlotOrder = new()
+    {
+        ["Clothes"] = 0, ["Armor"] = 1, ["Shields"] = 2, ["Hats"] = 3,
+        ["Cloaks"] = 4, ["Gloves"] = 5, ["Boots"] = 6,
+        ["Amulets"] = 7, ["Rings"] = 8,
+        ["Weapons"] = 9, ["Weapons_1H"] = 10, ["Weapons_2H"] = 11
+    };
+
+    private void ApplySort()
+    {
+        foreach (var group in NavGroups)
+        {
+            IEnumerable<BaseItemVM> sorted = CurrentSort switch
+            {
+                SortMode.Rarity => group.Items.OrderBy(i =>
+                    NavRarityOrder.GetValueOrDefault(i.Rarity, 99)),
+                SortMode.Slot => group.Items.OrderBy(i =>
+                    NavSlotOrder.GetValueOrDefault(i.Entry.EffectivePool, 99)),
+                _ => group.Items.OrderBy(i => i.Label, StringComparer.OrdinalIgnoreCase)
+            };
+
+            if (SortDescending)
+                sorted = sorted.Reverse();
+
+            var list = sorted.ToList();
+            for (int i = 0; i < list.Count; i++)
+            {
+                int oldIdx = group.Items.IndexOf(list[i]);
+                if (oldIdx != i)
+                    group.Items.Move(oldIdx, i);
+            }
+        }
+
+        // Also sort filtered items
+        ApplyFilter();
+    }
+
     private void ApplyFilter()
     {
         FilteredBaseItems.Clear();
         var query = SearchText.Trim();
-        var source = string.IsNullOrEmpty(query)
+        IEnumerable<BaseItemVM> source = string.IsNullOrEmpty(query)
             ? _allBaseItems
             : _allBaseItems.Where(i =>
                 i.Label.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                 i.StatId.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+        source = CurrentSort switch
+        {
+            SortMode.Rarity => source.OrderBy(i => NavRarityOrder.GetValueOrDefault(i.Rarity, 99)),
+            SortMode.Slot => source.OrderBy(i => NavSlotOrder.GetValueOrDefault(i.Entry.EffectivePool, 99)),
+            _ => source.OrderBy(i => i.Label, StringComparer.OrdinalIgnoreCase)
+        };
+        if (SortDescending) source = source.Reverse();
+
         foreach (var item in source)
             FilteredBaseItems.Add(item);
     }
@@ -227,34 +280,30 @@ public partial class ConstructorViewModel : ViewModelBase
 
     /// <summary>
     /// Reload localized texts for the artifact from loca data for the current editing language.
-    /// Only fills empty fields — doesn't overwrite user edits.
+    /// Always resolves from handle (overrides cached text for this language).
     /// </summary>
     private void ReloadLocaForCurrentLang(ArtifactItemVM artVm)
     {
         var lang = EditingLang;
         var art = artVm.Artifact;
 
-        // Item DisplayName — resolve via stored handle for new language
-        if ((!art.DisplayName.ContainsKey(lang) || string.IsNullOrEmpty(art.DisplayName.GetValueOrDefault(lang)))
-            && !string.IsNullOrEmpty(art.DisplayNameHandle))
+        // Item DisplayName — always resolve from handle for requested language
+        if (!string.IsNullOrEmpty(art.DisplayNameHandle))
         {
             var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
             if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
         }
 
         // Item Description
-        if ((!art.Description.ContainsKey(lang) || string.IsNullOrEmpty(art.Description.GetValueOrDefault(lang)))
-            && !string.IsNullOrEmpty(art.DescriptionHandle))
+        if (!string.IsNullOrEmpty(art.DescriptionHandle))
         {
             var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
             if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
         }
 
-        // Passives — load descriptions for the new language
+        // Passives — always resolve for current language
         foreach (var passive in art.Passives)
         {
-            if (passive.DisplayName.ContainsKey(lang) && !string.IsNullOrEmpty(passive.DisplayName[lang]))
-                continue; // Already has text for this lang
 
             var pFields = _resolver?.ResolveAll(passive.Name);
             if (pFields == null) continue;

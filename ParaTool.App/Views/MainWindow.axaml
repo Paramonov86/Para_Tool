@@ -8,7 +8,7 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/app_icon.png"
         Title="ParaTool"
-        Width="1400" Height="850"
+        Width="1610" Height="978"
         MinWidth="1000" MinHeight="650"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource AppBgBrush}">
@@ -28,7 +28,7 @@
             <ComboBox Grid.Column="2"
                       ItemsSource="{Binding Languages}"
                       SelectedItem="{Binding SelectedLanguage}"
-                      FontSize="12"
+                      FontSize="{DynamicResource FontSize12}"
                       MinWidth="100">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="loc:LangInfo">
@@ -79,7 +79,7 @@
                                 BorderThickness="0,3,0,0"
                                 BorderBrush="{Binding PatcherTabBrush}">
                             <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="14" FontWeight="Bold"
+                                       FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
                                        Foreground="{Binding PatcherTabForeground}"
                                        LetterSpacing="1" />
                         </Border>
@@ -97,7 +97,7 @@
                                 BorderThickness="0,3,0,0"
                                 BorderBrush="{Binding ConstructorTabBrush}">
                             <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="14" FontWeight="Bold"
+                                       FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
                                        Foreground="{Binding ConstructorTabForeground}"
                                        LetterSpacing="1" />
                         </Border>
@@ -110,11 +110,11 @@
                             Spacing="6" Margin="0,0,12,0">
                     <!-- Font size -->
                     <ComboBox Name="FontSizeSelector"
-                              FontSize="11" Padding="6,3" MinWidth="55"
+                              FontSize="11" Padding="6,3" MinWidth="65"
                               ToolTip.Tip="Font size">
-                        <ComboBoxItem Content="A⁻" Tag="12" />
-                        <ComboBoxItem Content="A" Tag="14" />
-                        <ComboBoxItem Content="A⁺" Tag="16" />
+                        <ComboBoxItem Content="A  -30%" />
+                        <ComboBoxItem Content="A  0%" />
+                        <ComboBoxItem Content="A  +50%" />
                     </ComboBox>
 
                     <!-- Theme -->
@@ -125,10 +125,15 @@
                         <ComboBoxItem Content="⚪ Light" />
                         <ComboBoxItem Content="🔴 Dota 2" />
                         <ComboBoxItem Content="🟡 Cyberpunk" />
-                        <ComboBoxItem Content="🧛 Dracula" />
+                        <ComboBoxItem Content="⚔️ WoW" />
                         <ComboBoxItem Content="❄️ Nord" />
                         <ComboBoxItem Content="💜 Synthwave" />
-                        <ComboBoxItem Content="⚔️ BG3 Dark" />
+                        <ComboBoxItem Content="⚔️ BG3" />
+                        <ComboBoxItem Content="🎀 Pinky" />
+                        <ComboBoxItem Content="💻 Hacker" />
+                        <ComboBoxItem Content="🤡 Clown" />
+                        <ComboBoxItem Content="🏛️ Gov" />
+                        <ComboBoxItem Content="🌿 Nature" />
                     </ComboBox>
                 </StackPanel>
             </Grid>
@@ -139,7 +144,7 @@
                    Text="{Binding AppVersion}"
                    VerticalAlignment="Bottom" HorizontalAlignment="Left"
                    Margin="8,0,0,4"
-                   FontSize="10"
+                   FontSize="{DynamicResource FontSize10}"
                    Foreground="{StaticResource TextMutedBrush}"
                    Opacity="0.5"
                    IsHitTestVisible="False" />

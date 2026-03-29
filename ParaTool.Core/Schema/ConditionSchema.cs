@@ -26,8 +26,10 @@ public sealed class ConditionDef
 public sealed class ConditionParam
 {
     public required string Name { get; init; }
-    public required string Type { get; init; } // "string", "enum", "int", "float", "bool", "entity", "ability", "damageType", "surface", etc.
+    public required string Type { get; init; } // "string", "enum", "flags", "int", "float", "bool", "entity"
     public string[]? EnumValues { get; init; }
+    /// <summary>Optional short display labels (same length as EnumValues).</summary>
+    public string[]? DisplayValues { get; init; }
     public bool IsOptional { get; init; }
 }
 
@@ -86,6 +88,34 @@ public sealed class ConditionSchema
 
     public static readonly string[] ItemSlots = BoostMapping.StatItemSlot;
 
+    public static readonly string[] SpellCategories =
+    [
+        "SpellCategory.Dash", "SpellCategory.Jump", "SpellCategory.DetectThoughts",
+        "SpellCategory.None", "SpellCategory.TargetSingle", "SpellCategory.TargetMultiselect",
+        "SpellCategory.TargetAoE", "SpellCategory.IntentDamage", "SpellCategory.IntentHealing",
+        "SpellCategory.IntentBuff", "SpellCategory.IntentDebuff", "SpellCategory.IntentUtility",
+    ];
+
+    public static readonly string[] SpellTypes =
+    [
+        "SpellType.Damage", "SpellType.Healing", "SpellType.Rush", "SpellType.Shout",
+        "SpellType.Zone", "SpellType.Throw", "SpellType.Wall", "SpellType.Teleportation",
+        "SpellType.MultiStrike",
+    ];
+
+    public static readonly string[] InstrumentTypes =
+    [
+        "None", "Bagpipes", "Drum", "Dulcimer", "Flute", "Lute", "Lyre", "Horn", "Shawm", "Violin",
+    ];
+
+    public static readonly string[] HealingTypes = ["Healing", "HealSelf", "HealSharing"];
+
+    public static readonly string[] StatusRemoveCauses = ["None", "Death", "LongRest", "ShortRest", "Expired"];
+
+    public static readonly string[] SizeCategories = BoostMapping.SizeCategories;
+
+    public static readonly string[] DamageFlags = ["Hit", "Miss", "Critical", "Magical", "NonLethal", "Melee", "Ranged", "WeaponBasedDamage", "Surface", "Projectile", "Trap", "Thorns"];
+
     public static readonly string[] EntityTargetsEn = ["Target", "Source"];
     public static readonly string[] EntityTargetsRu = ["Цель", "Источник"];
 
@@ -121,6 +151,10 @@ public sealed class ConditionSchema
         "SurfaceSurfaceDeepWater", "SurfaceSurfaceDeepWaterRunning",
         "SurfaceWaterElectrified", "SurfaceSurfaceWaterElectrified",
     ];
+
+    /// <summary>Short display labels for InSurfaceValues (strip "Surface" prefix).</summary>
+    public static readonly string[] InSurfaceLabels =
+        InSurfaceValues.Select(s => s.StartsWith("Surface") ? s[7..] : s).ToArray();
 
     // ── Parsing ────────────────────────────────────────────────
 
@@ -197,7 +231,7 @@ public sealed class ConditionSchema
                     // Special case: InSurface gridStateStr → surface enum
                     if (func.Value.name == "InSurface" && funcParams.Count > 0)
                     {
-                        funcParams[0] = new ConditionParam { Name = "surface", Type = "enum", EnumValues = InSurfaceValues };
+                        funcParams[0] = new ConditionParam { Name = "surface", Type = "enum", EnumValues = InSurfaceValues, DisplayValues = InSurfaceLabels };
                     }
 
                     AddFunc(schema, new ConditionDef
@@ -307,14 +341,14 @@ public sealed class ConditionSchema
         "KhnSchool" => "enum",
         "KhnWeaponProperties" => "enum",
         "Khn_Entity" => "enum",
-        "KhnInstrumentType" => "string",
-        "KhnHealingType" => "string",
-        "KhnStatusRemoveCause" => "string",
-        "KhnSpellCategory" => "string",
-        "SpellFlags" => "enum",
-        "SpellType" => "string",
+        "KhnInstrumentType" => "enum",
+        "KhnHealingType" => "enum",
+        "KhnStatusRemoveCause" => "enum",
+        "KhnSpellCategory" => "enum",
+        "SpellFlags" => "flags",
+        "SpellType" => "enum",
         "StatsFunctorType" => "string",
-        "DamageFlags" => "string",
+        "DamageFlags" => "flags",
         "ItemSlot" => "enum",
         "table" => "string",
         _ => "string"
@@ -329,6 +363,12 @@ public sealed class ConditionSchema
         "Khn_Entity" => EntityTargetsEn,
         "SpellFlags" => SpellFlags,
         "ItemSlot" => ItemSlots,
+        "KhnSpellCategory" => SpellCategories,
+        "SpellType" => SpellTypes,
+        "KhnInstrumentType" => InstrumentTypes,
+        "KhnHealingType" => HealingTypes,
+        "KhnStatusRemoveCause" => StatusRemoveCauses,
+        "DamageFlags" => DamageFlags,
         _ => null
     };
 
@@ -341,7 +381,7 @@ public sealed class ConditionSchema
         "level" or "dc" or "basedc" or "value" or "amount" or "cost" => "int",
         "offhand" or "checkranged" or "mainhand" or "ispercentage" => "bool",
         "statusid" or "status" or "spellid" or "spell" or "passivename" or "tag" => "string",
-        "size" => "string",
+        "size" => "enum",
         "properties" or "weaponflags" or "flags" => "enum",
         _ => "string"
     };
@@ -353,6 +393,8 @@ public sealed class ConditionSchema
         "school" => SpellSchools,
         "slot" => ItemSlots,
         "properties" or "weaponflags" => WeaponProperties,
+        "flags" => WeaponProperties,
+        "size" => SizeCategories,
         _ => null
     };
 

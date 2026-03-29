@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Styling;
 
 namespace ParaTool.App.Themes;
 
@@ -8,13 +9,35 @@ namespace ParaTool.App.Themes;
 /// </summary>
 public static class ThemeManager
 {
+    // Default rarity colors (dark themes)
+    private static readonly Color DefCommon = Color.Parse("#8A8494");
+    private static readonly Color DefUncommon = Color.Parse("#2ECC71");
+    private static readonly Color DefRare = Color.Parse("#3498DB");
+    private static readonly Color DefVeryRare = Color.Parse("#9B59B6");
+    private static readonly Color DefLegendary = Color.Parse("#C8A96E");
+
+    // Light-friendly rarity colors (darker/more saturated for contrast)
+    private static readonly Color LightCommon = Color.Parse("#6A6474");
+    private static readonly Color LightUncommon = Color.Parse("#1B9E52");
+    private static readonly Color LightRare = Color.Parse("#2070B0");
+    private static readonly Color LightVeryRare = Color.Parse("#7A3E9D");
+    private static readonly Color LightLegendary = Color.Parse("#A07830");
+
     public record ThemeDef(
         string Name,
         Color AppBg, Color PanelBg, Color CardBg, Color HoverBg, Color InputBg,
         Color TextPrimary, Color TextSecondary, Color TextMuted, Color TextDisabled,
         Color Accent, Color AccentLight, Color Gold,
         Color Success, Color Warning, Color Error, Color Info,
-        Color BorderSubtle);
+        Color BorderSubtle,
+        bool IsLight = false)
+    {
+        public Color RarityCommon => IsLight ? LightCommon : DefCommon;
+        public Color RarityUncommon => IsLight ? LightUncommon : DefUncommon;
+        public Color RarityRare => IsLight ? LightRare : DefRare;
+        public Color RarityVeryRare => IsLight ? LightVeryRare : DefVeryRare;
+        public Color RarityLegendary => IsLight ? LightLegendary : DefLegendary;
+    }
 
     public static readonly ThemeDef Paramonov = new("Paramonov",
         AppBg: Color.Parse("#1A1820"), PanelBg: Color.Parse("#2F2C3A"), CardBg: Color.Parse("#3D3A4D"),
@@ -34,17 +57,18 @@ public static class ThemeManager
         Accent: Color.Parse("#6C5CE7"), AccentLight: Color.Parse("#5A4BD6"), Gold: Color.Parse("#B8962E"),
         Success: Color.Parse("#27AE60"), Warning: Color.Parse("#E67E22"),
         Error: Color.Parse("#E74C3C"), Info: Color.Parse("#2980B9"),
-        BorderSubtle: Color.Parse("#D8D6E0"));
+        BorderSubtle: Color.Parse("#D8D6E0"),
+        IsLight: true);
 
     public static readonly ThemeDef Dota2 = new("Dota 2",
-        AppBg: Color.Parse("#0D0D0D"), PanelBg: Color.Parse("#1A1A1A"), CardBg: Color.Parse("#242424"),
-        HoverBg: Color.Parse("#333333"), InputBg: Color.Parse("#151515"),
-        TextPrimary: Color.Parse("#D4D4D4"), TextSecondary: Color.Parse("#999999"),
-        TextMuted: Color.Parse("#666666"), TextDisabled: Color.Parse("#444444"),
-        Accent: Color.Parse("#C23B22"), AccentLight: Color.Parse("#E04830"), Gold: Color.Parse("#DAA520"),
-        Success: Color.Parse("#4CAF50"), Warning: Color.Parse("#FF9800"),
-        Error: Color.Parse("#F44336"), Info: Color.Parse("#2196F3"),
-        BorderSubtle: Color.Parse("#333333"));
+        AppBg: Color.Parse("#0C0A0E"), PanelBg: Color.Parse("#181620"), CardBg: Color.Parse("#222030"),
+        HoverBg: Color.Parse("#2E2A3A"), InputBg: Color.Parse("#100E16"),
+        TextPrimary: Color.Parse("#D8D0C4"), TextSecondary: Color.Parse("#A09888"),
+        TextMuted: Color.Parse("#6A6258"), TextDisabled: Color.Parse("#3E3830"),
+        Accent: Color.Parse("#C9302C"), AccentLight: Color.Parse("#E04438"), Gold: Color.Parse("#E2B53E"),
+        Success: Color.Parse("#5EC45E"), Warning: Color.Parse("#E2B53E"),
+        Error: Color.Parse("#C9302C"), Info: Color.Parse("#6CB4DC"),
+        BorderSubtle: Color.Parse("#2E2A3A"));
 
     // ── Cyberpunk — neon yellow / cyan on deep dark ──────────
     public static readonly ThemeDef Cyberpunk = new("Cyberpunk",
@@ -57,16 +81,16 @@ public static class ThemeManager
         Error: Color.Parse("#FF3860"), Info: Color.Parse("#00D4FF"),
         BorderSubtle: Color.Parse("#2A2A44"));
 
-    // ── Dracula — purple/pink/green pastel glow ───────────────
-    public static readonly ThemeDef Dracula = new("Dracula",
-        AppBg: Color.Parse("#282A36"), PanelBg: Color.Parse("#2D2F3D"), CardBg: Color.Parse("#343746"),
-        HoverBg: Color.Parse("#44475A"), InputBg: Color.Parse("#21222C"),
-        TextPrimary: Color.Parse("#F8F8F2"), TextSecondary: Color.Parse("#D0CCE0"),
-        TextMuted: Color.Parse("#6272A4"), TextDisabled: Color.Parse("#4A5070"),
-        Accent: Color.Parse("#BD93F9"), AccentLight: Color.Parse("#D4AAFF"), Gold: Color.Parse("#F1FA8C"),
-        Success: Color.Parse("#50FA7B"), Warning: Color.Parse("#FFB86C"),
-        Error: Color.Parse("#FF5555"), Info: Color.Parse("#8BE9FD"),
-        BorderSubtle: Color.Parse("#44475A"));
+    // ── WoW — Alliance blue & gold with a touch of Horde red ──
+    public static readonly ThemeDef Wow = new("WoW",
+        AppBg: Color.Parse("#0C1220"), PanelBg: Color.Parse("#141E30"), CardBg: Color.Parse("#1C2840"),
+        HoverBg: Color.Parse("#263450"), InputBg: Color.Parse("#0A1018"),
+        TextPrimary: Color.Parse("#D8E4F0"), TextSecondary: Color.Parse("#A0B8D0"),
+        TextMuted: Color.Parse("#5A7898"), TextDisabled: Color.Parse("#3A4E68"),
+        Accent: Color.Parse("#1E70BF"), AccentLight: Color.Parse("#3A90E0"), Gold: Color.Parse("#D4A520"),
+        Success: Color.Parse("#4CAF50"), Warning: Color.Parse("#D4A520"),
+        Error: Color.Parse("#8C1616"), Info: Color.Parse("#4A9AD4"),
+        BorderSubtle: Color.Parse("#263450"));
 
     // ── Nord — cool arctic blue-gray ──────────────────────────
     public static readonly ThemeDef Nord = new("Nord",
@@ -90,18 +114,75 @@ public static class ThemeManager
         Error: Color.Parse("#FE4450"), Info: Color.Parse("#36F9F6"),
         BorderSubtle: Color.Parse("#2A1E55"));
 
-    // ── BG3 Dark — amber / gold inspired by the game UI ───────
-    public static readonly ThemeDef Bg3Dark = new("BG3 Dark",
-        AppBg: Color.Parse("#111015"), PanelBg: Color.Parse("#1C1A22"), CardBg: Color.Parse("#26232E"),
-        HoverBg: Color.Parse("#332E3C"), InputBg: Color.Parse("#15131B"),
-        TextPrimary: Color.Parse("#E8DDD0"), TextSecondary: Color.Parse("#BCA88A"),
-        TextMuted: Color.Parse("#7A6E5C"), TextDisabled: Color.Parse("#4A4238"),
-        Accent: Color.Parse("#C8963E"), AccentLight: Color.Parse("#E0B05A"), Gold: Color.Parse("#C8963E"),
+    // ── BG3 — warm amber/gold, matches the game UI ─────────────
+    public static readonly ThemeDef Bg3 = new("BG3",
+        AppBg: Color.Parse("#1A1612"), PanelBg: Color.Parse("#221E18"), CardBg: Color.Parse("#2C2820"),
+        HoverBg: Color.Parse("#3A3228"), InputBg: Color.Parse("#161210"),
+        TextPrimary: Color.Parse("#E0D4C0"), TextSecondary: Color.Parse("#C8BCA4"),
+        TextMuted: Color.Parse("#8A7E68"), TextDisabled: Color.Parse("#4A4238"),
+        Accent: Color.Parse("#C8963E"), AccentLight: Color.Parse("#E0B05A"), Gold: Color.Parse("#C8A96E"),
         Success: Color.Parse("#5A9E4B"), Warning: Color.Parse("#D4903A"),
         Error: Color.Parse("#B03030"), Info: Color.Parse("#4A8AB5"),
-        BorderSubtle: Color.Parse("#332E3C"));
+        BorderSubtle: Color.Parse("#3A3228"));
 
-    public static readonly ThemeDef[] AllThemes = [Paramonov, Light, Dota2, Cyberpunk, Dracula, Nord, Synthwave, Bg3Dark];
+    // ── Pinky — warm pastel pink, cozy & cute ──────────────────
+    public static readonly ThemeDef Pinky = new("Pinky",
+        AppBg: Color.Parse("#F5EEF0"), PanelBg: Color.Parse("#FFFFFF"), CardBg: Color.Parse("#FFF0F3"),
+        HoverBg: Color.Parse("#FFE0E8"), InputBg: Color.Parse("#F8F2F4"),
+        TextPrimary: Color.Parse("#4A3040"), TextSecondary: Color.Parse("#7A5A68"),
+        TextMuted: Color.Parse("#B898A8"), TextDisabled: Color.Parse("#D4C0C8"),
+        Accent: Color.Parse("#E8789A"), AccentLight: Color.Parse("#F09AB4"), Gold: Color.Parse("#D4A06A"),
+        Success: Color.Parse("#7BC8A4"), Warning: Color.Parse("#E8A862"),
+        Error: Color.Parse("#E06070"), Info: Color.Parse("#82AAD4"),
+        BorderSubtle: Color.Parse("#EADCE0"),
+        IsLight: true);
+
+    // ── Hacker — acid green on black, 90s terminal rave ─────────
+    public static readonly ThemeDef Hacker = new("Hacker",
+        AppBg: Color.Parse("#000000"), PanelBg: Color.Parse("#0A0A0A"), CardBg: Color.Parse("#111111"),
+        HoverBg: Color.Parse("#1A1A1A"), InputBg: Color.Parse("#050505"),
+        TextPrimary: Color.Parse("#00FF41"), TextSecondary: Color.Parse("#00CC33"),
+        TextMuted: Color.Parse("#008820"), TextDisabled: Color.Parse("#004410"),
+        Accent: Color.Parse("#00FF41"), AccentLight: Color.Parse("#33FF66"), Gold: Color.Parse("#CCFF00"),
+        Success: Color.Parse("#00FF41"), Warning: Color.Parse("#CCFF00"),
+        Error: Color.Parse("#FF0040"), Info: Color.Parse("#00CCFF"),
+        BorderSubtle: Color.Parse("#1A1A1A"));
+
+    // ── Clown — chaotic circus madness ───────────────────────────
+    public static readonly ThemeDef Clown = new("Clown",
+        AppBg: Color.Parse("#1A0A2E"), PanelBg: Color.Parse("#220E3A"), CardBg: Color.Parse("#2E1448"),
+        HoverBg: Color.Parse("#3E1A5E"), InputBg: Color.Parse("#140828"),
+        TextPrimary: Color.Parse("#F0E840"), TextSecondary: Color.Parse("#E0D030"),
+        TextMuted: Color.Parse("#A09020"), TextDisabled: Color.Parse("#605010"),
+        Accent: Color.Parse("#FF2020"), AccentLight: Color.Parse("#FF5050"), Gold: Color.Parse("#FFD700"),
+        Success: Color.Parse("#00FF88"), Warning: Color.Parse("#FF8C00"),
+        Error: Color.Parse("#FF1493"), Info: Color.Parse("#00FFFF"),
+        BorderSubtle: Color.Parse("#4A1870"));
+
+    // ── Gov — generic government website, sterile blue-gray ────
+    public static readonly ThemeDef Gov = new("Gov",
+        AppBg: Color.Parse("#E8EDF2"), PanelBg: Color.Parse("#FFFFFF"), CardBg: Color.Parse("#F0F4F8"),
+        HoverBg: Color.Parse("#D0DCE8"), InputBg: Color.Parse("#EEF1F5"),
+        TextPrimary: Color.Parse("#1A2B3C"), TextSecondary: Color.Parse("#445566"),
+        TextMuted: Color.Parse("#8899AA"), TextDisabled: Color.Parse("#B0BEC5"),
+        Accent: Color.Parse("#0D4CD3"), AccentLight: Color.Parse("#2E6AE6"), Gold: Color.Parse("#B8860B"),
+        Success: Color.Parse("#2E7D32"), Warning: Color.Parse("#E65100"),
+        Error: Color.Parse("#C62828"), Info: Color.Parse("#0D4CD3"),
+        BorderSubtle: Color.Parse("#C8D4E0"),
+        IsLight: true);
+
+    // ── Nature — warm wood & amber, cozy cabin vibes ───────────
+    public static readonly ThemeDef Nature = new("Nature",
+        AppBg: Color.Parse("#1C1610"), PanelBg: Color.Parse("#2A2018"), CardBg: Color.Parse("#362A1E"),
+        HoverBg: Color.Parse("#443626"), InputBg: Color.Parse("#18120C"),
+        TextPrimary: Color.Parse("#E8DCC8"), TextSecondary: Color.Parse("#C4B498"),
+        TextMuted: Color.Parse("#8A7A60"), TextDisabled: Color.Parse("#5A4E3C"),
+        Accent: Color.Parse("#C89840"), AccentLight: Color.Parse("#E0B050"), Gold: Color.Parse("#D4A830"),
+        Success: Color.Parse("#7AAC56"), Warning: Color.Parse("#D4A030"),
+        Error: Color.Parse("#B85040"), Info: Color.Parse("#6A9EB0"),
+        BorderSubtle: Color.Parse("#443626"));
+
+    public static readonly ThemeDef[] AllThemes = [Paramonov, Light, Dota2, Cyberpunk, Wow, Nord, Synthwave, Bg3, Pinky, Hacker, Clown, Gov, Nature];
 
     public static void ApplyTheme(Application app, ThemeDef theme)
     {
@@ -129,6 +210,16 @@ public static class ThemeManager
         SetColor(app, "CardBg", theme.CardBg);
         SetColor(app, "TextPrimary", theme.TextPrimary);
         SetColor(app, "Accent", theme.Accent);
+
+        // Rarity colors
+        SetBrush(app, "RarityCommonBrush", theme.RarityCommon);
+        SetBrush(app, "RarityUncommonBrush", theme.RarityUncommon);
+        SetBrush(app, "RarityRareBrush", theme.RarityRare);
+        SetBrush(app, "RarityVeryRareBrush", theme.RarityVeryRare);
+        SetBrush(app, "RarityLegendaryBrush", theme.RarityLegendary);
+
+        // Switch FluentTheme variant for light/dark themes
+        app.RequestedThemeVariant = theme.IsLight ? ThemeVariant.Light : ThemeVariant.Dark;
     }
 
     private static void SetBrush(Application app, string key, Color color)

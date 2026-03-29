@@ -6,7 +6,7 @@
         <!-- Title -->
         <TextBlock Grid.Column="0"
                    Text="ParaTool"
-                   FontSize="13" FontWeight="SemiBold"
+                   FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    VerticalAlignment="Center"
                    Margin="12,0,0,0" />

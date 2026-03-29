@@ -1,3 +1,4 @@
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -7,6 +8,7 @@ using Avalonia.Media;
 using ParaTool.App.Controls;
 using ParaTool.App.ViewModels;
 using ParaTool.App.Localization;
+using ParaTool.App.Services;
 
 namespace ParaTool.App.Views;
 
@@ -18,14 +20,7 @@ public partial class ConstructorView : UserControl
     private static SolidColorBrush ChipTextSelected => Themes.ThemeBrushes.TextPrimary;
     private static SolidColorBrush ThemeSelectedBg => Themes.ThemeBrushes.CardBg;
 
-    private static readonly Dictionary<string, SolidColorBrush> RarityBrushes = new()
-    {
-        ["Common"] = new(Color.Parse("#8A8494")),
-        ["Uncommon"] = new(Color.Parse("#2ECC71")),
-        ["Rare"] = new(Color.Parse("#3498DB")),
-        ["VeryRare"] = new(Color.Parse("#9B59B6")),
-        ["Legendary"] = new(Color.Parse("#C8A96E")),
-    };
+    private static SolidColorBrush GetRarityBrush(string rarity) => Themes.ThemeBrushes.GetRarity(rarity);
 
     // BG3 localization folder names with flag emojis
     private static readonly string[] Bg3Languages =
@@ -52,6 +47,8 @@ public partial class ConstructorView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         AddHandler(Button.ClickEvent, OnButtonClick, RoutingStrategies.Bubble);
+        Loc.Instance.PropertyChanged += (_, _) => RebuildChips();
+        FontScale.ScaleChanged += RebuildChips;
         AddHandler(GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
 
@@ -73,7 +70,10 @@ public partial class ConstructorView : UserControl
         // Toggle code/preview button
         var toggleBtn = this.FindControl<Button>("ToggleCodeViewBtn");
         if (toggleBtn != null)
+        {
+            toggleBtn.Content = "\ud83d\udc41"; // eye = preview mode (default)
             toggleBtn.Click += OnToggleCodeView;
+        }
     }
 
     private void OnToggleCodeView(object? sender, RoutedEventArgs e)
@@ -83,7 +83,8 @@ public partial class ConstructorView : UserControl
 
         if (sender is Button btn)
         {
-            btn.Content = vm.IsCodeView ? "\ud83d\udc41" : "</>";
+            // Eye = preview mode, </> = code mode
+            btn.Content = vm.IsCodeView ? "</>" : "\ud83d\udc41";
             btn.Foreground = vm.IsCodeView
                 ? Themes.ThemeBrushes.Accent
                 : Themes.ThemeBrushes.TextMuted;
@@ -266,8 +267,8 @@ public partial class ConstructorView : UserControl
 
         var searchBox = new TextBox
         {
-            Watermark = "Search...",
-            FontSize = 12, Padding = new Avalonia.Thickness(8, 6),
+            Watermark = Loc.Instance.WmSearch,
+            FontSize = FontScale.Of(12), Padding = new Avalonia.Thickness(8, 6),
             Background = Themes.ThemeBrushes.InputBg,
             Margin = new Avalonia.Thickness(0, 0, 0, 4),
         };
@@ -290,12 +291,12 @@ public partial class ConstructorView : UserControl
                     || e.id.Contains(q, StringComparison.OrdinalIgnoreCase));
 
             // Custom option first
-            var customBtn = new ListBoxItem { Content = "Custom (type your own)...", FontSize = 11, Foreground = Themes.ThemeBrushes.Accent };
+            var customBtn = new ListBoxItem { Content = Loc.Instance.LblCustomOption, FontSize = FontScale.Of(11), Foreground = Themes.ThemeBrushes.Accent };
             listBox.Items.Add(customBtn);
 
             foreach (var (id, display) in source2)
             {
-                var item = new ListBoxItem { Content = display, Tag = id, FontSize = 11, Foreground = Themes.ThemeBrushes.TextSecondary };
+                var item = new ListBoxItem { Content = display, Tag = id, FontSize = FontScale.Of(11), Foreground = Themes.ThemeBrushes.TextSecondary };
                 listBox.Items.Add(item);
             }
         }
@@ -372,7 +373,7 @@ public partial class ConstructorView : UserControl
 
         var searchBox = new TextBox
         {
-            Watermark = "Search...", FontSize = 12,
+            Watermark = Loc.Instance.WmSearch, FontSize = FontScale.Of(12),
             Padding = new Avalonia.Thickness(8, 6),
             Background = Themes.ThemeBrushes.InputBg,
             Margin = new Avalonia.Thickness(0, 0, 0, 4),
@@ -390,7 +391,7 @@ public partial class ConstructorView : UserControl
                 ? entries
                 : entries.Where(e => e.Contains(q!.Trim(), StringComparison.OrdinalIgnoreCase));
             foreach (var e in source2)
-                listBox.Items.Add(new ListBoxItem { Content = e, Tag = e, FontSize = 11, Foreground = Themes.ThemeBrushes.TextSecondary });
+                listBox.Items.Add(new ListBoxItem { Content = e, Tag = e, FontSize = FontScale.Of(11), Foreground = Themes.ThemeBrushes.TextSecondary });
         }
 
         searchBox.TextChanged += (_, _) => Filter(searchBox.Text ?? "");
@@ -519,11 +520,11 @@ public partial class ConstructorView : UserControl
         foreach (var rarity in ArtifactItemVM.RarityOptions)
         {
             var isSelected = art.EditRarity == rarity;
-            var brush = RarityBrushes.GetValueOrDefault(rarity, ChipTextDefault);
+            var brush = GetRarityBrush(rarity);
             var btn = new Button
             {
                 Content = Loc.Instance.RarityName(rarity), Tag = rarity,
-                FontSize = 12, FontWeight = FontWeight.SemiBold,
+                FontSize = FontScale.Of(12), FontWeight = FontWeight.SemiBold,
                 Padding = new Thickness(12, 5), Margin = new Thickness(0, 0, 4, 4),
                 CornerRadius = new CornerRadius(12),
                 Cursor = new Cursor(StandardCursorType.Hand),
@@ -547,7 +548,7 @@ public partial class ConstructorView : UserControl
             var btn = new Button
             {
                 Content = Loc.Instance.PoolName(pool), Tag = pool,
-                FontSize = 11, Padding = new Thickness(10, 4),
+                FontSize = FontScale.Of(11), Padding = new Thickness(10, 4),
                 Margin = new Thickness(0, 0, 4, 4), CornerRadius = new CornerRadius(10),
                 Cursor = new Cursor(StandardCursorType.Hand),
                 Background = isSelected ? ChipSelectedBg : ChipDefaultBg,
@@ -571,7 +572,7 @@ public partial class ConstructorView : UserControl
             var btn = new Button
             {
                 Content = Loc.Instance.ThemeName(theme), Tag = theme,
-                FontSize = 11, Padding = new Thickness(10, 4),
+                FontSize = FontScale.Of(11), Padding = new Thickness(10, 4),
                 Margin = new Thickness(0, 0, 4, 4), CornerRadius = new CornerRadius(10),
                 Cursor = new Cursor(StandardCursorType.Hand),
                 Background = isSelected ? ThemeSelectedBg : ChipDefaultBg,

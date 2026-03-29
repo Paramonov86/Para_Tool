@@ -1,15 +1,18 @@
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using ParaTool.App.Themes;
+using ParaTool.App.Services;
+using ParaTool.App.Localization;
 
 namespace ParaTool.App.Controls;
 
 /// <summary>
 /// Semicolon-separated string displayed as removable colored chips.
-/// Typing text and pressing Space/Enter/; creates a new chip.
+/// If SearchItems is set, "+" opens a SearchPickerChip popup instead of text input.
 /// </summary>
 public class ChipListEditor : UserControl
 {
@@ -18,6 +21,9 @@ public class ChipListEditor : UserControl
 
     public static readonly StyledProperty<string> ChipColorProperty =
         AvaloniaProperty.Register<ChipListEditor, string>(nameof(ChipColor), "#E67E22");
+
+    public static readonly StyledProperty<string[]?> SearchItemsProperty =
+        AvaloniaProperty.Register<ChipListEditor, string[]?>(nameof(SearchItems));
 
     public string? Text
     {
@@ -31,25 +37,48 @@ public class ChipListEditor : UserControl
         set => SetValue(ChipColorProperty, value);
     }
 
+    /// <summary>If set, "+" opens a search picker instead of text input.</summary>
+    public string[]? SearchItems
+    {
+        get => GetValue(SearchItemsProperty);
+        set => SetValue(SearchItemsProperty, value);
+    }
+
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal };
     private readonly TextBox _input;
+    private readonly Button _addBtn;
     private bool _updating;
 
     public ChipListEditor()
     {
         _input = new TextBox
         {
-            FontSize = 12,
+            FontSize = FontScale.Of(12),
             Padding = new Thickness(6, 4),
             MinWidth = 80,
-            Watermark = "Type and press Enter...",
+            Watermark = Loc.Instance.WmTypeAndEnter,
             Background = Avalonia.Media.Brushes.Transparent,
             BorderThickness = new Thickness(0),
             VerticalAlignment = VerticalAlignment.Center,
         };
-
         _input.KeyDown += OnInputKeyDown;
+
+        _addBtn = new Button
+        {
+            Content = "+",
+            FontSize = FontScale.Of(14),
+            FontWeight = FontWeight.Bold,
+            Padding = new Thickness(6, 0),
+            Background = Avalonia.Media.Brushes.Transparent,
+            Foreground = new SolidColorBrush(Color.Parse("#E06040")),
+            BorderThickness = new Thickness(0),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        _addBtn.Click += OnAddClick;
+
         _panel.Children.Add(_input);
+        _panel.Children.Add(_addBtn);
 
         Content = new Border
         {
@@ -62,24 +91,102 @@ public class ChipListEditor : UserControl
         {
             if (e.Property == TextProperty && !_updating)
                 Rebuild();
+            if (e.Property == SearchItemsProperty)
+                UpdateInputVisibility();
         };
+        FontScale.ScaleChanged += () =>
+        {
+            _input.FontSize = FontScale.Of(12);
+            _addBtn.FontSize = FontScale.Of(14);
+            if (!_updating) Rebuild();
+        };
+
+        UpdateInputVisibility();
+    }
+
+    private void UpdateInputVisibility()
+    {
+        // If search items available, hide text input — use "+" button with picker
+        _input.IsVisible = SearchItems == null || SearchItems.Length == 0;
+    }
+
+    private void OnAddClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var items = SearchItems;
+        if (items is { Length: > 0 })
+        {
+            OpenSearchPicker(null);
+        }
+        else
+        {
+            // Fallback: add from text input
+            AddFromInput();
+        }
+    }
+
+    private void OpenSearchPicker(string? replaceValue)
+    {
+        var items = SearchItems;
+        if (items == null || items.Length == 0) return;
+
+        var picker = new SearchPickerChip
+        {
+            Text = replaceValue ?? "",
+            Items = items,
+            Watermark = Loc.Instance.WmSearch,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        picker.PropertyChanged += (s, ev) =>
+        {
+            if (ev.Property.Name == "Text" && s is SearchPickerChip sp && !string.IsNullOrEmpty(sp.Text))
+            {
+                if (replaceValue != null)
+                {
+                    var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                    var idx = parts.IndexOf(replaceValue);
+                    if (idx >= 0) parts[idx] = sp.Text;
+                    else parts.Add(sp.Text);
+                    _updating = true;
+                    Text = string.Join(";", parts);
+                    _updating = false;
+                }
+                else
+                {
+                    var current = Text ?? "";
+                    _updating = true;
+                    Text = string.IsNullOrEmpty(current) ? sp.Text : $"{current};{sp.Text}";
+                    _updating = false;
+                }
+                Rebuild();
+            }
+        };
+
+        // Add picker to panel so it has a visual parent, then open
+        _panel.Children.Insert(_panel.Children.Count - 1, picker);
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => picker.OpenPicker(),
+            Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     private void OnInputKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key is Key.Enter or Key.Space || (e.Key == Key.OemSemicolon))
         {
-            var text = _input.Text?.Trim().TrimEnd(';');
-            if (!string.IsNullOrEmpty(text))
-            {
-                var current = Text ?? "";
-                _updating = true;
-                Text = string.IsNullOrEmpty(current) ? text : $"{current};{text}";
-                _updating = false;
-                _input.Text = "";
-                Rebuild();
-            }
+            AddFromInput();
             e.Handled = true;
+        }
+    }
+
+    private void AddFromInput()
+    {
+        var text = _input.Text?.Trim().TrimEnd(';');
+        if (!string.IsNullOrEmpty(text))
+        {
+            var current = Text ?? "";
+            _updating = true;
+            Text = string.IsNullOrEmpty(current) ? text : $"{current};{text}";
+            _updating = false;
+            _input.Text = "";
+            Rebuild();
         }
     }
 
@@ -96,7 +203,9 @@ public class ChipListEditor : UserControl
             _panel.Children.Add(chip);
         }
 
-        _panel.Children.Add(_input);
+        if (_input.IsVisible)
+            _panel.Children.Add(_input);
+        _panel.Children.Add(_addBtn);
     }
 
     private Border CreateChip(string value, Color color)
@@ -104,17 +213,30 @@ public class ChipListEditor : UserControl
         var colorBrush = new SolidColorBrush(color);
 
         var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        stack.Children.Add(new TextBlock
+        var textBlock = new TextBlock
         {
             Text = value,
-            FontSize = 11, FontWeight = FontWeight.SemiBold,
+            FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = colorBrush,
             VerticalAlignment = VerticalAlignment.Center,
-        });
+            Cursor = new Cursor(StandardCursorType.Hand),
+        };
+
+        // Click on chip text to replace via search picker
+        if (SearchItems is { Length: > 0 })
+        {
+            textBlock.PointerPressed += (_, e) =>
+            {
+                OpenSearchPicker(value);
+                e.Handled = true;
+            };
+        }
+
+        stack.Children.Add(textBlock);
 
         var removeBtn = new Button
         {
-            Content = "×", FontSize = 10,
+            Content = "×", FontSize = FontScale.Of(10),
             Padding = new Thickness(3, 0),
             Background = Avalonia.Media.Brushes.Transparent,
             Foreground = ThemeBrushes.TextMuted,

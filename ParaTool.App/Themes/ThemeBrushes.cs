@@ -27,4 +27,16 @@ public static class ThemeBrushes
     public static SolidColorBrush Accent => Get("AccentBrush");
     public static SolidColorBrush AccentLight => Get("AccentLightBrush");
     public static SolidColorBrush BorderSubtle => Get("BorderSubtleBrush");
+
+    public static SolidColorBrush GetRarity(string rarity) => rarity switch
+    {
+        "Common" => Get("RarityCommonBrush"),
+        "Uncommon" => Get("RarityUncommonBrush"),
+        "Rare" => Get("RarityRareBrush"),
+        "VeryRare" => Get("RarityVeryRareBrush"),
+        "Legendary" => Get("RarityLegendaryBrush"),
+        _ => Get("RarityCommonBrush"),
+    };
+
+    public static Color GetRarityColor(string rarity) => GetRarity(rarity).Color;
 }

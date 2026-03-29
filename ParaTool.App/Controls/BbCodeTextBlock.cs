@@ -16,10 +16,20 @@ public class BbCodeTextBlock : TextBlock
     public static readonly StyledProperty<string?> BbTextProperty =
         AvaloniaProperty.Register<BbCodeTextBlock, string?>(nameof(BbText));
 
+    public static readonly StyledProperty<string?> BbParamsProperty =
+        AvaloniaProperty.Register<BbCodeTextBlock, string?>(nameof(BbParams));
+
     public string? BbText
     {
         get => GetValue(BbTextProperty);
         set => SetValue(BbTextProperty, value);
+    }
+
+    /// <summary>Semicolon-separated DescriptionParams, e.g. "DealDamage(1d4,Fire);3"</summary>
+    public string? BbParams
+    {
+        get => GetValue(BbParamsProperty);
+        set => SetValue(BbParamsProperty, value);
     }
 
     private static readonly SolidColorBrush StatusColor = new(Color.Parse("#E74C3C"));
@@ -29,11 +39,30 @@ public class BbCodeTextBlock : TextBlock
     private static readonly SolidColorBrush TipColor = new(Color.Parse("#C8A96E"));
     private static readonly SolidColorBrush ParamColor = new(Color.Parse("#E67E22"));
 
+    // BG3 damage type colors
+    private static readonly Dictionary<string, SolidColorBrush> DamageColors = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Fire"] = new(Color.Parse("#FF4500")),
+        ["Cold"] = new(Color.Parse("#87CEEB")),
+        ["Lightning"] = new(Color.Parse("#FFD700")),
+        ["Thunder"] = new(Color.Parse("#DDA0DD")),
+        ["Acid"] = new(Color.Parse("#7FFF00")),
+        ["Poison"] = new(Color.Parse("#32CD32")),
+        ["Necrotic"] = new(Color.Parse("#98FB98")),
+        ["Radiant"] = new(Color.Parse("#FFD700")),
+        ["Psychic"] = new(Color.Parse("#FF69B4")),
+        ["Force"] = new(Color.Parse("#9B59B6")),
+        ["Slashing"] = new(Color.Parse("#C0C0C0")),
+        ["Piercing"] = new(Color.Parse("#C0C0C0")),
+        ["Bludgeoning"] = new(Color.Parse("#C0C0C0")),
+    };
+    private static readonly SolidColorBrush HealColor = new(Color.Parse("#48D1CC"));
+
     public BbCodeTextBlock()
     {
         PropertyChanged += (_, e) =>
         {
-            if (e.Property == BbTextProperty)
+            if (e.Property == BbTextProperty || e.Property == BbParamsProperty)
                 RenderBbCode();
         };
         AttachedToVisualTree += (_, _) => RenderBbCode();
@@ -46,6 +75,22 @@ public class BbCodeTextBlock : TextBlock
         if (string.IsNullOrEmpty(raw)) return;
 
         Inlines ??= new InlineCollection();
+
+        // Substitute DescriptionParams: [1] → resolved param, [dp1] → bold colored param
+        var paramStr = BbParams;
+        if (!string.IsNullOrEmpty(paramStr))
+        {
+            var paramParts = paramStr.Split(';', StringSplitOptions.TrimEntries);
+            for (int pi = 0; pi < paramParts.Length; pi++)
+            {
+                var paramText = ResolveParam(paramParts[pi]);
+                var idx = (pi + 1).ToString();
+                // [dp1] → bold colored param, [p1] and [1] → param text
+                raw = raw.Replace($"[dp{idx}]", $"[b]{paramText}[/b]");
+                raw = raw.Replace($"[p{idx}]", paramText);
+                raw = raw.Replace($"[{idx}]", paramText);
+            }
+        }
 
         // Tokenize BB-code into segments
         int pos = 0;
@@ -102,6 +147,14 @@ public class BbCodeTextBlock : TextBlock
                 case "tip" when !isClosing:
                     pos = AddTaggedSpan(raw, pos, "tip", TipColor, boldStack, italicStack);
                     break;
+                case "dmg" when !isClosing:
+                    var dmgType = arg;
+                    var dmgColor = DamageColors.GetValueOrDefault(dmgType, ParamColor);
+                    pos = AddTaggedSpan(raw, pos, "dmg", dmgColor, boldStack, italicStack);
+                    break;
+                case "heal" when !isClosing:
+                    pos = AddTaggedSpan(raw, pos, "heal", HealColor, boldStack, italicStack);
+                    break;
                 case "p" when !isClosing:
                     // no-op, just skip
                     break;
@@ -153,5 +206,68 @@ public class BbCodeTextBlock : TextBlock
         else run.Foreground = Foreground; // inherit
 
         Inlines!.Add(run);
+    }
+
+    // ── DescriptionParams resolution ───────────────────────────
+
+    /// <summary>
+    /// Resolve a DescriptionParams entry to display text.
+    /// DealDamage(1d4,Fire) → "1~4 Fire Damage"
+    /// DealDamage(,Fire) → " Fire Damage" (leading space)
+    /// RegainHitPoints(2) → "2 hit points"
+    /// Distance(3) → "3m / 10ft"
+    /// Plain number → as-is
+    /// </summary>
+    private static string ResolveParam(string param)
+    {
+        param = param.Trim();
+
+        // DealDamage(dice,Type) or DealDamage(,Type) → colored damage text
+        if (param.StartsWith("DealDamage(", StringComparison.OrdinalIgnoreCase))
+        {
+            var inner = param["DealDamage(".Length..].TrimEnd(')');
+            var parts = inner.Split(',', 2, StringSplitOptions.TrimEntries);
+            var dice = parts.Length > 0 ? parts[0] : "";
+            var dmgType = parts.Length > 1 ? parts[1] : "";
+
+            var diceDisplay = FormatDice(dice);
+            // Use [dmg=Type] custom tag for colored rendering
+            if (string.IsNullOrEmpty(diceDisplay))
+                return $" [dmg={dmgType}]{dmgType} Damage[/dmg]";
+            return $"[dmg={dmgType}]{diceDisplay} {dmgType} Damage[/dmg]";
+        }
+
+        // RegainHitPoints(amount) → teal heal color
+        if (param.StartsWith("RegainHitPoints(", StringComparison.OrdinalIgnoreCase))
+        {
+            var inner = param["RegainHitPoints(".Length..].TrimEnd(')');
+            return $"[heal]{FormatDice(inner)} hit points[/heal]";
+        }
+
+        // Distance(n)
+        if (param.StartsWith("Distance(", StringComparison.OrdinalIgnoreCase))
+        {
+            var inner = param["Distance(".Length..].TrimEnd(')');
+            if (double.TryParse(inner, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var m))
+                return $"{m}m / {Math.Round(m * 3.28)}ft";
+            return inner;
+        }
+
+        return param; // plain number or unknown
+    }
+
+    /// <summary>Format dice: "1d4" → "1~4", "2d6" → "2~12", number → as-is.</summary>
+    private static string FormatDice(string dice)
+    {
+        if (string.IsNullOrEmpty(dice)) return "";
+        var m = System.Text.RegularExpressions.Regex.Match(dice, @"^(\d+)d(\d+)$");
+        if (m.Success)
+        {
+            var n = int.Parse(m.Groups[1].Value);
+            var d = int.Parse(m.Groups[2].Value);
+            return $"{n}~{n * d}";
+        }
+        return dice;
     }
 }

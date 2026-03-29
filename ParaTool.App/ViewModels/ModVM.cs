@@ -22,7 +22,7 @@ public partial class ModVM : ObservableObject
     public string Name { get; }
     public bool IsAmp => ModInfo.IsAmp;
     public IBrush ModBackground => IsAmp
-        ? new SolidColorBrush(Color.Parse("#33C8A96E"))
+        ? new SolidColorBrush(Themes.ThemeBrushes.Get("GoldBrush").Color, 0.2)
         : Themes.ThemeBrushes.PanelBg;
     public ObservableCollection<ItemVM> Items { get; }
 

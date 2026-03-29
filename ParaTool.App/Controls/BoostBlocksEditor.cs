@@ -1,3 +1,4 @@
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -5,6 +6,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using ParaTool.Core.Schema;
+using ParaTool.App.Services;
+using ParaTool.App.Themes;
 
 namespace ParaTool.App.Controls;
 
@@ -55,6 +58,7 @@ public class BoostBlocksEditor : UserControl
         ClipToBounds = false;
         PropertyChanged += OnPropertyChanged;
         Localization.Loc.Instance.PropertyChanged += (_, _) => { if (!_updating) Rebuild(); };
+        FontScale.ScaleChanged += () => { if (!_updating) Rebuild(); };
         // Auto-populate Status/Spell lists from ConstructorViewModel when attached
         AttachedToVisualTree += (_, _) => TryLoadPickerLists();
     }
@@ -108,14 +112,14 @@ public class BoostBlocksEditor : UserControl
         var addBtn = new Button
         {
             Content = "+",
-            FontSize = 14, FontWeight = FontWeight.Bold,
+            FontSize = FontScale.Of(14), FontWeight = FontWeight.Bold,
             Padding = new Thickness(8, 4),
             Margin = new Thickness(2),
             CornerRadius = new CornerRadius(10),
             Background = BgDefault,
-            Foreground = new SolidColorBrush(Color.Parse("#6C5CE7")),
+            Foreground = ThemeBrushes.Accent,
             BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(Color.Parse("#6C5CE7")),
+            BorderBrush = ThemeBrushes.Accent,
             Cursor = new Cursor(StandardCursorType.Hand),
         };
         addBtn.Click += OnAddClick;
@@ -144,22 +148,50 @@ public class BoostBlocksEditor : UserControl
         var colorBrush = new SolidColorBrush(color);
         var bgBrush = new SolidColorBrush(color, 0.15);
 
+        // Detect target context prefix (SELF, SWAP, OBSERVER_TARGET, OBSERVER_SOURCE)
+        string? targetCtx = null;
+        if (args.Length > 0 && TargetContextValues.Contains(args[0].Trim(), StringComparer.OrdinalIgnoreCase))
+        {
+            targetCtx = args[0].Trim();
+            args = args[1..]; // shift args past the target context
+        }
+
         var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
 
         // Label
         stack.Children.Add(new TextBlock
         {
             Text = def.Label,
-            FontSize = 11, FontWeight = FontWeight.SemiBold,
+            FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = colorBrush,
             VerticalAlignment = VerticalAlignment.Center,
         });
 
-        // Parameters — render as appropriate controls
-        for (int i = 0; i < def.Params.Length && i < args.Length; i++)
+        // Target context tumbler (optional, shown only if present or for functors)
+        if (IsFunctorMode)
+        {
+            var ctxItems = new[] { "—" }.Concat(TargetContextValues).ToArray();
+            var ctxChip = new TumblerChipEditor
+            {
+                Text = targetCtx ?? "—",
+                Items = ctxItems,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            ctxChip.Tag = (rawBoost, -1); // -1 = target context slot
+            ctxChip.PropertyChanged += (s, e2) =>
+            {
+                if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int _) && !_updating)
+                    UpdateTargetContext(rb, tc.Text);
+            };
+            stack.Children.Add(ctxChip);
+        }
+
+        // Parameters — render as appropriate controls (show all params, even if args is shorter)
+        for (int i = 0; i < def.Params.Length; i++)
         {
             var param = def.Params[i];
-            var value = args[i];
+            var isOptional = i >= args.Length;
+            var value = !isOptional ? args[i] : "";
             var paramIdx = i;
 
             if (param.Type == "hidden")
@@ -186,11 +218,39 @@ public class BoostBlocksEditor : UserControl
                 };
                 stack.Children.Add(chip);
             }
+            else if (param.Type == "flags" && param.EnumValues != null)
+            {
+                var lang = Localization.Loc.Instance.Lang;
+                var picker = new ChecklistPickerChip
+                {
+                    Text = value,
+                    Options = param.EnumValues,
+                    Labels = EnumLabels.GetDisplayLabels(param.EnumValues, lang),
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                picker.Tag = (rawBoost, paramIdx);
+                picker.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is ChecklistPickerChip cp && cp.Tag is (string rb, int pi) && !_updating)
+                        UpdateParam(rb, pi, cp.Text ?? "");
+                };
+                stack.Children.Add(picker);
+            }
             else if (param.Type == "enum" && param.EnumValues != null)
             {
+                // Optional params get "—" (none) option at the start
+                var lang = Localization.Loc.Instance.Lang;
+                var items = isOptional || string.IsNullOrEmpty(value)
+                    ? new[] { "—" }.Concat(param.EnumValues).ToArray()
+                    : param.EnumValues;
+                var displayItems = isOptional || string.IsNullOrEmpty(value)
+                    ? new[] { "—" }.Concat(EnumLabels.GetDisplayLabels(param.EnumValues, lang)).ToArray()
+                    : EnumLabels.GetDisplayLabels(param.EnumValues, lang);
                 var chip = new TumblerChipEditor
                 {
-                    Text = value, Items = param.EnumValues,
+                    Text = string.IsNullOrEmpty(value) ? "—" : value,
+                    Items = items,
+                    DisplayItems = displayItems,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 chip.Tag = (rawBoost, paramIdx);
@@ -295,7 +355,7 @@ public class BoostBlocksEditor : UserControl
                 {
                     var tb = new TextBox
                     {
-                        Text = value, FontSize = 11,
+                        Text = value, FontSize = FontScale.Of(11),
                         Padding = new Thickness(4, 1), MinWidth = 60,
                         Background = InputBg, CornerRadius = new CornerRadius(4),
                         VerticalAlignment = VerticalAlignment.Center,
@@ -314,7 +374,7 @@ public class BoostBlocksEditor : UserControl
         // Remove button
         var removeBtn = new Button
         {
-            Content = "×", FontSize = 11,
+            Content = "×", FontSize = FontScale.Of(11),
             Padding = new Thickness(4, 0),
             Background = Brushes.Transparent, Foreground = FgMuted,
             BorderThickness = new Thickness(0),
@@ -381,12 +441,12 @@ public class BoostBlocksEditor : UserControl
         var headerRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         headerRow.Children.Add(new TextBlock
         {
-            Text = "IF", FontSize = 12, FontWeight = FontWeight.Bold,
+            Text = "IF", FontSize = FontScale.Of(12), FontWeight = FontWeight.Bold,
             Foreground = ifBrush, VerticalAlignment = VerticalAlignment.Center,
         });
         var removeBtn = new Button
         {
-            Content = "×", FontSize = 10,
+            Content = "×", FontSize = FontScale.Of(10),
             Padding = new Thickness(4, 0),
             Background = Brushes.Transparent, Foreground = FgMuted,
             BorderThickness = new Thickness(0),
@@ -422,7 +482,7 @@ public class BoostBlocksEditor : UserControl
         // Row 3: "THEN" label
         outer.Children.Add(new TextBlock
         {
-            Text = "THEN", FontSize = 10, FontWeight = FontWeight.SemiBold,
+            Text = "THEN", FontSize = FontScale.Of(10), FontWeight = FontWeight.SemiBold,
             Foreground = new SolidColorBrush(ifColor, 0.6),
             Margin = new Thickness(12, 2, 0, 0),
         });
@@ -505,13 +565,13 @@ public class BoostBlocksEditor : UserControl
         stack.Children.Add(new TextBlock
         {
             Text = raw,
-            FontSize = 11,
+            FontSize = FontScale.Of(11),
             Foreground = FgMuted,
             VerticalAlignment = VerticalAlignment.Center,
         });
         var removeBtn = new Button
         {
-            Content = "×", FontSize = 11,
+            Content = "×", FontSize = FontScale.Of(11),
             Padding = new Thickness(4, 0),
             Background = Brushes.Transparent, Foreground = FgMuted,
             BorderThickness = new Thickness(0),
@@ -559,10 +619,30 @@ public class BoostBlocksEditor : UserControl
         if (parsed == null) return;
 
         var (funcName, args) = parsed.Value;
-        if (paramIdx >= args.Length) return;
-        args[paramIdx] = newValue;
 
-        var newBoost = args.Length > 0 ? $"{funcName}({string.Join(",", args)})" : funcName;
+        // Account for target context prefix (SELF, SWAP, etc.) shifting indices
+        int offset = 0;
+        if (args.Length > 0 && TargetContextValues.Contains(args[0].Trim(), StringComparer.OrdinalIgnoreCase))
+            offset = 1;
+
+        var actualIdx = paramIdx + offset;
+
+        // Extend args array if param index is beyond current length
+        if (actualIdx >= args.Length)
+        {
+            var extended = new string[actualIdx + 1];
+            args.CopyTo(extended, 0);
+            for (int ai = args.Length; ai < extended.Length; ai++) extended[ai] = "";
+            args = extended;
+        }
+        args[actualIdx] = newValue == "—" ? "" : newValue;
+
+        // Trim trailing empty args
+        var trimmedArgs = args.AsEnumerable().ToList();
+        while (trimmedArgs.Count > 0 && string.IsNullOrEmpty(trimmedArgs[^1]))
+            trimmedArgs.RemoveAt(trimmedArgs.Count - 1);
+
+        var newBoost = trimmedArgs.Count > 0 ? $"{funcName}({string.Join(",", trimmedArgs)})" : funcName;
 
         var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
         var idx = parts.IndexOf(rawBoost);
@@ -606,6 +686,7 @@ public class BoostBlocksEditor : UserControl
                     "formula" => "1",
                     "bool" => "true",
                     "enum" => p.EnumValues?.FirstOrDefault() ?? "None",
+                    "flags" => p.EnumValues?.FirstOrDefault() ?? "None",
                     "string" => p.Name.Contains("Status") ? "YOURSTATUS" :
                                 p.Name.Contains("Spell") ? "YourSpell" :
                                 p.Name.Contains("Resource") ? "ActionPoint" : "Value",
@@ -620,6 +701,38 @@ public class BoostBlocksEditor : UserControl
         menu.Open(this);
     }
 
+    private static readonly string[] TargetContextValues = ["SELF", "SWAP", "OBSERVER_TARGET", "OBSERVER_SOURCE"];
+
+    private void UpdateTargetContext(string rawBoost, string? newCtx)
+    {
+        if (_updating) return;
+        var parsed = BoostMapping.ParseBoostCall(rawBoost);
+        if (parsed == null) return;
+
+        var (funcName, args) = parsed.Value;
+
+        // Strip existing target context if present
+        if (args.Length > 0 && TargetContextValues.Contains(args[0].Trim(), StringComparer.OrdinalIgnoreCase))
+            args = args[1..];
+
+        // Prepend new context if not "—"
+        var finalArgs = (newCtx != null && newCtx != "—")
+            ? new[] { newCtx }.Concat(args).ToArray()
+            : args;
+
+        // Trim trailing empty
+        var trimmed = finalArgs.ToList();
+        while (trimmed.Count > 0 && string.IsNullOrEmpty(trimmed[^1]))
+            trimmed.RemoveAt(trimmed.Count - 1);
+
+        var newBoost = trimmed.Count > 0 ? $"{funcName}({string.Join(",", trimmed)})" : funcName;
+
+        var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        var idx = parts.IndexOf(rawBoost);
+        if (idx >= 0) parts[idx] = newBoost;
+        SyncText(string.Join(";", parts));
+    }
+
     private void SyncText(string value)
     {
         _updating = true;
@@ -627,4 +740,16 @@ public class BoostBlocksEditor : UserControl
         _updating = false;
         Rebuild();
     }
+
+    private static string DefaultForParam(BoostMapping.ParamDef p) => p.Type switch
+    {
+        "enum" => p.EnumValues?.FirstOrDefault() ?? "",
+        "flags" => p.EnumValues?.FirstOrDefault() ?? "",
+        "bool" => "true",
+        "number" or "int" => "0",
+        "float" => "0",
+        "formula" => "1",
+        "dice" => "1d4",
+        _ => "",
+    };
 }

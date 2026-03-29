@@ -3,6 +3,7 @@ using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ParaTool.App.Localization;
 using ParaTool.Core.Localization;
+using ParaTool.App.Themes;
 using ParaTool.Core.Models;
 using ParaTool.Core.Services;
 
@@ -53,24 +54,33 @@ public partial class ItemVM : ObservableObject
         foreach (var o in RarityOptions) o.Display = Loc.Instance.RarityName(o.Value);
 
         OnPropertyChanged(nameof(ItemLabel));
+        OnPropertyChanged(nameof(ItemLabelForeground));
         OnPropertyChanged(nameof(ThemesDisplay));
     }
 
     public string StatId => _entry.StatId;
     public string StatType => _entry.StatType;
     public string? DisplayName => _entry.DisplayName;
+    public bool HasArtifactOverride => _entry.HasArtifactOverride;
     public string ItemLabel
     {
         get
         {
             var lang = Loc.Instance.Lang;
+            string name;
             if (_locaService != null && !string.IsNullOrEmpty(_entry.DisplayNameHandle))
             {
                 var resolved = _locaService.ResolveHandle(_entry.DisplayNameHandle, lang);
-                if (resolved != null) return BbCode.FromBg3Xml(resolved);
+                name = resolved != null ? BbCode.FromBg3Xml(resolved) : null!;
             }
-            return VanillaLocaService.GetDisplayName(_entry.StatId, lang)
+            else
+            {
+                name = null!;
+            }
+            name ??= VanillaLocaService.GetDisplayName(_entry.StatId, lang)
                 ?? _entry.DisplayName ?? _entry.StatId;
+
+            return _entry.HasArtifactOverride ? $"\U0001f527 {name}" : name;
         }
     }
     public bool HasDisplayName => _entry.DisplayName != null
@@ -96,15 +106,11 @@ public partial class ItemVM : ObservableObject
         OnPropertyChanged(nameof(RarityColor));
     }
 
-    public IBrush RarityColor => SelectedRarity.Value switch
-    {
-        "Common" => new SolidColorBrush(Color.Parse("#8A8494")),
-        "Uncommon" => new SolidColorBrush(Color.Parse("#2ECC71")),
-        "Rare" => new SolidColorBrush(Color.Parse("#3498DB")),
-        "VeryRare" => new SolidColorBrush(Color.Parse("#9B59B6")),
-        "Legendary" => new SolidColorBrush(Color.Parse("#C8A96E")),
-        _ => new SolidColorBrush(Color.Parse("#8A8494")),
-    };
+    public IBrush ItemLabelForeground => _entry.HasArtifactOverride
+        ? ThemeBrushes.Get("WarningBrush")
+        : ThemeBrushes.TextSecondary;
+
+    public IBrush RarityColor => ThemeBrushes.GetRarity(SelectedRarity.Value);
 
     public void SyncThemesToEntry()
     {
@@ -137,6 +143,13 @@ public partial class ItemVM : ObservableObject
                          ?? RarityOptions[0];
         SelectedThemes = new ObservableCollection<string>(_entry.EffectiveThemes);
         NotifyThemesChanged();
+    }
+
+    public void NotifyArtifactOverrideChanged()
+    {
+        OnPropertyChanged(nameof(HasArtifactOverride));
+        OnPropertyChanged(nameof(ItemLabel));
+        OnPropertyChanged(nameof(ItemLabelForeground));
     }
 
     // === Option lists (shared across all instances) ===

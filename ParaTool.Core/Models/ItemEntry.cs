@@ -50,4 +50,9 @@ public sealed class ItemEntry
 
     public bool IsModified =>
         UserPool != null || UserRarity != null || UserThemes.Count > 0 || !Enabled;
+
+    /// <summary>
+    /// True when a saved artifact overrides this item's stats via the Constructor.
+    /// </summary>
+    public bool HasArtifactOverride { get; set; }
 }

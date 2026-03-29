@@ -197,6 +197,55 @@ public partial class Loc : ObservableObject
     public string LblIcon => this["LblIcon"];
     public string LblIconBrowser => this["LblIconBrowser"];
 
+    public string LblArmor => this["LblArmor"];
+    public string LblWeapon => this["LblWeapon"];
+    public string LblPassives => this["LblPassives"];
+    public string LblArmorClass => this["LblArmorClass"];
+    public string LblArmorType => this["LblArmorType"];
+    public string LblProficiency => this["LblProficiency"];
+    public string LblWeight => this["LblWeight"];
+    public string LblDamage => this["LblDamage"];
+    public string LblVersatile => this["LblVersatile"];
+    public string LblDefaultBoosts => this["LblDefaultBoosts"];
+    public string LblProperties => this["LblProperties"];
+    public string LblUnique => this["LblUnique"];
+    public string TipUnique => this["TipUnique"];
+    public string LblPermanentBoosts => this["LblPermanentBoosts"];
+    public string LblTriggerCondAction => this["LblTriggerCondAction"];
+    public string LblWhen => this["LblWhen"];
+    public string LblIf => this["LblIf"];
+    public string LblDo => this["LblDo"];
+    public string LblContext => this["LblContext"];
+    public string LblCreateNewItem => this["LblCreateNewItem"];
+    public string LblBasedOn => this["LblBasedOn"];
+    public string BtnCreateArtifact => this["BtnCreateArtifact"];
+    public string LblChooseIcon => this["LblChooseIcon"];
+    public string BtnClose => this["BtnClose"];
+    public string LblUploadPng => this["LblUploadPng"];
+    public string TipUploadPng => this["TipUploadPng"];
+    public string LblLoadingIcons => this["LblLoadingIcons"];
+    public string WmSearchIcons => this["WmSearchIcons"];
+    public string WmItemName => this["WmItemName"];
+    public string WmPassiveName => this["WmPassiveName"];
+    public string WmNewItemName => this["WmNewItemName"];
+    public string WmSearch => this["WmSearch"];
+    public string LblCustomOption => this["LblCustomOption"];
+    public string WmTypeAndEnter => this["WmTypeAndEnter"];
+    public string LblMadeWith => this["LblMadeWith"];
+    public string LblSupportTool => this["LblSupportTool"];
+    public string LblIconCount => this["LblIconCount"];
+    public string BbTipBold => this["BbTipBold"];
+    public string BbTipItalic => this["BbTipItalic"];
+    public string BbTipStatus => this["BbTipStatus"];
+    public string BbTipTooltip => this["BbTipTooltip"];
+    public string BbTipSpell => this["BbTipSpell"];
+    public string BbTipPassive => this["BbTipPassive"];
+    public string BbTipResource => this["BbTipResource"];
+    public string BbTipParam => this["BbTipParam"];
+    public string BbTipLineBreak => this["BbTipLineBreak"];
+    public string TipToggleCodePreview => this["TipToggleCodePreview"];
+    public string LblCardMechanics => this["LblCardMechanics"];
+
     // === Dynamic lookups ===
 
     public string PoolName(string pool)
