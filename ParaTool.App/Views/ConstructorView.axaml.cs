@@ -199,6 +199,13 @@ public partial class ConstructorView : UserControl
             return;
         }
 
+        // Upload custom PNG icon
+        if (btn.Name == "UploadPngBtn" && DataContext is ConstructorViewModel uploadVm)
+        {
+            _ = UploadPngIconAsync(uploadVm);
+            return;
+        }
+
         // Icon grid click
         if (btn.Name == "IconGridBtn" && btn.Tag is IconEntryVM iconVm
             && DataContext is ConstructorViewModel ctorVm && ctorVm.IconBrowser != null)
@@ -218,6 +225,67 @@ public partial class ConstructorView : UserControl
             }
             InsertBbCode(_lastFocusedLocaBox, tag);
             return;
+        }
+    }
+
+    private async Task UploadPngIconAsync(ConstructorViewModel vm)
+    {
+        if (vm.SelectedArtifact == null) return;
+
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(
+            new Avalonia.Platform.Storage.FilePickerOpenOptions
+            {
+                Title = "Select PNG icon",
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new Avalonia.Platform.Storage.FilePickerFileType("PNG images") { Patterns = ["*.png"] }
+                ]
+            });
+
+        if (files.Count == 0) return;
+
+        try
+        {
+            await using var stream = await files[0].OpenReadAsync();
+            using var ms = new System.IO.MemoryStream();
+            await stream.CopyToAsync(ms);
+            var pngData = ms.ToArray();
+
+            var iconSet = ParaTool.Core.Textures.IconConverter.ConvertPng(pngData);
+
+            var art = vm.SelectedArtifact.Artifact;
+            art.IconMainDdsBase64 = Convert.ToBase64String(iconSet.MainDds);
+            art.IconConsoleDdsBase64 = Convert.ToBase64String(iconSet.ConsoleDds);
+
+            // Add 144×144 icon to persistent atlas store
+            var atlasMapKey = art.StatId;
+            ParaTool.Core.Textures.AtlasStore.AddIcon(atlasMapKey, iconSet.AtlasRgba);
+            art.AtlasIconMapKey = atlasMapKey;
+
+            // Update preview bitmap from the 380×380 DDS
+            var decoded = ParaTool.Core.Textures.DdsReader.Decode(iconSet.MainDds);
+            var bitmap = new Avalonia.Media.Imaging.WriteableBitmap(
+                new Avalonia.PixelSize(decoded.width, decoded.height),
+                new Avalonia.Vector(96, 96),
+                Avalonia.Platform.PixelFormats.Rgba8888,
+                Avalonia.Platform.AlphaFormat.Unpremul);
+
+            using (var buf = bitmap.Lock())
+            {
+                System.Runtime.InteropServices.Marshal.Copy(
+                    decoded.rgba, 0, buf.Address, decoded.rgba.Length);
+            }
+
+            vm.SelectedArtifact.IconBitmap = bitmap;
+            vm.SelectedArtifact.IsDirty = true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"PNG upload error: {ex.Message}");
         }
     }
 

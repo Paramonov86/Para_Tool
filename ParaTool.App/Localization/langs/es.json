@@ -226,5 +226,23 @@
   "BbTipParam": "Marcador de parámetro [p1] — reemplazado por el valor de DescriptionParams en tiempo de ejecución",
   "BbTipLineBreak": "Salto de línea [br]",
   "TipToggleCodePreview": "Alternar editor de BB-code / vista previa",
-  "LblCardMechanics": "MECÁNICAS"
+  "LblCardMechanics": "MECÁNICAS",
+
+  "enum.Highlighted": "Resaltar",
+  "enum.IsHidden": "Oculta",
+  "enum.IsToggled": "Alternar",
+  "enum.ToggledDefaultOn": "Activo",
+  "enum.ToggledDefaultAddToHotbar": "A barra",
+  "enum.ToggleForParty": "Para grupo",
+  "enum.OncePerTurn": "1/Turno",
+  "enum.OncePerAttack": "1/Ataque",
+  "enum.OncePerShortRest": "1/Desc. corto",
+  "enum.OncePerLongRest": "1/Desc. largo",
+  "enum.OncePerCombat": "1/Combate",
+  "enum.DisplayBoostInTooltip": "Mostrar bonus",
+  "enum.Temporary": "Temporal",
+
+  "LblAnd": "Y",
+  "LblOr": "O",
+  "LblNot": "NO"
 }

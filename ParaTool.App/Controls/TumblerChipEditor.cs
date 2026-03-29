@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using ParaTool.App.Themes;
 using ParaTool.App.Services;
+using ParaTool.App.Localization;
 
 namespace ParaTool.App.Controls;
 
@@ -207,22 +208,36 @@ public class TumblerChipEditor : UserControl
         MinWidth = 30,
     };
 
+    private double _avgItemLen;
+
     private void UpdateMinWidthFromItems()
     {
         if (Items is not { Length: > 0 }) return;
-        // Measure widest item text to set chip width
         var displayItems = DisplayItems ?? Items;
-        var longest = displayItems.OrderByDescending(s => s.Length).First();
-        var tb = new TextBlock { Text = longest, FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold };
+
+        // Use 75th percentile length instead of max to avoid oversized chips
+        var lengths = displayItems.Select(s => s.Length).OrderBy(l => l).ToArray();
+        var p75Idx = Math.Min((int)(lengths.Length * 0.75), lengths.Length - 1);
+        var refText = displayItems.OrderByDescending(s => s.Length).Skip(lengths.Length - 1 - p75Idx).First();
+        _avgItemLen = lengths.Average();
+
+        var tb = new TextBlock { Text = refText, FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold };
         tb.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var w = tb.DesiredSize.Width + 24; // +padding
+        var w = tb.DesiredSize.Width + 28;
         _chip.MinWidth = Math.Max(w, 48);
         _valueText.MinWidth = w - 20;
-        // Also set min width on drum labels
         if (_upperLabels != null)
             foreach (var l in _upperLabels) l.MinWidth = w - 20;
         if (_lowerLabels != null)
             foreach (var l in _lowerLabels) l.MinWidth = w - 20;
+    }
+
+    /// <summary>Adaptive font size: shrink for items much longer than average.</summary>
+    private double FontForLength(int len)
+    {
+        if (_avgItemLen < 1 || len <= _avgItemLen * 1.5) return FontScale.Of(11);
+        if (len > _avgItemLen * 2.5) return FontScale.Of(8);
+        return FontScale.Of(9);
     }
 
     private void UpdateChipText()
@@ -231,12 +246,20 @@ public class TumblerChipEditor : UserControl
         var display = val;
         if (DisplayItems != null && Items != null)
         {
-            var idx = Array.IndexOf(Items, val);
+            var idx = Array.FindIndex(Items, i => i.Equals(val, StringComparison.OrdinalIgnoreCase));
             if (idx >= 0 && idx < DisplayItems.Length) display = DisplayItems[idx];
+        }
+        // Fallback: try loca enum key
+        if (display == val && !string.IsNullOrEmpty(val) && val != "—")
+        {
+            var locaKey = $"enum.{val}";
+            var locaVal = Localization.Loc.Instance[locaKey];
+            if (locaVal != locaKey) display = locaVal;
         }
         _valueText.Text = string.IsNullOrEmpty(display) ? "—" : display;
         _valueText.Foreground = string.IsNullOrEmpty(val)
             ? ThemeBrushes.TextMuted : ThemeBrushes.TextPrimary;
+        if (IsListMode) _valueText.FontSize = FontForLength(display.Length);
     }
 
     private string DisplayAt(int idx)
@@ -527,14 +550,20 @@ public class TumblerChipEditor : UserControl
             for (int i = 0; i < SidesCount; i++)
             {
                 int idx = _currentIndex - (SidesCount - i);
-                _upperLabels[i].Text = idx >= 0 ? DisplayAt(idx) : "";
+                var txt = idx >= 0 ? DisplayAt(idx) : "";
+                _upperLabels[i].Text = txt;
+                _upperLabels[i].FontSize = FontForLength(txt.Length) - 1;
             }
             for (int i = 0; i < SidesCount; i++)
             {
                 int idx = _currentIndex + i + 1;
-                _lowerLabels[i].Text = DisplayAt(idx);
+                var txt = DisplayAt(idx);
+                _lowerLabels[i].Text = txt;
+                _lowerLabels[i].FontSize = FontForLength(txt.Length) - 1;
             }
-            _valueText.Text = DisplayAt(_currentIndex);
+            var current = DisplayAt(_currentIndex);
+            _valueText.Text = current;
+            _valueText.FontSize = FontForLength(current.Length);
         }
         else
         {

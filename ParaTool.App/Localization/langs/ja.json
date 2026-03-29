@@ -226,5 +226,23 @@
   "BbTipParam": "パラメータプレースホルダー [p1] — 実行時にDescriptionParamsの値で置換されます",
   "BbTipLineBreak": "改行 [br]",
   "TipToggleCodePreview": "BBコードエディタ / プレビューの切替",
-  "LblCardMechanics": "メカニクス"
+  "LblCardMechanics": "メカニクス",
+
+  "enum.Highlighted": "ハイライト",
+  "enum.IsHidden": "非表示",
+  "enum.IsToggled": "切替",
+  "enum.ToggledDefaultOn": "初期ON",
+  "enum.ToggledDefaultAddToHotbar": "ホットバー",
+  "enum.ToggleForParty": "パーティ用",
+  "enum.OncePerTurn": "1/ターン",
+  "enum.OncePerAttack": "1/攻撃",
+  "enum.OncePerShortRest": "1/小休憩",
+  "enum.OncePerLongRest": "1/大休憩",
+  "enum.OncePerCombat": "1/戦闘",
+  "enum.DisplayBoostInTooltip": "ブースト表示",
+  "enum.Temporary": "一時的",
+
+  "LblAnd": "かつ",
+  "LblOr": "または",
+  "LblNot": "否定"
 }

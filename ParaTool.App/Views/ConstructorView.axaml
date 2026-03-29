@@ -343,7 +343,7 @@
                                         </StackPanel>
                                     </Button>
                                     <!-- Upload custom -->
-                                    <Button Grid.Column="1" Margin="6,0,0,0"
+                                    <Button Grid.Column="1" Margin="6,0,0,0" Name="UploadPngBtn"
                                             Background="{StaticResource CardBgBrush}"
                                             BorderThickness="1" BorderBrush="{StaticResource BorderSubtleBrush}"
                                             CornerRadius="6" Padding="12,6" Cursor="Hand"
@@ -398,6 +398,9 @@
                                                         </Grid>
                                                     </Button>
                                                     <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0" ClipToBounds="False">
+                                                        <!-- Properties toggle chips -->
+                                                        <ctrl:ToggleChipsEditor Text="{Binding EditProperties}"
+                                                                                Options="{x:Static vm:PassiveVM.PassivePropertyOptions}" />
                                                         <!-- Permanent boosts section -->
                                                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
                                                                 BorderBrush="{DynamicResource SuccessBrush}" BorderThickness="2,0,0,0">
@@ -624,7 +627,7 @@
                                           IsVisible="{Binding HasPassives}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="vm:PassiveVM">
-                                        <StackPanel Margin="0,0,0,6">
+                                        <StackPanel Margin="0,0,0,6" IsVisible="{Binding HasVisibleLoca}">
                                             <TextBox Text="{Binding EditDisplayName}"
                                                      Watermark="{Binding WmPassiveName, Source={x:Static loc:Loc.Instance}}"
                                                      FontSize="{DynamicResource FontSize12}" FontWeight="Bold"

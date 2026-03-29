@@ -226,5 +226,23 @@
   "BbTipParam": "Espace réservé au paramètre [p1] — remplacé par la valeur de DescriptionParams à l'exécution",
   "BbTipLineBreak": "Saut de ligne [br]",
   "TipToggleCodePreview": "Basculer éditeur BB-code / aperçu",
-  "LblCardMechanics": "MÉCANIQUES"
+  "LblCardMechanics": "MÉCANIQUES",
+
+  "enum.Highlighted": "Surbrillance",
+  "enum.IsHidden": "Masqué",
+  "enum.IsToggled": "Bascule",
+  "enum.ToggledDefaultOn": "Actif défaut",
+  "enum.ToggledDefaultAddToHotbar": "Vers barre",
+  "enum.ToggleForParty": "Pour groupe",
+  "enum.OncePerTurn": "1/Tour",
+  "enum.OncePerAttack": "1/Attaque",
+  "enum.OncePerShortRest": "1/Repos court",
+  "enum.OncePerLongRest": "1/Repos long",
+  "enum.OncePerCombat": "1/Combat",
+  "enum.DisplayBoostInTooltip": "Afficher bonus",
+  "enum.Temporary": "Temporaire",
+
+  "LblAnd": "ET",
+  "LblOr": "OU",
+  "LblNot": "NON"
 }

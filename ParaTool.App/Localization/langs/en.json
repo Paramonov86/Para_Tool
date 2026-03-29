@@ -266,5 +266,23 @@
   "BbTipParam": "Parameter placeholder [p1] — replaced by DescriptionParams value at runtime",
   "BbTipLineBreak": "Line break [br]",
   "TipToggleCodePreview": "Toggle BB-code editor / preview",
-  "LblCardMechanics": "MECHANICS"
+  "LblCardMechanics": "MECHANICS",
+
+  "enum.Highlighted": "Highlight",
+  "enum.IsHidden": "Hidden",
+  "enum.IsToggled": "Toggle",
+  "enum.ToggledDefaultOn": "Default On",
+  "enum.ToggledDefaultAddToHotbar": "To Hotbar",
+  "enum.ToggleForParty": "For Party",
+  "enum.OncePerTurn": "1/Turn",
+  "enum.OncePerAttack": "1/Attack",
+  "enum.OncePerShortRest": "1/Short Rest",
+  "enum.OncePerLongRest": "1/Long Rest",
+  "enum.OncePerCombat": "1/Combat",
+  "enum.DisplayBoostInTooltip": "Show Boost",
+  "enum.Temporary": "Temporary",
+
+  "LblAnd": "AND",
+  "LblOr": "OR",
+  "LblNot": "NOT"
 }

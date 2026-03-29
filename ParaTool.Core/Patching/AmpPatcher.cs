@@ -270,6 +270,7 @@ public sealed class AmpPatcher
         var overrideStats = new StringBuilder();
         var newStats = new StringBuilder();
         var allLocaEntries = new Dictionary<string, List<(string handle, string xmlText)>>(StringComparer.OrdinalIgnoreCase);
+        var customIconStatIds = new List<string>(); // items with custom PNG icons
         int count = 0;
 
         foreach (var art in artifacts)
@@ -297,7 +298,9 @@ public sealed class AmpPatcher
                 allLocaEntries[lang].AddRange(entries);
             }
 
-            // Icon files
+            // Icon files + track custom icons for metadata
+            if (compiled.IconFiles != null)
+                customIconStatIds.Add(art.StatId);
             if (compiled.IconFiles != null)
             {
                 foreach (var (relativePath, data) in compiled.IconFiles)
@@ -318,6 +321,36 @@ public sealed class AmpPatcher
             }
 
             count++;
+        }
+
+        // Write custom icon atlases from AtlasStore
+        var atlasFiles = Textures.AtlasStore.GetAllAtlasFiles();
+        if (atlasFiles.Count > 0)
+        {
+            // Find Public/ModFolder/ directory
+            var publicDirs = Directory.GetDirectories(extractDir, "Public", SearchOption.TopDirectoryOnly);
+            if (publicDirs.Length > 0)
+            {
+                var modDirs = Directory.GetDirectories(publicDirs[0]);
+                if (modDirs.Length > 0)
+                {
+                    var modFolder = modDirs[0];
+                    foreach (var (relativePath, data) in atlasFiles)
+                    {
+                        var targetPath = Path.Combine(modFolder, relativePath);
+                        Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
+                        File.WriteAllBytes(targetPath, data);
+                    }
+                }
+            }
+        }
+
+        // Update GUI/metadata.lsx with custom icon entries
+        if (customIconStatIds.Count > 0)
+        {
+            var metadataLsx = FindFile(extractDir, "metadata.lsx");
+            if (metadataLsx != null)
+                PatchIconMetadata(metadataLsx, customIconStatIds);
         }
 
         var statFiles = Directory.GetFiles(statsDir, "*.txt")
@@ -451,6 +484,80 @@ public sealed class AmpPatcher
                 var content = ArtifactCompiler.GenerateLocaXml(locaEntries);
                 File.WriteAllText(newPath, content);
             }
+        }
+    }
+
+    /// <summary>
+    /// Adds custom icon entries to GUI/metadata.lsx for each artifact with a custom PNG icon.
+    /// Each icon gets two entries: 144×144 items_png + 380×380 Tooltips/ItemIcons.
+    /// </summary>
+    private static void PatchIconMetadata(string metadataPath, IReadOnlyList<string> statIds)
+    {
+        var text = File.ReadAllText(metadataPath);
+
+        // Collect existing MapKey values to avoid duplicates
+        var existingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (System.Text.RegularExpressions.Match m in
+            System.Text.RegularExpressions.Regex.Matches(text, @"value=""([^""]+)"""))
+        {
+            if (m.Groups[1].Value.Contains("/"))
+                existingKeys.Add(m.Groups[1].Value);
+        }
+
+        var sb = new StringBuilder();
+
+        foreach (var statId in statIds)
+        {
+            // 144×144 console icon
+            var consolePath = $"Assets/ControllerUIIcons/items_png/{statId}.png";
+            if (!existingKeys.Contains(consolePath))
+            {
+                sb.AppendLine($"\t\t\t\t\t\t<node id=\"Object\">");
+                sb.AppendLine($"\t\t\t\t\t\t\t<attribute id=\"MapKey\" type=\"FixedString\" value=\"{consolePath}\" />");
+                sb.AppendLine($"\t\t\t\t\t\t\t<children>");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t<node id=\"entries\">");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"h\" type=\"int16\" value=\"144\" />");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"mipcount\" type=\"int8\" value=\"8\" />");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"w\" type=\"int16\" value=\"144\" />");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t</node>");
+                sb.AppendLine($"\t\t\t\t\t\t\t</children>");
+                sb.AppendLine($"\t\t\t\t\t\t</node>");
+            }
+
+            // 380×380 tooltip icon
+            var tooltipPath = $"Assets/Tooltips/ItemIcons/{statId}.png";
+            if (!existingKeys.Contains(tooltipPath))
+            {
+                sb.AppendLine($"\t\t\t\t\t\t<node id=\"Object\">");
+                sb.AppendLine($"\t\t\t\t\t\t\t<attribute id=\"MapKey\" type=\"FixedString\" value=\"{tooltipPath}\" />");
+                sb.AppendLine($"\t\t\t\t\t\t\t<children>");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t<node id=\"entries\">");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"h\" type=\"int16\" value=\"380\" />");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"mipcount\" type=\"int8\" value=\"9\" />");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t\t<attribute id=\"w\" type=\"int16\" value=\"380\" />");
+                sb.AppendLine($"\t\t\t\t\t\t\t\t</node>");
+                sb.AppendLine($"\t\t\t\t\t\t\t</children>");
+                sb.AppendLine($"\t\t\t\t\t\t</node>");
+            }
+        }
+
+        if (sb.Length == 0) return;
+
+        // Insert before the last </children> in the entries node
+        // Find the marker: </children>\n\t\t\t\t</node>\n\t\t\t</children>
+        var insertMarker = "</children>\n\t\t\t\t</node>\n\t\t\t</children>";
+        var insertIdx = text.LastIndexOf(insertMarker, StringComparison.Ordinal);
+        if (insertIdx < 0)
+        {
+            // Try with \r\n
+            insertMarker = "</children>\r\n\t\t\t\t</node>\r\n\t\t\t</children>";
+            insertIdx = text.LastIndexOf(insertMarker, StringComparison.Ordinal);
+        }
+
+        if (insertIdx >= 0)
+        {
+            text = text.Insert(insertIdx, sb.ToString());
+            File.WriteAllText(metadataPath, text);
         }
     }
 

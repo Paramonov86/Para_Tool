@@ -226,5 +226,23 @@
   "BbTipParam": "Заповнювач параметра [p1] — замінюється значенням DescriptionParams під час виконання",
   "BbTipLineBreak": "Розрив рядка [br]",
   "TipToggleCodePreview": "Перемкнути редактор BB-коду / попередній перегляд",
-  "LblCardMechanics": "МЕХАНІКИ"
+  "LblCardMechanics": "МЕХАНІКИ",
+
+  "enum.Highlighted": "Підсвітка",
+  "enum.IsHidden": "Прихована",
+  "enum.IsToggled": "Вкл/Вимк",
+  "enum.ToggledDefaultOn": "Увімк. за замовч.",
+  "enum.ToggledDefaultAddToHotbar": "До панелі",
+  "enum.ToggleForParty": "Для групи",
+  "enum.OncePerTurn": "1/Хід",
+  "enum.OncePerAttack": "1/Атака",
+  "enum.OncePerShortRest": "1/Кор. відп.",
+  "enum.OncePerLongRest": "1/Довг. відп.",
+  "enum.OncePerCombat": "1/Бій",
+  "enum.DisplayBoostInTooltip": "Показ. бонус",
+  "enum.Temporary": "Тимчасова",
+
+  "LblAnd": "І",
+  "LblOr": "АБО",
+  "LblNot": "НЕ"
 }

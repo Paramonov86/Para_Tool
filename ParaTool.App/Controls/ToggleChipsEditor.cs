@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using ParaTool.App.Services;
+using ParaTool.App.Localization;
 
 namespace ParaTool.App.Controls;
 
@@ -63,12 +64,14 @@ public class ToggleChipsEditor : UserControl
             (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             StringComparer.OrdinalIgnoreCase);
 
+        var lang = Localization.Loc.Instance.Lang;
         foreach (var opt in options)
         {
             var isOn = selected.Contains(opt);
             var btn = new Button
             {
-                Content = opt,
+                Content = Loc.Instance[$"enum.{opt}"] is var locLabel && locLabel != $"enum.{opt}"
+                    ? locLabel : ParaTool.Core.Schema.EnumLabels.GetLabel(opt, lang),
                 Tag = opt,
                 FontSize = FontScale.Of(11),
                 Padding = new Thickness(10, 4),

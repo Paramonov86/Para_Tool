@@ -226,5 +226,23 @@
   "BbTipParam": "参数占位符 [p1] — 运行时由 DescriptionParams 值替换",
   "BbTipLineBreak": "换行 [br]",
   "TipToggleCodePreview": "切换 BB-code 编辑器 / 预览",
-  "LblCardMechanics": "机制"
+  "LblCardMechanics": "机制",
+
+  "enum.Highlighted": "高亮",
+  "enum.IsHidden": "隐藏",
+  "enum.IsToggled": "切换",
+  "enum.ToggledDefaultOn": "默认开启",
+  "enum.ToggledDefaultAddToHotbar": "加入快捷栏",
+  "enum.ToggleForParty": "全队生效",
+  "enum.OncePerTurn": "1/回合",
+  "enum.OncePerAttack": "1/攻击",
+  "enum.OncePerShortRest": "1/短休",
+  "enum.OncePerLongRest": "1/长休",
+  "enum.OncePerCombat": "1/战斗",
+  "enum.DisplayBoostInTooltip": "显示加成",
+  "enum.Temporary": "临时",
+
+  "LblAnd": "且",
+  "LblOr": "或",
+  "LblNot": "非"
 }

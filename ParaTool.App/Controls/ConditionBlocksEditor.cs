@@ -93,7 +93,9 @@ public class ConditionBlocksEditor : UserControl
             Control element;
             if (token.Type is CondToken.Kind.And or CondToken.Kind.Or)
             {
-                var connLabel = token.Type == CondToken.Kind.And ? "AND" : "OR";
+                var connLabel = token.Type == CondToken.Kind.And
+                    ? Localization.Loc.Instance["LblAnd"]
+                    : Localization.Loc.Instance["LblOr"];
                 var connBtn = new Button
                 {
                     Content = connLabel,
@@ -233,7 +235,7 @@ public class ConditionBlocksEditor : UserControl
         {
             var notBtn = new Button
             {
-                Content = "NOT", FontSize = FontScale.Of(9), FontWeight = FontWeight.Bold,
+                Content = Localization.Loc.Instance["LblNot"], FontSize = FontScale.Of(9), FontWeight = FontWeight.Bold,
                 Foreground = FgNot, Background = BgNot,
                 Padding = new Thickness(4, 1), CornerRadius = new CornerRadius(4),
                 BorderThickness = new Thickness(0),
@@ -288,17 +290,30 @@ public class ConditionBlocksEditor : UserControl
             else if (param?.Type == "enum" && param.EnumValues != null)
             {
                 var isRuParam = Localization.Loc.Instance.Lang == "ru";
-                var isEntity = param.EnumValues == ConditionSchema.EntityTargetsEn || param.EnumValues == ConditionSchema.EntityTargetsRu;
+                var isEntity = param.EnumValues == ConditionSchema.EntityTargetsEn
+                    || param.EnumValues == ConditionSchema.EntityTargetsRu
+                    || argVal.StartsWith("context.", StringComparison.OrdinalIgnoreCase);
 
                 // Skip entity param if it's the default (context.Target) — only show if context.Source
-                if (isEntity && (argVal == "context.Target" || argVal == "" || argVal == "context.Target"))
+                if (isEntity && (argVal == "context.Target" || argVal == ""))
                     continue;
 
+                // Strip enum prefix (e.g. "DamageType.Fire" → "Fire")
+                var enumPrefix = "";
+                var cleanVal = argVal;
+                var dotIdx = argVal.IndexOf('.');
+                if (dotIdx > 0 && !argVal.StartsWith("context."))
+                {
+                    enumPrefix = argVal[..(dotIdx + 1)]; // "DamageType."
+                    cleanVal = argVal[(dotIdx + 1)..];   // "Fire"
+                }
+
                 var lang = Localization.Loc.Instance.Lang;
-                var displayVal = isEntity ? ConditionSchema.EntityFromRaw(argVal, isRuParam) : argVal;
+                var displayVal = isEntity ? ConditionSchema.EntityFromRaw(argVal, isRuParam) : cleanVal;
                 var tumblerItems = isEntity ? ConditionSchema.GetEntityTargets(isRuParam) : param.EnumValues;
                 var tumblerDisplayItems = isEntity ? null
                     : param.DisplayValues ?? (param.EnumValues != null ? EnumLabels.GetDisplayLabels(param.EnumValues, lang) : null);
+                var capturedPrefix = enumPrefix;
                 var enumTumbler = new TumblerChipEditor
                 {
                     Text = displayVal, Items = tumblerItems,
@@ -310,7 +325,7 @@ public class ConditionBlocksEditor : UserControl
                     if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
                     {
                         var raw = isEntity ? ConditionSchema.EntityToRaw(tc.Text ?? "") : tc.Text ?? "";
-                        token.Args[paramIdx] = $"{raw}";
+                        token.Args[paramIdx] = capturedPrefix + raw;
                         SyncFromTokens(tokens);
                     }
                 };
@@ -332,6 +347,27 @@ public class ConditionBlocksEditor : UserControl
                     }
                 };
                 stack.Children.Add(tumbler);
+            }
+            else if (argVal.StartsWith("context.", StringComparison.OrdinalIgnoreCase))
+            {
+                // Entity value in a non-entity param — skip if default Target
+                if (argVal == "context.Target") continue;
+                var isRuEntity = Localization.Loc.Instance.Lang == "ru";
+                var entityTumbler = new TumblerChipEditor
+                {
+                    Text = ConditionSchema.EntityFromRaw(argVal, isRuEntity),
+                    Items = ConditionSchema.GetEntityTargets(isRuEntity),
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                entityTumbler.PropertyChanged += (s, e) =>
+                {
+                    if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
+                    {
+                        token.Args[paramIdx] = ConditionSchema.EntityToRaw(tc.Text ?? "");
+                        SyncFromTokens(tokens);
+                    }
+                };
+                stack.Children.Add(entityTumbler);
             }
             else
             {

@@ -104,7 +104,7 @@
   "NavDuplicate": "Дублировать",
   "NavDelete": "Удалить",
   "ConstructorEditorTitle": "РЕДАКТОР",
-  "ConstructorPreviewTitle": "ПРЕВЬЮ",
+  "ConstructorPreviewTitle": "ПРЕДПРОСМОТР / ЛОКАЛИЗАЦИЯ",
 
   "EditorNoSelection": "Выберите предмет в навигаторе\nили создайте наследника",
   "CardIdentity": "ИДЕНТИФИКАЦИЯ",
@@ -266,5 +266,23 @@
   "BbTipParam": "Параметр [p1] — подставляется из DescriptionParams",
   "BbTipLineBreak": "Перенос строки [br]",
   "TipToggleCodePreview": "Переключить ВВ-код редактор / превью",
-  "LblCardMechanics": "МЕХАНИКИ"
+  "LblCardMechanics": "МЕХАНИКИ",
+
+  "enum.Highlighted": "Подсветка",
+  "enum.IsHidden": "Скрыта",
+  "enum.IsToggled": "Вкл/Выкл",
+  "enum.ToggledDefaultOn": "Вкл по умолч.",
+  "enum.ToggledDefaultAddToHotbar": "В панель",
+  "enum.ToggleForParty": "Для группы",
+  "enum.OncePerTurn": "1/Ход",
+  "enum.OncePerAttack": "1/Атака",
+  "enum.OncePerShortRest": "1/Кор. отдых",
+  "enum.OncePerLongRest": "1/Длин. отдых",
+  "enum.OncePerCombat": "1/Бой",
+  "enum.DisplayBoostInTooltip": "Показ. буст",
+  "enum.Temporary": "Временная",
+
+  "LblAnd": "И",
+  "LblOr": "ИЛИ",
+  "LblNot": "НЕ"
 }

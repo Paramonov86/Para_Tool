@@ -380,7 +380,9 @@ public sealed class ConditionSchema
         "slot" => "enum",
         "level" or "dc" or "basedc" or "value" or "amount" or "cost" => "int",
         "offhand" or "checkranged" or "mainhand" or "ispercentage" => "bool",
+        "resourcetype" or "resource" => "enum",
         "statusid" or "status" or "spellid" or "spell" or "passivename" or "tag" => "string",
+        "attacktype" => "enum",
         "size" => "enum",
         "properties" or "weaponflags" or "flags" => "enum",
         _ => "string"
@@ -395,6 +397,8 @@ public sealed class ConditionSchema
         "properties" or "weaponflags" => WeaponProperties,
         "flags" => WeaponProperties,
         "size" => SizeCategories,
+        "attacktype" => BoostMapping.AttackType,
+        "resourcetype" or "resource" => BoostMapping.ActionResources,
         _ => null
     };
 

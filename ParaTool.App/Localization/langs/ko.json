@@ -226,5 +226,23 @@
   "BbTipParam": "매개변수 자리 표시자 [p1] — 런타임에 DescriptionParams 값으로 대체됩니다",
   "BbTipLineBreak": "줄 바꿈 [br]",
   "TipToggleCodePreview": "BB-코드 편집기 / 미리보기 전환",
-  "LblCardMechanics": "메카닉스"
+  "LblCardMechanics": "메카닉스",
+
+  "enum.Highlighted": "강조",
+  "enum.IsHidden": "숨김",
+  "enum.IsToggled": "전환",
+  "enum.ToggledDefaultOn": "기본 켜짐",
+  "enum.ToggledDefaultAddToHotbar": "핫바에",
+  "enum.ToggleForParty": "파티용",
+  "enum.OncePerTurn": "1/턴",
+  "enum.OncePerAttack": "1/공격",
+  "enum.OncePerShortRest": "1/짧은 휴식",
+  "enum.OncePerLongRest": "1/긴 휴식",
+  "enum.OncePerCombat": "1/전투",
+  "enum.DisplayBoostInTooltip": "보너스 표시",
+  "enum.Temporary": "일시적",
+
+  "LblAnd": "그리고",
+  "LblOr": "또는",
+  "LblNot": "아님"
 }

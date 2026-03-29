@@ -11,17 +11,17 @@ public static class ThemeManager
 {
     // Default rarity colors (dark themes)
     private static readonly Color DefCommon = Color.Parse("#8A8494");
-    private static readonly Color DefUncommon = Color.Parse("#2ECC71");
+    private static readonly Color DefUncommon = Color.Parse("#2AB560");
     private static readonly Color DefRare = Color.Parse("#3498DB");
-    private static readonly Color DefVeryRare = Color.Parse("#9B59B6");
-    private static readonly Color DefLegendary = Color.Parse("#C8A96E");
+    private static readonly Color DefVeryRare = Color.Parse("#C43060");
+    private static readonly Color DefLegendary = Color.Parse("#E8A832");
 
     // Light-friendly rarity colors (darker/more saturated for contrast)
     private static readonly Color LightCommon = Color.Parse("#6A6474");
-    private static readonly Color LightUncommon = Color.Parse("#1B9E52");
+    private static readonly Color LightUncommon = Color.Parse("#1A8A48");
     private static readonly Color LightRare = Color.Parse("#2070B0");
-    private static readonly Color LightVeryRare = Color.Parse("#7A3E9D");
-    private static readonly Color LightLegendary = Color.Parse("#A07830");
+    private static readonly Color LightVeryRare = Color.Parse("#A82850");
+    private static readonly Color LightLegendary = Color.Parse("#B88020");
 
     public record ThemeDef(
         string Name,

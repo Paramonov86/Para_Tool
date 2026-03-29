@@ -66,7 +66,7 @@ public partial class ArtifactItemVM : ObservableObject
                 EndPoint = new Avalonia.RelativePoint(0, 1, Avalonia.RelativeUnit.Relative),
                 GradientStops =
                 {
-                    new GradientStop(Color.FromArgb(50, c.R, c.G, c.B), 0),
+                    new GradientStop(Color.FromArgb(100, c.R, c.G, c.B), 0),
                     new GradientStop(Color.FromArgb(0, c.R, c.G, c.B), 1),
                 }
             };
@@ -361,6 +361,13 @@ public partial class PassiveVM : ObservableObject
 
     private string EditLang => _parent.GetEditingLang?.Invoke() ?? Loc.Instance.Lang;
 
+    public static string[] PassivePropertyOptions { get; } =
+    [
+        "Highlighted", "IsHidden", "IsToggled", "ToggledDefaultOn",
+        "OncePerTurn", "OncePerAttack", "OncePerShortRest", "OncePerLongRest", "OncePerCombat",
+        "DisplayBoostInTooltip", "Temporary", "ToggledDefaultAddToHotbar", "ToggleForParty"
+    ];
+
     public static string[] TriggerOptions { get; } = ParaTool.Core.Schema.BoostMapping.TriggerEvents.Keys.ToArray();
     public static string[] TriggerLabels => ParaTool.Core.Schema.BoostMapping.TriggerEvents.Values
         .Select(v =>
@@ -394,6 +401,9 @@ public partial class PassiveVM : ObservableObject
 
     public string StatName => Passive.Name;
 
+    /// <summary>True if passive has localized content to show in preview.</summary>
+    public bool HasVisibleLoca => !string.IsNullOrWhiteSpace(EditDisplayName) || !string.IsNullOrWhiteSpace(EditDescription);
+
     public string EditDisplayName
     {
         get => GetLang(Passive.DisplayName);
@@ -426,6 +436,18 @@ public partial class PassiveVM : ObservableObject
     {
         get => Passive.DescriptionParams;
         set { Passive.DescriptionParams = value ?? ""; _parent.IsDirty = true; OnPropertyChanged(); }
+    }
+
+    public string EditProperties
+    {
+        get => Passive.Properties;
+        set
+        {
+            Passive.Properties = value ?? "";
+            _parent.IsDirty = true;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasVisibleLoca));
+        }
     }
 
     public string EditBoostContext

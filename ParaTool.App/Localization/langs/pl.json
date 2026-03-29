@@ -226,5 +226,23 @@
   "BbTipParam": "Symbol zastępczy parametru [p1] — zastępowany wartością DescriptionParams w trakcie działania",
   "BbTipLineBreak": "Nowa linia [br]",
   "TipToggleCodePreview": "Przełącz edytor BB-code / podgląd",
-  "LblCardMechanics": "MECHANIKI"
+  "LblCardMechanics": "MECHANIKI",
+
+  "enum.Highlighted": "Podświetl",
+  "enum.IsHidden": "Ukryta",
+  "enum.IsToggled": "Przełącz",
+  "enum.ToggledDefaultOn": "Domyślnie wł.",
+  "enum.ToggledDefaultAddToHotbar": "Do paska",
+  "enum.ToggleForParty": "Dla drużyny",
+  "enum.OncePerTurn": "1/Turę",
+  "enum.OncePerAttack": "1/Atak",
+  "enum.OncePerShortRest": "1/Kr. odpocz.",
+  "enum.OncePerLongRest": "1/Dł. odpocz.",
+  "enum.OncePerCombat": "1/Walkę",
+  "enum.DisplayBoostInTooltip": "Pokaż bonus",
+  "enum.Temporary": "Tymczasowa",
+
+  "LblAnd": "I",
+  "LblOr": "LUB",
+  "LblNot": "NIE"
 }

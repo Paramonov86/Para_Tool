@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using ParaTool.App.Themes;
 using ParaTool.App.Services;
+using ParaTool.App.Localization;
 
 namespace ParaTool.App.Controls;
 
@@ -74,10 +75,25 @@ public class ChecklistPickerChip : UserControl
         if (selected.Length == 0)
             _valueText.Text = "—";
         else if (selected.Length == 1)
-            _valueText.Text = selected[0];
+            _valueText.Text = GetDisplayLabel(selected[0]);
         else
-            _valueText.Text = $"{selected.Length} selected";
+            _valueText.Text = string.Join(", ", selected.Select(GetDisplayLabel));
         _valueText.Foreground = selected.Length > 0 ? ThemeBrushes.TextPrimary : ThemeBrushes.TextMuted;
+    }
+
+    private string GetDisplayLabel(string rawValue)
+    {
+        var options = Options;
+        var labels = Labels;
+        if (options != null && labels != null)
+        {
+            var idx = Array.FindIndex(options, o => o.Equals(rawValue, StringComparison.OrdinalIgnoreCase));
+            if (idx >= 0 && idx < labels.Length) return labels[idx];
+        }
+        // Fallback: loca
+        var locaKey = $"enum.{rawValue}";
+        var locaVal = Localization.Loc.Instance[locaKey];
+        return locaVal != locaKey ? locaVal : rawValue;
     }
 
     private void OpenChecklist()

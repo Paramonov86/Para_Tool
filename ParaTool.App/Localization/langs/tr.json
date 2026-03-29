@@ -226,5 +226,23 @@
   "BbTipParam": "Parametre yer tutucusu [p1] — çalışma zamanında DescriptionParams değeriyle değiştirilir",
   "BbTipLineBreak": "Satır sonu [br]",
   "TipToggleCodePreview": "BB-code düzenleyici / önizleme geçişi",
-  "LblCardMechanics": "MEKANİKLER"
+  "LblCardMechanics": "MEKANİKLER",
+
+  "enum.Highlighted": "Vurgula",
+  "enum.IsHidden": "Gizli",
+  "enum.IsToggled": "Aç/Kapa",
+  "enum.ToggledDefaultOn": "Varsayılan Açık",
+  "enum.ToggledDefaultAddToHotbar": "Panele",
+  "enum.ToggleForParty": "Grup için",
+  "enum.OncePerTurn": "1/Tur",
+  "enum.OncePerAttack": "1/Saldırı",
+  "enum.OncePerShortRest": "1/Kısa Din.",
+  "enum.OncePerLongRest": "1/Uzun Din.",
+  "enum.OncePerCombat": "1/Savaş",
+  "enum.DisplayBoostInTooltip": "Bonusu göster",
+  "enum.Temporary": "Geçici",
+
+  "LblAnd": "VE",
+  "LblOr": "VEYA",
+  "LblNot": "DEĞİL"
 }

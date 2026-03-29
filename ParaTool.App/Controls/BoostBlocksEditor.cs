@@ -167,8 +167,8 @@ public class BoostBlocksEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center,
         });
 
-        // Target context tumbler (optional, shown only if present or for functors)
-        if (IsFunctorMode)
+        // Target context tumbler (only shown if data already contains one)
+        if (targetCtx != null)
         {
             var ctxItems = new[] { "—" }.Concat(TargetContextValues).ToArray();
             var ctxChip = new TumblerChipEditor

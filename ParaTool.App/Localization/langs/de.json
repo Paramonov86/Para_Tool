@@ -226,5 +226,23 @@
   "BbTipParam": "Parameter-Platzhalter [p1] — wird zur Laufzeit durch DescriptionParams-Wert ersetzt",
   "BbTipLineBreak": "Zeilenumbruch [br]",
   "TipToggleCodePreview": "BB-Code-Editor / Vorschau umschalten",
-  "LblCardMechanics": "MECHANIKEN"
+  "LblCardMechanics": "MECHANIKEN",
+
+  "enum.Highlighted": "Hervorheben",
+  "enum.IsHidden": "Versteckt",
+  "enum.IsToggled": "Umschalten",
+  "enum.ToggledDefaultOn": "Standard An",
+  "enum.ToggledDefaultAddToHotbar": "Zur Leiste",
+  "enum.ToggleForParty": "Für Gruppe",
+  "enum.OncePerTurn": "1/Runde",
+  "enum.OncePerAttack": "1/Angriff",
+  "enum.OncePerShortRest": "1/Kurze Rast",
+  "enum.OncePerLongRest": "1/Lange Rast",
+  "enum.OncePerCombat": "1/Kampf",
+  "enum.DisplayBoostInTooltip": "Bonus zeigen",
+  "enum.Temporary": "Temporär",
+
+  "LblAnd": "UND",
+  "LblOr": "ODER",
+  "LblNot": "NICHT"
 }

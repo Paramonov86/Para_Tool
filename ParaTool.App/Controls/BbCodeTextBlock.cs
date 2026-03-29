@@ -32,26 +32,26 @@ public class BbCodeTextBlock : TextBlock
         set => SetValue(BbParamsProperty, value);
     }
 
-    private static readonly SolidColorBrush StatusColor = new(Color.Parse("#E74C3C"));
-    private static readonly SolidColorBrush SpellColor = new(Color.Parse("#9B59B6"));
+    private static readonly SolidColorBrush StatusColor = new(Color.Parse("#C8A96E"));
+    private static readonly SolidColorBrush SpellColor = new(Color.Parse("#C8A96E"));
     private static readonly SolidColorBrush PassiveColor = new(Color.Parse("#C8A96E"));
-    private static readonly SolidColorBrush ResourceColor = new(Color.Parse("#F1C40F"));
+    private static readonly SolidColorBrush ResourceColor = new(Color.Parse("#C8A96E"));
     private static readonly SolidColorBrush TipColor = new(Color.Parse("#C8A96E"));
     private static readonly SolidColorBrush ParamColor = new(Color.Parse("#E67E22"));
 
     // BG3 damage type colors
     private static readonly Dictionary<string, SolidColorBrush> DamageColors = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Fire"] = new(Color.Parse("#FF4500")),
-        ["Cold"] = new(Color.Parse("#87CEEB")),
-        ["Lightning"] = new(Color.Parse("#FFD700")),
-        ["Thunder"] = new(Color.Parse("#DDA0DD")),
-        ["Acid"] = new(Color.Parse("#7FFF00")),
-        ["Poison"] = new(Color.Parse("#32CD32")),
-        ["Necrotic"] = new(Color.Parse("#98FB98")),
-        ["Radiant"] = new(Color.Parse("#FFD700")),
-        ["Psychic"] = new(Color.Parse("#FF69B4")),
-        ["Force"] = new(Color.Parse("#9B59B6")),
+        ["Fire"] = new(Color.Parse("#E8602A")),
+        ["Cold"] = new(Color.Parse("#48A8D0")),
+        ["Lightning"] = new(Color.Parse("#60B0E8")),
+        ["Thunder"] = new(Color.Parse("#8868C8")),
+        ["Acid"] = new(Color.Parse("#5BBD2B")),
+        ["Poison"] = new(Color.Parse("#A8B840")),
+        ["Necrotic"] = new(Color.Parse("#6AA85C")),
+        ["Radiant"] = new(Color.Parse("#E8C838")),
+        ["Psychic"] = new(Color.Parse("#C850C0")),
+        ["Force"] = new(Color.Parse("#D84080")),
         ["Slashing"] = new(Color.Parse("#C0C0C0")),
         ["Piercing"] = new(Color.Parse("#C0C0C0")),
         ["Bludgeoning"] = new(Color.Parse("#C0C0C0")),

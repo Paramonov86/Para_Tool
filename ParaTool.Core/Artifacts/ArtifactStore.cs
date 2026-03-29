@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ParaTool.Core.Services;
@@ -6,7 +8,7 @@ namespace ParaTool.Core.Artifacts;
 
 /// <summary>
 /// Manages the user's artifact collection.
-/// Artifacts are stored as individual .art files (JSON) in a dedicated folder.
+/// Artifacts are stored as individual .art files (AES-256 encrypted JSON) in a dedicated folder.
 /// Location: %LocalAppData%/ParaTool/Artifacts/
 /// </summary>
 public static class ArtifactStore
@@ -17,6 +19,10 @@ public static class ArtifactStore
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
+
+    // AES-256 key derived from a passphrase (obfuscated in binary)
+    private static readonly byte[] AesKey = DeriveKey("P4r4T00l_Anc13nt_Arm0ury_2024!@#");
+    private static readonly byte[] Magic = "PART"u8.ToArray(); // file header magic
 
     /// <summary>
     /// Gets the artifacts storage directory.
@@ -29,8 +35,7 @@ public static class ArtifactStore
     }
 
     /// <summary>
-    /// Save an artifact definition to disk.
-    /// Filename is based on ArtifactId for uniqueness.
+    /// Save an artifact definition to disk (encrypted).
     /// </summary>
     public static void Save(ArtifactDefinition artifact)
     {
@@ -41,7 +46,6 @@ public static class ArtifactStore
         if (string.IsNullOrEmpty(artifact.DescriptionHandle))
             artifact.DescriptionHandle = Localization.HandleGenerator.New();
 
-        // Ensure all passives/statuses/spells have handles
         foreach (var p in artifact.Passives)
         {
             if (string.IsNullOrEmpty(p.DisplayNameHandle)) p.DisplayNameHandle = Localization.HandleGenerator.New();
@@ -60,7 +64,8 @@ public static class ArtifactStore
 
         var path = GetArtifactPath(artifact.ArtifactId);
         var json = JsonSerializer.Serialize(artifact, JsonOptions);
-        File.WriteAllText(path, json);
+        var encrypted = Encrypt(Encoding.UTF8.GetBytes(json));
+        File.WriteAllBytes(path, encrypted);
     }
 
     /// <summary>
@@ -71,7 +76,8 @@ public static class ArtifactStore
         var path = GetArtifactPath(artifactId);
         if (!File.Exists(path)) return null;
 
-        var json = File.ReadAllText(path);
+        var json = ReadArtFile(path);
+        if (json == null) return null;
         return JsonSerializer.Deserialize<ArtifactDefinition>(json, JsonOptions);
     }
 
@@ -87,7 +93,8 @@ public static class ArtifactStore
         {
             try
             {
-                var json = File.ReadAllText(file);
+                var json = ReadArtFile(file);
+                if (json == null) continue;
                 var artifact = JsonSerializer.Deserialize<ArtifactDefinition>(json, JsonOptions);
                 if (artifact != null)
                     result.Add(artifact);
@@ -111,5 +118,78 @@ public static class ArtifactStore
     private static string GetArtifactPath(string artifactId)
     {
         return Path.Combine(GetArtifactsDir(), $"{artifactId}.art");
+    }
+
+    // ── Crypto ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Read .art file — supports both encrypted (PART header) and legacy plain JSON.
+    /// </summary>
+    private static string? ReadArtFile(string path)
+    {
+        var data = File.ReadAllBytes(path);
+        if (data.Length == 0) return null;
+
+        // Check for encrypted format (PART magic + IV + ciphertext)
+        if (data.Length > 4 + 16 && data[0] == Magic[0] && data[1] == Magic[1]
+            && data[2] == Magic[2] && data[3] == Magic[3])
+        {
+            var decrypted = Decrypt(data);
+            return decrypted != null ? Encoding.UTF8.GetString(decrypted) : null;
+        }
+
+        // Legacy: plain JSON (starts with '{' or BOM)
+        return Encoding.UTF8.GetString(data);
+    }
+
+    private static byte[] Encrypt(byte[] plaintext)
+    {
+        using var aes = Aes.Create();
+        aes.Key = AesKey;
+        aes.GenerateIV();
+
+        using var ms = new MemoryStream();
+        ms.Write(Magic); // 4 bytes header
+        ms.Write(aes.IV); // 16 bytes IV
+
+        using (var cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
+        {
+            cs.Write(plaintext);
+            cs.FlushFinalBlock();
+        }
+
+        return ms.ToArray();
+    }
+
+    private static byte[]? Decrypt(byte[] data)
+    {
+        try
+        {
+            using var aes = Aes.Create();
+            aes.Key = AesKey;
+
+            // Skip magic (4) + read IV (16)
+            var iv = new byte[16];
+            Buffer.BlockCopy(data, 4, iv, 0, 16);
+            aes.IV = iv;
+
+            using var ms = new MemoryStream(data, 4 + 16, data.Length - 4 - 16);
+            using var cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read);
+            using var result = new MemoryStream();
+            cs.CopyTo(result);
+            return result.ToArray();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static byte[] DeriveKey(string passphrase)
+    {
+        // PBKDF2 with fixed salt for deterministic key
+        var salt = "ParaTool_ArtifactSalt_v1"u8.ToArray();
+        using var pbkdf2 = new Rfc2898DeriveBytes(passphrase, salt, 10000, HashAlgorithmName.SHA256);
+        return pbkdf2.GetBytes(32); // AES-256
     }
 }

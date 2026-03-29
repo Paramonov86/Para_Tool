@@ -61,7 +61,7 @@ public class ChipListEditor : UserControl
             BorderThickness = new Thickness(0),
             VerticalAlignment = VerticalAlignment.Center,
         };
-        _input.KeyDown += OnInputKeyDown;
+        _input.KeyUp += OnInputKeyUp;
 
         _addBtn = new Button
         {
@@ -167,12 +167,20 @@ public class ChipListEditor : UserControl
             Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
-    private void OnInputKeyDown(object? sender, KeyEventArgs e)
+    private void OnInputKeyUp(object? sender, KeyEventArgs e)
     {
-        if (e.Key is Key.Enter or Key.Space || (e.Key == Key.OemSemicolon))
+        if (e.Key == Key.Enter)
         {
             AddFromInput();
             e.Handled = true;
+            return;
+        }
+        // Check if text ends with ';' (works with any keyboard layout)
+        var text = _input.Text;
+        if (text != null && text.EndsWith(';'))
+        {
+            _input.Text = text.TrimEnd(';');
+            AddFromInput();
         }
     }
 
