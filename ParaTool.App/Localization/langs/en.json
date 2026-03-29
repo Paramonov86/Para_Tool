@@ -229,6 +229,8 @@
   "LblDamage": "Damage",
   "LblVersatile": "Versatile",
   "LblDefaultBoosts": "Default Boosts",
+  "LblBoostsMainHand": "Main Hand",
+  "LblBoostsOffHand": "Off Hand",
   "LblProperties": "Properties",
   "LblUnique": "Unique (not recommended)",
   "TipUnique": "Unique items drop only once per playthrough. Not recommended for most items.",

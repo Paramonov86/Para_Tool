@@ -94,6 +94,12 @@ public sealed class ArtifactDefinition
     /// <summary>Spells unlocked by this item (semicolon-separated).</summary>
     public string SpellsOnEquip { get; set; } = "";
 
+    /// <summary>Weapon-specific: Boosts when equipped in main hand (e.g. "UnlockSpell(Target_Sickle_l)").</summary>
+    public string? BoostsOnEquipMainHand { get; set; }
+
+    /// <summary>Weapon-specific: Boosts when equipped in off hand.</summary>
+    public string? BoostsOnEquipOffHand { get; set; }
+
     // ─── Passive Definitions ────────────────────────────────
 
     /// <summary>Custom passives created for this artifact.</summary>

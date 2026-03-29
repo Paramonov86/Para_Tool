@@ -107,9 +107,10 @@ public class UpdateService
 
         var script = $"""
             @echo off
-            timeout /t 2 /nobreak >nul
+            timeout /t 4 /nobreak >nul
             xcopy /s /y /q "{sourceDir}\*" "{currentAppDir}\"
             start "" "{currentExe}"
+            timeout /t 2 /nobreak >nul
             rmdir /s /q "{Path.GetDirectoryName(sourceDir)}"
             del "%~f0"
             """;

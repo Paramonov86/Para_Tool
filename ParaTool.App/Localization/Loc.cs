@@ -207,6 +207,8 @@ public partial class Loc : ObservableObject
     public string LblDamage => this["LblDamage"];
     public string LblVersatile => this["LblVersatile"];
     public string LblDefaultBoosts => this["LblDefaultBoosts"];
+    public string LblBoostsMainHand => this["LblBoostsMainHand"];
+    public string LblBoostsOffHand => this["LblBoostsOffHand"];
     public string LblProperties => this["LblProperties"];
     public string LblUnique => this["LblUnique"];
     public string TipUnique => this["TipUnique"];

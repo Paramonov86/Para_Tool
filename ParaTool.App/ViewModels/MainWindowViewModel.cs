@@ -386,8 +386,9 @@ public partial class MainWindowViewModel : ObservableObject
             var extractedDir = await _updateService.DownloadAndExtractAsync(
                 _pendingUpdate.DownloadUrl, progress);
 
-            var currentAppDir = AppContext.BaseDirectory.TrimEnd(
-                Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            // Use ProcessPath — AppContext.BaseDirectory points to temp extraction dir for single-file apps
+            var currentAppDir = Path.GetDirectoryName(Environment.ProcessPath)!
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             _updateService.ApplyAndRestart(extractedDir, currentAppDir);
         }

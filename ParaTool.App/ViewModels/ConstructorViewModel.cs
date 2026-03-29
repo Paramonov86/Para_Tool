@@ -446,6 +446,8 @@ public partial class ConstructorViewModel : ViewModelBase
             art.StatusOnEquip = fresh.StatusOnEquip;
             art.SpellsOnEquip = fresh.SpellsOnEquip;
             art.DefaultBoosts = fresh.DefaultBoosts;
+            art.BoostsOnEquipMainHand = fresh.BoostsOnEquipMainHand;
+            art.BoostsOnEquipOffHand = fresh.BoostsOnEquipOffHand;
             art.Damage = fresh.Damage;
             art.VersatileDamage = fresh.VersatileDamage;
             art.WeaponProperties = fresh.WeaponProperties;
@@ -580,6 +582,8 @@ public partial class ConstructorViewModel : ViewModelBase
             if (fields.TryGetValue("Damage", out var dmg)) artifact.Damage = dmg;
             if (fields.TryGetValue("VersatileDamage", out var vd)) artifact.VersatileDamage = vd;
             if (fields.TryGetValue("Weapon Properties", out var wp)) artifact.WeaponProperties = wp;
+            if (fields.TryGetValue("BoostsOnEquipMainHand", out var boostsMH)) artifact.BoostsOnEquipMainHand = boostsMH;
+            if (fields.TryGetValue("BoostsOnEquipOffHand", out var boostsOH)) artifact.BoostsOnEquipOffHand = boostsOH;
             if (fields.TryGetValue("Spells", out var spells)) artifact.SpellsOnEquip = spells;
 
             // Auto-calculate price from pool + rarity
@@ -602,17 +606,17 @@ public partial class ConstructorViewModel : ViewModelBase
                     if (pFields.TryGetValue("DisplayName", out var dn))
                     {
                         var t = ResolveLoca(dn, EditingLang);
-                        if (t != null) passive.DisplayName[EditingLang] = t;
-                        if (EditingLang != scanLang) { var st = ResolveLoca(dn, scanLang); if (st != null) passive.DisplayName[scanLang] = st; }
-                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dn, "en"); if (en != null) passive.DisplayName["en"] = en; }
+                        if (t != null) passive.DisplayName[EditingLang] = BbCode.FromBg3Xml(t);
+                        if (EditingLang != scanLang) { var st = ResolveLoca(dn, scanLang); if (st != null) passive.DisplayName[scanLang] = BbCode.FromBg3Xml(st); }
+                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dn, "en"); if (en != null) passive.DisplayName["en"] = BbCode.FromBg3Xml(en); }
                     }
                     // Resolve description
                     if (pFields.TryGetValue("Description", out var dd))
                     {
                         var t = ResolveLoca(dd, EditingLang);
-                        if (t != null) passive.Description[EditingLang] = t;
-                        if (EditingLang != scanLang) { var st = ResolveLoca(dd, scanLang); if (st != null) passive.Description[scanLang] = st; }
-                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dd, "en"); if (en != null) passive.Description["en"] = en; }
+                        if (t != null) passive.Description[EditingLang] = BbCode.FromBg3Xml(t);
+                        if (EditingLang != scanLang) { var st = ResolveLoca(dd, scanLang); if (st != null) passive.Description[scanLang] = BbCode.FromBg3Xml(st); }
+                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dd, "en"); if (en != null) passive.Description["en"] = BbCode.FromBg3Xml(en); }
                     }
                     // Fallback: vanilla description
                     if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(EditingLang)))
@@ -625,7 +629,7 @@ public partial class ConstructorViewModel : ViewModelBase
                                 if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(lang)))
                                 {
                                     var vDesc = VanillaLoca.GetDescription(vanillaName, lang);
-                                    if (vDesc != null) passive.Description[lang] = vDesc;
+                                    if (vDesc != null) passive.Description[lang] = BbCode.FromBg3Xml(vDesc);
                                 }
                             }
                         }

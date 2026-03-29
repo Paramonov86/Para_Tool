@@ -555,9 +555,9 @@ public static class BoostMapping
         if (def == null) return raw; // unknown boost — show raw
 
         var label = Tr($"boost.{funcName}", translate);
-        // If no translation found, use built-in LabelRu/Label
+        // If no translation found, use built-in English label
         if (label == $"boost.{funcName}")
-            label = translate != null ? def.LabelRu : def.Label;
+            label = def.Label;
 
         var valueParts = new List<string>();
 
@@ -583,7 +583,9 @@ public static class BoostMapping
             }
             else if (param.Type == "string")
             {
-                // String IDs (spells, statuses) — skip in display
+                // Show spell/interrupt names for unlock boosts, skip others
+                if (funcName is "UnlockSpell" or "UnlockInterrupt" or "UnlockSpellVariant")
+                    valueParts.Add(val);
             }
             else // enum
             {

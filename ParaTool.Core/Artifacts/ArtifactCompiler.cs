@@ -100,6 +100,10 @@ public static class ArtifactCompiler
             var boostsStr = string.Join(";", allBoosts);
             stats.AppendLine($"data \"Boosts\" \"{boostsStr}\"");
         }
+        if (!string.IsNullOrEmpty(art.BoostsOnEquipMainHand))
+            stats.AppendLine($"data \"BoostsOnEquipMainHand\" \"{art.BoostsOnEquipMainHand}\"");
+        if (!string.IsNullOrEmpty(art.BoostsOnEquipOffHand))
+            stats.AppendLine($"data \"BoostsOnEquipOffHand\" \"{art.BoostsOnEquipOffHand}\"");
         if (!string.IsNullOrEmpty(art.PassivesOnEquip))
             stats.AppendLine($"data \"PassivesOnEquip\" \"{art.PassivesOnEquip}\"");
         if (!string.IsNullOrEmpty(art.StatusOnEquip))

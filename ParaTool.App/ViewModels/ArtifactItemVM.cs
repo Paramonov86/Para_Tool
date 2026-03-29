@@ -236,6 +236,18 @@ public partial class ArtifactItemVM : ObservableObject
         set { Artifact.WeaponProperties = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); }
     }
 
+    public string EditBoostsOnEquipMainHand
+    {
+        get => Artifact.BoostsOnEquipMainHand ?? "";
+        set { Artifact.BoostsOnEquipMainHand = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(HasMainHandBoosts)); OnPropertyChanged(nameof(PreviewMainHandText)); }
+    }
+
+    public string EditBoostsOnEquipOffHand
+    {
+        get => Artifact.BoostsOnEquipOffHand ?? "";
+        set { Artifact.BoostsOnEquipOffHand = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(HasOffHandBoosts)); OnPropertyChanged(nameof(PreviewOffHandText)); }
+    }
+
     public string EditWeight
     {
         get => Artifact.Weight < 0 ? "" : (Artifact.Weight == (int)Artifact.Weight
@@ -265,6 +277,14 @@ public partial class ArtifactItemVM : ObservableObject
 
     public string PreviewBoostsText => ParaTool.Core.Schema.BoostMapping.FormatBoostsForPreview(
         Artifact.Boosts, key => Localization.Loc.Instance[key]);
+
+    public string PreviewMainHandText => ParaTool.Core.Schema.BoostMapping.FormatBoostsForPreview(
+        Artifact.BoostsOnEquipMainHand ?? "", key => Localization.Loc.Instance[key]);
+    public bool HasMainHandBoosts => !string.IsNullOrEmpty(Artifact.BoostsOnEquipMainHand);
+
+    public string PreviewOffHandText => ParaTool.Core.Schema.BoostMapping.FormatBoostsForPreview(
+        Artifact.BoostsOnEquipOffHand ?? "", key => Localization.Loc.Instance[key]);
+    public bool HasOffHandBoosts => !string.IsNullOrEmpty(Artifact.BoostsOnEquipOffHand);
 
     public string EditPassivesOnEquip
     {
@@ -438,6 +458,11 @@ public partial class ArtifactItemVM : ObservableObject
         OnPropertyChanged(nameof(PreviewDescription));
         OnPropertyChanged(nameof(HasDescription));
         OnPropertyChanged(nameof(HasBoosts));
+        OnPropertyChanged(nameof(PreviewBoostsText));
+        OnPropertyChanged(nameof(HasMainHandBoosts));
+        OnPropertyChanged(nameof(PreviewMainHandText));
+        OnPropertyChanged(nameof(HasOffHandBoosts));
+        OnPropertyChanged(nameof(PreviewOffHandText));
         OnPropertyChanged(nameof(HasPassives));
         OnPropertyChanged(nameof(EditDisplayName));
         OnPropertyChanged(nameof(EditDescription));
