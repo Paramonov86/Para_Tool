@@ -492,114 +492,161 @@ public sealed class AmpPatcher
     }
 
     /// <summary>
-    /// Patches RootTemplates in _merged.lsf:
-    /// - New artifacts: adds GameObjects nodes with minimal fields
-    /// - Override artifacts: updates DisplayName, Description, Icon on existing nodes
+    /// Patches RootTemplates:
+    /// - Override artifacts: finds GameObjects node in individual {uuid}.lsf or _merged.lsf,
+    ///   updates DisplayName, Description, Icon
+    /// - New artifacts: creates individual {uuid}.lsf files (safer than modifying _merged.lsf)
     /// </summary>
     private static void PatchRootTemplates(string extractDir,
         IReadOnlyList<ArtifactDefinition> newArtifacts,
         IReadOnlyList<ArtifactDefinition> overrideArtifacts)
     {
-        var mergedPath = Directory.GetFiles(extractDir, "_merged.lsf", SearchOption.AllDirectories)
-            .FirstOrDefault(p => p.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase));
-
-        if (mergedPath == null) return;
+        // Find RootTemplates directory
+        var rtDir = Directory.GetDirectories(extractDir, "RootTemplates", SearchOption.AllDirectories)
+            .FirstOrDefault();
+        if (rtDir == null) return;
 
         try
         {
-            LSLib.Resource resource;
-            using (var fs = File.OpenRead(mergedPath))
+            // ── Override artifacts: find and update existing templates ──
+            if (overrideArtifacts.Count > 0)
             {
-                var reader = new LSLib.LSFReader(fs);
-                resource = reader.Read();
-            }
+                var remaining = new Dictionary<string, ArtifactDefinition>(StringComparer.OrdinalIgnoreCase);
+                foreach (var a in overrideArtifacts) remaining[a.StatId] = a;
 
-            if (!resource.Regions.TryGetValue("Templates", out var templatesRegion)) return;
-
-            // Build lookup: Stats value → GameObjects node for overrides
-            var overrideMap = overrideArtifacts.ToDictionary(a => a.StatId, StringComparer.OrdinalIgnoreCase);
-
-            if (overrideMap.Count > 0 && templatesRegion.Children.TryGetValue("GameObjects", out var goNodes))
-            {
-                foreach (var goNode in goNodes)
+                // 1. Check individual {uuid}.lsf files first (they override _merged.lsf)
+                foreach (var lsfFile in Directory.GetFiles(rtDir, "*.lsf")
+                    .Where(f => !Path.GetFileName(f).StartsWith("_")))
                 {
-                    if (!goNode.Attributes.TryGetValue("Stats", out var statsAttr)) continue;
-                    var statsVal = statsAttr.Value?.ToString();
-                    if (statsVal == null || !overrideMap.TryGetValue(statsVal, out var art)) continue;
+                    if (remaining.Count == 0) break;
+                    if (TryUpdateTemplateInLsf(lsfFile, remaining)) { }
+                }
 
-                    // Update DisplayName handle
-                    if (!string.IsNullOrEmpty(art.DisplayNameHandle))
-                    {
-                        goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
-                        {
-                            Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
-                        };
-                    }
-
-                    // Update Description handle
-                    if (!string.IsNullOrEmpty(art.DescriptionHandle))
-                    {
-                        goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
-                        {
-                            Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
-                        };
-                    }
-
-                    // Update Icon if custom
-                    if (art.AtlasIconMapKey != null || art.IconMainDdsBase64 != null)
-                    {
-                        goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                        {
-                            Value = art.AtlasIconMapKey ?? art.StatId
-                        };
-                    }
-
-                    overrideMap.Remove(statsVal);
+                // 2. Check _merged.lsf for any remaining
+                if (remaining.Count > 0)
+                {
+                    var mergedPath = Path.Combine(rtDir, "_merged.lsf");
+                    if (File.Exists(mergedPath))
+                        TryUpdateTemplateInLsf(mergedPath, remaining);
                 }
             }
 
-            // Add new artifact templates
+            // ── New artifacts: create individual {uuid}.lsf files ──
             foreach (var art in newArtifacts)
             {
-                var goNode = new LSLib.Node { Name = "GameObjects", Parent = templatesRegion };
-
-                goNode.Attributes["MapKey"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                    { Value = art.TemplateUuid };
-                goNode.Attributes["Name"] = new LSLib.NodeAttribute(LSLib.AttributeType.LSString)
-                    { Value = art.StatId };
-                goNode.Attributes["Type"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                    { Value = "item" };
-                goNode.Attributes["ParentTemplateId"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                    { Value = art.ParentTemplateUuid };
-                goNode.Attributes["Stats"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                    { Value = art.StatId };
-                goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                    { Value = art.AtlasIconMapKey ?? art.StatId };
-                goNode.Attributes["LevelName"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                    { Value = "" };
-                goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
-                {
-                    Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
-                };
-                goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
-                {
-                    Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
-                };
-
-                templatesRegion.AppendChild(goNode);
-            }
-
-            // Write back
-            using (var outFs = File.Create(mergedPath))
-            {
-                var writer = new LSLib.LSFWriter(outFs);
-                writer.Write(resource);
+                var lsfPath = Path.Combine(rtDir, $"{art.TemplateUuid}.lsf");
+                CreateTemplateLsf(lsfPath, art);
             }
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"RootTemplate patching failed: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Try to find and update GameObjects nodes matching override artifacts in an LSF file.
+    /// Returns true if any were found and updated.
+    /// </summary>
+    private static bool TryUpdateTemplateInLsf(string lsfPath, Dictionary<string, ArtifactDefinition> remaining)
+    {
+        LSLib.Resource resource;
+        using (var fs = File.OpenRead(lsfPath))
+        {
+            var reader = new LSLib.LSFReader(fs);
+            resource = reader.Read();
+        }
+
+        if (!resource.Regions.TryGetValue("Templates", out var region)) return false;
+        if (!region.Children.TryGetValue("GameObjects", out var goNodes)) return false;
+
+        bool modified = false;
+        foreach (var goNode in goNodes)
+        {
+            if (!goNode.Attributes.TryGetValue("Stats", out var statsAttr)) continue;
+            var statsVal = statsAttr.Value?.ToString();
+            if (statsVal == null || !remaining.TryGetValue(statsVal, out var art)) continue;
+
+            UpdateTemplateNode(goNode, art);
+            remaining.Remove(statsVal);
+            modified = true;
+        }
+
+        if (modified)
+        {
+            using var outFs = File.Create(lsfPath);
+            var writer = new LSLib.LSFWriter(outFs);
+            writer.Write(resource);
+        }
+
+        return modified;
+    }
+
+    /// <summary>Update DisplayName, Description, Icon on an existing GameObjects node.</summary>
+    private static void UpdateTemplateNode(LSLib.Node goNode, ArtifactDefinition art)
+    {
+        if (!string.IsNullOrEmpty(art.DisplayNameHandle))
+        {
+            goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+            {
+                Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
+            };
+        }
+
+        if (!string.IsNullOrEmpty(art.DescriptionHandle))
+        {
+            goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+            {
+                Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
+            };
+        }
+
+        if (art.AtlasIconMapKey != null || art.IconMainDdsBase64 != null)
+        {
+            goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+            {
+                Value = art.AtlasIconMapKey ?? art.StatId
+            };
+        }
+    }
+
+    /// <summary>Create an individual {uuid}.lsf file for a new artifact.</summary>
+    private static void CreateTemplateLsf(string lsfPath, ArtifactDefinition art)
+    {
+        var resource = new LSLib.Resource();
+        var region = new LSLib.Region { Name = "Templates", RegionName = "Templates" };
+        resource.Regions["Templates"] = region;
+
+        var goNode = new LSLib.Node { Name = "GameObjects", Parent = region };
+
+        goNode.Attributes["MapKey"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+            { Value = art.TemplateUuid };
+        goNode.Attributes["Name"] = new LSLib.NodeAttribute(LSLib.AttributeType.LSString)
+            { Value = art.StatId };
+        goNode.Attributes["Type"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+            { Value = "item" };
+        goNode.Attributes["ParentTemplateId"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+            { Value = art.ParentTemplateUuid };
+        goNode.Attributes["Stats"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+            { Value = art.StatId };
+        goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+            { Value = art.AtlasIconMapKey ?? art.StatId };
+        goNode.Attributes["LevelName"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+            { Value = "" };
+        goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+        {
+            Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
+        };
+        goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+        {
+            Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
+        };
+
+        region.AppendChild(goNode);
+
+        using var outFs = File.Create(lsfPath);
+        var writer = new LSLib.LSFWriter(outFs);
+        writer.Write(resource);
     }
 
     /// <summary>
