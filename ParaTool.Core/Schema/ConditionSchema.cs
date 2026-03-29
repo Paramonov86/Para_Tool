@@ -227,7 +227,8 @@ public sealed class ConditionSchema
                             Name = pName,
                             Type = MapLuaType(pType),
                             EnumValues = GetEnumValues(pType),
-                            IsOptional = false,
+                            // Entity params are optional — BG3 auto-fills from context
+                            IsOptional = pType is "Khn_Entity",
                         });
                     }
 
@@ -298,7 +299,7 @@ public sealed class ConditionSchema
                 foreach (var arg in argsStr.Split(',', StringSplitOptions.TrimEntries))
                 {
                     if (string.IsNullOrEmpty(arg)) continue;
-                    // Entity params → Target/Source enum
+                    // Entity params → optional Target/Source enum (BG3 auto-fills from context)
                     if (arg is "entity" or "entity2" or "target" or "source" or "owner")
                     {
                         funcParams.Add(new ConditionParam

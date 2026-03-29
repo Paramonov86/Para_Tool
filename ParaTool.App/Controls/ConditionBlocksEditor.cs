@@ -685,16 +685,18 @@ public class ConditionBlocksEditor : UserControl
 
     private void AddCondition(ConditionDef def)
     {
-        // Build default args
-        var args = def.Params.Select(p => p.Type switch
-        {
-            "enum" => $"'{p.EnumValues?.FirstOrDefault() ?? "None"}'",
-            "flags" => $"'{p.EnumValues?.FirstOrDefault() ?? "None"}'",
-            "int" => "1",
-            "float" => "1",
-            "bool" => "true",
-            _ => $"'{p.Name}'"
-        }).ToArray();
+        // Build default args (skip optional params — user adds them explicitly)
+        var args = def.Params
+            .Where(p => !p.IsOptional)
+            .Select(p => p.Type switch
+            {
+                "enum" => $"'{p.EnumValues?.FirstOrDefault() ?? "None"}'",
+                "flags" => $"'{p.EnumValues?.FirstOrDefault() ?? "None"}'",
+                "int" => "1",
+                "float" => "1",
+                "bool" => "true",
+                _ => $"'{p.Name}'"
+            }).ToArray();
 
         var call = args.Length > 0 ? $"{def.Name}({string.Join(",", args)})" : $"{def.Name}()";
 
