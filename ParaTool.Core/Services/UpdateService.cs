@@ -104,18 +104,35 @@ public class UpdateService
 
         // The zip may contain a single subfolder — find where the exe is
         var sourceDir = FindExeDirectory(extractedDir, exeName) ?? extractedDir;
+        var oldExe = Path.Combine(currentAppDir, exeName);
+        var backupExe = oldExe + ".old";
 
+        // Robust update script: rename old exe (Windows allows rename of running exe),
+        // then copy new files, then clean up. chcp 65001 for Unicode path support.
         var script = $"""
             @echo off
-            timeout /t 4 /nobreak >nul
+            chcp 65001 >nul 2>&1
+            timeout /t 2 /nobreak >nul
+            set RETRIES=0
+            :RENAME_RETRY
+            if exist "{backupExe}" del /f /q "{backupExe}"
+            ren "{oldExe}" "{exeName}.old" 2>nul
+            if not exist "{backupExe}" (
+                set /a RETRIES+=1
+                if %RETRIES% GEQ 10 goto FORCE_COPY
+                timeout /t 1 /nobreak >nul
+                goto RENAME_RETRY
+            )
+            :FORCE_COPY
             xcopy /s /y /q "{sourceDir}\*" "{currentAppDir}\"
+            if exist "{backupExe}" del /f /q "{backupExe}"
             start "" "{currentExe}"
             timeout /t 2 /nobreak >nul
             rmdir /s /q "{Path.GetDirectoryName(sourceDir)}"
             del "%~f0"
             """;
 
-        File.WriteAllText(batPath, script);
+        File.WriteAllText(batPath, script, System.Text.Encoding.UTF8);
 
         Process.Start(new ProcessStartInfo
         {
