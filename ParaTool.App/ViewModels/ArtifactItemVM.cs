@@ -5,6 +5,7 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ParaTool.App.Localization;
 using ParaTool.Core.Artifacts;
+using ParaTool.Core.Localization;
 
 namespace ParaTool.App.ViewModels;
 
@@ -507,7 +508,8 @@ public partial class PassiveVM : ObservableObject
             // Auto-generate StatId from human name if creating new
             if (string.IsNullOrEmpty(Passive.Name) || Passive.Name.StartsWith("Passive_New"))
             {
-                var cleaned = System.Text.RegularExpressions.Regex.Replace((value ?? "").Trim(), @"[^a-zA-Z0-9\s]", "");
+                var transliterated = Transliterator.ToLatin((value ?? "").Trim());
+                var cleaned = System.Text.RegularExpressions.Regex.Replace(transliterated, @"[^a-zA-Z0-9\s]", "");
                 var parts = cleaned.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 Passive.Name = parts.Length > 0
                     ? "Passive_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + (p.Length > 1 ? p[1..] : "")))

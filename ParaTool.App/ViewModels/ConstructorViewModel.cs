@@ -791,8 +791,9 @@ public partial class ConstructorViewModel : ViewModelBase
     {
         if (SelectedArtifact == null || string.IsNullOrWhiteSpace(humanName)) return;
 
-        // Generate StatId: "My Cool Sword" → "AMP_My_Cool_Sword"
-        var cleaned = System.Text.RegularExpressions.Regex.Replace(humanName.Trim(), @"[^a-zA-Z0-9\s]", "");
+        // Generate StatId: "Тестовая шмотка" → "AMP_Testovaya_Shmotka"
+        var transliterated = Transliterator.ToLatin(humanName.Trim());
+        var cleaned = System.Text.RegularExpressions.Regex.Replace(transliterated, @"[^a-zA-Z0-9\s]", "");
         var parts = cleaned.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var statId = "AMP_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + (p.Length > 1 ? p[1..] : "")));
 
