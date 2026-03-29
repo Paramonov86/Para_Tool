@@ -238,7 +238,7 @@ public partial class ConstructorView : UserControl
         var files = await topLevel.StorageProvider.OpenFilePickerAsync(
             new Avalonia.Platform.Storage.FilePickerOpenOptions
             {
-                Title = "Select PNG icon",
+                Title = Loc.Instance.DlgSelectPng,
                 AllowMultiple = false,
                 FileTypeFilter =
                 [

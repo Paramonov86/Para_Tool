@@ -649,7 +649,7 @@
                                                      IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                             <!-- Passive desc: code mode = raw TextBox -->
                                             <TextBox Text="{Binding EditDescription}"
-                                                     Watermark="Passive description (BB-code)"
+                                                     Watermark="{Binding WmPassiveDesc, Source={x:Static loc:Loc.Instance}}"
                                                      FontSize="{DynamicResource FontSize12}"
                                                      Foreground="{DynamicResource TextSecondaryBrush}"
                                                      Background="Transparent" BorderThickness="0"
@@ -678,7 +678,7 @@
                                      IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                             <TextBox Name="LocaDescription"
                                      Text="{Binding EditDescription}"
-                                     Watermark="Description / lore (BB-code)"
+                                     Watermark="{Binding WmDescriptionLore, Source={x:Static loc:Loc.Instance}}"
                                      TextWrapping="Wrap" AcceptsReturn="True"
                                      MinHeight="40" FontSize="{DynamicResource FontSize11}"
                                      Foreground="{DynamicResource TextMutedBrush}"

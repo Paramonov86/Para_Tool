@@ -245,6 +245,13 @@ public partial class Loc : ObservableObject
     public string BbTipLineBreak => this["BbTipLineBreak"];
     public string TipToggleCodePreview => this["TipToggleCodePreview"];
     public string LblCardMechanics => this["LblCardMechanics"];
+    public string TipFontSize => this["TipFontSize"];
+    public string TipColorTheme => this["TipColorTheme"];
+    public string WmBrowseIcons => this["WmBrowseIcons"];
+    public string WmPassiveDesc => this["WmPassiveDesc"];
+    public string WmDescriptionLore => this["WmDescriptionLore"];
+    public string LblNoIconSelected => this["LblNoIconSelected"];
+    public string DlgSelectPng => this["DlgSelectPng"];
 
     /// <summary>Get display labels for enum values, using loca with EnumLabels fallback.</summary>
     public string[] GetEnumDisplayLabels(string[] values)

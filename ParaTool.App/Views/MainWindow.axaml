@@ -111,7 +111,7 @@
                     <!-- Font size -->
                     <ComboBox Name="FontSizeSelector"
                               FontSize="11" Padding="6,3" MinWidth="65"
-                              ToolTip.Tip="Font size">
+                              ToolTip.Tip="{Binding TipFontSize, Source={x:Static loc:Loc.Instance}}">
                         <ComboBoxItem Content="A  -30%" />
                         <ComboBoxItem Content="A  0%" />
                         <ComboBoxItem Content="A  +50%" />
@@ -120,7 +120,7 @@
                     <!-- Theme -->
                     <ComboBox Name="ThemeSelector"
                               FontSize="11" Padding="6,3" MinWidth="130"
-                              ToolTip.Tip="Color theme">
+                              ToolTip.Tip="{Binding TipColorTheme, Source={x:Static loc:Loc.Instance}}">
                         <ComboBoxItem Content="🟣 Paramonov" />
                         <ComboBoxItem Content="⚪ Light" />
                         <ComboBoxItem Content="🔴 Dota 2" />
