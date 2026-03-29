@@ -50,3 +50,10 @@ app_icon.svg
 BOOST_MAPPING_TASK.md
 BOOST_MAPPING_ARCHITECTURE.md
 VANILLA_LOCA_TASK.md
+
+# Release archives
+*.zip
+
+# Test/debug files
+diagnose_lost_items.py
+passive_debug.log
