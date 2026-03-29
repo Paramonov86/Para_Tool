@@ -221,7 +221,7 @@ public static class ConditionLabels
         ["HasPassive"] = ("Has Passive", "Есть пассивка"),
         ["IsPassiveSource"] = ("Is Passive Source", "Источник пассивки"),
         ["IsPassiveOwner"] = ("Is Passive Owner", "Владелец пассивки"),
-        ["AttackedWithPassiveSourceWeapon"] = ("Attacked w/ Passive Weapon", "Атака оружием пассивки"),
+        ["AttackedWithPassiveSourceWeapon"] = ("Attacked w/ Source Weapon", "Атака самим оружием"),
 
         // ── Resource ──────────────────────────────────────────
         ["HasActionResource"] = ("Has Resource", "Есть ресурс"),

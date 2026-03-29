@@ -400,6 +400,20 @@ public partial class ConstructorViewModel : ViewModelBase
         }
 
         SelectedArtifact.IsDirty = false;
+
+        // Show save notification
+        SaveToastText = Localization.Loc.Instance.Lang == "ru" ? "Сохранено ✓" : "Saved ✓";
+        ShowSaveToast = true;
+        _ = HideSaveToastAsync();
+    }
+
+    [ObservableProperty] private bool _showSaveToast;
+    [ObservableProperty] private string _saveToastText = "";
+
+    private async Task HideSaveToastAsync()
+    {
+        await Task.Delay(2000);
+        ShowSaveToast = false;
     }
 
     // === Reset (red button) ===

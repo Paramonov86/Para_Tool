@@ -210,6 +210,12 @@ public class BoostBlocksEditor : UserControl
                 // Invisible constant — don't render, keep value as-is
                 continue;
             }
+
+            // RollBonus: 3rd param (AbilityOrSkill) only needed for SavingThrow/SkillCheck/RawAbility
+            // Always show as optional for these, skip for attack types
+            if (def.FuncName == "RollBonus" && i == 2 && args.Length > 0
+                && args[0].Trim() is not ("SavingThrow" or "SkillCheck" or "RawAbility"))
+                continue;
             else if (param.Type == "int")
             {
                 // Integer tumbler chip (allow -1 for infinite duration etc.)
@@ -265,10 +271,16 @@ public class BoostBlocksEditor : UserControl
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 chip.Tag = (rawBoost, paramIdx);
+                var capturedDef = def;
                 chip.PropertyChanged += (s, e2) =>
                 {
                     if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                    {
                         UpdateParam(rb, pi, tc.Text ?? "");
+                        // Changing first param may affect visibility of later params → deferred rebuild
+                        if (pi == 0 && capturedDef.FuncName == "RollBonus")
+                            Avalonia.Threading.Dispatcher.UIThread.Post(Rebuild);
+                    }
                 };
                 stack.Children.Add(chip);
             }

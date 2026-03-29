@@ -454,7 +454,8 @@ public class ConditionBlocksEditor : UserControl
         }
 
         // "+" button to add optional params — skip entity defaults, only offer context.Source
-        if (def != null && argCount < paramCount)
+        var hasEntityArg = token.Args.Any(a => a.TrimStart('\'', '"').StartsWith("context."));
+        if (def != null && argCount < paramCount && !hasEntityArg)
         {
             var nextParam = def.Params[argCount];
             // Skip if next param is entity and default (most users don't need it)

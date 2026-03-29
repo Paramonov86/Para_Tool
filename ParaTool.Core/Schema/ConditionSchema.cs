@@ -230,9 +230,21 @@ public sealed class ConditionSchema
 
                     // Special case: InSurface gridStateStr → surface enum
                     if (func.Value.name == "InSurface" && funcParams.Count > 0)
-                    {
-                        funcParams[0] = new ConditionParam { Name = "surface", Type = "enum", EnumValues = InSurfaceValues, DisplayValues = InSurfaceLabels };
-                    }
+                        funcParams[0] = new ConditionParam { Name = "surface", Type = "enum", EnumValues = InSurfaceValues };
+
+                    // Special case: DamageType params named "value", "damageType" etc.
+                    if (func.Value.name is "HasAttackDamageDoneForType" or "HasDamageDoneForType"
+                        or "HasDamageDoneForTypeIncludingZero" or "SpellDamageTypeIs" or "HasDamageEffectFlag"
+                        && funcParams.Count > 0)
+                        funcParams[0] = new ConditionParam { Name = "damageType", Type = "enum", EnumValues = DamageTypes };
+
+                    // Special case: HasStatusGroup → StatusGroups enum
+                    if (func.Value.name == "HasStatusGroup" && funcParams.Count > 0)
+                        funcParams[0] = new ConditionParam { Name = "statusGroup", Type = "enum", EnumValues = ConditionSchema.StatusGroups };
+
+                    // Special case: HasSpellFlag → SpellFlags enum
+                    if (func.Value.name == "HasSpellFlag" && funcParams.Count > 0)
+                        funcParams[0] = new ConditionParam { Name = "spellFlag", Type = "enum", EnumValues = SpellFlags };
 
                     AddFunc(schema, new ConditionDef
                     {
@@ -301,6 +313,13 @@ public sealed class ConditionSchema
                     });
                 }
             }
+
+            // Special case overrides for khn functions with wrong param types
+            if (name is "HasDamageDoneForType" or "HasDamageDoneForTypeIncludingZero"
+                or "HasAttackDamageDoneForType" or "SpellDamageTypeIs" && funcParams.Count > 0)
+                funcParams[0] = new ConditionParam { Name = "damageType", Type = "enum", EnumValues = DamageTypes };
+            if (name == "HasStatusGroup" && funcParams.Count > 0)
+                funcParams[0] = new ConditionParam { Name = "statusGroup", Type = "enum", EnumValues = StatusGroups };
 
             AddFunc(schema, new ConditionDef
             {

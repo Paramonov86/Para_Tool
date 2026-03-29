@@ -55,11 +55,11 @@ public static class ArtifactCompiler
         stats.AppendLine($"data \"ValueOverride\" \"{art.ValueOverride}\"");
 
         if (art.Unique)
-            stats.AppendLine($"data \"Unique\" \"1\"");
+            stats.AppendLine("data \"Unique\" \"1\"");
         if (!string.IsNullOrEmpty(art.ComboCategory))
             stats.AppendLine($"data \"ComboCategory\" \"{art.ComboCategory}\"");
         if (art.Weight >= 0)
-            stats.AppendLine($"data \"Weight\" \"{art.Weight}\"");
+            stats.AppendLine($"data \"Weight\" \"{art.Weight.ToString(System.Globalization.CultureInfo.InvariantCulture)}\"");
 
         // Armor-specific
         if (art.ArmorClass >= 0)
@@ -89,7 +89,17 @@ public static class ArtifactCompiler
                 allBoosts.Add($"UnlockSpell({spell})");
         }
         if (allBoosts.Count > 0)
-            stats.AppendLine($"data \"Boosts\" \"{string.Join(";", allBoosts)}\"");
+        {
+            var boostsStr = string.Join(";", allBoosts);
+            stats.AppendLine($"data \"Boosts\" \"{boostsStr}\"");
+            File.AppendAllText(Path.Combine(Path.GetTempPath(), "paratool_compile_debug.txt"),
+                $"[{art.StatId}] Boosts={boostsStr}\n");
+        }
+        else
+        {
+            File.AppendAllText(Path.Combine(Path.GetTempPath(), "paratool_compile_debug.txt"),
+                $"[{art.StatId}] NO BOOSTS (art.Boosts=\"{art.Boosts}\", art.SpellsOnEquip=\"{art.SpellsOnEquip}\")\n");
+        }
         if (!string.IsNullOrEmpty(art.PassivesOnEquip))
             stats.AppendLine($"data \"PassivesOnEquip\" \"{art.PassivesOnEquip}\"");
         if (!string.IsNullOrEmpty(art.StatusOnEquip))

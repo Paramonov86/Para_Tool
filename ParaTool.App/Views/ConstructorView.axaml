@@ -81,7 +81,7 @@
                                                        FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextPrimaryBrush}"
                                                        TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Row="1" Text="{Binding EditUsingBase}" FontSize="{DynamicResource FontSize10}"
+                                            <TextBlock Grid.Row="1" Text="{Binding EditStatId}" FontSize="{DynamicResource FontSize10}"
                                                        Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
                                         </Grid>
                                     </Border>
@@ -489,6 +489,12 @@
                             Padding="30,10" CornerRadius="8" Cursor="Hand">
                         <TextBlock Text="{Binding BtnSave, Source={x:Static loc:Loc.Instance}}" />
                     </Button>
+                    <Border IsVisible="{ReflectionBinding DataContext.ShowSaveToast, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            Background="#1A2ECC71" BorderBrush="#2ECC71" BorderThickness="1"
+                            CornerRadius="6" Padding="12,6">
+                        <TextBlock Text="{ReflectionBinding DataContext.SaveToastText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                   Foreground="#2ECC71" FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" />
+                    </Border>
                     <Button Command="{Binding ResetArtifactCommand}"
                             Background="{DynamicResource ErrorBrush}" Foreground="White"
                             FontSize="{DynamicResource FontSize14}" FontWeight="Bold"

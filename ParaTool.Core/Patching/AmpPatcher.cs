@@ -34,6 +34,7 @@ public sealed class AmpPatcher
             allItems.AddRange(ampMod.Items);
 
         var enabledModItems = mods
+            .Where(m => !string.IsNullOrEmpty(m.PakPath)) // Exclude virtual mods (artifacts handled by ApplyArtifacts)
             .SelectMany(m => m.Items)
             .Where(i => i.Enabled)
             .ToList();
@@ -47,9 +48,9 @@ public sealed class AmpPatcher
         if (ampMod != null)
             allItemsForTt.AddRange(ampMod.Items);
 
-        if (enabledModItems.Count == 0 && modifiedAmpItems.Count == 0)
+        var hasArtifacts = ArtifactStore.LoadAll().Any(a => a.PatchEnabled);
+        if (enabledModItems.Count == 0 && modifiedAmpItems.Count == 0 && !hasArtifacts)
         {
-            // Check if any AMP items were disabled (need re-patch to remove them)
             var disabledAmpItems = ampMod?.Items.Where(i => !i.Enabled && i.IsModified).ToList()
                 ?? new List<ItemEntry>();
             if (disabledAmpItems.Count == 0)
@@ -254,17 +255,21 @@ public sealed class AmpPatcher
     /// </summary>
     private static int ApplyArtifacts(string extractDir, string? statsDir, string ampPakPath)
     {
-        var artifacts = ArtifactStore.LoadAll().Where(a => a.PatchEnabled).ToList();
-        if (artifacts.Count == 0 || statsDir == null) return 0;
+        var logPath = Path.Combine(Path.GetTempPath(), "paratool_patch_debug.txt");
+        var log = new System.Text.StringBuilder();
 
-        // Load existing stat IDs to distinguish overrides vs new items
-        var existingStatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var statFile in Directory.GetFiles(statsDir, "*.txt"))
+        var allArts = ArtifactStore.LoadAll();
+        log.AppendLine($"LoadAll: {allArts.Count} artifacts from {ArtifactStore.GetArtifactsDir()}");
+        foreach (var a in allArts)
+            log.AppendLine($"  - {a.StatId} PatchEnabled={a.PatchEnabled} UsingBase={a.UsingBase}");
+
+        var artifacts = allArts.Where(a => a.PatchEnabled).ToList();
+        log.AppendLine($"After filter: {artifacts.Count}, statsDir={statsDir}");
+
+        if (artifacts.Count == 0 || statsDir == null)
         {
-            var text = File.ReadAllText(statFile);
-            var parsed = StatsParser.Parse(text);
-            foreach (var entry in parsed)
-                existingStatIds.Add(entry.Name);
+            File.WriteAllText(logPath, log.ToString());
+            return 0;
         }
 
         var overrideStats = new StringBuilder();
@@ -277,7 +282,10 @@ public sealed class AmpPatcher
 
         foreach (var art in artifacts)
         {
-            bool isOverride = existingStatIds.Contains(art.StatId);
+            // Override = same StatId as UsingBase (modifying existing item)
+            // New = different StatId (creating new item, even if leftover from previous patch exists in stats)
+            bool isOverride = art.StatId.Equals(art.UsingBase, StringComparison.OrdinalIgnoreCase);
+            log.AppendLine($"  {art.StatId}: isOverride={isOverride} (UsingBase={art.UsingBase})");
             var compiled = ArtifactCompiler.Compile(art, isOverride);
 
             if (isOverride)
@@ -439,6 +447,8 @@ public sealed class AmpPatcher
             WriteLocaEntries(extractDir, allLocaEntries);
         }
 
+        log.AppendLine($"Done: {count} artifacts, {newArtifacts.Count} new, {overrideArtifacts.Count} overrides");
+        File.WriteAllText(logPath, log.ToString());
         return count;
     }
 
@@ -510,7 +520,11 @@ public sealed class AmpPatcher
         // Find RootTemplates directory
         var rtDir = Directory.GetDirectories(extractDir, "RootTemplates", SearchOption.AllDirectories)
             .FirstOrDefault();
-        if (rtDir == null) return;
+
+        var rtLog = Path.Combine(Path.GetTempPath(), "paratool_rt_debug.txt");
+        File.WriteAllText(rtLog, $"rtDir={rtDir}\nnewArtifacts={newArtifacts.Count}\noverrideArtifacts={overrideArtifacts.Count}\n");
+
+        if (rtDir == null) { File.AppendAllText(rtLog, "ABORT: rtDir is null\n"); return; }
 
         try
         {
@@ -538,9 +552,11 @@ public sealed class AmpPatcher
             }
 
             // ── New artifacts: create individual {uuid}.lsf files ──
+            File.AppendAllText(rtLog, $"Creating {newArtifacts.Count} new RootTemplates in {rtDir}\n");
             foreach (var art in newArtifacts)
             {
                 var lsfPath = Path.Combine(rtDir, $"{art.TemplateUuid}.lsf");
+                File.AppendAllText(rtLog, $"  Creating: {lsfPath} (ParentTemplate={art.ParentTemplateUuid})\n");
                 CreateTemplateLsf(lsfPath, art);
             }
         }
