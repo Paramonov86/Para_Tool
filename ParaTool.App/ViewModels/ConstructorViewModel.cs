@@ -526,6 +526,10 @@ public partial class ConstructorViewModel : ViewModelBase
         {
             var fields = _resolver.ResolveAll(baseItem.StatId);
 
+            // Resolve ParentTemplateUuid from base item's RootTemplate field
+            if (fields.TryGetValue("RootTemplate", out var rtUuid) && !string.IsNullOrEmpty(rtUuid))
+                artifact.ParentTemplateUuid = rtUuid;
+
             if (fields.TryGetValue("Boosts", out var boosts)) artifact.Boosts = boosts;
             if (fields.TryGetValue("PassivesOnEquip", out var passives)) artifact.PassivesOnEquip = passives;
             if (fields.TryGetValue("StatusOnEquip", out var statuses)) artifact.StatusOnEquip = statuses;
