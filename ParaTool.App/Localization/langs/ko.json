@@ -169,6 +169,7 @@
   "boost.Disadvantage": "불이점",
   "boost.SpellSaveDC": "주문 내성 DC",
   "boost.UnlockSpell": "주문 잠금 해제",
+  "boost.UseAttack": "Use Attack",
   "boost.Proficiency": "숙련",
   "boost.Skill": "기술 보너스",
   "boost.ActionResource": "자원",

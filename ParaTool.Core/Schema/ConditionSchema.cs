@@ -250,6 +250,14 @@ public sealed class ConditionSchema
                     if (func.Value.name == "HasSpellFlag" && funcParams.Count > 0)
                         funcParams[0] = new ConditionParam { Name = "spellFlag", Type = "enum", EnumValues = SpellFlags };
 
+                    // Special case: WieldingWeapon weaponFlags → WeaponProperties enum
+                    if (func.Value.name == "WieldingWeapon" && funcParams.Count > 0)
+                        funcParams[0] = new ConditionParam { Name = "weaponFlags", Type = "enum", EnumValues = BoostMapping.WeaponFlags };
+
+                    // Special case: HasActionResource resourceType → ActionResources enum
+                    if (func.Value.name == "HasActionResource" && funcParams.Count > 0)
+                        funcParams[0] = new ConditionParam { Name = "resourceType", Type = "enum", EnumValues = BoostMapping.ActionResources };
+
                     AddFunc(schema, new ConditionDef
                     {
                         Name = func.Value.name,
@@ -324,6 +332,11 @@ public sealed class ConditionSchema
                 funcParams[0] = new ConditionParam { Name = "damageType", Type = "enum", EnumValues = DamageTypes };
             if (name == "HasStatusGroup" && funcParams.Count > 0)
                 funcParams[0] = new ConditionParam { Name = "statusGroup", Type = "enum", EnumValues = StatusGroups };
+
+            // Distance functions: value is float, not int
+            if (name.StartsWith("DistanceTo") && funcParams.Count > 0)
+                foreach (var fp in funcParams.Where(p => p.Name == "value"))
+                    funcParams[funcParams.IndexOf(fp)] = new ConditionParam { Name = "distance", Type = "float" };
 
             AddFunc(schema, new ConditionDef
             {

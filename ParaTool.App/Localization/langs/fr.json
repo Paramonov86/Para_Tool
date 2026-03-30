@@ -150,6 +150,7 @@
   "boost.Disadvantage": "Désavantage",
   "boost.SpellSaveDC": "DD de sauvegarde",
   "boost.UnlockSpell": "Débloquer un sort",
+  "boost.UseAttack": "Use Attack",
   "boost.Proficiency": "Maîtrise",
   "boost.Skill": "Bonus de compétence",
   "boost.ActionResource": "Ressource",

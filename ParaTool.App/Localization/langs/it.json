@@ -150,6 +150,7 @@
   "boost.Disadvantage": "Svantaggio",
   "boost.SpellSaveDC": "CD incantesimo",
   "boost.UnlockSpell": "Sblocca incantesimo",
+  "boost.UseAttack": "Use Attack",
   "boost.Proficiency": "Competenza",
   "boost.Skill": "Bonus abilità",
   "boost.ActionResource": "Risorsa",

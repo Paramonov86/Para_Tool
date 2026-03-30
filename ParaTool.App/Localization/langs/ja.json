@@ -150,6 +150,7 @@
   "boost.Disadvantage": "不利",
   "boost.SpellSaveDC": "呪文セーヴDC",
   "boost.UnlockSpell": "呪文解放",
+  "boost.UseAttack": "Use Attack",
   "boost.Proficiency": "習熟",
   "boost.Skill": "技能ボーナス",
   "boost.ActionResource": "リソース",

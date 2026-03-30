@@ -150,6 +150,7 @@
   "boost.Disadvantage": "劣势",
   "boost.SpellSaveDC": "法术豁免DC",
   "boost.UnlockSpell": "解锁法术",
+  "boost.UseAttack": "Use Attack",
   "boost.Proficiency": "熟练",
   "boost.Skill": "技能加成",
   "boost.ActionResource": "资源",

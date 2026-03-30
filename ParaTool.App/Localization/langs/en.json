@@ -209,6 +209,7 @@
   "boost.Disadvantage": "Disadvantage",
   "boost.SpellSaveDC": "Spell Save DC",
   "boost.UnlockSpell": "Unlock Spell",
+  "boost.UseAttack": "Use Attack",
   "boost.Proficiency": "Proficiency",
   "boost.Skill": "Skill Bonus",
   "boost.ActionResource": "Resource",

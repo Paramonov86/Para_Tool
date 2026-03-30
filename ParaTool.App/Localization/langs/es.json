@@ -150,6 +150,7 @@
   "boost.Disadvantage": "Desventaja",
   "boost.SpellSaveDC": "CD de salvación",
   "boost.UnlockSpell": "Desbloquear hechizo",
+  "boost.UseAttack": "Use Attack",
   "boost.Proficiency": "Competencia",
   "boost.Skill": "Bonificación de habilidad",
   "boost.ActionResource": "Recurso",

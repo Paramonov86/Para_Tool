@@ -282,9 +282,9 @@ public static class BoostMapping
         new("SwapPlaces", "Swap Places", "Поменяться местами", "#9B59B6", []),
 
         // ── Spells & Combat ──
-        new("UseSpell", "Use Spell", "Использовать заклинание", "#9B59B6",
-            [new("SpellId", "Spell", "string"), new("IgnoreHasSpell", "Ignore Check", "bool")]),
-        new("UseAttack", "Use Attack", "Использовать атаку", "#E06040", []),
+        new("UseSpell", "Use Spell", "Применить заклинание", "#9B59B6",
+            [new("SpellId", "Spell", "string"), new("IgnoreHasSpell", "Flag", "bool"), new("IgnoreChecks", "Flag", "bool")]),
+        new("UseAttack", "Use Attack", "Применить атаку", "#E06040", []),
         new("ExecuteWeaponFunctors", "Execute Weapon Functors", "Функторы оружия", "#E06040",
             [new("Type", "Hand", "enum", ExecuteWeaponFunctorsType)]),
         new("Counterspell", "Counterspell", "Контрзаклинание", "#9B59B6", []),

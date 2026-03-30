@@ -211,12 +211,16 @@ public class BoostBlocksEditor : UserControl
             stack.Children.Add(ctxChip);
         }
 
-        // Parameters — render as appropriate controls (show all params, even if args is shorter)
-        for (int i = 0; i < def.Params.Length; i++)
+        // Parameters — render only params that have values (don't show empty optional trailing params)
+        var renderCount = Math.Max(args.Length, 0);
+        for (int i = 0; i < Math.Min(def.Params.Length, Math.Max(renderCount, def.Params.Length)); i++)
         {
             var param = def.Params[i];
             var isOptional = i >= args.Length;
             var value = !isOptional ? args[i] : "";
+
+            // Skip trailing params with no value
+            if (isOptional && string.IsNullOrEmpty(value)) continue;
             var paramIdx = i;
 
             if (param.Type == "hidden")

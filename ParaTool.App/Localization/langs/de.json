@@ -150,6 +150,7 @@
   "boost.Disadvantage": "Nachteil",
   "boost.SpellSaveDC": "Zauber-SG",
   "boost.UnlockSpell": "Zauber freischalten",
+  "boost.UseAttack": "Use Attack",
   "boost.Proficiency": "Übung",
   "boost.Skill": "Fertigkeitsbonus",
   "boost.ActionResource": "Ressource",

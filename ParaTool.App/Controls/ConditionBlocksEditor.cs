@@ -389,6 +389,40 @@ public class ConditionBlocksEditor : UserControl
                 };
                 stack.Children.Add(tumbler);
             }
+            else if (param?.Type == "bool" || (param?.Type != "enum" && argVal is "true" or "false"))
+            {
+                var boolTumbler = new TumblerChipEditor
+                {
+                    Text = argVal, Items = ["true", "false"],
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                boolTumbler.PropertyChanged += (s, e) =>
+                {
+                    if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
+                    {
+                        token.Args[paramIdx] = tc.Text ?? "false";
+                        SyncFromTokens(tokens);
+                    }
+                };
+                stack.Children.Add(boolTumbler);
+            }
+            else if (param?.Type == "float")
+            {
+                var tumbler = new TumblerChipEditor
+                {
+                    Text = argVal, Step = 0.5, MinValue = 0, MaxValue = 9999,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                tumbler.PropertyChanged += (s, e) =>
+                {
+                    if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
+                    {
+                        token.Args[paramIdx] = tc.Text ?? "0";
+                        SyncFromTokens(tokens);
+                    }
+                };
+                stack.Children.Add(tumbler);
+            }
             else if (argVal.StartsWith("context.", StringComparison.OrdinalIgnoreCase))
             {
                 // Entity value in a non-entity param — always show if explicitly set

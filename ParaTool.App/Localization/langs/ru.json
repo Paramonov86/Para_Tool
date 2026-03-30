@@ -209,6 +209,7 @@
   "boost.Disadvantage": "Помеха",
   "boost.SpellSaveDC": "КС заклинаний",
   "boost.UnlockSpell": "Открыть заклинание",
+  "boost.UseAttack": "Применить атаку",
   "boost.Proficiency": "Умение",
   "boost.Skill": "Бонус к навыку",
   "boost.ActionResource": "Ресурс",
