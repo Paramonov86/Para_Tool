@@ -359,7 +359,13 @@ public sealed class AmpPatcher
         {
             var metadataLsf = FindFile(extractDir, "metadata.lsf");
             if (metadataLsf != null)
+            {
                 PatchIconMetadataLsf(metadataLsf, customIconStatIds);
+                // Remove .lsx duplicate — BG3 prefers .lsx over .lsf, so our .lsf changes would be ignored
+                var metadataLsx = Path.ChangeExtension(metadataLsf, ".lsx");
+                if (File.Exists(metadataLsx))
+                    File.Delete(metadataLsx);
+            }
         }
 
         var statFiles = Directory.GetFiles(statsDir, "*.txt")
@@ -478,7 +484,7 @@ public sealed class AmpPatcher
 
         // Generate/update RootTemplates for artifacts
         if (newArtifacts.Count > 0 || overrideArtifacts.Count > 0)
-            PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts);
+            PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts, ampPakPath);
 
         // Write loca XML entries
         if (allLocaEntries.Count > 0)
@@ -554,7 +560,8 @@ public sealed class AmpPatcher
     /// </summary>
     private static void PatchRootTemplates(string extractDir,
         IReadOnlyList<ArtifactDefinition> newArtifacts,
-        IReadOnlyList<ArtifactDefinition> overrideArtifacts)
+        IReadOnlyList<ArtifactDefinition> overrideArtifacts,
+        string ampPakPath)
     {
         // Find RootTemplates directory
         var rtDir = Directory.GetDirectories(extractDir, "RootTemplates", SearchOption.AllDirectories)
@@ -596,7 +603,7 @@ public sealed class AmpPatcher
             {
                 var lsfPath = Path.Combine(rtDir, $"{art.TemplateUuid}.lsf");
                 File.AppendAllText(rtLog, $"  Creating: {lsfPath} (ParentTemplate={art.ParentTemplateUuid})\n");
-                CreateTemplateLsf(lsfPath, art);
+                CreateTemplateLsf(lsfPath, art, ampPakPath);
             }
         }
         catch (Exception ex)
@@ -675,7 +682,7 @@ public sealed class AmpPatcher
     /// Create an individual {uuid}.lsf by cloning the parent template and replacing key fields.
     /// This preserves Equipment/Slot/Visuals from the parent.
     /// </summary>
-    private static void CreateTemplateLsf(string lsfPath, ArtifactDefinition art)
+    private static void CreateTemplateLsf(string lsfPath, ArtifactDefinition art, string ampPakPath)
     {
         // Find parent template LSF to clone from
         var rtDir = Path.GetDirectoryName(lsfPath)!;
@@ -702,21 +709,31 @@ public sealed class AmpPatcher
         }
         else
         {
-            // Try _merged.lsf
-            var mergedPath = Path.Combine(rtDir, "_merged.lsf");
-            if (File.Exists(mergedPath))
-            {
-                using var fs = File.OpenRead(mergedPath);
-                var reader = new LSLib.LSFReader(fs);
-                var mergedRes = reader.Read();
+            // Try _merged.lsf in current mod directory
+            goNode = FindTemplateInMerged(Path.Combine(rtDir, "_merged.lsf"), art.ParentTemplateUuid);
 
-                if (mergedRes.Regions.TryGetValue("Templates", out var region) &&
-                    region.Children.TryGetValue("GameObjects", out var nodes))
+            // Try all _merged.lsf in the extracted pak (other Public/ folders)
+            if (goNode == null)
+            {
+                var extractRoot = rtDir;
+                // Walk up to extract root (parent of Public/)
+                while (extractRoot != null && !Directory.Exists(Path.Combine(extractRoot, "Public")))
+                    extractRoot = Path.GetDirectoryName(extractRoot);
+                if (extractRoot != null)
                 {
-                    goNode = nodes.FirstOrDefault(n =>
-                        n.Attributes.TryGetValue("MapKey", out var mk) &&
-                        art.ParentTemplateUuid.Equals(mk.Value?.ToString(), StringComparison.OrdinalIgnoreCase));
+                    foreach (var merged in Directory.GetFiles(extractRoot, "_merged.lsf", SearchOption.AllDirectories))
+                    {
+                        if (!merged.Contains("RootTemplates")) continue;
+                        goNode = FindTemplateInMerged(merged, art.ParentTemplateUuid);
+                        if (goNode != null) break;
+                    }
                 }
+            }
+
+            // Try vanilla Shared.pak as last resort
+            if (goNode == null)
+            {
+                goNode = FindTemplateInSharedPak(art.ParentTemplateUuid, ampPakPath);
             }
 
             // Create minimal resource with cloned node
@@ -777,9 +794,114 @@ public sealed class AmpPatcher
                 { Value = art.AtlasIconMapKey };
         }
 
+        // Ensure EquipmentTypeID is set — prevents items ending up in wrong slot
+        if (!goNode.Attributes.ContainsKey("EquipmentTypeID"))
+        {
+            // Map stat type to BG3 EquipmentTypeID UUID
+            var eqTypeId = GetEquipmentTypeId(art.StatType, art.UsingBase);
+            if (eqTypeId != null)
+            {
+                goNode.Attributes["EquipmentTypeID"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                    { Value = eqTypeId };
+            }
+        }
+
         using var outFs = File.Create(lsfPath);
         var writer = new LSLib.LSFWriter(outFs);
         writer.Write(resource);
+    }
+
+    /// <summary>
+    /// Get BG3 EquipmentTypeID UUID based on stat type.
+    /// These are vanilla BG3 equipment slot UUIDs from Shared.pak.
+    /// </summary>
+    private static LSLib.Node? FindTemplateInMerged(string mergedPath, string uuid)
+    {
+        if (!File.Exists(mergedPath)) return null;
+        try
+        {
+            using var fs = File.OpenRead(mergedPath);
+            var reader = new LSLib.LSFReader(fs);
+            var res = reader.Read();
+            if (res.Regions.TryGetValue("Templates", out var region) &&
+                region.Children.TryGetValue("GameObjects", out var nodes))
+            {
+                return nodes.FirstOrDefault(n =>
+                    n.Attributes.TryGetValue("MapKey", out var mk) &&
+                    uuid.Equals(mk.Value?.ToString(), StringComparison.OrdinalIgnoreCase));
+            }
+        }
+        catch { /* ignore corrupt files */ }
+        return null;
+    }
+
+    private static LSLib.Node? FindTemplateInSharedPak(string uuid, string ampPakPath)
+    {
+        try
+        {
+            // Shared.pak is in the same Data directory as AMP pak
+            var dataDir = Path.GetDirectoryName(ampPakPath);
+            if (dataDir == null) return null;
+            var sharedPak = Path.Combine(dataDir, "Shared.pak");
+            if (!File.Exists(sharedPak)) return null;
+
+            // Find the RootTemplates/_merged.lsf entry in Shared.pak
+            using var pakStream = File.OpenRead(sharedPak);
+            var header = PakReader.ReadHeader(pakStream);
+            var entries = PakReader.ReadFileList(pakStream, header);
+            var rtEntry = entries.FirstOrDefault(e =>
+                e.Path.Contains("RootTemplates/_merged.lsf", StringComparison.OrdinalIgnoreCase));
+            if (rtEntry.Path == null) return null;
+
+            var lsfData = PakReader.ExtractFileData(pakStream, rtEntry);
+            using var ms = new System.IO.MemoryStream(lsfData);
+            var reader = new LSLib.LSFReader(ms);
+            var res = reader.Read();
+
+            if (res.Regions.TryGetValue("Templates", out var region) &&
+                region.Children.TryGetValue("GameObjects", out var nodes))
+            {
+                return nodes.FirstOrDefault(n =>
+                    n.Attributes.TryGetValue("MapKey", out var mk) &&
+                    uuid.Equals(mk.Value?.ToString(), StringComparison.OrdinalIgnoreCase));
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.AppLogger.Warn($"FindTemplateInSharedPak failed: {ex.Message}");
+        }
+        return null;
+    }
+
+    private static string? GetEquipmentTypeId(string statType, string? usingBase)
+    {
+        // Weapons always go in melee/ranged weapon slot — BG3 determines from template
+        if (statType == "Weapon")
+            return "2ef8e830-1759-4335-b4db-e498e41b1afe"; // Melee Main Weapon
+
+        // Armor — determine slot from base name patterns
+        if (statType == "Armor" && usingBase != null)
+        {
+            var b = usingBase.ToUpperInvariant();
+            if (b.Contains("AMULET") || b.Contains("NECK"))
+                return "e4133b20-a10f-4a97-9e2e-4e07e1c7a9e0"; // Amulet
+            if (b.Contains("RING"))
+                return "af06a192-1a52-41fb-a46f-ae7a1010cd15"; // Ring
+            if (b.Contains("CLOAK") || b.Contains("MANTLE"))
+                return "3e2d74e3-3631-4a22-b71b-95565dbc13e9"; // Cloak
+            if (b.Contains("HELMET") || b.Contains("HAT") || b.Contains("CIRCLET") || b.Contains("CROWN"))
+                return "aedd3574-39a3-4b47-a20a-34e4f90c02fd"; // Helmet
+            if (b.Contains("GLOVES") || b.Contains("GAUNTLET"))
+                return "6d37abad-5eb8-4e98-9963-e4e514d2959a"; // Gloves
+            if (b.Contains("BOOTS") || b.Contains("SHOES"))
+                return "29a5e2b2-0e67-4355-8e40-469aabd16498"; // Boots
+            if (b.Contains("SHIELD"))
+                return "a3ce6f42-1fd3-4880-a330-5765f7a35c24"; // Shield
+            // Chest armor (default for ARM_ prefix)
+            return "6a084c55-76e8-4528-9510-3b63ec290cd0"; // Chest
+        }
+
+        return null;
     }
 
     /// <summary>

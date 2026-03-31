@@ -104,8 +104,16 @@ public static class ArtifactCompiler
             stats.AppendLine($"data \"BoostsOnEquipMainHand\" \"{art.BoostsOnEquipMainHand}\"");
         if (!string.IsNullOrEmpty(art.BoostsOnEquipOffHand))
             stats.AppendLine($"data \"BoostsOnEquipOffHand\" \"{art.BoostsOnEquipOffHand}\"");
+        // Build PassivesOnEquip: merge explicit list + all passives from Passives array
+        var poeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!string.IsNullOrEmpty(art.PassivesOnEquip))
-            stats.AppendLine($"data \"PassivesOnEquip\" \"{art.PassivesOnEquip}\"");
+            foreach (var n in art.PassivesOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                poeNames.Add(n);
+        foreach (var p in art.Passives ?? [])
+            if (!string.IsNullOrEmpty(p.Name))
+                poeNames.Add(p.Name);
+        if (poeNames.Count > 0)
+            stats.AppendLine($"data \"PassivesOnEquip\" \"{string.Join(";", poeNames)}\"");
         if (!string.IsNullOrEmpty(art.StatusOnEquip))
             stats.AppendLine($"data \"StatusOnEquip\" \"{art.StatusOnEquip}\"");
 
@@ -132,10 +140,9 @@ public static class ArtifactCompiler
         // Update PassivesOnEquip with renamed passives
         if (passiveRenames.Count > 0 && !string.IsNullOrEmpty(art.PassivesOnEquip))
         {
-            var poeNames = art.PassivesOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var updated = poeNames.Select(n => passiveRenames.TryGetValue(n, out var renamed) ? renamed : n);
+            var renamedPoe = art.PassivesOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var updated = renamedPoe.Select(n => passiveRenames.TryGetValue(n, out var renamed) ? renamed : n);
             art.PassivesOnEquip = string.Join(";", updated);
-            // Re-emit PassivesOnEquip line (was already written — need to replace)
         }
 
         // Re-build stats header with updated PassivesOnEquip
@@ -155,16 +162,17 @@ public static class ArtifactCompiler
             if (passive.UsingBase != null)
                 stats.AppendLine($"using \"{passive.UsingBase}\"");
 
-            stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(passive.DisplayNameHandle)}\"");
-            stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(passive.DescriptionHandle)}\"");
+            // Only write DisplayName/Description if they have real handles (not empty)
+            // For inherited passives with empty handles, let BG3 inherit from parent
+            if (!string.IsNullOrEmpty(passive.DisplayNameHandle))
+                stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(passive.DisplayNameHandle)}\"");
+            if (!string.IsNullOrEmpty(passive.DescriptionHandle))
+                stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(passive.DescriptionHandle)}\"");
 
             if (!string.IsNullOrEmpty(passive.DescriptionParams))
                 stats.AppendLine($"data \"DescriptionParams\" \"{passive.DescriptionParams}\"");
-            stats.AppendLine($"data \"Properties\" \"{passive.Properties}\"");
-
-            // Clear icon for inherited passives (stale icon from parent)
-            if (passive.UsingBase != null)
-                stats.AppendLine("data \"Icon\" \"\"");
+            if (!string.IsNullOrEmpty(passive.Properties))
+                stats.AppendLine($"data \"Properties\" \"{passive.Properties}\"");
 
             // Boost-based
             if (!string.IsNullOrEmpty(passive.BoostContext))
