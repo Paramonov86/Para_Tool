@@ -929,6 +929,7 @@ public partial class ConstructorViewModel : ViewModelBase
         // 2. Try IconName from RootTemplate (resolved during scan) or vanilla UUID mapping or vanilla loca
         var baseItem = _allBaseItems.FirstOrDefault(b => b.StatId == vm.Artifact.StatId
             || b.StatId == vm.Artifact.UsingBase);
+        Core.Services.AppLogger.Info($"LoadIcon [{vm.Artifact.StatId}]: baseItem={baseItem?.StatId ?? "null"}, baseItem.IconName={baseItem?.Entry.IconName ?? "null"}");
         var rtIconName = baseItem?.Entry.IconName
             ?? VanillaLoca.GetIconName(vm.Artifact.StatId)
             ?? VanillaLoca.GetIconName(vm.Artifact.UsingBase ?? "");
