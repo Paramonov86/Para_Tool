@@ -500,5 +500,11 @@
   "LblNoIconSelected": "Иконка не выбрана",
   "DlgSelectPng": "Выбрать PNG иконку",
   "WmSearchPassive": "Добавить пассивку...",
-  "LblAddEmptyPassive": "Добавить пустую пассивку"
+  "LblAddEmptyPassive": "Добавить пустую пассивку",
+
+  "WmSearchItems": "Поиск предметов...",
+  "LblHideDisabled": "Скрыть откл.",
+  "LblThemeFilter": "Темы",
+  "LblShowThemes": "Показать темы:",
+  "LblNoTheme": "Без темы"
 }

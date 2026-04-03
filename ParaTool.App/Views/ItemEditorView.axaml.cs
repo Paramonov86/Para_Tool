@@ -283,7 +283,7 @@ public partial class ItemEditorView : UserControl
         {
             var cb = new CheckBox
             {
-                Content = theme == "None" ? "No theme" : Loc.Instance.ThemeName(theme),
+                Content = theme == "None" ? Loc.Instance.LblNoTheme : Loc.Instance.ThemeName(theme),
                 IsChecked = !vm.HiddenThemes.Contains(theme),
                 FontSize = FontScale.Of(12),
                 Tag = theme

@@ -473,5 +473,10 @@
   "TipDefaultTab": "Set current tab as default on startup"
 ,
   "WmSearchPassive": "Add existing passive...",
-  "LblAddEmptyPassive": "Add empty passive"
+  "LblAddEmptyPassive": "Add empty passive",
+  "WmSearchItems": "Eşya ara...",
+  "LblHideDisabled": "Kapalıları gizle",
+  "LblThemeFilter": "Temalar",
+  "LblShowThemes": "Temaları göster:",
+  "LblNoTheme": "Temasız"
 }

@@ -473,5 +473,10 @@
   "TipDefaultTab": "Set current tab as default on startup"
 ,
   "WmSearchPassive": "Add existing passive...",
-  "LblAddEmptyPassive": "Add empty passive"
+  "LblAddEmptyPassive": "Add empty passive",
+  "WmSearchItems": "Rechercher des objets...",
+  "LblHideDisabled": "Masquer désact.",
+  "LblThemeFilter": "Thèmes",
+  "LblShowThemes": "Afficher les thèmes :",
+  "LblNoTheme": "Sans thème"
 }

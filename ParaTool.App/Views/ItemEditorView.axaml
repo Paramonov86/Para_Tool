@@ -80,7 +80,7 @@
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBox Grid.Column="0"
                                          Text="{Binding SearchText}"
-                                         Watermark="&#x1F50D; Search items..."
+                                         Watermark="{Binding WmSearchItems, Source={x:Static loc:Loc.Instance}}"
                                          FontSize="{DynamicResource FontSize12}"
                                          Padding="8,4"
                                          CornerRadius="4"
@@ -88,12 +88,12 @@
                                          BorderThickness="0" />
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="6,0,0,0">
                                     <ToggleButton IsChecked="{Binding HideDisabled}"
-                                                  Content="Hide Off"
+                                                  Content="{Binding LblHideDisabled, Source={x:Static loc:Loc.Instance}}"
                                                   FontSize="{DynamicResource FontSize10}" Padding="8,3" CornerRadius="4"
                                                   Background="{StaticResource CardBgBrush}"
                                                   Foreground="{StaticResource TextMutedBrush}"
                                                   BorderThickness="0" />
-                                    <Button Content="Themes"
+                                    <Button Content="{Binding LblThemeFilter, Source={x:Static loc:Loc.Instance}}"
                                             FontSize="{DynamicResource FontSize10}" Padding="8,3" CornerRadius="4"
                                             Background="{StaticResource CardBgBrush}"
                                             Foreground="{StaticResource TextMutedBrush}"
@@ -404,7 +404,7 @@
                             BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1"
                             IsVisible="False">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Show themes:"
+                            <TextBlock Text="{Binding LblShowThemes, Source={x:Static loc:Loc.Instance}}"
                                        FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4" />
                             <ItemsControl Name="ThemeFilterCheckboxes" />
