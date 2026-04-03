@@ -678,8 +678,9 @@ public class ConditionBlocksEditor : UserControl
         menu.Items.Add(groupItem);
         menu.Items.Add(new Separator());
 
-        // Group by category
-        var groups = schema.Functions
+        // Group by category (snapshot to avoid collection-modified crash)
+        var funcs = schema.Functions.ToList();
+        var groups = funcs
             .Where(f => f.Category != "General" || f.Params.Length == 0) // skip complex helpers
             .GroupBy(f => f.Category)
             .OrderBy(g => g.Key);
