@@ -81,16 +81,16 @@ public partial class ItemVM : ObservableObject
             var lang = Loc.Instance.Lang;
             string? name = null;
 
-            // 1. Try embedded vanilla loca first (authoritative for vanilla items)
-            name = VanillaLocaService.GetDisplayName(_entry.StatId, lang)
-                ?? (_entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(_entry.LocaAncestorId, lang) : null);
-
-            // 2. Try dynamic resolve via loca handle (mod items)
-            if (name == null && _locaService != null && !string.IsNullOrEmpty(_entry.DisplayNameHandle))
+            // 1. If item has its own loca handle, resolve from mod pak first (mod-specific name)
+            if (_locaService != null && !string.IsNullOrEmpty(_entry.DisplayNameHandle))
             {
                 var resolved = _locaService.ResolveHandle(_entry.DisplayNameHandle, lang);
                 if (resolved != null) name = BbCode.FromBg3Xml(resolved);
             }
+
+            // 2. Try embedded vanilla loca (for vanilla items or inherited names)
+            name ??= VanillaLocaService.GetDisplayName(_entry.StatId, lang)
+                ?? (_entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(_entry.LocaAncestorId, lang) : null);
 
             // 3. Static DisplayName from scan (fallback)
             name ??= _entry.DisplayName ?? _entry.StatId;

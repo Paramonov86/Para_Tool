@@ -25,6 +25,11 @@ public sealed class ScanResult
     /// Paths to all scanned pak files (AMP + mods) for on-demand loca loading.
     /// </summary>
     public string[] PakPaths { get; init; } = [];
+
+    /// <summary>
+    /// Handle → owning pak path. Ensures mod-specific loca text wins over other mods.
+    /// </summary>
+    public Dictionary<string, string> HandleOwnership { get; init; } = new();
 }
 
 public sealed class ScanProgress
@@ -128,11 +133,13 @@ public sealed class ModScanner
             TotalPaks = finalScanned, ScannedPaks = finalScanned, ModsFound = finalFound });
         Parsing.StatsResolver? combinedResolver = null;
         Dictionary<string, string>? locaMap = null;
+        Dictionary<string, string>? handleOwnershipMap = null;
         await Task.Run(() =>
         {
             var result = ResolveDisplayNames(ampPakPath, ampMod, mods, nonAmpPaks, langCode, _vanillaDb.Resolver, progress);
             combinedResolver = result.resolver;
             locaMap = result.locaMap;
+            handleOwnershipMap = result.handleOwnership;
         }, ct);
 
         // Apply vanilla overrides: mark AMP items as modified by other mods
@@ -161,7 +168,8 @@ public sealed class ModScanner
             CleanedOldPaks = cleanedOldPaks,
             Resolver = combinedResolver,
             LocaMap = locaMap ?? new(),
-            PakPaths = new[] { ampPakPath }.Concat(nonAmpPaks).ToArray()
+            PakPaths = new[] { ampPakPath }.Concat(nonAmpPaks).ToArray(),
+            HandleOwnership = handleOwnershipMap ?? new()
         };
     }
 
@@ -810,7 +818,7 @@ public sealed class ModScanner
         }
     }
 
-    private static (Parsing.StatsResolver resolver, Dictionary<string, string> locaMap) ResolveDisplayNames(string ampPakPath, ModInfo? ampMod,
+    private static (Parsing.StatsResolver resolver, Dictionary<string, string> locaMap, Dictionary<string, string> handleOwnership) ResolveDisplayNames(string ampPakPath, ModInfo? ampMod,
         List<ModInfo> mods, string[] modPakPaths, string langCode, Parsing.StatsResolver baseResolver,
         IProgress<ScanProgress>? progress = null)
     {
@@ -822,7 +830,8 @@ public sealed class ModScanner
             resolver.AddEntries(new[] { kvp.Value });
 
         var masterLocaMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (allItems.Count == 0) return (resolver, masterLocaMap);
+        var handleOwnership = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (allItems.Count == 0) return (resolver, masterLocaMap, handleOwnership);
 
         progress?.Report(new ScanProgress { Stage = "BuildResolver", Percent = 58 });
 
@@ -901,7 +910,7 @@ public sealed class ModScanner
             }
         }
 
-        if (uuidToStatIds.Count == 0) return (resolver, masterLocaMap);
+        if (uuidToStatIds.Count == 0) return (resolver, masterLocaMap, handleOwnership);
 
         progress?.Report(new ScanProgress { Stage = "ScanTemplates", Percent = 70 });
 
@@ -970,6 +979,19 @@ public sealed class ModScanner
                 var modLoca = ItemNameResolver.ReadAllLocalization(mod.PakPath, langCode);
                 foreach (var (k, v) in modLoca)
                     masterLocaMap.TryAdd(k, v);
+
+                // Force-override masterLocaMap for handles belonging to THIS mod's items.
+                // Prevents other mods from shadowing via TryAdd order.
+                var ownedHandles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var h in modNh.Values) ownedHandles.Add(h);
+                foreach (var h in modDh.Values) ownedHandles.Add(h);
+                foreach (var (k, v) in modLoca)
+                    if (ownedHandles.Contains(k))
+                        masterLocaMap[k] = v;
+
+                // Track handle ownership for on-demand loca loading (other languages)
+                foreach (var h in ownedHandles)
+                    handleOwnership[h] = mod.PakPath;
             }
             catch (Exception ex) { AppLogger.Warn($"Failed to resolve mod pak {mod.PakPath}: {ex.Message}"); }
         }
@@ -1001,6 +1023,17 @@ public sealed class ModScanner
         var ampLoca = ItemNameResolver.ReadAllLocalization(ampPakPath, langCode);
         foreach (var (k, v) in ampLoca)
             masterLocaMap.TryAdd(k, v);
+
+        // AMP-owned handles: override with AMP's text (authoritative for its templates)
+        var ampOwnedHandles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var h in ampNh.Values) ampOwnedHandles.Add(h);
+        foreach (var h in ampDh.Values) ampOwnedHandles.Add(h);
+        foreach (var (k, v) in ampLoca)
+            if (ampOwnedHandles.Contains(k))
+            {
+                masterLocaMap[k] = v;
+                handleOwnership[k] = ampPakPath;
+            }
 
         progress?.Report(new ScanProgress { Stage = "ResolveLoca", Percent = 90 });
 
@@ -1277,7 +1310,7 @@ public sealed class ModScanner
             item.SearchableText = sb.ToString();
         }
 
-        return (resolver, masterLocaMap);
+        return (resolver, masterLocaMap, handleOwnership);
     }
 
     /// <summary>Strip BG3 LSTag markup from loca text, e.g. "&lt;LSTag Tooltip="..."&gt;text&lt;/LSTag&gt;" → "text"</summary>

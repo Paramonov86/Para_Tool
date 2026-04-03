@@ -330,6 +330,18 @@ public partial class ItemEditorViewModel : ViewModelBase
                     new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
             }
             catch { /* ignore */ }
+
+            // Reset success state after 5 seconds so user can patch again
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(5000);
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    PatchSuccess = false;
+                    PatchSuccessMessage = null;
+                    OnPropertyChanged(nameof(ShowPatchButton));
+                });
+            });
         }
         else
         {

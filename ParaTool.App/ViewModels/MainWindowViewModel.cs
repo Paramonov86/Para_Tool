@@ -209,6 +209,8 @@ public partial class MainWindowViewModel : ObservableObject
         // Build loca service BEFORE creating ModVMs (they need it for dynamic name resolution)
         _locaService = new LocaService(result.PakPaths);
         _locaService.SeedCache(Loc.Instance.Lang, result.LocaMap);
+        if (result.HandleOwnership.Count > 0)
+            _locaService.SetHandleOwnership(result.HandleOwnership);
 
         var editor = new ItemEditorViewModel
         {

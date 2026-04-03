@@ -86,17 +86,17 @@ public partial class ArtifactItemVM : ObservableObject
     {
         get
         {
-            var c = GetRarityColor(Artifact.Rarity);
+            // Fixed pale violet glow, independent of rarity
             return new LinearGradientBrush
             {
                 StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
                 EndPoint = new Avalonia.RelativePoint(0, 1, Avalonia.RelativeUnit.Relative),
                 GradientStops =
                 {
-                    new GradientStop(Color.FromArgb(0, c.R, c.G, c.B), 0),
-                    new GradientStop(Color.FromArgb(40, c.R, c.G, c.B), 0.4),
-                    new GradientStop(Color.FromArgb(120, c.R, c.G, c.B), 0.85),
-                    new GradientStop(Color.FromArgb(160, c.R, c.G, c.B), 1),
+                    new GradientStop(Color.FromArgb(0, 108, 92, 231), 0),
+                    new GradientStop(Color.FromArgb(0, 108, 92, 231), 0.55),
+                    new GradientStop(Color.FromArgb(25, 108, 92, 231), 0.8),
+                    new GradientStop(Color.FromArgb(50, 108, 92, 231), 1),
                 }
             };
         }
@@ -368,8 +368,9 @@ public partial class ArtifactItemVM : ObservableObject
             if (fields.TryGetValue("Icon", out var icon)) passive.Icon = icon;
 
             // Resolve DisplayName from loca handle
-            if (fields.TryGetValue("DisplayName", out var dnHandle))
+            if (fields.TryGetValue("DisplayName", out var dnHandleRaw))
             {
+                var dnHandle = Core.Localization.HandleGenerator.Parse(dnHandleRaw).handle;
                 passive.DisplayNameHandle = dnHandle;
                 if (locaService != null)
                 {
@@ -386,8 +387,9 @@ public partial class ArtifactItemVM : ObservableObject
             }
 
             // Resolve Description from loca handle
-            if (fields.TryGetValue("Description", out var descHandle))
+            if (fields.TryGetValue("Description", out var descHandleRaw))
             {
+                var descHandle = Core.Localization.HandleGenerator.Parse(descHandleRaw).handle;
                 passive.DescriptionHandle = descHandle;
                 if (locaService != null)
                 {
@@ -637,7 +639,7 @@ public partial class PassiveVM : ObservableObject
     public string EditDescription
     {
         get => GetLang(Passive.Description);
-        set { SetLang(Passive.Description, value); _parent.IsDirty = true; OnPropertyChanged(); }
+        set { SetLang(Passive.Description, value); _parent.IsDirty = true; OnPropertyChanged(nameof(HasVisibleLoca)); OnPropertyChanged(); }
     }
 
     public string EditDescriptionParams

@@ -458,6 +458,22 @@
                                                                 ToolTip.Tip="Remove passive" />
                                                     </Grid>
                                                     <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0" ClipToBounds="False">
+                                                        <!-- Display Name -->
+                                                        <TextBox Text="{Binding EditDisplayName}"
+                                                                 Watermark="{Binding WmPassiveName, Source={x:Static loc:Loc.Instance}}"
+                                                                 FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
+                                                                 Foreground="{DynamicResource GoldBrush}"
+                                                                 Background="{StaticResource CardBgBrush}"
+                                                                 BorderThickness="0" CornerRadius="4"
+                                                                 Padding="8,4" />
+                                                        <!-- Description -->
+                                                        <TextBox Text="{Binding EditDescription}"
+                                                                 Watermark="{Binding WmPassiveDesc, Source={x:Static loc:Loc.Instance}}"
+                                                                 FontSize="{DynamicResource FontSize11}"
+                                                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                 Background="{StaticResource CardBgBrush}"
+                                                                 BorderThickness="0" CornerRadius="4"
+                                                                 Padding="8,4" TextWrapping="Wrap" AcceptsReturn="True" />
                                                         <!-- Properties toggle chips -->
                                                         <ctrl:ToggleChipsEditor Text="{Binding EditProperties}"
                                                                                 Options="{x:Static vm:PassiveVM.PassivePropertyOptions}" />
@@ -688,9 +704,9 @@
 
                             <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="12,8" />
 
-                            <!-- ═══ PASSIVES: on subtle card background ═══ -->
-                            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="6"
-                                    Margin="8,0,8,4" Padding="12,8"
+                            <!-- ═══ PASSIVES: full-width banner ═══ -->
+                            <Border Background="#302840" CornerRadius="0"
+                                    Margin="0" Padding="14,10"
                                     IsVisible="{Binding HasPassives}">
                                 <ItemsControl ItemsSource="{Binding PassiveVMs}">
                                     <ItemsControl.ItemTemplate>
@@ -750,24 +766,16 @@
                                 <!-- Gradient overlay from bottom (rarity glow) -->
                                 <Border Background="{Binding RarityGlowBottom}" CornerRadius="0,0,6,6">
                                     <StackPanel>
-                                        <!-- Lore text (preview mode) -->
-                                        <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
-                                                 FontSize="{DynamicResource FontSize12}" FontStyle="Italic"
-                                                 Foreground="{DynamicResource TextDisabledBrush}"
-                                                 TextWrapping="Wrap"
-                                                 Margin="16,12,16,0"
-                                                 IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                        <!-- Lore text (code mode) -->
+                                        <!-- Lore text (always editable) -->
                                         <TextBox Name="LocaDescription"
                                                  Text="{Binding EditDescription}"
                                                  Watermark="{Binding WmDescriptionLore, Source={x:Static loc:Loc.Instance}}"
                                                  TextWrapping="Wrap" AcceptsReturn="True"
-                                                 MinHeight="40" FontSize="{DynamicResource FontSize11}"
+                                                 MinHeight="30" FontSize="{DynamicResource FontSize11}"
                                                  Foreground="{DynamicResource TextDisabledBrush}"
                                                  FontStyle="Italic"
                                                  Background="Transparent" BorderThickness="0"
-                                                 Padding="0" Margin="16,12,16,0"
-                                                 IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                                 Padding="0" Margin="16,12,16,0" />
                                         <!-- Price/weight bar -->
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                                                     Spacing="0" Margin="16,8,16,10">

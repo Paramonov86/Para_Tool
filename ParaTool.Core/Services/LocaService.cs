@@ -10,6 +10,8 @@ public sealed class LocaService
 {
     private readonly string[] _pakPaths;
     private readonly ConcurrentDictionary<string, Dictionary<string, string>> _cache = new();
+    // handle → pak path: ensures owning mod's loca text wins over other mods
+    private readonly Dictionary<string, string> _handleOwnership = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>BG3 folder name → ParaTool lang code.</summary>
     public static readonly Dictionary<string, string> Bg3ToCode = new(StringComparer.OrdinalIgnoreCase)
@@ -43,6 +45,16 @@ public sealed class LocaService
     }
 
     /// <summary>
+    /// Register handles owned by specific mod paks. When loading loca on-demand,
+    /// these handles will be resolved from their owning pak (not first-found).
+    /// </summary>
+    public void SetHandleOwnership(Dictionary<string, string> handleToPakPath)
+    {
+        foreach (var (handle, pakPath) in handleToPakPath)
+            _handleOwnership[handle] = pakPath;
+    }
+
+    /// <summary>
     /// Get loca map for a given language code. Loads from paks on first request, then cached.
     /// Returns null if language has no loca data in any pak.
     /// </summary>
@@ -72,6 +84,30 @@ public sealed class LocaService
             return null;
         }
 
+        // Override with owning mod's loca for priority handles
+        if (_handleOwnership.Count > 0)
+        {
+            var pakGroups = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (handle, pakPath) in _handleOwnership)
+            {
+                if (!combined.ContainsKey(handle)) continue;
+                if (!pakGroups.ContainsKey(pakPath)) pakGroups[pakPath] = [];
+                pakGroups[pakPath].Add(handle);
+            }
+            foreach (var (pakPath, handles) in pakGroups)
+            {
+                if (!File.Exists(pakPath)) continue;
+                try
+                {
+                    var loca = ItemNameResolver.ReadAllLocalization(pakPath, langCode);
+                    foreach (var h in handles)
+                        if (loca.TryGetValue(h, out var text))
+                            combined[h] = text; // Override!
+                }
+                catch { /* skip */ }
+            }
+        }
+
         _cache[langCode] = combined;
         return combined;
     }
@@ -87,7 +123,8 @@ public sealed class LocaService
         var handle = handleField.Split(';')[0].Trim();
         if (string.IsNullOrEmpty(handle)) return null;
 
-        if (map.TryGetValue(handle, out var text)) return text;
+        if (map.TryGetValue(handle, out var text))
+            return text;
 
         // Prefix match
         foreach (var (key, value) in map)
