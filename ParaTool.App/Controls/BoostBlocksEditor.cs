@@ -70,17 +70,12 @@ public class BoostBlocksEditor : UserControl
         Content = _panel;
         ClipToBounds = false;
         PropertyChanged += OnPropertyChanged;
-        _locHandler = (_, _) => { if (!_updating) Avalonia.Threading.Dispatcher.UIThread.Post(() => Rebuild()); };
-        _scaleHandler = () => { if (!_updating) Rebuild(); };
+        _locHandler = (_, _) => { if (!_updating && IsLoaded) Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsLoaded) Rebuild(); }); };
+        _scaleHandler = () => { if (!_updating && IsLoaded) Rebuild(); };
         Localization.Loc.Instance.PropertyChanged += _locHandler;
         FontScale.ScaleChanged += _scaleHandler;
         // Auto-populate Status/Spell lists from ConstructorViewModel when attached
         AttachedToVisualTree += (_, _) => TryLoadPickerLists();
-        DetachedFromVisualTree += (_, _) =>
-        {
-            Localization.Loc.Instance.PropertyChanged -= _locHandler;
-            FontScale.ScaleChanged -= _scaleHandler;
-        };
     }
 
     /// <summary>Global status/spell/passive lists, set once by ConstructorViewModel.</summary>
@@ -116,8 +111,11 @@ public class BoostBlocksEditor : UserControl
             Rebuild();
     }
 
+    private bool _rebuilding;
     private void Rebuild()
     {
+        if (_rebuilding) return;
+        _rebuilding = true;
         _updating = true;
         _panel.Children.Clear();
         var raw = Text ?? "";
@@ -147,6 +145,7 @@ public class BoostBlocksEditor : UserControl
         addBtn.Click += OnAddClick;
         _panel.Children.Add(addBtn);
         _updating = false;
+        _rebuilding = false;
     }
 
     private Control? CreateBlock(string rawBoost)

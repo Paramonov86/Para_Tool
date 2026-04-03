@@ -52,15 +52,10 @@ public class ConditionBlocksEditor : UserControl
             if (e.Property == TextProperty && !_updating) Rebuild();
         };
         // Rebuild chips when UI language changes (labels need to update)
-        _locHandler = (_, _) => { if (!_updating) Avalonia.Threading.Dispatcher.UIThread.Post(() => Rebuild()); };
-        _scaleHandler = () => { if (!_updating) Rebuild(); };
+        _locHandler = (_, _) => { if (!_updating && IsLoaded) Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsLoaded) Rebuild(); }); };
+        _scaleHandler = () => { if (!_updating && IsLoaded) Rebuild(); };
         Loc.Instance.PropertyChanged += _locHandler;
         FontScale.ScaleChanged += _scaleHandler;
-        DetachedFromVisualTree += (_, _) =>
-        {
-            Loc.Instance.PropertyChanged -= _locHandler;
-            FontScale.ScaleChanged -= _scaleHandler;
-        };
         AddHandler(KeyDownEvent, (_, e) =>
         {
             if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control) && _undoStack.Count > 0)
@@ -89,7 +84,16 @@ public class ConditionBlocksEditor : UserControl
 
     // ── Rebuild UI from text ───────────────────────────────────
 
+    private bool _rebuilding;
+
     private void Rebuild()
+    {
+        if (_rebuilding) return;
+        _rebuilding = true;
+        try { RebuildCore(); } finally { _rebuilding = false; }
+    }
+
+    private void RebuildCore()
     {
         _panel.Children.Clear();
         var raw = Text ?? "";
