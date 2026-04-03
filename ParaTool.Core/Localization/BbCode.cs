@@ -71,6 +71,13 @@ public static partial class BbCode
         text = ItalicRegex().Replace(text, "[i]$1[/i]");
         text = text.Replace("<br>", "[br]");
 
+        // LSTag self-closing with Image type: <LSTag Type="Image" Info="X"/>
+        text = LsTagImageRegex().Replace(text, m =>
+        {
+            var info = m.Groups[1].Value;
+            return $"[img={info}]";
+        });
+
         // LSTag with Type
         text = LsTagTypedRegex().Replace(text, m =>
         {
@@ -107,9 +114,11 @@ public static partial class BbCode
         if (string.IsNullOrEmpty(bbcode)) return bbcode;
         var text = bbcode;
         // Remove closing tags
-        text = Regex.Replace(text, @"\[/[a-z]+\]", "", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"\[/[a-z:]+\]", "", RegexOptions.IgnoreCase);
+        // Remove self-closing image tags: [img=X]
+        text = Regex.Replace(text, @"\[img=[^\]]*\]", "", RegexOptions.IgnoreCase);
         // Remove opening tags with args: [tag=arg]
-        text = Regex.Replace(text, @"\[[a-z]+=([^\]]*)\]", "", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"\[[a-z:]+=[^\]]*\]", "", RegexOptions.IgnoreCase);
         // Remove simple tags: [b], [i], [br]
         text = Regex.Replace(text, @"\[[a-z]+\]", "", RegexOptions.IgnoreCase);
         // Remove param tags: [p1], [dp1]
@@ -269,6 +278,9 @@ public static partial class BbCode
 
     [GeneratedRegex(@"<i>(.*?)</i>", RegexOptions.Singleline)]
     private static partial Regex ItalicRegex();
+
+    [GeneratedRegex(@"<LSTag\s+Type=""Image""\s+Info=""([^""]*)""\s*/>", RegexOptions.Singleline)]
+    private static partial Regex LsTagImageRegex();
 
     [GeneratedRegex(@"<LSTag Type=""(\w+)"" Tooltip=""([^""]+)"">(.*?)</LSTag>", RegexOptions.Singleline)]
     private static partial Regex LsTagTypedRegex();

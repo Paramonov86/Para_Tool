@@ -738,6 +738,24 @@
                                      Margin="16,0,16,8"
                                      IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
 
+                            <!-- Price (gold value) -->
+                            <Grid ColumnDefinitions="Auto,Auto,*" Margin="16,4,16,8">
+                                <TextBlock Grid.Column="0" Text="&#x1FA99;"
+                                           FontSize="{DynamicResource FontSize14}"
+                                           VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding EditValueOverride}"
+                                         FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
+                                         Foreground="{DynamicResource GoldBrush}"
+                                         Background="Transparent" BorderThickness="0"
+                                         Padding="0" MinWidth="60"
+                                         VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Text="gp"
+                                           FontSize="{DynamicResource FontSize11}"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           VerticalAlignment="Center" Margin="2,0,0,0" />
+                            </Grid>
+
                             <!-- Bottom rarity glow -->
                             <Border Height="24" CornerRadius="0,0,10,10"
                                     Background="{Binding RarityGlowBottom}" />

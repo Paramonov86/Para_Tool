@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using ParaTool.App.Localization;
@@ -37,10 +38,11 @@ public partial class ItemEditorView : UserControl
         {
             vm.PropertyChanged += (_, args) =>
             {
-                if (args.PropertyName is nameof(vm.CurrentSort) or nameof(vm.SortDescending))
+                if (args.PropertyName is nameof(vm.CurrentSort) or nameof(vm.SecondarySort) or nameof(vm.SortDescending))
                     UpdateSortButtons(vm);
             };
             UpdateSortButtons(vm);
+            BuildPoolThemeToggles(vm);
         }
     }
 
@@ -50,6 +52,7 @@ public partial class ItemEditorView : UserControl
         var inactive = Application.Current!.FindResource("CardBgBrush") as IBrush ?? Brushes.Gray;
         var activeFg = Brushes.White;
         var inactiveFg = Application.Current!.FindResource("TextMutedBrush") as IBrush ?? Brushes.Gray;
+        var secondaryActive = new SolidColorBrush(((SolidColorBrush)active).Color, 0.5);
 
         var nameBtn = this.FindControl<Button>("SortNameBtn");
         var rarityBtn = this.FindControl<Button>("SortRarityBtn");
@@ -64,6 +67,20 @@ public partial class ItemEditorView : UserControl
             if (btn == null) continue;
             btn.Background = vm.CurrentSort == mode ? active : inactive;
             btn.Foreground = vm.CurrentSort == mode ? activeFg : inactiveFg;
+        }
+
+        // Secondary sort buttons
+        var s2NameBtn = this.FindControl<Button>("Sort2NameBtn");
+        var s2RarityBtn = this.FindControl<Button>("Sort2RarityBtn");
+        var s2SlotBtn = this.FindControl<Button>("Sort2SlotBtn");
+
+        foreach (var (btn, mode) in new[] {
+            (s2NameBtn, SortMode.Name), (s2RarityBtn, SortMode.Rarity),
+            (s2SlotBtn, SortMode.Slot) })
+        {
+            if (btn == null) continue;
+            btn.Background = vm.SecondarySort == mode ? secondaryActive : inactive;
+            btn.Foreground = vm.SecondarySort == mode ? activeFg : inactiveFg;
         }
 
         if (dirBtn != null)
@@ -85,6 +102,10 @@ public partial class ItemEditorView : UserControl
         else if (btn.Name == "ModThemeBtn" && btn.Tag is ModVM themeMod)
         {
             ShowModThemePopup(themeMod);
+        }
+        else if (btn.Name == "ThemeFilterBtn")
+        {
+            ShowThemeFilterPopup();
         }
         else if (btn.Name == "DiscordBtn")
         {
@@ -174,6 +195,115 @@ public partial class ItemEditorView : UserControl
                 _currentThemeItem.SelectedThemes.Remove(theme);
             _currentThemeItem.NotifyThemesChanged();
         }
+    }
+
+    private void BuildPoolThemeToggles(ItemEditorViewModel vm)
+    {
+        var poolPanel = this.FindControl<Avalonia.Controls.WrapPanel>("PoolToggles");
+        var themePanel = this.FindControl<Avalonia.Controls.WrapPanel>("ThemeToggles");
+        if (poolPanel == null || themePanel == null) return;
+
+        var accent = Application.Current!.FindResource("AccentBrush") as IBrush ?? Brushes.Purple;
+        var inactive = Application.Current!.FindResource("CardBgBrush") as IBrush ?? Brushes.Gray;
+        var activeFg = Brushes.White;
+        var inactiveFg = Application.Current!.FindResource("TextMutedBrush") as IBrush ?? Brushes.Gray;
+
+        // Pool toggles
+        foreach (var pool in new[] { "Clothes", "Armor", "Shields", "Hats", "Cloaks",
+                                      "Gloves", "Boots", "Amulets", "Rings",
+                                      "Weapons", "Weapons_1H", "Weapons_2H" })
+        {
+            var btn = new ToggleButton
+            {
+                Content = Loc.Instance.PoolName(pool),
+                Tag = pool,
+                IsChecked = true,
+                FontSize = FontScale.Of(10),
+                Padding = new Avalonia.Thickness(6, 2),
+                CornerRadius = new Avalonia.CornerRadius(4),
+                BorderThickness = new Avalonia.Thickness(0),
+                Background = accent,
+                Foreground = activeFg,
+                Margin = new Avalonia.Thickness(0, 0, 3, 0)
+            };
+            btn.IsCheckedChanged += (s, _) =>
+            {
+                if (s is ToggleButton tb && tb.Tag is string p)
+                {
+                    var on = tb.IsChecked == true;
+                    vm.SetPoolEnabled(p, on);
+                    tb.Background = on ? accent : inactive;
+                    tb.Foreground = on ? activeFg : inactiveFg;
+                }
+            };
+            poolPanel.Children.Add(btn);
+        }
+
+        // Theme toggles
+        foreach (var theme in ItemVM.AvailableThemes)
+        {
+            var btn = new ToggleButton
+            {
+                Content = Loc.Instance.ThemeName(theme),
+                Tag = theme,
+                IsChecked = true,
+                FontSize = FontScale.Of(10),
+                Padding = new Avalonia.Thickness(6, 2),
+                CornerRadius = new Avalonia.CornerRadius(4),
+                BorderThickness = new Avalonia.Thickness(0),
+                Background = accent,
+                Foreground = activeFg,
+                Margin = new Avalonia.Thickness(0, 0, 3, 0)
+            };
+            btn.IsCheckedChanged += (s, _) =>
+            {
+                if (s is ToggleButton tb && tb.Tag is string t)
+                {
+                    var on = tb.IsChecked == true;
+                    vm.SetThemeEnabled(t, on);
+                    tb.Background = on ? accent : inactive;
+                    tb.Foreground = on ? activeFg : inactiveFg;
+                }
+            };
+            themePanel.Children.Add(btn);
+        }
+    }
+
+    private void ShowThemeFilterPopup()
+    {
+        var popup = this.FindControl<Border>("ThemeFilterPopup");
+        var container = this.FindControl<ItemsControl>("ThemeFilterCheckboxes");
+        if (popup == null || container == null || DataContext is not ItemEditorViewModel vm) return;
+
+        var panel = new StackPanel { Spacing = 2 };
+
+        // Add "No theme" option
+        var themes = new[] { "None" }.Concat(ItemVM.AvailableThemes);
+        foreach (var theme in themes)
+        {
+            var cb = new CheckBox
+            {
+                Content = theme == "None" ? "No theme" : Loc.Instance.ThemeName(theme),
+                IsChecked = !vm.HiddenThemes.Contains(theme),
+                FontSize = FontScale.Of(12),
+                Tag = theme
+            };
+            cb.IsCheckedChanged += OnThemeFilterCheckedChanged;
+            panel.Children.Add(cb);
+        }
+
+        container.ItemsSource = null;
+        container.Items.Clear();
+        container.Items.Add(panel);
+
+        popup.IsVisible = !popup.IsVisible;
+    }
+
+    private void OnThemeFilterCheckedChanged(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox cb || cb.Tag is not string theme) return;
+        if (DataContext is not ItemEditorViewModel vm) return;
+        vm.ToggleThemeFilter(theme);
     }
 
     private static void OpenDiscord()

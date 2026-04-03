@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ParaTool.App.Localization;
 using ParaTool.Core.Artifacts;
@@ -239,13 +240,13 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditBoostsOnEquipMainHand
     {
         get => Artifact.BoostsOnEquipMainHand ?? "";
-        set { Artifact.BoostsOnEquipMainHand = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(HasMainHandBoosts)); OnPropertyChanged(nameof(PreviewMainHandText)); }
+        set { Artifact.BoostsOnEquipMainHand = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(HasMainHandBoosts), nameof(PreviewMainHandText)); }
     }
 
     public string EditBoostsOnEquipOffHand
     {
         get => Artifact.BoostsOnEquipOffHand ?? "";
-        set { Artifact.BoostsOnEquipOffHand = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(HasOffHandBoosts)); OnPropertyChanged(nameof(PreviewOffHandText)); }
+        set { Artifact.BoostsOnEquipOffHand = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(HasOffHandBoosts), nameof(PreviewOffHandText)); }
     }
 
     public string EditWeight
@@ -272,7 +273,7 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditBoosts
     {
         get => Artifact.Boosts;
-        set { Artifact.Boosts = value ?? ""; MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(HasBoosts)); OnPropertyChanged(nameof(PreviewBoostsText)); }
+        set { Artifact.Boosts = value ?? ""; MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(HasBoosts), nameof(PreviewBoostsText)); }
     }
 
     public string PreviewBoostsText => ParaTool.Core.Schema.BoostMapping.FormatBoostsForPreview(
@@ -308,13 +309,13 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditDisplayName
     {
         get => GetLangValue(Artifact.DisplayName);
-        set { SetLangValue(Artifact.DisplayName, value); MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(DisplayLabel)); OnPropertyChanged(nameof(PreviewName)); }
+        set { SetLangValue(Artifact.DisplayName, value); MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(DisplayLabel), nameof(PreviewName)); }
     }
 
     public string EditDescription
     {
         get => GetLangValue(Artifact.Description);
-        set { SetLangValue(Artifact.Description, value); MarkDirty(); OnPropertyChanged(); OnPropertyChanged(nameof(PreviewDescription)); OnPropertyChanged(nameof(HasDescription)); }
+        set { SetLangValue(Artifact.Description, value); MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(PreviewDescription), nameof(HasDescription)); }
     }
 
     // === Passives (editable list) ===
@@ -416,6 +417,30 @@ public partial class ArtifactItemVM : ObservableObject
     // === Helpers ===
 
     private void MarkDirty() => IsDirty = true;
+
+    // Debounce preview updates to avoid UI lag on every keystroke
+    private DispatcherTimer? _previewDebounce;
+    private readonly HashSet<string> _pendingNotifications = new();
+
+    private void NotifyPreviewDebounced(params string[] propertyNames)
+    {
+        foreach (var name in propertyNames)
+            _pendingNotifications.Add(name);
+
+        _previewDebounce?.Stop();
+        _previewDebounce ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        _previewDebounce.Tick -= FlushPreviewNotifications;
+        _previewDebounce.Tick += FlushPreviewNotifications;
+        _previewDebounce.Start();
+    }
+
+    private void FlushPreviewNotifications(object? sender, EventArgs e)
+    {
+        _previewDebounce?.Stop();
+        foreach (var name in _pendingNotifications)
+            OnPropertyChanged(name);
+        _pendingNotifications.Clear();
+    }
 
     private string GetLocalizedName()
     {

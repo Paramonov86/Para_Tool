@@ -301,15 +301,28 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (_patcherView == null) return;
 
-        // Remove old artifacts mod
+        // Remember enabled states from previous artifacts mod
+        var oldEnabled = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         var old = _patcherView.Mods.FirstOrDefault(m => m.ModInfo.UUID == ArtifactsModUuid);
         if (old != null)
+        {
+            foreach (var item in old.Items)
+                oldEnabled[item.StatId] = item.Entry.Enabled;
             _patcherView.Mods.Remove(old);
+        }
 
         // Add fresh
         var artifactsMod = BuildArtifactsMod();
         if (artifactsMod != null)
+        {
+            // Restore previous enabled states
+            foreach (var item in artifactsMod.Items)
+            {
+                if (oldEnabled.TryGetValue(item.StatId, out var wasEnabled))
+                    item.Enabled = wasEnabled;
+            }
             _patcherView.Mods.Add(new ModVM(artifactsMod, _locaService));
+        }
 
         // Mark patcher items that have artifact overrides
         var artifactStatIds = new HashSet<string>(

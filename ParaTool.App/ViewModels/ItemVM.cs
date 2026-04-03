@@ -67,6 +67,13 @@ public partial class ItemVM : ObservableObject
     public string StatType => _entry.StatType;
     public string? DisplayName => _entry.DisplayName;
     public bool HasArtifactOverride => _entry.HasArtifactOverride;
+
+    private static readonly Dictionary<string, string> RarityShort = new()
+    {
+        ["Common"] = "C", ["Uncommon"] = "U", ["Rare"] = "R",
+        ["VeryRare"] = "VR", ["Legendary"] = "L"
+    };
+
     public string ItemLabel
     {
         get
@@ -88,6 +95,11 @@ public partial class ItemVM : ObservableObject
             // 3. Static DisplayName from scan (fallback)
             name ??= _entry.DisplayName ?? _entry.StatId;
 
+            // Add rarity suffix for disambiguation
+            var rarity = _entry.EffectiveRarity;
+            if (RarityShort.TryGetValue(rarity, out var rs))
+                name = $"{name} ({rs})";
+
             return _entry.HasArtifactOverride ? $"\U0001f527 {name}" : name;
         }
     }
@@ -99,6 +111,7 @@ public partial class ItemVM : ObservableObject
     public ItemEntry Entry => _entry;
 
     [ObservableProperty] private bool _enabled;
+    [ObservableProperty] private bool _isVisibleInFilter = true;
     [ObservableProperty] private LabeledOption _selectedPool;
     [ObservableProperty] private LabeledOption _selectedRarity;
     [ObservableProperty] private ObservableCollection<string> _selectedThemes;

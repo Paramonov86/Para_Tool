@@ -15,6 +15,7 @@ public partial class ItemEditorViewModel : ViewModelBase
 {
     [ObservableProperty] private ObservableCollection<ModVM> _mods = new();
     [ObservableProperty] private SortMode _currentSort = SortMode.Name;
+    [ObservableProperty] private SortMode _secondarySort = SortMode.Name;
     [ObservableProperty] private bool _sortDescending;
     [ObservableProperty] private bool _isPatching;
     [ObservableProperty] private int _patchPercent;
@@ -23,6 +24,13 @@ public partial class ItemEditorViewModel : ViewModelBase
     [ObservableProperty] private string? _patchError;
     [ObservableProperty] private bool _allEnabled = true;
     [ObservableProperty] private string? _patchSuccessMessage;
+
+    // Filter state
+    [ObservableProperty] private string? _searchText;
+    [ObservableProperty] private bool _hideDisabled;
+
+    // Theme filter: themes NOT in this set are hidden
+    public HashSet<string> HiddenThemes { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     // Profile state
     [ObservableProperty] private ObservableCollection<string> _profileNames = new();
@@ -70,12 +78,21 @@ public partial class ItemEditorViewModel : ViewModelBase
     partial void OnHasBackupChanged(bool value) => OnPropertyChanged(nameof(ShowRestoreButton));
     partial void OnPatchErrorChanged(string? value) => OnPropertyChanged(nameof(ShowPatchButton));
     partial void OnCurrentSortChanged(SortMode value) => ApplySort();
+    partial void OnSecondarySortChanged(SortMode value) => ApplySort();
     partial void OnSortDescendingChanged(bool value) => ApplySort();
+    partial void OnSearchTextChanged(string? value) => ApplyFilters();
+    partial void OnHideDisabledChanged(bool value) => ApplyFilters();
 
     [RelayCommand]
     private void SetSort(string mode)
     {
         CurrentSort = Enum.Parse<SortMode>(mode);
+    }
+
+    [RelayCommand]
+    private void SetSecondarySort(string mode)
+    {
+        SecondarySort = Enum.Parse<SortMode>(mode);
     }
 
     [RelayCommand]
@@ -97,26 +114,25 @@ public partial class ItemEditorViewModel : ViewModelBase
         ["Weapons"] = 9, ["Weapons_1H"] = 10, ["Weapons_2H"] = 11
     };
 
+    private IComparable GetSortKey(ItemVM i, SortMode mode) => mode switch
+    {
+        SortMode.Rarity => RarityOrder.GetValueOrDefault(i.Entry.EffectiveRarity, 99),
+        SortMode.Theme => (i.Entry.EffectiveThemes.Count == 0 ? "~" : i.Entry.EffectiveThemes.FirstOrDefault() ?? "~"),
+        SortMode.Slot => SlotOrder.GetValueOrDefault(i.Entry.EffectivePool, 99),
+        _ => (IComparable)(i.DisplayName ?? i.StatId)
+    };
+
     public void ApplySort()
     {
         foreach (var mod in Mods)
         {
-            IEnumerable<ItemVM> sorted = CurrentSort switch
-            {
-                SortMode.Rarity => mod.Items.OrderBy(i =>
-                    RarityOrder.GetValueOrDefault(i.Entry.EffectiveRarity, 99)),
-                SortMode.Theme => mod.Items.OrderBy(i =>
-                    i.Entry.EffectiveThemes.Count == 0 ? 1 : 0)
-                    .ThenBy(i => i.Entry.EffectiveThemes.FirstOrDefault() ?? ""),
-                SortMode.Slot => mod.Items.OrderBy(i =>
-                    SlotOrder.GetValueOrDefault(i.Entry.EffectivePool, 99)),
-                _ => mod.Items.OrderBy(i => i.DisplayName ?? i.StatId, StringComparer.OrdinalIgnoreCase)
-            };
+            var sorted = mod.Items
+                .OrderBy(i => GetSortKey(i, CurrentSort))
+                .ThenBy(i => GetSortKey(i, SecondarySort));
 
-            if (SortDescending)
-                sorted = sorted.Reverse();
+            IEnumerable<ItemVM> result = SortDescending ? sorted.Reverse() : sorted;
 
-            var list = sorted.ToList();
+            var list = result.ToList();
             for (int i = 0; i < list.Count; i++)
             {
                 if (mod.Items[i] != list[i])
@@ -127,6 +143,113 @@ public partial class ItemEditorViewModel : ViewModelBase
             }
         }
     }
+
+    public void ApplyFilters()
+    {
+        var query = SearchText?.Trim();
+        var hasSearch = !string.IsNullOrEmpty(query);
+        var hasThemeFilter = HiddenThemes.Count > 0;
+
+        foreach (var mod in Mods)
+        {
+            foreach (var item in mod.Items)
+            {
+                bool visible = true;
+
+                if (HideDisabled && !item.Enabled)
+                    visible = false;
+
+                if (visible && hasThemeFilter)
+                {
+                    // Hide items whose ALL themes are in HiddenThemes (or have no themes and "None" is hidden)
+                    var themes = item.Entry.EffectiveThemes;
+                    if (themes.Count == 0)
+                        visible = !HiddenThemes.Contains("None");
+                    else
+                        visible = themes.Any(t => !HiddenThemes.Contains(t));
+                }
+
+                if (visible && hasSearch)
+                {
+                    visible = item.ItemLabel.Contains(query!, StringComparison.OrdinalIgnoreCase)
+                           || item.StatId.Contains(query!, StringComparison.OrdinalIgnoreCase);
+                }
+
+                item.IsVisibleInFilter = visible;
+            }
+
+            mod.RefreshFilterState();
+
+            // Auto-expand mods with search results
+            if (hasSearch && mod.HasVisibleItems)
+                mod.IsExpanded = true;
+        }
+
+        RefreshCounts();
+    }
+
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        SearchText = "";
+    }
+
+    public void ToggleThemeFilter(string theme)
+    {
+        if (!HiddenThemes.Remove(theme))
+            HiddenThemes.Add(theme);
+        ApplyFilters();
+    }
+
+    /// <summary>
+    /// Enable or disable all items matching a given pool across all mods.
+    /// </summary>
+    public void SetPoolEnabled(string pool, bool enabled)
+    {
+        foreach (var mod in Mods)
+        {
+            foreach (var item in mod.Items)
+            {
+                if (item.Entry.EffectivePool.Equals(pool, StringComparison.OrdinalIgnoreCase))
+                    item.Enabled = enabled;
+            }
+            mod.RefreshCounts();
+        }
+        RefreshCounts();
+    }
+
+    /// <summary>
+    /// Enable or disable all items matching a given theme across all mods.
+    /// </summary>
+    public void SetThemeEnabled(string theme, bool enabled)
+    {
+        foreach (var mod in Mods)
+        {
+            foreach (var item in mod.Items)
+            {
+                if (item.Entry.EffectiveThemes.Contains(theme))
+                    item.Enabled = enabled;
+            }
+            mod.RefreshCounts();
+        }
+        RefreshCounts();
+    }
+
+    /// <summary>
+    /// Check if any item in the given pool is enabled.
+    /// </summary>
+    public bool IsPoolEnabled(string pool) =>
+        Mods.SelectMany(m => m.Items)
+            .Where(i => i.Entry.EffectivePool.Equals(pool, StringComparison.OrdinalIgnoreCase))
+            .Any(i => i.Enabled);
+
+    /// <summary>
+    /// Check if any item in the given theme is enabled.
+    /// </summary>
+    public bool IsThemeEnabled(string theme) =>
+        Mods.SelectMany(m => m.Items)
+            .Where(i => i.Entry.EffectiveThemes.Contains(theme))
+            .Any(i => i.Enabled);
 
     partial void OnSelectedProfileChanged(string? value)
     {

@@ -31,6 +31,8 @@ public partial class ModVM : ObservableObject
 
     public int TotalItems => Items.Count;
     public int EnabledItems => Items.Count(i => i.Enabled);
+    public int VisibleItems => Items.Count(i => i.IsVisibleInFilter);
+    public bool HasVisibleItems => Items.Any(i => i.IsVisibleInFilter);
     public string CountDisplay => $"{EnabledItems}/{TotalItems}";
 
     partial void OnEnabledChanged(bool value)
@@ -45,6 +47,12 @@ public partial class ModVM : ObservableObject
     {
         OnPropertyChanged(nameof(EnabledItems));
         OnPropertyChanged(nameof(CountDisplay));
+    }
+
+    public void RefreshFilterState()
+    {
+        OnPropertyChanged(nameof(VisibleItems));
+        OnPropertyChanged(nameof(HasVisibleItems));
     }
 
     /// <summary>

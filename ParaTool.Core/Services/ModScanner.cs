@@ -613,7 +613,9 @@ public sealed class ModScanner
             foreach (var entry in mergedModEntries.Values)
             {
                 if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
-                if (_vanillaDb.Resolver.AllEntries.ContainsKey(entry.Name)) continue;
+                var isVanilla = _vanillaDb.Resolver.AllEntries.ContainsKey(entry.Name);
+                var isAmpIntegrated = ampWhitelist != null && ampWhitelist.Contains(entry.Name);
+                if (isVanilla && !isAmpIntegrated) continue;
 
                 var item = ResolveItem(entry, resolver);
                 if (item == null) continue;

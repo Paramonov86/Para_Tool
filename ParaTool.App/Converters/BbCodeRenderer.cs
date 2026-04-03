@@ -1,6 +1,9 @@
 using System.Text.RegularExpressions;
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using ParaTool.Core.Localization;
 
 namespace ParaTool.App.Converters;
@@ -19,7 +22,73 @@ public static partial class BbCodeRenderer
     private static readonly SolidColorBrush PassiveColor = new(Color.Parse("#2ECC71"));   // green
     private static readonly SolidColorBrush ResourceColor = new(Color.Parse("#F1C40F"));  // yellow
     private static readonly SolidColorBrush DamageParamColor = new(Color.Parse("#E67E22"));// orange
+    private static readonly SolidColorBrush ImageTagColor = new(Color.Parse("#F39C12"));  // warm yellow
     private static readonly SolidColorBrush DefaultText = new(Color.Parse("#C8B8DB"));    // secondary
+
+    // Known Image Info → icon asset file name mapping
+    private static readonly Dictionary<string, string> ImageToAsset = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["SoftWarning"] = "ico_warningSoft",
+        ["Warning"] = "ico_warning",
+        ["Concentration"] = "ico_concentration",
+        ["Coin"] = "ico_coin",
+        ["AC"] = "ico_AC",
+        ["Duration"] = "ico_duration",
+        ["Hourglass"] = "ico_hourglass",
+        ["Recharge"] = "ico_recharge",
+        ["Range"] = "ico_range",
+        ["Reach"] = "ico_reach",
+        ["Radius"] = "ico_radius",
+        ["Target"] = "ico_target",
+        ["Type"] = "ico_type",
+        ["Proficiency"] = "ico_proficiency",
+        ["Finesse"] = "ico_finesse",
+        ["Throwable"] = "ico_throwable",
+        ["Dippable"] = "ico_dippable",
+        ["MagicalProperties"] = "ico_magicalProperties",
+        ["CampSupplies"] = "ico_campSupplies",
+        ["BonusActionPoint"] = "ico_bonusActionPointTT",
+        ["ReactionPoint"] = "ico_reactionPointTT",
+        ["SpellSlot"] = "ico_spellSlotTT",
+        ["RollAttack"] = "ico_roll_attack",
+        ["RollSave"] = "ico_roll_save",
+    };
+
+    // Fallback Unicode symbols for unmapped Image tags
+    private static readonly Dictionary<string, string> ImageSymbols = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["SoftWarning"] = "\u26A0",
+        ["Warning"] = "\u26A0",
+        ["Concentration"] = "\u25C9",
+        ["Advantage"] = "\u2191",
+        ["Disadvantage"] = "\u2193",
+    };
+
+    private static readonly Dictionary<string, Bitmap?> _iconCache = new(StringComparer.OrdinalIgnoreCase);
+
+    private static Bitmap? LoadTooltipIcon(string assetName)
+    {
+        if (_iconCache.TryGetValue(assetName, out var cached))
+            return cached;
+
+        try
+        {
+            // Avalonia 11: load AvaloniaResource via assembly manifest
+            var asm = typeof(BbCodeRenderer).Assembly;
+            // AvaloniaResource items are embedded with dotted path: ParaTool.App.Assets.TooltipIcons.name.png
+            var resName = $"ParaTool.App.Assets.TooltipIcons.{assetName}.png";
+            using var stream = asm.GetManifestResourceStream(resName);
+            if (stream == null) { _iconCache[assetName] = null; return null; }
+            var bmp = new Bitmap(stream);
+            _iconCache[assetName] = bmp;
+            return bmp;
+        }
+        catch
+        {
+            _iconCache[assetName] = null;
+            return null;
+        }
+    }
 
     /// <summary>
     /// Render BG3 loca XML-escaped text to Avalonia Inlines.
@@ -118,6 +187,37 @@ public static partial class BbCodeRenderer
                     continue;
                 }
 
+                // Try [img=X] — image tag (rendered as inline icon or fallback symbol)
+                var imgMatch = ImgRegex().Match(text, pos);
+                if (imgMatch.Success && imgMatch.Index == pos)
+                {
+                    var info = imgMatch.Groups[1].Value;
+                    bool added = false;
+
+                    // Try to load real icon
+                    if (ImageToAsset.TryGetValue(info, out var assetName))
+                    {
+                        var bmp = LoadTooltipIcon(assetName);
+                        if (bmp != null)
+                        {
+                            var img = new Image { Source = bmp, Width = 16, Height = 16 };
+                            img.Margin = new Thickness(1, 0);
+                            inlines.Add(new InlineUIContainer(img));
+                            added = true;
+                        }
+                    }
+
+                    // Fallback to Unicode symbol
+                    if (!added)
+                    {
+                        var symbol = ImageSymbols.GetValueOrDefault(info, "\u25CF");
+                        inlines.Add(new Run(symbol) { Foreground = ImageTagColor, FontWeight = FontWeight.Bold });
+                    }
+
+                    pos += imgMatch.Length;
+                    continue;
+                }
+
                 // Try [dpN] — bold damage param
                 var dpMatch = DpRegex().Match(text, pos);
                 if (dpMatch.Success && dpMatch.Index == pos)
@@ -180,6 +280,9 @@ public static partial class BbCodeRenderer
 
     [GeneratedRegex(@"\[resource=([^\]]+)\](.*?)\[/resource\]", RegexOptions.Singleline)]
     private static partial Regex ResourceRegex();
+
+    [GeneratedRegex(@"\[img=([^\]]*)\]")]
+    private static partial Regex ImgRegex();
 
     [GeneratedRegex(@"\[dp(\d+)\]")]
     private static partial Regex DpRegex();
