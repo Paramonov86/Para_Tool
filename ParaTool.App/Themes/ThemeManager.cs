@@ -220,6 +220,15 @@ public static class ThemeManager
         SetBrush(app, "RarityVeryRareBrush", theme.RarityVeryRare);
         SetBrush(app, "RarityLegendaryBrush", theme.RarityLegendary);
 
+        // Override Fluent system accent colors so CheckBox/ToggleButton match theme
+        SetColor(app, "SystemAccentColor", theme.Accent);
+        SetColor(app, "SystemAccentColorDark1", theme.Accent);
+        SetColor(app, "SystemAccentColorDark2", theme.Accent);
+        SetColor(app, "SystemAccentColorDark3", theme.Accent);
+        SetColor(app, "SystemAccentColorLight1", theme.AccentLight);
+        SetColor(app, "SystemAccentColorLight2", theme.AccentLight);
+        SetColor(app, "SystemAccentColorLight3", theme.AccentLight);
+
         // Switch FluentTheme variant for light/dark themes
         app.RequestedThemeVariant = theme.IsLight ? ThemeVariant.Light : ThemeVariant.Dark;
     }

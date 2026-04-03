@@ -94,7 +94,9 @@ public partial class ArtifactItemVM : ObservableObject
                 GradientStops =
                 {
                     new GradientStop(Color.FromArgb(0, c.R, c.G, c.B), 0),
-                    new GradientStop(Color.FromArgb(60, c.R, c.G, c.B), 1),
+                    new GradientStop(Color.FromArgb(40, c.R, c.G, c.B), 0.4),
+                    new GradientStop(Color.FromArgb(120, c.R, c.G, c.B), 0.85),
+                    new GradientStop(Color.FromArgb(160, c.R, c.G, c.B), 1),
                 }
             };
         }
