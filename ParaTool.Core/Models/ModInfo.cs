@@ -9,4 +9,7 @@ public sealed class ModInfo
     public string Version64 { get; init; } = "36028797018963968";
     public bool IsAmp { get; init; }
     public List<ItemEntry> Items { get; set; } = new();
+
+    /// <summary>StatIds of vanilla items that this mod overrides (for marking AMP items as modified).</summary>
+    public List<string>? VanillaOverrides { get; set; }
 }

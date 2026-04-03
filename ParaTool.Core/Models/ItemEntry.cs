@@ -60,6 +60,11 @@ public sealed class ItemEntry
     public bool HasArtifactOverride { get; set; }
 
     /// <summary>
+    /// Names of mods that override this item's stats (vanilla overrides from other mods).
+    /// </summary>
+    public List<string> ModifiedBy { get; set; } = new();
+
+    /// <summary>
     /// Concatenated stats text for deep search (boosts, passives, statuses, descriptions, etc.)
     /// Built at scan time from resolved stats chain.
     /// </summary>

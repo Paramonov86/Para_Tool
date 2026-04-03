@@ -100,9 +100,15 @@ public partial class ItemVM : ObservableObject
             if (RarityShort.TryGetValue(rarity, out var rs))
                 name = $"{name} ({rs})";
 
-            return _entry.HasArtifactOverride ? $"\U0001f527 {name}" : name;
+            if (_entry.HasArtifactOverride) return $"\U0001f527 {name}";
+            if (_entry.ModifiedBy.Count > 0) return $"\u270E {name}";
+            return name;
         }
     }
+    public string ItemTooltip => _entry.ModifiedBy.Count > 0
+        ? $"{_entry.StatId}\nModified by: {string.Join(", ", _entry.ModifiedBy)}"
+        : _entry.StatId;
+
     public bool HasDisplayName => _entry.DisplayName != null
         || VanillaLocaService.GetDisplayName(_entry.StatId, "en") != null
         || (_entry.LocaAncestorId != null && VanillaLocaService.GetDisplayName(_entry.LocaAncestorId, "en") != null);

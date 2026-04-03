@@ -229,7 +229,7 @@
                                                                            VerticalAlignment="Center"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            FontSize="{DynamicResource FontSize12}"
-                                                                           ToolTip.Tip="{Binding StatId}" />
+                                                                           ToolTip.Tip="{Binding ItemTooltip}" />
                                                                 <!-- Pool selector -->
                                                                 <ComboBox Grid.Column="2"
                                                                           ItemsSource="{x:Static vm:ItemVM.PoolOptions}"

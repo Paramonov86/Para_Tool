@@ -135,6 +135,21 @@ public sealed class ModScanner
             locaMap = result.locaMap;
         }, ct);
 
+        // Apply vanilla overrides: mark AMP items as modified by other mods
+        if (ampMod != null)
+        {
+            foreach (var mod in mods)
+            {
+                if (mod.VanillaOverrides == null) continue;
+                foreach (var statId in mod.VanillaOverrides)
+                {
+                    var ampItem = ampMod.Items.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
+                    if (ampItem != null)
+                        ampItem.ModifiedBy.Add(mod.Name);
+                }
+            }
+        }
+
         progress?.Report(new ScanProgress { Stage = "Done", Percent = 100,
             TotalPaks = finalScanned, ScannedPaks = finalScanned, ModsFound = finalFound });
 
@@ -607,15 +622,19 @@ public sealed class ModScanner
                 }
             }
 
-            // Filter: keep only Armor/Weapon entries from this mod that are NOT vanilla rebals.
-            // Items already in AMP treasure tables are kept but marked as integrated.
+            // Filter: keep only Armor/Weapon entries from this mod that are NOT vanilla.
+            // Vanilla overrides from mods are tracked as "modified by" on AMP items instead.
             var items = new List<ItemEntry>();
+            var vanillaOverrides = new List<string>(); // StatIds of vanilla items this mod overrides
             foreach (var entry in mergedModEntries.Values)
             {
                 if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
-                var isVanilla = _vanillaDb.Resolver.AllEntries.ContainsKey(entry.Name);
-                var isAmpIntegrated = ampWhitelist != null && ampWhitelist.Contains(entry.Name);
-                if (isVanilla && !isAmpIntegrated) continue;
+                if (_vanillaDb.Resolver.AllEntries.ContainsKey(entry.Name))
+                {
+                    // Track vanilla override for later marking on AMP items
+                    vanillaOverrides.Add(entry.Name);
+                    continue;
+                }
 
                 var item = ResolveItem(entry, resolver);
                 if (item == null) continue;
@@ -632,6 +651,10 @@ public sealed class ModScanner
 
                 items.Add(item);
             }
+
+            // Mark AMP items as modified by this mod
+            if (vanillaOverrides.Count > 0 && modInfo.Name != null)
+                modInfo.VanillaOverrides = vanillaOverrides;
 
             if (items.Count == 0) return null;
 
