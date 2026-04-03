@@ -882,12 +882,79 @@ public sealed class ModScanner
 
         progress?.Report(new ScanProgress { Stage = "ScanTemplates", Percent = 70 });
 
-        // Resolve UUID → display name + description + handles from AMP pak
-        var (resolved, resolvedDescs, nameHandlesMap, descHandlesMap) =
+        // === Name resolution: mod-pak first → AMP fallback → vanilla fallback ===
+
+        // Per-item resolved names/descriptions/handles (keyed by StatId, not UUID)
+        var itemNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var itemDescs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var itemNameHandles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var itemDescHandles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> iconNamesMap = new(StringComparer.OrdinalIgnoreCase);
+
+        // Step 1: Resolve from each mod pak FIRST (for that mod's items only)
+        foreach (var mod in mods)
+        {
+            if (string.IsNullOrEmpty(mod.PakPath)) continue;
+            var modItemSet = new HashSet<string>(
+                mod.Items.Select(i => i.StatId), StringComparer.OrdinalIgnoreCase);
+
+            var modUuidMap = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (uuid, statIds) in uuidToStatIds)
+            {
+                var modStatIds = statIds.Where(s => modItemSet.Contains(s)).ToList();
+                if (modStatIds.Count > 0)
+                    modUuidMap[uuid] = modStatIds;
+            }
+            if (modUuidMap.Count == 0) continue;
+
+            try
+            {
+                var (modNames, modDescs, modNh, modDh) =
+                    ItemNameResolver.ResolveFromPakFull(mod.PakPath, modUuidMap, langCode);
+
+                foreach (var (uuid, modStatIds) in modUuidMap)
+                {
+                    foreach (var statId in modStatIds)
+                    {
+                        if (modNames.TryGetValue(uuid, out var n)) itemNames.TryAdd(statId, n);
+                        if (modDescs.TryGetValue(uuid, out var d)) itemDescs.TryAdd(statId, d);
+                        if (modNh.TryGetValue(uuid, out var nh)) itemNameHandles.TryAdd(statId, nh);
+                        if (modDh.TryGetValue(uuid, out var dh)) itemDescHandles.TryAdd(statId, dh);
+                    }
+                }
+
+                // Collect mod icons
+                try
+                {
+                    using var mfs = File.OpenRead(mod.PakPath);
+                    var mHeader = PakReader.ReadHeader(mfs);
+                    var mEntries = PakReader.ReadFileList(mfs, mHeader);
+                    var mUuids = new HashSet<string>(modUuidMap.Keys, StringComparer.OrdinalIgnoreCase);
+                    var mRtFiles = mEntries.Where(e2 =>
+                        (e2.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) || e2.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
+                        (e2.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) || e2.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase)));
+                    foreach (var rtf in mRtFiles)
+                    {
+                        var rtData = PakReader.ExtractFileData(mfs, rtf);
+                        var mIcons = RootTemplateIconExtractor.ExtractFromLsf(rtData);
+                        foreach (var (k2, v2) in mIcons)
+                            if (mUuids.Contains(k2)) iconNamesMap.TryAdd(k2, v2);
+                    }
+                }
+                catch { /* skip */ }
+
+                // Collect mod loca
+                var modLoca = ItemNameResolver.ReadAllLocalization(mod.PakPath, langCode);
+                foreach (var (k, v) in modLoca)
+                    masterLocaMap.TryAdd(k, v);
+            }
+            catch (Exception ex) { AppLogger.Warn($"Failed to resolve mod pak {mod.PakPath}: {ex.Message}"); }
+        }
+
+        // Step 2: Resolve from AMP pak (fallback for items not resolved from mod pak)
+        var (ampNames, ampDescs, ampNh, ampDh) =
             ItemNameResolver.ResolveFromPakFull(ampPakPath, uuidToStatIds, langCode);
 
-        // Extract icon names from RootTemplates (separate pass — needs LSF parsing)
-        Dictionary<string, string> iconNamesMap = new(StringComparer.OrdinalIgnoreCase);
         try
         {
             using var hfs = File.OpenRead(ampPakPath);
@@ -908,71 +975,13 @@ public sealed class ModScanner
         }
         catch (Exception ex) { AppLogger.Error("Failed to scan AMP templates/icons", ex); }
 
-        // Collect all loca entries from AMP pak
         var ampLoca = ItemNameResolver.ReadAllLocalization(ampPakPath, langCode);
         foreach (var (k, v) in ampLoca)
             masterLocaMap.TryAdd(k, v);
 
         progress?.Report(new ScanProgress { Stage = "ResolveLoca", Percent = 90 });
 
-        // Resolve remaining from mod paks
-        var remainingUuids = uuidToStatIds.Keys
-            .Where(u => !resolved.ContainsKey(u))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (remainingUuids.Count > 0)
-        {
-            var remainingMap = uuidToStatIds
-                .Where(kvp => remainingUuids.Contains(kvp.Key))
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.OrdinalIgnoreCase);
-
-            foreach (var pakPath in modPakPaths)
-            {
-                if (remainingMap.Count == 0) break;
-                try
-                {
-                    var (modNames, modDescs, modNh, modDh) = ItemNameResolver.ResolveFromPakFull(pakPath, remainingMap, langCode);
-                    foreach (var (uuid, name) in modNames)
-                    {
-                        resolved[uuid] = name;
-                        remainingMap.Remove(uuid);
-                    }
-                    foreach (var (uuid, desc) in modDescs)
-                        resolvedDescs.TryAdd(uuid, desc);
-                    foreach (var (k2, v2) in modNh) nameHandlesMap.TryAdd(k2, v2);
-                    foreach (var (k2, v2) in modDh) descHandlesMap.TryAdd(k2, v2);
-
-                    // Collect mod icons
-                    try
-                    {
-                        using var mfs = File.OpenRead(pakPath);
-                        var mHeader = PakReader.ReadHeader(mfs);
-                        var mEntries = PakReader.ReadFileList(mfs, mHeader);
-                        var mUuids = new HashSet<string>(remainingMap.Keys, StringComparer.OrdinalIgnoreCase);
-                        var mRtFiles = mEntries.Where(e2 =>
-                            (e2.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) || e2.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
-                            (e2.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) || e2.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase)));
-                        foreach (var rtf in mRtFiles)
-                        {
-                            var rtData = PakReader.ExtractFileData(mfs, rtf);
-                            var mIcons = RootTemplateIconExtractor.ExtractFromLsf(rtData);
-                            foreach (var (k2, v2) in mIcons)
-                                if (mUuids.Contains(k2)) iconNamesMap.TryAdd(k2, v2);
-                        }
-                    }
-                    catch (Exception ex) { AppLogger.Warn($"Failed to scan mod icons: {ex.Message}"); }
-
-                    // Collect mod loca
-                    var modLoca = ItemNameResolver.ReadAllLocalization(pakPath, langCode);
-                    foreach (var (k, v) in modLoca)
-                        masterLocaMap.TryAdd(k, v);
-                }
-                catch (Exception ex) { AppLogger.Warn($"Failed to resolve mod pak {pakPath}: {ex.Message}"); }
-            }
-        }
-
-        // Apply: UUID → name/description → all items that share this UUID
-        // First pass: apply AMP-resolved names as default
+        // Step 3: Apply — mod-pak name wins, then AMP, then nothing (vanilla fallback later)
         foreach (var (uuid, statIds) in uuidToStatIds)
         {
             foreach (var statId in statIds)
@@ -980,62 +989,18 @@ public sealed class ModScanner
                 var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
                 if (item == null) continue;
 
-                if (resolved.TryGetValue(uuid, out var displayName))
-                    item.DisplayName = displayName;
-                if (resolvedDescs.TryGetValue(uuid, out var desc))
-                    item.Description = desc;
-                if (nameHandlesMap.TryGetValue(uuid, out var dnHandle))
-                    item.DisplayNameHandle = dnHandle;
-                if (descHandlesMap.TryGetValue(uuid, out var dHandle))
-                    item.DescriptionHandle = dHandle;
+                // Name: mod-pak → AMP
+                item.DisplayName = itemNames.TryGetValue(statId, out var modN) ? modN
+                    : ampNames.TryGetValue(uuid, out var ampN) ? ampN : null;
+                item.Description = itemDescs.TryGetValue(statId, out var modD) ? modD
+                    : ampDescs.TryGetValue(uuid, out var ampD) ? ampD : null;
+                item.DisplayNameHandle = itemNameHandles.TryGetValue(statId, out var modNh2) ? modNh2
+                    : ampNh.TryGetValue(uuid, out var ampNh2) ? ampNh2 : null;
+                item.DescriptionHandle = itemDescHandles.TryGetValue(statId, out var modDh2) ? modDh2
+                    : ampDh.TryGetValue(uuid, out var ampDh2) ? ampDh2 : null;
                 if (iconNamesMap.TryGetValue(uuid, out var iconName))
                     item.IconName = iconName;
             }
-        }
-
-        // Second pass: for each mod pak, try to resolve names from its OWN loca
-        // This overrides AMP names when the mod has its own localization
-        foreach (var mod in mods)
-        {
-            if (string.IsNullOrEmpty(mod.PakPath)) continue;
-            var modItemSet = new HashSet<string>(
-                mod.Items.Select(i => i.StatId), StringComparer.OrdinalIgnoreCase);
-
-            // Build UUID map for this mod's items only
-            var modUuidMap = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-            foreach (var (uuid, statIds) in uuidToStatIds)
-            {
-                var modStatIds = statIds.Where(s => modItemSet.Contains(s)).ToList();
-                if (modStatIds.Count > 0)
-                    modUuidMap[uuid] = modStatIds;
-            }
-            if (modUuidMap.Count == 0) continue;
-
-            try
-            {
-                var (modNames, modDescs, modNh, modDh) =
-                    ItemNameResolver.ResolveFromPakFull(mod.PakPath, modUuidMap, langCode);
-
-                // Override names for this mod's items only
-                foreach (var (uuid, modStatIds) in modUuidMap)
-                {
-                    foreach (var statId in modStatIds)
-                    {
-                        var item = mod.Items.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
-                        if (item == null) continue;
-
-                        if (modNames.TryGetValue(uuid, out var modName))
-                            item.DisplayName = modName;
-                        if (modDescs.TryGetValue(uuid, out var modDesc))
-                            item.Description = modDesc;
-                        if (modNh.TryGetValue(uuid, out var modHandle))
-                            item.DisplayNameHandle = modHandle;
-                        if (modDh.TryGetValue(uuid, out var modDHandle))
-                            item.DescriptionHandle = modDHandle;
-                    }
-                }
-            }
-            catch (Exception ex) { AppLogger.Warn($"Failed to resolve mod-specific loca from {mod.PakPath}: {ex.Message}"); }
         }
 
         // Fallback: fill missing DisplayNames from embedded VanillaLocaService
