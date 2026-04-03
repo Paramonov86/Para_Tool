@@ -972,6 +972,7 @@ public sealed class ModScanner
         }
 
         // Apply: UUID → name/description → all items that share this UUID
+        // First pass: apply AMP-resolved names as default
         foreach (var (uuid, statIds) in uuidToStatIds)
         {
             foreach (var statId in statIds)
@@ -990,6 +991,51 @@ public sealed class ModScanner
                 if (iconNamesMap.TryGetValue(uuid, out var iconName))
                     item.IconName = iconName;
             }
+        }
+
+        // Second pass: for each mod pak, try to resolve names from its OWN loca
+        // This overrides AMP names when the mod has its own localization
+        foreach (var mod in mods)
+        {
+            if (string.IsNullOrEmpty(mod.PakPath)) continue;
+            var modItemSet = new HashSet<string>(
+                mod.Items.Select(i => i.StatId), StringComparer.OrdinalIgnoreCase);
+
+            // Build UUID map for this mod's items only
+            var modUuidMap = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (uuid, statIds) in uuidToStatIds)
+            {
+                var modStatIds = statIds.Where(s => modItemSet.Contains(s)).ToList();
+                if (modStatIds.Count > 0)
+                    modUuidMap[uuid] = modStatIds;
+            }
+            if (modUuidMap.Count == 0) continue;
+
+            try
+            {
+                var (modNames, modDescs, modNh, modDh) =
+                    ItemNameResolver.ResolveFromPakFull(mod.PakPath, modUuidMap, langCode);
+
+                // Override names for this mod's items only
+                foreach (var (uuid, modStatIds) in modUuidMap)
+                {
+                    foreach (var statId in modStatIds)
+                    {
+                        var item = mod.Items.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
+                        if (item == null) continue;
+
+                        if (modNames.TryGetValue(uuid, out var modName))
+                            item.DisplayName = modName;
+                        if (modDescs.TryGetValue(uuid, out var modDesc))
+                            item.Description = modDesc;
+                        if (modNh.TryGetValue(uuid, out var modHandle))
+                            item.DisplayNameHandle = modHandle;
+                        if (modDh.TryGetValue(uuid, out var modDHandle))
+                            item.DescriptionHandle = modDHandle;
+                    }
+                }
+            }
+            catch (Exception ex) { AppLogger.Warn($"Failed to resolve mod-specific loca from {mod.PakPath}: {ex.Message}"); }
         }
 
         // Fallback: fill missing DisplayNames from embedded VanillaLocaService
