@@ -636,7 +636,7 @@
                                                  Background="Transparent" BorderThickness="0"
                                                  Padding="0" TextWrapping="Wrap" />
                                         <TextBlock Text="{Binding PreviewSubtitle}" FontSize="{DynamicResource FontSize12}"
-                                                   Foreground="{Binding RarityColor}" Margin="0,2,0,6" Opacity="0.5" />
+                                                   Foreground="{DynamicResource TextMutedBrush}" Margin="0,2,0,6" />
                                     </StackPanel>
                                     <Border Grid.Column="1" Width="200" Height="200"
                                             ClipToBounds="True" Background="Transparent"
