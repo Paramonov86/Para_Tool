@@ -675,19 +675,14 @@
                                           IsVisible="{Binding HasPassives}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="vm:PassiveVM">
-                                        <Border Margin="0,0,0,6" CornerRadius="6" Padding="10,6"
-                                                IsVisible="{Binding HasVisibleLoca}">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                    <GradientStop Color="#20C8A882" Offset="0" />
-                                                    <GradientStop Color="#10A08060" Offset="1" />
-                                                </LinearGradientBrush>
-                                            </Border.Background>
+                                        <Border Margin="0,0,0,6" CornerRadius="0" Padding="0,6"
+                                                IsVisible="{Binding HasVisibleLoca}"
+                                                Background="Transparent">
                                         <StackPanel>
                                             <TextBox Text="{Binding EditDisplayName}"
                                                      Watermark="{Binding WmPassiveName, Source={x:Static loc:Loc.Instance}}"
                                                      FontSize="{DynamicResource FontSize12}" FontWeight="Bold"
-                                                     Foreground="{DynamicResource GoldBrush}"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}"
                                                      Background="Transparent" BorderThickness="0"
                                                      Padding="0" Margin="0" MinHeight="0" />
                                             <!-- Passive desc: preview = rendered BB-code with params -->
@@ -716,44 +711,46 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <!-- Separator -->
-                            <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="12,6"
-                                    IsVisible="{Binding HasDescription}" />
-
-                            <!-- Description / lore -->
-                            <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
-                                     FontSize="{DynamicResource FontSize12}" FontStyle="Italic"
-                                     Foreground="{DynamicResource TextMutedBrush}"
-                                     TextWrapping="Wrap"
-                                     Margin="16,0,16,8"
-                                     IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                            <TextBox Name="LocaDescription"
-                                     Text="{Binding EditDescription}"
-                                     Watermark="{Binding WmDescriptionLore, Source={x:Static loc:Loc.Instance}}"
-                                     TextWrapping="Wrap" AcceptsReturn="True"
-                                     MinHeight="40" FontSize="{DynamicResource FontSize11}"
-                                     Foreground="{DynamicResource TextMutedBrush}"
-                                     Background="{DynamicResource InputBgBrush}"
-                                     CornerRadius="4" Padding="8,4"
-                                     Margin="16,0,16,8"
-                                     IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                            <!-- Description / lore — darker background block like in-game -->
+                            <Border Background="{DynamicResource InputBgBrush}"
+                                    Margin="0,6,0,0" Padding="16,12"
+                                    IsVisible="{Binding HasDescription}">
+                                <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
+                                         FontSize="{DynamicResource FontSize12}" FontStyle="Italic"
+                                         Foreground="{DynamicResource TextDisabledBrush}"
+                                         TextWrapping="Wrap"
+                                         IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                            </Border>
+                            <Border Background="{DynamicResource InputBgBrush}"
+                                    Margin="0,6,0,0" Padding="16,12"
+                                    IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                <TextBox Name="LocaDescription"
+                                         Text="{Binding EditDescription}"
+                                         Watermark="{Binding WmDescriptionLore, Source={x:Static loc:Loc.Instance}}"
+                                         TextWrapping="Wrap" AcceptsReturn="True"
+                                         MinHeight="40" FontSize="{DynamicResource FontSize11}"
+                                         Foreground="{DynamicResource TextDisabledBrush}"
+                                         FontStyle="Italic"
+                                         Background="Transparent" BorderThickness="0"
+                                         Padding="0" />
+                            </Border>
 
                             <!-- Bottom bar: weight + price (like in-game tooltip) -->
-                            <Border Background="#18FFFFFF" CornerRadius="0,0,10,10" Padding="16,4">
+                            <Border Background="{Binding RarityGradient}" CornerRadius="0,0,10,10" Padding="16,6">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="0">
                                     <!-- Weight -->
                                     <TextBlock Text="{Binding EditWeight}"
                                                FontSize="{DynamicResource FontSize12}"
-                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               Foreground="White"
                                                VerticalAlignment="Center" />
                                     <TextBlock Text=" kg"
                                                FontSize="{DynamicResource FontSize11}"
-                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               Foreground="White"
                                                VerticalAlignment="Center" Margin="0,0,16,0" />
                                     <!-- Price -->
                                     <TextBlock Text="{Binding EditValueOverride}"
-                                               FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
-                                               Foreground="{DynamicResource GoldBrush}"
+                                               FontSize="{DynamicResource FontSize12}"
+                                               Foreground="White"
                                                VerticalAlignment="Center" />
                                     <Image Source="/Assets/TooltipIcons/ico_gold.png"
                                            Width="16" Height="16"

@@ -117,10 +117,10 @@ public static class ThemeManager
 
     // ── BG3 — warm amber/gold, matches the game UI ─────────────
     public static readonly ThemeDef Bg3 = new("BG3",
-        AppBg: Color.Parse("#1A1612"), PanelBg: Color.Parse("#221E18"), CardBg: Color.Parse("#2C2820"),
-        HoverBg: Color.Parse("#3A3228"), InputBg: Color.Parse("#161210"),
-        TextPrimary: Color.Parse("#E0D4C0"), TextSecondary: Color.Parse("#C8BCA4"),
-        TextMuted: Color.Parse("#8A7E68"), TextDisabled: Color.Parse("#4A4238"),
+        AppBg: Color.Parse("#1E1A14"), PanelBg: Color.Parse("#2A2418"), CardBg: Color.Parse("#2C2820"),
+        HoverBg: Color.Parse("#3A3228"), InputBg: Color.Parse("#141210"),
+        TextPrimary: Color.Parse("#D4C8A8"), TextSecondary: Color.Parse("#C8BCA4"),
+        TextMuted: Color.Parse("#8A7E68"), TextDisabled: Color.Parse("#787068"),
         Accent: Color.Parse("#C8963E"), AccentLight: Color.Parse("#E0B05A"), Gold: Color.Parse("#C8A96E"),
         Success: Color.Parse("#5A9E4B"), Warning: Color.Parse("#D4903A"),
         Error: Color.Parse("#B03030"), Info: Color.Parse("#4A8AB5"),
