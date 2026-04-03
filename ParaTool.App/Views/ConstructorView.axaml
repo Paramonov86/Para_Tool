@@ -429,20 +429,22 @@
                                                         <!-- Properties toggle chips -->
                                                         <ctrl:ToggleChipsEditor Text="{Binding EditProperties}"
                                                                                 Options="{x:Static vm:PassiveVM.PassivePropertyOptions}" />
-                                                        <!-- Permanent boosts + context + conditions (single block) -->
+                                                        <!-- Permanent boosts: Context → Condition → Boosts -->
                                                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
                                                                 BorderBrush="{DynamicResource SuccessBrush}" BorderThickness="2,0,0,0">
                                                             <StackPanel Spacing="3">
                                                                 <TextBlock Text="{Binding LblPermanentBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{DynamicResource SuccessBrush}" />
-                                                                <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
-                                                                <Grid ColumnDefinitions="60,*" Margin="0,3,0,0">
-                                                                    <TextBlock Text="{Binding LblContext, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-                                                                    <TextBox Grid.Column="1" Text="{Binding EditBoostContext}" FontSize="{DynamicResource FontSize11}" Padding="6,3"
-                                                                             Background="{StaticResource InputBgBrush}" CornerRadius="3" />
-                                                                </Grid>
-                                                                <Grid ColumnDefinitions="60,*">
-                                                                    <TextBlock Text="{Binding LblIf, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-                                                                    <ctrl:ConditionBlocksEditor Grid.Column="1" Text="{Binding EditBoostConditions}" />
+                                                                <Grid ColumnDefinitions="60,*" RowDefinitions="Auto,Auto,Auto" ClipToBounds="False">
+                                                                    <TextBlock Text="{Binding LblWhen, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                                    <ctrl:ChecklistPickerChip Grid.Column="1" Text="{Binding EditBoostContext}"
+                                                                                          Options="{x:Static vm:PassiveVM.TriggerOptions}"
+                                                                                          Labels="{x:Static vm:PassiveVM.TriggerLabels}" />
+
+                                                                    <TextBlock Grid.Row="1" Text="{Binding LblIf, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                                                    <ctrl:ConditionBlocksEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditBoostConditions}" Margin="0,3,0,0" />
+
+                                                                    <TextBlock Grid.Row="2" Text="{Binding LblDo, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                                                    <ctrl:BoostBlocksEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditBoosts}" Margin="0,3,0,0" />
                                                                 </Grid>
                                                             </StackPanel>
                                                         </Border>
