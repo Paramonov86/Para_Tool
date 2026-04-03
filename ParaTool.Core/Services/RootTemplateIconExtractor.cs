@@ -39,7 +39,7 @@ public static class RootTemplateIconExtractor
     /// Returns StatId → (UUID, DisplayNameHandle, DescriptionHandle).
     /// Used when stats entries don't have RootTemplate UUID but templates reference the stats.
     /// </summary>
-    public static Dictionary<string, (string uuid, string? nameHandle, string? descHandle)>
+    public static Dictionary<string, (string uuid, string? nameHandle, string? descHandle, string? icon)>
         ExtractByStats(byte[] data, IReadOnlySet<string> statIds)
     {
         var result = new Dictionary<string, (string, string?, string?)>(StringComparer.OrdinalIgnoreCase);
@@ -56,9 +56,9 @@ public static class RootTemplateIconExtractor
     }
 
     private static void ExtractByStatsFromNode(Node node, IReadOnlySet<string> statIds,
-        Dictionary<string, (string uuid, string? nameHandle, string? descHandle)> result)
+        Dictionary<string, (string uuid, string? nameHandle, string? descHandle, string? icon)> result)
     {
-        string? mapKey = null, stats = null, nameHandle = null, descHandle = null;
+        string? mapKey = null, stats = null, nameHandle = null, descHandle = null, icon = null;
 
         foreach (var attr in node.Attributes)
         {
@@ -67,6 +67,8 @@ public static class RootTemplateIconExtractor
                 mapKey = attr.Value.Value?.ToString();
             else if (key.Equals("Stats", StringComparison.OrdinalIgnoreCase))
                 stats = attr.Value.Value?.ToString();
+            else if (key.Equals("Icon", StringComparison.OrdinalIgnoreCase))
+                icon = attr.Value.Value?.ToString();
             else if (key.Equals("DisplayName", StringComparison.OrdinalIgnoreCase))
             {
                 if (attr.Value.Value is TranslatedString ts)
@@ -84,7 +86,7 @@ public static class RootTemplateIconExtractor
         }
 
         if (mapKey != null && stats != null && statIds.Contains(stats))
-            result.TryAdd(stats, (mapKey, nameHandle, descHandle));
+            result.TryAdd(stats, (mapKey, nameHandle, descHandle, icon));
 
         foreach (var childList in node.Children)
             foreach (var child in childList.Value)

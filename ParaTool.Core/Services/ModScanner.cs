@@ -1155,7 +1155,7 @@ public sealed class ModScanner
                         // Resolve from mod loca
                         var modLoca2 = ItemNameResolver.ReadAllLocalization(mod.PakPath, langCode);
 
-                        foreach (var (statId, (uuid, nh, dh)) in reverseMap)
+                        foreach (var (statId, (uuid, nh, dh, rIcon)) in reverseMap)
                         {
                             var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
                             if (item == null) continue;
@@ -1179,7 +1179,8 @@ public sealed class ModScanner
                                 }
                             }
 
-                            // Also set icon and update UUID mapping
+                            if (rIcon != null && item.IconName == null)
+                                item.IconName = rIcon;
                             unnamed.Remove(statId);
                         }
                     }
