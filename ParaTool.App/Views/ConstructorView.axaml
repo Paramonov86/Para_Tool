@@ -736,13 +736,13 @@
                                                        FontSize="{DynamicResource FontSize12}"
                                                        Foreground="White" VerticalAlignment="Center" />
                                             <Image Source="/Assets/TooltipIcons/ico_weight_normal.png"
-                                                   Width="14" Height="14"
+                                                   Width="16" Height="16"
                                                    VerticalAlignment="Center" Margin="3,0,16,0" />
                                             <TextBlock Text="{Binding EditValueOverride}"
                                                        FontSize="{DynamicResource FontSize12}"
                                                        Foreground="White" VerticalAlignment="Center" />
                                             <Image Source="/Assets/TooltipIcons/ico_gold.png"
-                                                   Width="14" Height="14"
+                                                   Width="16" Height="16"
                                                    VerticalAlignment="Center" Margin="3,0,0,0" />
                                         </StackPanel>
                                     </StackPanel>
