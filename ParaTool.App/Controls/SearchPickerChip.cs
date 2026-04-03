@@ -31,6 +31,10 @@ public class SearchPickerChip : UserControl
     public string[]? Items { get => GetValue(ItemsProperty); set => SetValue(ItemsProperty, value); }
     public string? Watermark { get => GetValue(WatermarkProperty); set => SetValue(WatermarkProperty, value); }
 
+    /// <summary>Optional resolver + loca for resolving display names of stats entries.</summary>
+    public Core.Parsing.StatsResolver? Resolver { get; set; }
+    public Core.Services.LocaService? LocaService { get; set; }
+
     private readonly Border _chip;
     private readonly TextBlock _valueText;
     private Panel? _overlay;
@@ -99,9 +103,22 @@ public class SearchPickerChip : UserControl
 
         // Build display entries: StatId → "LocalizedName (StatId)" for search
         var lang = Localization.Loc.Instance.Lang;
+        var resolver = Resolver;
+        var locaSvc = LocaService;
         var entries = items.Select(id =>
         {
+            // Try vanilla loca first
             var displayName = Core.Services.VanillaLocaService.GetDisplayName(id, lang);
+            // Try resolver + LocaService for AMP/mod entries
+            if (displayName == null && resolver != null && locaSvc != null)
+            {
+                var fields = resolver.ResolveAll(id);
+                if (fields.TryGetValue("DisplayName", out var handle))
+                {
+                    var resolved = locaSvc.ResolveHandle(handle, lang);
+                    if (resolved != null) displayName = Core.Localization.BbCode.FromBg3Xml(resolved);
+                }
+            }
             var label = displayName != null ? $"{displayName}  ({id})" : id;
             return (Id: id, Label: label);
         }).ToArray();
@@ -154,7 +171,7 @@ public class SearchPickerChip : UserControl
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(12),
             Padding = new Thickness(16),
-            Width = 350, MaxHeight = 500,
+            MinWidth = 400, MaxWidth = 600, MaxHeight = 500,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             BoxShadow = BoxShadows.Parse("0 8 32 0 #60000000"),

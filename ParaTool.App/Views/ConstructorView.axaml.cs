@@ -75,6 +75,15 @@ public partial class ConstructorView : UserControl
                 }
             };
         }
+        // Wire up resolver/loca for passive picker when DataContext is set
+        DataContextChanged += (_, _) =>
+        {
+            if (passivePicker != null && DataContext is ConstructorViewModel cvm)
+            {
+                passivePicker.Resolver = cvm.StatsResolver;
+                passivePicker.LocaService = cvm.LocaService;
+            }
+        };
 
         // Setup language selector
         var langSelector = this.FindControl<TumblerChipEditor>("LocaLangSelector");
