@@ -176,6 +176,13 @@ public sealed class IconService
                         e.Path.EndsWith($"items_png/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
                         e.Path.EndsWith($"items_png/{iconName}.dds", StringComparison.OrdinalIgnoreCase));
 
+                // Fallback: Tooltips/Icons/ (some mods store icons here)
+                if (entry.Path == null)
+                    entry = entries.FirstOrDefault(e =>
+                        e.Path.EndsWith($"Icons/{iconName}.DDS", StringComparison.OrdinalIgnoreCase) ||
+                        e.Path.EndsWith($"Icons/{iconName}.dds", StringComparison.OrdinalIgnoreCase) ||
+                        e.Path.EndsWith($"Icons/{iconName}.png", StringComparison.OrdinalIgnoreCase));
+
                 if (entry.Path != null)
                 {
                     using var fs = File.OpenRead(pakPath);
