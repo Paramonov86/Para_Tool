@@ -435,6 +435,9 @@
                                                             <StackPanel Spacing="3">
                                                                 <TextBlock Text="{Binding LblPermanentBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{DynamicResource SuccessBrush}" />
                                                                 <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
+                                                                <!-- Boost conditions -->
+                                                                <TextBlock Text="{Binding LblIf, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" Margin="0,3,0,0" />
+                                                                <ctrl:ConditionBlocksEditor Text="{Binding EditBoostConditions}" />
                                                             </StackPanel>
                                                         </Border>
 
