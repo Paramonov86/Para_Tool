@@ -172,7 +172,9 @@ public partial class ItemEditorViewModel : ViewModelBase
                 if (visible && hasSearch)
                 {
                     visible = item.ItemLabel.Contains(query!, StringComparison.OrdinalIgnoreCase)
-                           || item.StatId.Contains(query!, StringComparison.OrdinalIgnoreCase);
+                           || item.StatId.Contains(query!, StringComparison.OrdinalIgnoreCase)
+                           || (item.Entry.SearchableText != null
+                               && item.Entry.SearchableText.Contains(query!, StringComparison.OrdinalIgnoreCase));
                 }
 
                 item.IsVisibleInFilter = visible;

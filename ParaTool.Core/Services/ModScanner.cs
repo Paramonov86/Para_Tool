@@ -1145,6 +1145,41 @@ public sealed class ModScanner
             AppLogger.Debug($"  No handle: {item.StatId} name=\"{item.DisplayName}\" inLocaMap={inMap} partial=\"{partial?[..Math.Min(partial?.Length ?? 0, 60)]}\"");
         }
 
+        // Build SearchableText for deep search in patcher
+        var searchFields = new[] { "PassivesOnEquip", "Boosts", "DefaultBoosts",
+            "StatusOnEquip", "BoostsOnEquipMainHand", "BoostsOnEquipOffHand",
+            "StatusOnEquipOffHand", "StatusOnEquipMainHand", "SpellsOnEquip" };
+        foreach (var item in allItems)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append(item.StatId).Append(' ');
+            if (item.DisplayName != null) sb.Append(item.DisplayName).Append(' ');
+            if (item.Description != null) sb.Append(item.Description).Append(' ');
+
+            var fields = resolver.ResolveAll(item.StatId);
+            foreach (var fieldName in searchFields)
+            {
+                if (fields.TryGetValue(fieldName, out var val) && !string.IsNullOrEmpty(val))
+                    sb.Append(val).Append(' ');
+            }
+
+            // Resolve passive names for search
+            if (fields.TryGetValue("PassivesOnEquip", out var passives) && !string.IsNullOrEmpty(passives))
+            {
+                foreach (var pName in passives.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    var pFields = resolver.ResolveAll(pName);
+                    foreach (var pf in new[] { "Boosts", "StatsFunctors", "Conditions", "BoostConditions" })
+                        if (pFields.TryGetValue(pf, out var pv)) sb.Append(pv).Append(' ');
+                    // Passive display name from vanilla loca
+                    var pDispName = VanillaLocaService.GetDisplayName(pName, langCode);
+                    if (pDispName != null) sb.Append(pDispName).Append(' ');
+                }
+            }
+
+            item.SearchableText = sb.ToString();
+        }
+
         return (resolver, masterLocaMap);
     }
 

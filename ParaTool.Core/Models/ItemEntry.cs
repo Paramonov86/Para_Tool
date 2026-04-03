@@ -58,4 +58,10 @@ public sealed class ItemEntry
     /// True when a saved artifact overrides this item's stats via the Constructor.
     /// </summary>
     public bool HasArtifactOverride { get; set; }
+
+    /// <summary>
+    /// Concatenated stats text for deep search (boosts, passives, statuses, descriptions, etc.)
+    /// Built at scan time from resolved stats chain.
+    /// </summary>
+    public string? SearchableText { get; set; }
 }
