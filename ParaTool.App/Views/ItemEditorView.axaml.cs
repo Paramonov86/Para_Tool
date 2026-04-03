@@ -103,6 +103,11 @@ public partial class ItemEditorView : UserControl
         {
             ShowModThemePopup(themeMod);
         }
+        else if (btn.Name == "GoToConstructorBtn" && btn.Tag is ItemVM goItem)
+        {
+            if (DataContext is ItemEditorViewModel vm)
+                vm.RaiseNavigateToConstructor(goItem.StatId);
+        }
         else if (btn.Name == "ThemeFilterBtn")
         {
             ShowThemeFilterPopup();

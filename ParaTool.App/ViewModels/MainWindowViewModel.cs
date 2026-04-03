@@ -246,6 +246,14 @@ public partial class MainWindowViewModel : ObservableObject
 
         _patcherView = editor;
         _constructorView = null; // reset on rescan
+
+        // Navigate to constructor when patcher item clicked
+        editor.NavigateToConstructor += statId =>
+        {
+            SwitchToConstructor();
+            if (_constructorView != null)
+                _constructorView.NavigateToItem(statId);
+        };
         // English loaded on-demand — scan LocaMap contains UI language texts only
 
         // Icon service for lazy DDS loading

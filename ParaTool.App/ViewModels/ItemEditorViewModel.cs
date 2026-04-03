@@ -49,6 +49,10 @@ public partial class ItemEditorViewModel : ViewModelBase
 
     public string? AmpPakPath { get; set; }
 
+    /// <summary>Raised when user clicks "Go to Constructor" on an item.</summary>
+    public event Action<string>? NavigateToConstructor;
+    public void RaiseNavigateToConstructor(string statId) => NavigateToConstructor?.Invoke(statId);
+
     public int TotalItems => Mods.Sum(m => m.TotalItems);
     public int TotalEnabled => Mods.Sum(m => m.EnabledItems);
     public string AllModsCount => $"{TotalEnabled}/{TotalItems}";

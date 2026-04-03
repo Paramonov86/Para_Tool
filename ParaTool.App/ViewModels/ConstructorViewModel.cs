@@ -185,6 +185,16 @@ public partial class ConstructorViewModel : ViewModelBase
         ApplyFilter();
     }
 
+    /// <summary>Navigate to a specific item by StatId — sets search and opens it.</summary>
+    public void NavigateToItem(string statId)
+    {
+        SearchText = statId;
+        var match = FilteredBaseItems.FirstOrDefault(b =>
+            b.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
+        if (match != null)
+            OpenBaseItem(match);
+    }
+
     [RelayCommand]
     private void SetSort(string mode) { if (Enum.TryParse<SortMode>(mode, out var m)) CurrentSort = m; }
 
