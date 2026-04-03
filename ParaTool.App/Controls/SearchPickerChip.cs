@@ -110,13 +110,28 @@ public class SearchPickerChip : UserControl
             // Try vanilla loca first
             var displayName = Core.Services.VanillaLocaService.GetDisplayName(id, lang);
             // Try resolver + LocaService for AMP/mod entries
-            if (displayName == null && resolver != null && locaSvc != null)
+            if (displayName == null && resolver != null)
             {
                 var fields = resolver.ResolveAll(id);
                 if (fields.TryGetValue("DisplayName", out var handle))
                 {
-                    var resolved = locaSvc.ResolveHandle(handle, lang);
-                    if (resolved != null) displayName = Core.Localization.BbCode.FromBg3Xml(resolved);
+                    var resolved = locaSvc?.ResolveHandle(handle, lang)
+                                ?? locaSvc?.ResolveHandle(handle, "en");
+                    if (resolved != null)
+                        displayName = Core.Localization.BbCode.FromBg3Xml(resolved);
+                }
+                // Fallback: walk using chain to find vanilla ancestor name
+                if (displayName == null)
+                {
+                    var cur = id;
+                    var allEntries = resolver.AllEntries;
+                    for (int d = 0; d < 20 && cur != null; d++)
+                    {
+                        if (!allEntries.TryGetValue(cur, out var entry) || entry.Using == null) break;
+                        cur = entry.Using;
+                        displayName = Core.Services.VanillaLocaService.GetDisplayName(cur, lang);
+                        if (displayName != null) break;
+                    }
                 }
             }
             var label = displayName != null ? $"{displayName}  ({id})" : id;
