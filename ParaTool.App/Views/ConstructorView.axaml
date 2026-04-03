@@ -429,15 +429,21 @@
                                                         <!-- Properties toggle chips -->
                                                         <ctrl:ToggleChipsEditor Text="{Binding EditProperties}"
                                                                                 Options="{x:Static vm:PassiveVM.PassivePropertyOptions}" />
-                                                        <!-- Permanent boosts section -->
+                                                        <!-- Permanent boosts + context + conditions (single block) -->
                                                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
                                                                 BorderBrush="{DynamicResource SuccessBrush}" BorderThickness="2,0,0,0">
                                                             <StackPanel Spacing="3">
                                                                 <TextBlock Text="{Binding LblPermanentBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{DynamicResource SuccessBrush}" />
                                                                 <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
-                                                                <!-- Boost conditions -->
-                                                                <TextBlock Text="{Binding LblIf, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" Margin="0,3,0,0" />
-                                                                <ctrl:ConditionBlocksEditor Text="{Binding EditBoostConditions}" />
+                                                                <Grid ColumnDefinitions="60,*" Margin="0,3,0,0">
+                                                                    <TextBlock Text="{Binding LblContext, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                                    <TextBox Grid.Column="1" Text="{Binding EditBoostContext}" FontSize="{DynamicResource FontSize11}" Padding="6,3"
+                                                                             Background="{StaticResource InputBgBrush}" CornerRadius="3" />
+                                                                </Grid>
+                                                                <Grid ColumnDefinitions="60,*">
+                                                                    <TextBlock Text="{Binding LblIf, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                                    <ctrl:ConditionBlocksEditor Grid.Column="1" Text="{Binding EditBoostConditions}" />
+                                                                </Grid>
                                                             </StackPanel>
                                                         </Border>
 
@@ -463,12 +469,7 @@
                                                             </StackPanel>
                                                         </Border>
 
-                                                        <!-- Context for boosts -->
-                                                        <Grid ColumnDefinitions="60,*" IsVisible="{Binding EditBoostContext, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                                            <TextBlock Text="{Binding LblContext, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Grid.Column="1" Text="{Binding EditBoostContext}" FontSize="{DynamicResource FontSize11}" Padding="6,3"
-                                                                     Background="{StaticResource InputBgBrush}" CornerRadius="3" />
-                                                        </Grid>
+                                                        <!-- (Context moved to boost conditions block above) -->
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Border>
