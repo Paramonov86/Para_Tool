@@ -55,6 +55,8 @@ public class ToggleChipsEditor : UserControl
         };
         _scaleHandler = () => { if (!_updating) Rebuild(); };
         FontScale.ScaleChanged += _scaleHandler;
+        Localization.Loc.Instance.PropertyChanged += (_, _) =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (!_updating) Rebuild(); });
         DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= _scaleHandler;
     }
 

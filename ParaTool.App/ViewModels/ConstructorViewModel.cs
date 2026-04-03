@@ -31,16 +31,16 @@ public partial class BaseItemVM : ObservableObject
                 return _cachedLabel;
 
             _cachedLabelLang = lang;
-            // Try resolve from handle via LocaService (AMP items)
+            // Try vanilla loca first (authoritative for vanilla items)
+            var vanilla = VanillaLocaService.GetDisplayName(Entry.StatId, lang)
+                ?? (Entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(Entry.LocaAncestorId, lang) : null);
+            if (vanilla != null) { _cachedLabel = vanilla; return _cachedLabel; }
+            // Try resolve from handle via LocaService (mod items)
             if (_locaService != null && !string.IsNullOrEmpty(Entry.DisplayNameHandle))
             {
                 var resolved = _locaService.ResolveHandle(Entry.DisplayNameHandle, lang);
                 if (resolved != null) { _cachedLabel = BbCode.FromBg3Xml(resolved); return _cachedLabel; }
             }
-            // Try vanilla loca (direct StatId + ancestor from using-chain)
-            var vanilla = VanillaLocaService.GetDisplayName(Entry.StatId, lang)
-                ?? (Entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(Entry.LocaAncestorId, lang) : null);
-            if (vanilla != null) { _cachedLabel = vanilla; return _cachedLabel; }
 
             // Fallback to scan name (may be in scan language)
             _cachedLabel = Entry.DisplayName ?? Entry.StatId;
@@ -322,44 +322,67 @@ public partial class ConstructorViewModel : ViewModelBase
     {
         var lang = EditingLang;
         var art = artVm.Artifact;
+        var statId = art.UsingBase ?? art.StatId;
 
-        // Item DisplayName
-        if (!string.IsNullOrEmpty(art.DisplayNameHandle))
+        // Item DisplayName: vanilla first, then LocaService
+        var vanillaName = VanillaLocaService.GetDisplayName(statId, lang);
+        if (vanillaName != null)
+            art.DisplayName[lang] = BbCode.FromBg3Xml(vanillaName);
+        else if (!string.IsNullOrEmpty(art.DisplayNameHandle))
         {
             var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
             if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
         }
 
-        // Item Description
-        if (!string.IsNullOrEmpty(art.DescriptionHandle))
+        // Item Description: vanilla first, then LocaService
+        var vanillaDesc = VanillaLocaService.GetDescription(statId, lang);
+        if (vanillaDesc != null)
+            art.Description[lang] = BbCode.FromBg3Xml(vanillaDesc);
+        else if (!string.IsNullOrEmpty(art.DescriptionHandle))
         {
             var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
             if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
         }
 
-        // Passives — resolve from own handle first, then vanilla handle
+        // Passives — vanilla first, then own handle
         foreach (var passive in art.Passives)
         {
-            var pFields = _resolver?.ResolveAll(passive.Name);
-
-            // DisplayName: prefer passive's own handle (custom loca), fallback to vanilla
-            var nameHandle = !string.IsNullOrEmpty(passive.DisplayNameHandle)
-                ? passive.DisplayNameHandle
-                : pFields?.GetValueOrDefault("DisplayName");
-            if (!string.IsNullOrEmpty(nameHandle))
+            // DisplayName: vanilla first
+            var vPassiveName = VanillaLocaService.GetDisplayName(passive.Name, lang);
+            if (vPassiveName != null)
             {
-                var text = _locaService?.ResolveHandle(nameHandle, lang);
-                if (text != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(text);
+                passive.DisplayName[lang] = BbCode.FromBg3Xml(vPassiveName);
+            }
+            else
+            {
+                var pFields = _resolver?.ResolveAll(passive.Name);
+                var nameHandle = !string.IsNullOrEmpty(passive.DisplayNameHandle)
+                    ? passive.DisplayNameHandle
+                    : pFields?.GetValueOrDefault("DisplayName");
+                if (!string.IsNullOrEmpty(nameHandle))
+                {
+                    var text = _locaService?.ResolveHandle(nameHandle, lang);
+                    if (text != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(text);
+                }
             }
 
-            // Description: same logic
-            var descHandle = !string.IsNullOrEmpty(passive.DescriptionHandle)
-                ? passive.DescriptionHandle
-                : pFields?.GetValueOrDefault("Description");
-            if (!string.IsNullOrEmpty(descHandle))
+            // Description: vanilla first
+            var vPassiveDesc = VanillaLocaService.GetDescription(passive.Name, lang);
+            if (vPassiveDesc != null)
             {
-                var text = _locaService?.ResolveHandle(descHandle, lang);
-                if (text != null) passive.Description[lang] = BbCode.FromBg3Xml(text);
+                passive.Description[lang] = BbCode.FromBg3Xml(vPassiveDesc);
+            }
+            else
+            {
+                var pFields = _resolver?.ResolveAll(passive.Name);
+                var descHandle = !string.IsNullOrEmpty(passive.DescriptionHandle)
+                    ? passive.DescriptionHandle
+                    : pFields?.GetValueOrDefault("Description");
+                if (!string.IsNullOrEmpty(descHandle))
+                {
+                    var text = _locaService?.ResolveHandle(descHandle, lang);
+                    if (text != null) passive.Description[lang] = BbCode.FromBg3Xml(text);
+                }
             }
         }
     }
@@ -693,58 +716,38 @@ public partial class ConstructorViewModel : ViewModelBase
         artifact.DisplayNameHandle = baseItem.Entry.DisplayNameHandle ?? "";
         artifact.DescriptionHandle = baseItem.Entry.DescriptionHandle ?? "";
 
-        // Pre-load English if available and UI is not English
-        if (EditingLang != "en" && _locaService != null)
+        // Load localization: vanilla first, then LocaService for mod items
+        foreach (var lang in new HashSet<string> { scanLang, EditingLang, "en" })
         {
-            if (!string.IsNullOrEmpty(artifact.DisplayNameHandle))
+            // DisplayName
+            if (!artifact.DisplayName.ContainsKey(lang))
             {
-                var enName = _locaService.ResolveHandle(artifact.DisplayNameHandle, "en");
-                if (enName != null) artifact.DisplayName["en"] = BbCode.FromBg3Xml(enName);
+                var vanillaName = VanillaLocaService.GetDisplayName(baseItem.StatId, lang)
+                    ?? (baseItem.Entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(baseItem.Entry.LocaAncestorId, lang) : null);
+                if (vanillaName != null)
+                    artifact.DisplayName[lang] = BbCode.FromBg3Xml(vanillaName);
+                else if (_locaService != null && !string.IsNullOrEmpty(artifact.DisplayNameHandle))
+                {
+                    var resolved = _locaService.ResolveHandle(artifact.DisplayNameHandle, lang);
+                    if (resolved != null) artifact.DisplayName[lang] = BbCode.FromBg3Xml(resolved);
+                }
             }
-            if (!string.IsNullOrEmpty(artifact.DescriptionHandle))
+            // Description
+            if (!artifact.Description.ContainsKey(lang))
             {
-                var enDesc = _locaService.ResolveHandle(artifact.DescriptionHandle, "en");
-                if (enDesc != null) artifact.Description["en"] = BbCode.FromBg3Xml(enDesc);
+                var vanillaDesc = VanillaLocaService.GetDescription(baseItem.StatId, lang)
+                    ?? (baseItem.Entry.LocaAncestorId != null ? VanillaLocaService.GetDescription(baseItem.Entry.LocaAncestorId, lang) : null);
+                if (vanillaDesc != null)
+                    artifact.Description[lang] = BbCode.FromBg3Xml(vanillaDesc);
+                else if (_locaService != null && !string.IsNullOrEmpty(artifact.DescriptionHandle))
+                {
+                    var resolved = _locaService.ResolveHandle(artifact.DescriptionHandle, lang);
+                    if (resolved != null) artifact.Description[lang] = BbCode.FromBg3Xml(resolved);
+                }
             }
         }
 
-        // DisplayName — Entry.DisplayName is in scan language (UI lang at scan time)
-        if (!string.IsNullOrEmpty(baseItem.Entry.DisplayName))
-            artifact.DisplayName[scanLang] = BbCode.FromBg3Xml(baseItem.Entry.DisplayName);
-        if (!string.IsNullOrEmpty(baseItem.Entry.Description))
-            artifact.Description[scanLang] = BbCode.FromBg3Xml(baseItem.Entry.Description);
-
-        // Load for EditingLang via LocaService (if different from scan lang)
-        if (EditingLang != scanLang && _locaService != null)
-        {
-            if (!string.IsNullOrEmpty(artifact.DisplayNameHandle))
-            {
-                var text = _locaService.ResolveHandle(artifact.DisplayNameHandle, EditingLang);
-                if (text != null) artifact.DisplayName[EditingLang] = BbCode.FromBg3Xml(text);
-            }
-            if (!string.IsNullOrEmpty(artifact.DescriptionHandle))
-            {
-                var text = _locaService.ResolveHandle(artifact.DescriptionHandle, EditingLang);
-                if (text != null) artifact.Description[EditingLang] = BbCode.FromBg3Xml(text);
-            }
-        }
-
-        // Also pre-load English if not already covered
-        if (scanLang != "en" && EditingLang != "en" && _locaService != null)
-        {
-            if (!string.IsNullOrEmpty(artifact.DisplayNameHandle))
-            {
-                var enText = _locaService.ResolveHandle(artifact.DisplayNameHandle, "en");
-                if (enText != null) artifact.DisplayName["en"] = BbCode.FromBg3Xml(enText);
-            }
-            if (!string.IsNullOrEmpty(artifact.DescriptionHandle))
-            {
-                var enText = _locaService.ResolveHandle(artifact.DescriptionHandle, "en");
-                if (enText != null) artifact.Description["en"] = BbCode.FromBg3Xml(enText);
-            }
-        }
-
-        // Fallback: vanilla embedded localization
+        // Fallback: vanilla embedded localization (fills any remaining gaps)
         FillFromVanillaLoca(artifact);
 
         artifact.LootPool = baseItem.Entry.DetectedPool;
