@@ -1133,7 +1133,7 @@ public sealed class ModScanner
                         e.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase)).ToList();
 
                     // Find templates with Stats attribute matching unnamed items
-                    var reverseMap = new Dictionary<string, (string uuid, string? nameHandle, string? descHandle)>(StringComparer.OrdinalIgnoreCase);
+                    var reverseMap = new Dictionary<string, (string uuid, string? nameHandle, string? descHandle, string? icon)>(StringComparer.OrdinalIgnoreCase);
                     foreach (var rtf in rtFiles)
                     {
                         var rtData = PakReader.ExtractFileData(mfs, rtf);

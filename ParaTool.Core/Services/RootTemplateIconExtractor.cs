@@ -42,7 +42,7 @@ public static class RootTemplateIconExtractor
     public static Dictionary<string, (string uuid, string? nameHandle, string? descHandle, string? icon)>
         ExtractByStats(byte[] data, IReadOnlySet<string> statIds)
     {
-        var result = new Dictionary<string, (string, string?, string?)>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<string, (string uuid, string? nameHandle, string? descHandle, string? icon)>(StringComparer.OrdinalIgnoreCase);
         try
         {
             using var ms = new MemoryStream(data);

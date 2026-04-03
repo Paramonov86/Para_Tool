@@ -608,5 +608,25 @@ public static class EnumLabels
         ["OncePerCombat"]               = ("1/Combat",     "1/Бой"),
         ["DisplayBoostInTooltip"]       = ("Show Boost",   "Показ. буст"),
         ["Temporary"]                   = ("Temp",         "Врем."),
+
+        // ── ConditionRollType ────────────────────────────────────
+        ["ConditionSavingThrow"]         = ("Saving Throw",     "Спасбросок"),
+        ["ConditionAbilityCheck"]        = ("Ability Check",    "Проверка способн."),
+        ["ConditionAttackRoll"]          = ("Attack Roll",      "Бросок атаки"),
+        ["ConditionDeathSavingThrow"]    = ("Death Save",       "Спасбросок смерти"),
+
+        // ── ActionType ───────────────────────────────────────────
+        ["MainAction"]                   = ("Action",           "Действие"),
+        ["BonusAction"]                  = ("Bonus",            "Бонусное"),
+        ["ReAction"]                     = ("Reaction",         "Реакция"),
+        ["FreeAction"]                   = ("Free",             "Свободное"),
+
+        // ── DiceType ─────────────────────────────────────────────
+        ["D4"]                           = ("d4",               "d4"),
+        ["D6"]                           = ("d6",               "d6"),
+        ["D8"]                           = ("d8",               "d8"),
+        ["D10"]                          = ("d10",              "d10"),
+        ["D12"]                          = ("d12",              "d12"),
+        ["D20"]                          = ("d20",              "d20"),
     };
 }

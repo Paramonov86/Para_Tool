@@ -523,6 +523,8 @@ public sealed class ConditionSchema
             "attacktype" => BoostMapping.AttackType,
             "resourcetype" or "resource" => BoostMapping.ActionResources,
             "dicetype" => ["D4", "D6", "D8", "D10", "D12", "D20"],
+            "conditionrolltype" => ["ConditionSavingThrow", "ConditionAbilityCheck", "ConditionAttackRoll", "ConditionDeathSavingThrow"],
+            "actiontype" => ["MainAction", "BonusAction", "ReAction", "FreeAction", "Movement"],
             _ => null
         };
     }

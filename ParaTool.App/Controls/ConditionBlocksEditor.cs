@@ -481,6 +481,8 @@ public class ConditionBlocksEditor : UserControl
                         Items = searchItems,
                         Watermark = Localization.Loc.Instance.WmSearch,
                         VerticalAlignment = VerticalAlignment.Center,
+                        Resolver = BoostBlocksEditor.GlobalResolver,
+                        LocaService = BoostBlocksEditor.GlobalLocaService,
                     };
                     picker.PropertyChanged += (s, e2) =>
                     {
