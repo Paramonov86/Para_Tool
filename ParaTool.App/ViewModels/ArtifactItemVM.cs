@@ -278,15 +278,28 @@ public partial class ArtifactItemVM : ObservableObject
         set { Artifact.Boosts = value ?? ""; MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(HasBoosts), nameof(PreviewBoostsText)); }
     }
 
+    private string TranslateBoostKey(string key)
+    {
+        if (key.StartsWith("stat."))
+        {
+            var statId = key[5..];
+            var lang = Localization.Loc.Instance.Lang;
+            var name = Controls.SearchPickerChip.ResolveStatDisplayName(statId, lang,
+                Controls.BoostBlocksEditor.GlobalResolver, Controls.BoostBlocksEditor.GlobalLocaService);
+            return name ?? key;
+        }
+        return Localization.Loc.Instance[key];
+    }
+
     public string PreviewBoostsText => ParaTool.Core.Schema.BoostMapping.FormatBoostsForPreview(
-        Artifact.Boosts, key => Localization.Loc.Instance[key]);
+        Artifact.Boosts, TranslateBoostKey);
 
     public string PreviewMainHandText => ParaTool.Core.Schema.BoostMapping.FormatBoostsForPreview(
-        Artifact.BoostsOnEquipMainHand ?? "", key => Localization.Loc.Instance[key]);
+        Artifact.BoostsOnEquipMainHand ?? "", TranslateBoostKey);
     public bool HasMainHandBoosts => !string.IsNullOrEmpty(Artifact.BoostsOnEquipMainHand);
 
     public string PreviewOffHandText => ParaTool.Core.Schema.BoostMapping.FormatBoostsForPreview(
-        Artifact.BoostsOnEquipOffHand ?? "", key => Localization.Loc.Instance[key]);
+        Artifact.BoostsOnEquipOffHand ?? "", TranslateBoostKey);
     public bool HasOffHandBoosts => !string.IsNullOrEmpty(Artifact.BoostsOnEquipOffHand);
 
     public string EditPassivesOnEquip

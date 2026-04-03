@@ -69,7 +69,11 @@ public class SearchPickerChip : UserControl
         Content = _chip;
 
         PropertyChanged += (_, e) => { if (e.Property == TextProperty) UpdateDisplay(); };
-        AttachedToVisualTree += (_, _) => UpdateDisplay(); // re-resolve after Resolver is set
+        AttachedToVisualTree += (_, _) => UpdateDisplay();
+        BoostBlocksEditor.GlobalResolverReady += () => Avalonia.Threading.Dispatcher.UIThread.Post(UpdateDisplay);
+        // If resolver already set (event already fired before subscription)
+        if (BoostBlocksEditor.GlobalResolver != null)
+            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateDisplay);
         Action scaleHandler = () => _valueText.FontSize = FontScale.Of(11);
         FontScale.ScaleChanged += scaleHandler;
         DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= scaleHandler;

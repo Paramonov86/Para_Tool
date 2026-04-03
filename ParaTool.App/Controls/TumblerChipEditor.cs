@@ -268,7 +268,12 @@ public class TumblerChipEditor : UserControl
     {
         var items = Items!;
         if (idx < 0 || idx >= items.Length) return "";
-        return DisplayItems != null && idx < DisplayItems.Length ? DisplayItems[idx] : items[idx];
+        if (DisplayItems != null && idx < DisplayItems.Length) return DisplayItems[idx];
+        // Fallback: try loca enum label
+        var val = items[idx];
+        var locaKey = $"enum.{val}";
+        var locaVal = Localization.Loc.Instance[locaKey];
+        return locaVal != locaKey ? locaVal : val;
     }
 
     private string Fmt(double v) =>

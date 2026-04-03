@@ -101,6 +101,20 @@ public class ChipListEditor : UserControl
             if (!_updating) Rebuild();
         };
         FontScale.ScaleChanged += scaleHandler;
+        bool resolverWasNull = true;
+        AttachedToVisualTree += (_, _) =>
+        {
+            if (BoostBlocksEditor.GlobalResolver != null && resolverWasNull)
+            {
+                resolverWasNull = false;
+                if (!_updating) Rebuild();
+            }
+        };
+        BoostBlocksEditor.GlobalResolverReady += () =>
+        {
+            resolverWasNull = false;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (!_updating) Rebuild(); });
+        };
         DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= scaleHandler;
 
         UpdateInputVisibility();
@@ -221,11 +235,14 @@ public class ChipListEditor : UserControl
     private Border CreateChip(string value, Color color)
     {
         var colorBrush = new SolidColorBrush(color);
+        var lang = Localization.Loc.Instance.Lang;
+        var displayName = SearchPickerChip.ResolveStatDisplayName(value, lang,
+            BoostBlocksEditor.GlobalResolver, BoostBlocksEditor.GlobalLocaService);
 
         var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         var textBlock = new TextBox
         {
-            Text = value,
+            Text = displayName ?? value,
             FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = colorBrush,
             VerticalAlignment = VerticalAlignment.Center,
@@ -236,6 +253,8 @@ public class ChipListEditor : UserControl
             MinHeight = 0,
             Cursor = new Cursor(StandardCursorType.Hand),
         };
+        if (displayName != null)
+            ToolTip.SetTip(textBlock, value);
 
         // Click on chip text to replace via search picker
         if (SearchItems is { Length: > 0 })

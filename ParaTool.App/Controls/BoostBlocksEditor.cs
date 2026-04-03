@@ -83,8 +83,15 @@ public class BoostBlocksEditor : UserControl
     public static string[]? GlobalSpellList { get; set; }
     public static string[]? GlobalPassiveList { get; set; }
     /// <summary>Global resolver + loca for resolving AMP/mod display names in pickers.</summary>
-    public static Core.Parsing.StatsResolver? GlobalResolver { get; set; }
+    private static Core.Parsing.StatsResolver? _globalResolver;
+    public static Core.Parsing.StatsResolver? GlobalResolver
+    {
+        get => _globalResolver;
+        set { _globalResolver = value; if (value != null) GlobalResolverReady?.Invoke(); }
+    }
     public static Core.Services.LocaService? GlobalLocaService { get; set; }
+    /// <summary>Fired once when GlobalResolver becomes available.</summary>
+    public static event Action? GlobalResolverReady;
 
     private void TryLoadPickerLists()
     {
@@ -385,7 +392,7 @@ public class BoostBlocksEditor : UserControl
                     : isPassive ? GlobalPassiveList
                     : null;
 
-                if (pickerItems is { Length: > 0 })
+                if (isStatus || isSpell || isPassive || pickerItems is { Length: > 0 })
                 {
                     var picker = new SearchPickerChip
                     {

@@ -472,9 +472,10 @@ public class ConditionBlocksEditor : UserControl
                     _ => null,
                 };
 
-                if (searchItems is { Length: > 0 })
+                var isSearchable = paramLower is "statusid" or "status" or "spellid" or "spell" or "passivename" or "passive";
+                if (isSearchable || searchItems is { Length: > 0 })
                 {
-                    // SearchPickerChip for status/spell
+                    // SearchPickerChip for status/spell/passive
                     var picker = new SearchPickerChip
                     {
                         Text = argVal,

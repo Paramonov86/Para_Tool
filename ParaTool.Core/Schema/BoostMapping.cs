@@ -739,9 +739,13 @@ public static class BoostMapping
             }
             else if (param.Type == "string")
             {
-                // Show spell/interrupt names for unlock boosts, skip others
-                if (funcName is "UnlockSpell" or "UnlockInterrupt" or "UnlockSpellVariant")
-                    valueParts.Add(val);
+                // Show spell/status/interrupt names with localization
+                if (funcName is "UnlockSpell" or "UnlockInterrupt" or "UnlockSpellVariant"
+                    or "ApplyStatus" or "RemoveStatus" or "StatusImmunity")
+                {
+                    var resolved = Tr($"stat.{val}", translate);
+                    valueParts.Add(resolved != $"stat.{val}" ? resolved : val);
+                }
             }
             else // enum
             {
