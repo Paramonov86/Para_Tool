@@ -720,14 +720,17 @@ public class BoostBlocksEditor : UserControl
         var defs = IsFunctorMode ? BoostMapping.Functors : BoostMapping.Boosts;
         var menu = new ContextMenu();
 
-        if (IsFunctorMode)
+        // IF block available in both functor and boost modes
         {
-            var ifItem = new MenuItem { Header = "⚡ Conditional (IF)", FontWeight = FontWeight.Bold };
+            var ifLabel = IsFunctorMode ? "⚡ Conditional (IF)" : "⚡ Conditional Boost (IF)";
+            var ifTemplate = IsFunctorMode
+                ? "IF(Enemy()):ApplyStatus(YOURSTATUS,100,1)"
+                : "IF(Enemy()):AC(1)";
+            var ifItem = new MenuItem { Header = ifLabel, FontWeight = FontWeight.Bold };
             ifItem.Click += (_, _) =>
             {
                 var current = Text ?? "";
-                var newIf = "IF(Enemy()):ApplyStatus(YOURSTATUS,100,1)";
-                SyncText(string.IsNullOrEmpty(current) ? newIf : $"{current};{newIf}");
+                SyncText(string.IsNullOrEmpty(current) ? ifTemplate : $"{current};{ifTemplate}");
             };
             menu.Items.Add(ifItem);
             menu.Items.Add(new Separator());
