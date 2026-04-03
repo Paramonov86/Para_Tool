@@ -103,6 +103,7 @@ public partial class ConstructorViewModel : ViewModelBase
     private readonly IconService? _iconService;
 
     public bool HasSavedArtifacts => SavedArtifacts.Count > 0;
+    public bool ShowSavedArtifacts => HasSavedArtifacts && !IsSearching;
     public bool IsArtifactSelected => SelectedArtifact != null;
     public bool HasNoSelection => SelectedArtifact == null;
 
@@ -126,7 +127,7 @@ public partial class ConstructorViewModel : ViewModelBase
             IconBrowser.IconSelected += OnIconSelected;
         }
         LoadSavedArtifacts();
-        SavedArtifacts.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasSavedArtifacts));
+        SavedArtifacts.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(HasSavedArtifacts)); OnPropertyChanged(nameof(ShowSavedArtifacts)); };
     }
 
     public void SetBaseItems(IEnumerable<ModVM> mods)
@@ -182,6 +183,7 @@ public partial class ConstructorViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(IsSearching));
         OnPropertyChanged(nameof(IsNotSearching));
+        OnPropertyChanged(nameof(ShowSavedArtifacts));
         ApplyFilter();
     }
 

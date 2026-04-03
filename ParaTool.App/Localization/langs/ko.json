@@ -510,5 +510,6 @@
   "LblHideDisabled": "비활성 숨기기",
   "LblThemeFilter": "테마",
   "LblShowThemes": "테마 표시:",
-  "LblNoTheme": "테마 없음"
+  "LblNoTheme": "테마 없음",
+  "TipOpenInConstructor": "생성기에서 열기"
 }

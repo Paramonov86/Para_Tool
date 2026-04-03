@@ -486,5 +486,6 @@
   "LblHideDisabled": "Сховати вимкн.",
   "LblThemeFilter": "Теми",
   "LblShowThemes": "Показати теми:",
-  "LblNoTheme": "Без теми"
+  "LblNoTheme": "Без теми",
+  "TipOpenInConstructor": "Відкрити в конструкторі"
 }

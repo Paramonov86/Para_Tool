@@ -486,5 +486,6 @@
   "LblHideDisabled": "Ukryj wyłączone",
   "LblThemeFilter": "Motywy",
   "LblShowThemes": "Pokaż motywy:",
-  "LblNoTheme": "Bez motywu"
+  "LblNoTheme": "Bez motywu",
+  "TipOpenInConstructor": "Otwórz w konstruktorze"
 }

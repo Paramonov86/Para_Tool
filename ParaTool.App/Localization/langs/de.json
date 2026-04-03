@@ -486,5 +486,6 @@
   "LblHideDisabled": "Aus ausblenden",
   "LblThemeFilter": "Themen",
   "LblShowThemes": "Themen anzeigen:",
-  "LblNoTheme": "Kein Thema"
+  "LblNoTheme": "Kein Thema",
+  "TipOpenInConstructor": "Im Konstruktor öffnen"
 }

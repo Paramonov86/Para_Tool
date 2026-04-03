@@ -49,8 +49,8 @@
                             Content="↕" />
                 </StackPanel>
 
-                <!-- Saved artifacts -->
-                <StackPanel Grid.Row="3" IsVisible="{Binding HasSavedArtifacts}">
+                <!-- Saved artifacts (hidden during search) -->
+                <StackPanel Grid.Row="3" IsVisible="{Binding ShowSavedArtifacts}">
                     <TextBlock Text="{Binding NavMyItems, Source={x:Static loc:Loc.Instance}}"
                                FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                Foreground="{StaticResource AccentLightBrush}"
@@ -771,15 +771,25 @@
                                         <!-- Price/weight bar -->
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
                                                     Spacing="0" Margin="16,8,16,10">
-                                            <TextBlock Text="{Binding EditWeight}"
-                                                       FontSize="{DynamicResource FontSize12}"
-                                                       Foreground="White" VerticalAlignment="Center" />
+                                            <TextBox Text="{Binding EditWeight}"
+                                                     FontSize="{DynamicResource FontSize12}"
+                                                     Foreground="White" VerticalAlignment="Center"
+                                                     VerticalContentAlignment="Center"
+                                                     Background="Transparent" BorderThickness="0"
+                                                     Padding="2,0" MinWidth="20" MaxWidth="60"
+                                                     MinHeight="0"
+                                                     HorizontalContentAlignment="Right" />
                                             <Image Source="/Assets/TooltipIcons/ico_weight_normal.png"
                                                    Width="{DynamicResource FontSize18}" Height="{DynamicResource FontSize18}"
                                                    VerticalAlignment="Center" Margin="3,0,16,0" />
-                                            <TextBlock Text="{Binding EditValueOverride}"
-                                                       FontSize="{DynamicResource FontSize12}"
-                                                       Foreground="White" VerticalAlignment="Center" />
+                                            <TextBox Text="{Binding EditValueOverride}"
+                                                     FontSize="{DynamicResource FontSize12}"
+                                                     Foreground="White" VerticalAlignment="Center"
+                                                     VerticalContentAlignment="Center"
+                                                     Background="Transparent" BorderThickness="0"
+                                                     Padding="2,0" MinWidth="20" MaxWidth="60"
+                                                     MinHeight="0"
+                                                     HorizontalContentAlignment="Right" />
                                             <Image Source="/Assets/TooltipIcons/ico_gold.png"
                                                    Width="{DynamicResource FontSize18}" Height="{DynamicResource FontSize18}"
                                                    VerticalAlignment="Center" Margin="3,0,0,0" />

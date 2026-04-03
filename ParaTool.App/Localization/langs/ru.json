@@ -514,5 +514,6 @@
   "LblHideDisabled": "Скрыть откл.",
   "LblThemeFilter": "Темы",
   "LblShowThemes": "Показать темы:",
-  "LblNoTheme": "Без темы"
+  "LblNoTheme": "Без темы",
+  "TipOpenInConstructor": "Открыть в конструкторе"
 }

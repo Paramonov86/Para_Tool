@@ -273,7 +273,7 @@
                                                                         BorderThickness="0"
                                                                         CornerRadius="4"
                                                                         Cursor="Hand"
-                                                                        ToolTip.Tip="Open in Constructor"
+                                                                        ToolTip.Tip="{Binding TipOpenInConstructor, Source={x:Static loc:Loc.Instance}}"
                                                                         Name="GoToConstructorBtn"
                                                                         Tag="{Binding}" />
                                                                 <!-- Theme selector button -->

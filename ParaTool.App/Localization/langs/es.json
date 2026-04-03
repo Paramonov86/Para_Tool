@@ -486,5 +486,6 @@
   "LblHideDisabled": "Ocultar desact.",
   "LblThemeFilter": "Temas",
   "LblShowThemes": "Mostrar temas:",
-  "LblNoTheme": "Sin tema"
+  "LblNoTheme": "Sin tema",
+  "TipOpenInConstructor": "Abrir en constructor"
 }

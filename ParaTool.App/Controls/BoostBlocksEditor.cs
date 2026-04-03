@@ -409,9 +409,12 @@ public class BoostBlocksEditor : UserControl
                     var tb = new TextBox
                     {
                         Text = value, FontSize = FontScale.Of(11),
-                        Padding = new Thickness(4, 1), MinWidth = 60,
-                        Background = InputBg, CornerRadius = new CornerRadius(4),
+                        Padding = new Thickness(4, 2), MinWidth = 60,
+                        Background = InputBg, Foreground = Themes.ThemeBrushes.TextPrimary,
+                        BorderThickness = new Thickness(0),
+                        CornerRadius = new CornerRadius(4),
                         VerticalAlignment = VerticalAlignment.Center,
+                        VerticalContentAlignment = VerticalAlignment.Center,
                     };
                     tb.Tag = (rawBoost, paramIdx);
                     tb.LostFocus += (s, _) =>

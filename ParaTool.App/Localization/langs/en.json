@@ -514,5 +514,6 @@
   "LblHideDisabled": "Hide Off",
   "LblThemeFilter": "Themes",
   "LblShowThemes": "Show themes:",
-  "LblNoTheme": "No theme"
+  "LblNoTheme": "No theme",
+  "TipOpenInConstructor": "Open in Constructor"
 }

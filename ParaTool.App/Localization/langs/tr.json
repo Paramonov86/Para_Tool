@@ -486,5 +486,6 @@
   "LblHideDisabled": "Kapalıları gizle",
   "LblThemeFilter": "Temalar",
   "LblShowThemes": "Temaları göster:",
-  "LblNoTheme": "Temasız"
+  "LblNoTheme": "Temasız",
+  "TipOpenInConstructor": "Yapıcıda aç"
 }

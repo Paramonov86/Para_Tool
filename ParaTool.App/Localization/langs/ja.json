@@ -486,5 +486,6 @@
   "LblHideDisabled": "無効を非表示",
   "LblThemeFilter": "テーマ",
   "LblShowThemes": "テーマを表示:",
-  "LblNoTheme": "テーマなし"
+  "LblNoTheme": "テーマなし",
+  "TipOpenInConstructor": "コンストラクターで開く"
 }

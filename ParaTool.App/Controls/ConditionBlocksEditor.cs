@@ -486,9 +486,12 @@ public class ConditionBlocksEditor : UserControl
                     var tb = new TextBox
                     {
                         Text = argVal, FontSize = FontScale.Of(10),
-                        Padding = new Thickness(4, 1), MinWidth = 60,
-                        Background = InputBg, CornerRadius = new CornerRadius(4),
+                        Padding = new Thickness(4, 2), MinWidth = 60,
+                        Background = InputBg, Foreground = Themes.ThemeBrushes.TextPrimary,
+                        BorderThickness = new Thickness(0),
+                        CornerRadius = new CornerRadius(4),
                         VerticalAlignment = VerticalAlignment.Center,
+                        VerticalContentAlignment = VerticalAlignment.Center,
                     };
                     tb.LostFocus += (s, _) =>
                     {

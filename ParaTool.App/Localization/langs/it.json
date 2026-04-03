@@ -486,5 +486,6 @@
   "LblHideDisabled": "Nascondi disatt.",
   "LblThemeFilter": "Temi",
   "LblShowThemes": "Mostra temi:",
-  "LblNoTheme": "Nessun tema"
+  "LblNoTheme": "Nessun tema",
+  "TipOpenInConstructor": "Apri nel costruttore"
 }
