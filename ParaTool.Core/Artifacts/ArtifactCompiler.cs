@@ -159,7 +159,9 @@ public static class ArtifactCompiler
         {
             stats.AppendLine($"new entry \"{passive.Name}\"");
             stats.AppendLine("type \"PassiveData\"");
-            var hasUsing = passive.UsingBase != null;
+            // Skip self-referencing using (Name == UsingBase) — BG3 ignores it
+            var hasUsing = passive.UsingBase != null
+                && !passive.Name.Equals(passive.UsingBase, StringComparison.OrdinalIgnoreCase);
             if (hasUsing)
                 stats.AppendLine($"using \"{passive.UsingBase}\"");
 
@@ -215,7 +217,8 @@ public static class ArtifactCompiler
             stats.AppendLine($"new entry \"{status.Name}\"");
             stats.AppendLine("type \"StatusData\"");
             stats.AppendLine($"data \"StatusType\" \"{status.StatusType}\"");
-            var statusHasUsing = status.UsingBase != null;
+            var statusHasUsing = status.UsingBase != null
+                && !status.Name.Equals(status.UsingBase, StringComparison.OrdinalIgnoreCase);
             if (statusHasUsing)
                 stats.AppendLine($"using \"{status.UsingBase}\"");
 
@@ -273,7 +276,8 @@ public static class ArtifactCompiler
             stats.AppendLine($"new entry \"{spell.Name}\"");
             stats.AppendLine($"type \"SpellData\"");
             stats.AppendLine($"data \"SpellType\" \"{spell.SpellType}\"");
-            var spellHasUsing = spell.UsingBase != null;
+            var spellHasUsing = spell.UsingBase != null
+                && !spell.Name.Equals(spell.UsingBase, StringComparison.OrdinalIgnoreCase);
             if (spellHasUsing)
                 stats.AppendLine($"using \"{spell.UsingBase}\"");
 

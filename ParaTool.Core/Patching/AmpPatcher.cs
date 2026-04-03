@@ -415,14 +415,29 @@ public sealed class AmpPatcher
 
             // Append passives/statuses/spells from overrides to last stat file
             var nonItemOverrides = new StringBuilder();
+            var nonItemNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var entry in overrideParsed)
             {
                 if (entry.Type == "Armor" || entry.Type == "Weapon") continue;
+                nonItemNames.Add(entry.Name);
                 nonItemOverrides.AppendLine($"new entry \"{entry.Name}\"");
                 nonItemOverrides.AppendLine($"type \"{entry.Type}\"");
-                if (entry.Using != null) nonItemOverrides.AppendLine($"using \"{entry.Using}\"");
+                // Skip self-referencing using (already handled by compiler)
+                if (entry.Using != null && !entry.Name.Equals(entry.Using, StringComparison.OrdinalIgnoreCase))
+                    nonItemOverrides.AppendLine($"using \"{entry.Using}\"");
                 foreach (var (k, v) in entry.Data) nonItemOverrides.AppendLine($"data \"{k}\" \"{v}\"");
                 nonItemOverrides.AppendLine();
+            }
+
+            // Remove existing entries for these names first (cleanup duplicates + replace originals)
+            if (nonItemNames.Count > 0)
+            {
+                foreach (var sf in statFiles)
+                {
+                    var text = File.ReadAllText(sf);
+                    var cleaned = StatsFileEditor.RemoveEntries(text, nonItemNames);
+                    if (cleaned != text) File.WriteAllText(sf, cleaned);
+                }
             }
 
             if (nonItemOverrides.Length > 0)
