@@ -1115,6 +1115,28 @@ public sealed class ModScanner
             }
         }
 
+        // Final AMP fallback: for items still without names, try AMP loca
+        // (covers mod items whose using-chain leads to AMP-only entries not in vanilla loca)
+        foreach (var (uuid, statIds) in uuidToStatIds)
+        {
+            foreach (var statId in statIds)
+            {
+                var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
+                if (item == null || item.DisplayName != null) continue;
+
+                if (ampNames.TryGetValue(uuid, out var ampN))
+                {
+                    item.DisplayName = ampN;
+                    item.DisplayNameHandle = ampNh.GetValueOrDefault(uuid);
+                }
+                if (item.Description == null && ampDescs.TryGetValue(uuid, out var ampD))
+                {
+                    item.Description = ampD;
+                    item.DescriptionHandle = ampDh.GetValueOrDefault(uuid);
+                }
+            }
+        }
+
         // Reverse-lookup: for items with DisplayName but no handle, find handle in masterLocaMap
         // This enables multi-language resolution later
         if (masterLocaMap.Count > 0)
