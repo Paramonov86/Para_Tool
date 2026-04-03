@@ -277,9 +277,21 @@ public class ConditionBlocksEditor : UserControl
         var argCount = token.Args.Length;
         var count = argCount;
 
+        // Detect if leading optional entity param was omitted:
+        // If first param is optional entity AND argCount < paramCount AND first arg doesn't look like entity
+        int paramOffset = 0;
+        if (def != null && paramCount > 0 && argCount < paramCount
+            && def.Params[0].IsOptional
+            && (def.Params[0].EnumValues == ConditionSchema.EntityTargetsEn || def.Params[0].EnumValues == ConditionSchema.EntityTargetsRu))
+        {
+            var firstArg = argCount > 0 ? token.Args[0].Trim('\'', '"', ' ') : "";
+            if (!firstArg.StartsWith("context.", StringComparison.OrdinalIgnoreCase))
+                paramOffset = 1; // skip entity param in definition
+        }
+
         for (int pi = 0; pi < count; pi++)
         {
-            var param = pi < paramCount ? def!.Params[pi] : null;
+            var param = (pi + paramOffset) < paramCount ? def!.Params[pi + paramOffset] : null;
             var argVal = pi < argCount ? token.Args[pi].Trim('\'', '"', ' ') : "";
             var paramIdx = pi;
 

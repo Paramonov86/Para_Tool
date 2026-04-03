@@ -349,14 +349,15 @@ public sealed class ConditionSchema
         }
     }
 
-    /// <summary>Register commonly used BG3 conditions not found in khn files.</summary>
+    /// <summary>Register commonly used BG3 conditions not found in khn files.
+    /// Uses overwrite=true to replace khn-parsed definitions with properly typed params.</summary>
     private static void RegisterBuiltinConditions(ConditionSchema schema)
     {
         var statusParam = new ConditionParam { Name = "statusId", Type = "string" };
         var entityParam = new ConditionParam { Name = "target", Type = "enum", EnumValues = EntityTargetsEn, IsOptional = true };
         var intParam = new ConditionParam { Name = "amount", Type = "int" };
 
-        // Status duration conditions: StatusDuration*(statusId, amount, entity)
+        // Status duration conditions: StatusDuration*(entity, statusId, amount)
         foreach (var name in new[] { "StatusDurationLessThan", "StatusDurationMoreThan",
             "StatusDurationEqualOrLessThan", "StatusDurationEqualOrMoreThan" })
         {
@@ -364,7 +365,7 @@ public sealed class ConditionSchema
             {
                 Name = name, Category = "Status", Source = "builtin",
                 Params = [entityParam, statusParam, intParam],
-            });
+            }, overwrite: true);
         }
 
         // HasStatusWithGroup(statusGroup, entity)
@@ -372,9 +373,9 @@ public sealed class ConditionSchema
         {
             Name = "HasStatusWithGroup", Category = "Status", Source = "builtin",
             Params = [entityParam, new ConditionParam { Name = "statusGroup", Type = "enum", EnumValues = StatusGroups }],
-        });
+        }, overwrite: true);
 
-        // StatusStacksLessThan / MoreThan(statusId, amount, entity)
+        // StatusStacksLessThan / MoreThan(entity, statusId, amount)
         foreach (var name in new[] { "StatusStacksLessThan", "StatusStacksMoreThan",
             "StatusStacksEqualOrLessThan", "StatusStacksEqualOrMoreThan" })
         {
@@ -382,7 +383,7 @@ public sealed class ConditionSchema
             {
                 Name = name, Category = "Status", Source = "builtin",
                 Params = [entityParam, statusParam, intParam],
-            });
+            }, overwrite: true);
         }
 
         // SpellAttackRollAbove / Below(amount)
@@ -393,7 +394,7 @@ public sealed class ConditionSchema
             {
                 Name = name, Category = "Roll", Source = "builtin",
                 Params = [intParam],
-            });
+            }, overwrite: true);
         }
 
         // WieldingWeaponOfType(weaponType)
@@ -401,19 +402,25 @@ public sealed class ConditionSchema
         {
             Name = "WieldingWeaponOfType", Category = "Item", Source = "builtin",
             Params = [new ConditionParam { Name = "weaponType", Type = "enum", EnumValues = BoostMapping.WeaponFlags }],
-        });
+        }, overwrite: true);
 
         // HasArmorType(armorType)
         AddFunc(schema, new ConditionDef
         {
             Name = "HasArmorType", Category = "Item", Source = "builtin",
             Params = [new ConditionParam { Name = "armorType", Type = "enum", EnumValues = BoostMapping.ArmorTypes }],
-        });
+        }, overwrite: true);
     }
 
-    private static void AddFunc(ConditionSchema schema, ConditionDef func)
+    private static void AddFunc(ConditionSchema schema, ConditionDef func, bool overwrite = false)
     {
-        if (schema.ByName.ContainsKey(func.Name)) return;
+        if (schema.ByName.ContainsKey(func.Name))
+        {
+            if (!overwrite) return;
+            // Replace existing definition (builtin with typed params overrides khn-parsed untyped)
+            var old = schema.ByName[func.Name];
+            schema.Functions.Remove(old);
+        }
         schema.Functions.Add(func);
         schema.ByName[func.Name] = func;
     }
