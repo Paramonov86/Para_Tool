@@ -981,7 +981,13 @@ public sealed class ModScanner
 
         progress?.Report(new ScanProgress { Stage = "ResolveLoca", Percent = 90 });
 
-        // Step 3: Apply — mod-pak name wins, then AMP, then nothing (vanilla fallback later)
+        // Step 3: Apply names per item
+        // AMP items: mod-pak → AMP (AMP is authoritative for its own items)
+        // Non-AMP mod items: mod-pak only (skip AMP, vanilla fallback later)
+        var ampItemSet = ampMod != null
+            ? new HashSet<string>(ampMod.Items.Select(i => i.StatId), StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var (uuid, statIds) in uuidToStatIds)
         {
             foreach (var statId in statIds)
@@ -989,15 +995,33 @@ public sealed class ModScanner
                 var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
                 if (item == null) continue;
 
-                // Name: mod-pak → AMP
-                item.DisplayName = itemNames.TryGetValue(statId, out var modN) ? modN
-                    : ampNames.TryGetValue(uuid, out var ampN) ? ampN : null;
-                item.Description = itemDescs.TryGetValue(statId, out var modD) ? modD
-                    : ampDescs.TryGetValue(uuid, out var ampD) ? ampD : null;
-                item.DisplayNameHandle = itemNameHandles.TryGetValue(statId, out var modNh2) ? modNh2
-                    : ampNh.TryGetValue(uuid, out var ampNh2) ? ampNh2 : null;
-                item.DescriptionHandle = itemDescHandles.TryGetValue(statId, out var modDh2) ? modDh2
-                    : ampDh.TryGetValue(uuid, out var ampDh2) ? ampDh2 : null;
+                var isAmpItem = ampItemSet.Contains(statId);
+
+                // Mod-pak name (highest priority for all items)
+                if (itemNames.TryGetValue(statId, out var modN))
+                {
+                    item.DisplayName = modN;
+                    item.DisplayNameHandle = itemNameHandles.GetValueOrDefault(statId);
+                }
+                // AMP name (only for AMP's own items, NOT for other mods)
+                else if (isAmpItem && ampNames.TryGetValue(uuid, out var ampN))
+                {
+                    item.DisplayName = ampN;
+                    item.DisplayNameHandle = ampNh.GetValueOrDefault(uuid);
+                }
+                // else: leave null → vanilla fallback will fill it
+
+                if (itemDescs.TryGetValue(statId, out var modD))
+                {
+                    item.Description = modD;
+                    item.DescriptionHandle = itemDescHandles.GetValueOrDefault(statId);
+                }
+                else if (isAmpItem && ampDescs.TryGetValue(uuid, out var ampD))
+                {
+                    item.Description = ampD;
+                    item.DescriptionHandle = ampDh.GetValueOrDefault(uuid);
+                }
+
                 if (iconNamesMap.TryGetValue(uuid, out var iconName))
                     item.IconName = iconName;
             }
