@@ -115,6 +115,8 @@ public partial class ConstructorViewModel : ViewModelBase
 
     public bool HasSavedArtifacts => SavedArtifacts.Count > 0;
     public bool ShowSavedArtifacts => HasSavedArtifacts && !IsSearching;
+    [ObservableProperty] private bool _artifactsExpanded;
+    [RelayCommand] private void ToggleArtifactsExpanded() => ArtifactsExpanded = !ArtifactsExpanded;
     public bool IsArtifactSelected => SelectedArtifact != null;
     public bool HasNoSelection => SelectedArtifact == null;
 

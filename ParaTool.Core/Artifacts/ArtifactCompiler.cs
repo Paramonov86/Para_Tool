@@ -159,36 +159,49 @@ public static class ArtifactCompiler
         {
             stats.AppendLine($"new entry \"{passive.Name}\"");
             stats.AppendLine("type \"PassiveData\"");
-            if (passive.UsingBase != null)
+            var hasUsing = passive.UsingBase != null;
+            if (hasUsing)
                 stats.AppendLine($"using \"{passive.UsingBase}\"");
 
-            // Only write DisplayName/Description if they have real handles (not empty)
-            // For inherited passives with empty handles, let BG3 inherit from parent
+            // DisplayName/Description: only if handles exist
             if (!string.IsNullOrEmpty(passive.DisplayNameHandle))
                 stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(passive.DisplayNameHandle)}\"");
             if (!string.IsNullOrEmpty(passive.DescriptionHandle))
                 stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(passive.DescriptionHandle)}\"");
 
-            if (!string.IsNullOrEmpty(passive.DescriptionParams))
+            // When using a base, always write ALL fields explicitly (even empty)
+            // to override inherited values. Without this, cleared fields inherit from parent.
+            if (hasUsing)
+            {
                 stats.AppendLine($"data \"DescriptionParams\" \"{passive.DescriptionParams}\"");
-            if (!string.IsNullOrEmpty(passive.Properties))
                 stats.AppendLine($"data \"Properties\" \"{passive.Properties}\"");
-
-            // Boost-based
-            if (!string.IsNullOrEmpty(passive.BoostContext))
                 stats.AppendLine($"data \"BoostContext\" \"{passive.BoostContext}\"");
-            if (!string.IsNullOrEmpty(passive.BoostConditions))
                 stats.AppendLine($"data \"BoostConditions\" \"{passive.BoostConditions}\"");
-            if (!string.IsNullOrEmpty(passive.Boosts))
                 stats.AppendLine($"data \"Boosts\" \"{passive.Boosts}\"");
-
-            // Functor-based
-            if (!string.IsNullOrEmpty(passive.StatsFunctorContext))
                 stats.AppendLine($"data \"StatsFunctorContext\" \"{passive.StatsFunctorContext}\"");
-            if (!string.IsNullOrEmpty(passive.Conditions))
                 stats.AppendLine($"data \"Conditions\" \"{passive.Conditions}\"");
-            if (!string.IsNullOrEmpty(passive.StatsFunctors))
                 stats.AppendLine($"data \"StatsFunctors\" \"{passive.StatsFunctors}\"");
+            }
+            else
+            {
+                // New passives (no using): only write non-empty fields
+                if (!string.IsNullOrEmpty(passive.DescriptionParams))
+                    stats.AppendLine($"data \"DescriptionParams\" \"{passive.DescriptionParams}\"");
+                if (!string.IsNullOrEmpty(passive.Properties))
+                    stats.AppendLine($"data \"Properties\" \"{passive.Properties}\"");
+                if (!string.IsNullOrEmpty(passive.BoostContext))
+                    stats.AppendLine($"data \"BoostContext\" \"{passive.BoostContext}\"");
+                if (!string.IsNullOrEmpty(passive.BoostConditions))
+                    stats.AppendLine($"data \"BoostConditions\" \"{passive.BoostConditions}\"");
+                if (!string.IsNullOrEmpty(passive.Boosts))
+                    stats.AppendLine($"data \"Boosts\" \"{passive.Boosts}\"");
+                if (!string.IsNullOrEmpty(passive.StatsFunctorContext))
+                    stats.AppendLine($"data \"StatsFunctorContext\" \"{passive.StatsFunctorContext}\"");
+                if (!string.IsNullOrEmpty(passive.Conditions))
+                    stats.AppendLine($"data \"Conditions\" \"{passive.Conditions}\"");
+                if (!string.IsNullOrEmpty(passive.StatsFunctors))
+                    stats.AppendLine($"data \"StatsFunctors\" \"{passive.StatsFunctors}\"");
+            }
 
             stats.AppendLine();
 
@@ -202,32 +215,51 @@ public static class ArtifactCompiler
             stats.AppendLine($"new entry \"{status.Name}\"");
             stats.AppendLine("type \"StatusData\"");
             stats.AppendLine($"data \"StatusType\" \"{status.StatusType}\"");
-            if (status.UsingBase != null)
+            var statusHasUsing = status.UsingBase != null;
+            if (statusHasUsing)
                 stats.AppendLine($"using \"{status.UsingBase}\"");
 
             stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(status.DisplayNameHandle)}\"");
             stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(status.DescriptionHandle)}\"");
 
-            if (!string.IsNullOrEmpty(status.DescriptionParams))
+            // When using a base, always write all fields to override inherited values
+            if (statusHasUsing)
+            {
                 stats.AppendLine($"data \"DescriptionParams\" \"{status.DescriptionParams}\"");
-            if (!string.IsNullOrEmpty(status.Icon))
                 stats.AppendLine($"data \"Icon\" \"{status.Icon}\"");
-            if (!string.IsNullOrEmpty(status.StatusPropertyFlags))
                 stats.AppendLine($"data \"StatusPropertyFlags\" \"{status.StatusPropertyFlags}\"");
-            if (!string.IsNullOrEmpty(status.StatusGroups))
                 stats.AppendLine($"data \"StatusGroups\" \"{status.StatusGroups}\"");
-            if (!string.IsNullOrEmpty(status.StackType))
                 stats.AppendLine($"data \"StackType\" \"{status.StackType}\"");
-            if (status.StackPriority != 0)
                 stats.AppendLine($"data \"StackPriority\" \"{status.StackPriority}\"");
-            if (!string.IsNullOrEmpty(status.Boosts))
                 stats.AppendLine($"data \"Boosts\" \"{status.Boosts}\"");
-            if (!string.IsNullOrEmpty(status.PassivesOnApply))
                 stats.AppendLine($"data \"PassivesOnApply\" \"{status.PassivesOnApply}\"");
-            if (!string.IsNullOrEmpty(status.RemoveEvents))
                 stats.AppendLine($"data \"RemoveEvents\" \"{status.RemoveEvents}\"");
-            if (status.StatusEffect != null)
-                stats.AppendLine($"data \"StatusEffect\" \"{status.StatusEffect}\"");
+                if (status.StatusEffect != null)
+                    stats.AppendLine($"data \"StatusEffect\" \"{status.StatusEffect}\"");
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(status.DescriptionParams))
+                    stats.AppendLine($"data \"DescriptionParams\" \"{status.DescriptionParams}\"");
+                if (!string.IsNullOrEmpty(status.Icon))
+                    stats.AppendLine($"data \"Icon\" \"{status.Icon}\"");
+                if (!string.IsNullOrEmpty(status.StatusPropertyFlags))
+                    stats.AppendLine($"data \"StatusPropertyFlags\" \"{status.StatusPropertyFlags}\"");
+                if (!string.IsNullOrEmpty(status.StatusGroups))
+                    stats.AppendLine($"data \"StatusGroups\" \"{status.StatusGroups}\"");
+                if (!string.IsNullOrEmpty(status.StackType))
+                    stats.AppendLine($"data \"StackType\" \"{status.StackType}\"");
+                if (status.StackPriority != 0)
+                    stats.AppendLine($"data \"StackPriority\" \"{status.StackPriority}\"");
+                if (!string.IsNullOrEmpty(status.Boosts))
+                    stats.AppendLine($"data \"Boosts\" \"{status.Boosts}\"");
+                if (!string.IsNullOrEmpty(status.PassivesOnApply))
+                    stats.AppendLine($"data \"PassivesOnApply\" \"{status.PassivesOnApply}\"");
+                if (!string.IsNullOrEmpty(status.RemoveEvents))
+                    stats.AppendLine($"data \"RemoveEvents\" \"{status.RemoveEvents}\"");
+                if (status.StatusEffect != null)
+                    stats.AppendLine($"data \"StatusEffect\" \"{status.StatusEffect}\"");
+            }
 
             stats.AppendLine();
 
@@ -241,24 +273,37 @@ public static class ArtifactCompiler
             stats.AppendLine($"new entry \"{spell.Name}\"");
             stats.AppendLine($"type \"SpellData\"");
             stats.AppendLine($"data \"SpellType\" \"{spell.SpellType}\"");
-            if (spell.UsingBase != null)
+            var spellHasUsing = spell.UsingBase != null;
+            if (spellHasUsing)
                 stats.AppendLine($"using \"{spell.UsingBase}\"");
 
             stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(spell.DisplayNameHandle)}\"");
             stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(spell.DescriptionHandle)}\"");
 
-            if (!string.IsNullOrEmpty(spell.DescriptionParams))
+            if (spellHasUsing)
+            {
                 stats.AppendLine($"data \"DescriptionParams\" \"{spell.DescriptionParams}\"");
-            if (!string.IsNullOrEmpty(spell.Icon))
                 stats.AppendLine($"data \"Icon\" \"{spell.Icon}\"");
-            if (!string.IsNullOrEmpty(spell.SpellProperties))
                 stats.AppendLine($"data \"SpellProperties\" \"{spell.SpellProperties}\"");
-            if (!string.IsNullOrEmpty(spell.UseCosts))
                 stats.AppendLine($"data \"UseCosts\" \"{spell.UseCosts}\"");
-            if (!string.IsNullOrEmpty(spell.Cooldown))
                 stats.AppendLine($"data \"Cooldown\" \"{spell.Cooldown}\"");
-            if (!string.IsNullOrEmpty(spell.SpellFlags))
                 stats.AppendLine($"data \"SpellFlags\" \"{spell.SpellFlags}\"");
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(spell.DescriptionParams))
+                    stats.AppendLine($"data \"DescriptionParams\" \"{spell.DescriptionParams}\"");
+                if (!string.IsNullOrEmpty(spell.Icon))
+                    stats.AppendLine($"data \"Icon\" \"{spell.Icon}\"");
+                if (!string.IsNullOrEmpty(spell.SpellProperties))
+                    stats.AppendLine($"data \"SpellProperties\" \"{spell.SpellProperties}\"");
+                if (!string.IsNullOrEmpty(spell.UseCosts))
+                    stats.AppendLine($"data \"UseCosts\" \"{spell.UseCosts}\"");
+                if (!string.IsNullOrEmpty(spell.Cooldown))
+                    stats.AppendLine($"data \"Cooldown\" \"{spell.Cooldown}\"");
+                if (!string.IsNullOrEmpty(spell.SpellFlags))
+                    stats.AppendLine($"data \"SpellFlags\" \"{spell.SpellFlags}\"");
+            }
 
             foreach (var (key, value) in spell.ExtraData)
                 stats.AppendLine($"data \"{key}\" \"{value}\"");

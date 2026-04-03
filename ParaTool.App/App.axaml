@@ -41,6 +41,14 @@
         <Style Selector="ScrollBar:horizontal /template/ Thumb:pointerover">
             <Setter Property="Background" Value="{DynamicResource AccentLightBrush}" />
         </Style>
+
+        <!-- Global TextBox hover/focus effects -->
+        <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
+        </Style>
+        <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
     </Application.Styles>
     <Application.Resources>
         <ResourceDictionary>
