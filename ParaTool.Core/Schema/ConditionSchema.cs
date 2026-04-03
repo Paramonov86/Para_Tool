@@ -478,35 +478,54 @@ public sealed class ConditionSchema
         _ => null
     };
 
-    private static string InferTypeFromName(string paramName) => paramName.ToLowerInvariant() switch
+    private static string InferTypeFromName(string paramName)
     {
-        "ability" => "enum",
-        "damagetype" or "dmgtype" => "enum",
-        "school" => "enum",
-        "slot" => "enum",
-        "level" or "dc" or "basedc" or "value" or "amount" or "cost" => "int",
-        "offhand" or "checkranged" or "mainhand" or "ispercentage" => "bool",
-        "resourcetype" or "resource" => "enum",
-        "statusid" or "status" or "spellid" or "spell" or "passivename" or "tag" => "string",
-        "attacktype" => "enum",
-        "size" => "enum",
-        "properties" or "weaponflags" or "flags" => "enum",
-        _ => "string"
-    };
+        var lower = paramName.ToLowerInvariant();
+        // Indexed abilities: ability1, ability2
+        if (lower.StartsWith("ability")) return "enum";
+        return lower switch
+        {
+            "damagetype" or "dmgtype" => "enum",
+            "school" or "spellschool" => "enum",
+            "slot" => "enum",
+            "level" or "dc" or "basedc" or "fallbackdc"
+                or "value" or "amount" or "cost" or "number"
+                or "max" or "min" or "minvalue" or "maxvalue"
+                or "grenadenum" or "slotnum" or "maxuses"
+                or "numberofenemy" => "int",
+            "distance" => "float",
+            "offhand" or "checkranged" or "mainhand" or "ispercentage"
+                or "result" or "checkstacks" or "spellcast" or "hasshield" => "bool",
+            "resourcetype" or "resource" => "enum",
+            "statusid" or "status" or "spellid" or "spell" or "passivename" or "tag" => "string",
+            "attacktype" => "enum",
+            "size" => "enum",
+            "dicetype" => "enum",
+            "actiontype" => "enum",
+            "conditionrolltype" => "enum",
+            "properties" or "weaponflags" or "flags" => "enum",
+            _ => "string"
+        };
+    }
 
-    private static string[]? GetEnumValuesFromName(string paramName) => paramName.ToLowerInvariant() switch
+    private static string[]? GetEnumValuesFromName(string paramName)
     {
-        "ability" => Abilities,
-        "damagetype" or "dmgtype" => DamageTypes,
-        "school" => SpellSchools,
-        "slot" => ItemSlots,
-        "properties" or "weaponflags" => WeaponProperties,
-        "flags" => WeaponProperties,
-        "size" => SizeCategories,
-        "attacktype" => BoostMapping.AttackType,
-        "resourcetype" or "resource" => BoostMapping.ActionResources,
-        _ => null
-    };
+        var lower = paramName.ToLowerInvariant();
+        if (lower.StartsWith("ability")) return Abilities;
+        return lower switch
+        {
+            "damagetype" or "dmgtype" => DamageTypes,
+            "school" or "spellschool" => SpellSchools,
+            "slot" => ItemSlots,
+            "properties" or "weaponflags" => WeaponProperties,
+            "flags" => WeaponProperties,
+            "size" => SizeCategories,
+            "attacktype" => BoostMapping.AttackType,
+            "resourcetype" or "resource" => BoostMapping.ActionResources,
+            "dicetype" => ["D4", "D6", "D8", "D10", "D12", "D20"],
+            _ => null
+        };
+    }
 
     // ── Categories ─────────────────────────────────────────────
 
