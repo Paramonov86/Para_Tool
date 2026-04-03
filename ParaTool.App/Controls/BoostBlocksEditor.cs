@@ -70,7 +70,7 @@ public class BoostBlocksEditor : UserControl
         Content = _panel;
         ClipToBounds = false;
         PropertyChanged += OnPropertyChanged;
-        _locHandler = (_, _) => { if (!_updating) Rebuild(); };
+        _locHandler = (_, _) => { if (!_updating) Avalonia.Threading.Dispatcher.UIThread.Post(() => Rebuild()); };
         _scaleHandler = () => { if (!_updating) Rebuild(); };
         Localization.Loc.Instance.PropertyChanged += _locHandler;
         FontScale.ScaleChanged += _scaleHandler;
