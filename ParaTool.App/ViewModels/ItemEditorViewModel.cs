@@ -59,12 +59,12 @@ public partial class ItemEditorViewModel : ViewModelBase
 
     public ItemEditorViewModel()
     {
-        Loc.Instance.PropertyChanged += (_, _) =>
+        Loc.Instance.PropertyChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             OnPropertyChanged(nameof(ModsCountText));
             if (HasMissingItems)
                 OnPropertyChanged(nameof(MissingItemsText));
-        };
+        });
         RefreshProfileList();
     }
 

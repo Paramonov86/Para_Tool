@@ -62,11 +62,11 @@ public partial class BaseItemVM : ObservableObject
         Entry = entry;
         ModName = modName;
         _locaService = locaService;
-        Localization.Loc.Instance.PropertyChanged += (_, _) =>
+        Localization.Loc.Instance.PropertyChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             OnPropertyChanged(nameof(Label));
             OnPropertyChanged(nameof(FullLabel));
-        };
+        });
     }
 }
 

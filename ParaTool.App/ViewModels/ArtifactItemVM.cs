@@ -44,7 +44,7 @@ public partial class ArtifactItemVM : ObservableObject
     public ArtifactItemVM(ArtifactDefinition artifact)
     {
         Artifact = artifact;
-        _langHandler = (_, _) => RefreshAll();
+        _langHandler = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(RefreshAll);
         Loc.Instance.PropertyChanged += _langHandler;
     }
 

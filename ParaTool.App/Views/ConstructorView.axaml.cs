@@ -51,7 +51,7 @@ public partial class ConstructorView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         AddHandler(Button.ClickEvent, OnButtonClick, RoutingStrategies.Bubble);
-        Loc.Instance.PropertyChanged += (_, _) => RebuildChips();
+        Loc.Instance.PropertyChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(RebuildChips);
         FontScale.ScaleChanged += RebuildChips;
         AddHandler(GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);

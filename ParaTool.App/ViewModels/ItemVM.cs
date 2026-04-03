@@ -47,7 +47,7 @@ public partial class ItemVM : ObservableObject
         _selectedRarity = RarityOptions.FirstOrDefault(o => o.Value == entry.EffectiveRarity) ?? RarityOptions[0];
         _selectedThemes = new ObservableCollection<string>(entry.EffectiveThemes);
 
-        _langHandler = (_, _) => OnLanguageChanged();
+        _langHandler = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(OnLanguageChanged);
         Loc.Instance.PropertyChanged += _langHandler;
     }
 
