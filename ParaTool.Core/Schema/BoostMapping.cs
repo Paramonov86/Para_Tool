@@ -508,17 +508,168 @@ public static class BoostMapping
         Functors.FirstOrDefault(f => f.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase));
 
     // ═══════════════════════════════════════════════════════════
+    // ENGINE BOOST DESCRIPTIONS — hardcoded in bg3.exe
+    // Maps boost type+args → localized description template
+    // [1] is replaced with the first parameter value
+    // ═══════════════════════════════════════════════════════════
+
+    public record EngineBoostDesc(string En, string Ru);
+
+    /// <summary>
+    /// Boost descriptions extracted from bg3.exe binary.
+    /// Key = boost function name (+ optional qualifier), Value = EN/RU templates with [1] placeholder.
+    /// </summary>
+    public static readonly Dictionary<string, EngineBoostDesc> EngineDescriptions = new()
+    {
+        // Resistance / Vulnerability / Immunity
+        ["Resistance.Resistant"] =          new("Grants Resistance to [1].", "Дает устойчивость: [1]"),
+        ["Resistance.Immune"] =             new("Immunity to [1]", "Невосприимчивость к эффекту «[1]»"),
+        ["Resistance.Vulnerable"] =         new("Grants Vulnerability to [1].", "Дает уязвимость: [1]"),
+
+        // Armor Class
+        ["AC"] =                            new("Armour Class [1]", "Класс брони: [1]"),
+
+        // Weapon Enchantment
+        ["WeaponEnchantment"] =             new("Weapon Enchantment", "Зачарование оружия"),
+
+        // Saving Throw Proficiency (per ability)
+        ["SavingThrowProf.Strength"] =      new("Proficiency in Strength Saving Throws.", "Умение в испытаниях силы."),
+        ["SavingThrowProf.Dexterity"] =     new("Proficiency in Dexterity Saving Throws.", "Умение в испытаниях ловкости."),
+        ["SavingThrowProf.Constitution"] =  new("Proficiency in Constitution Saving Throws.", "Умение в испытаниях выносливости."),
+        ["SavingThrowProf.Intelligence"] =  new("Proficiency in Intelligence Saving Throws.", "Умение в испытаниях интеллекта."),
+        ["SavingThrowProf.Wisdom"] =        new("Proficiency in Wisdom Saving Throws.", "Умение в испытаниях мудрости."),
+        ["SavingThrowProf.Charisma"] =      new("Proficiency in Charisma Saving Throws.", "Умение в испытаниях харизмы."),
+
+        // Ability Override Minimum (set ability score)
+        ["AbilityOverrideMinimum.Strength"] =     new("Set the wearer's Strength to [1]. The enchantment has no effect if their Strength score is higher without it.", "Увеличивает показатель силы владельца до [1]. Чары не действуют, если показатель силы выше без них."),
+        ["AbilityOverrideMinimum.Dexterity"] =    new("Set the wearer's Dexterity score to [1]. The enchantment has no effect if their Dexterity score is higher without it.", "Увеличивает показатель ловкости владельца до [1]. Чары не действуют, если показатель ловкости выше без них."),
+        ["AbilityOverrideMinimum.Constitution"] = new("Set the wearer's Constitution score to [1]. The enchantment has no effect if their Constitution score is higher without it.", "Увеличивает показатель выносливости владельца до [1]. Чары не действуют, если показатель выносливости выше без них."),
+        ["AbilityOverrideMinimum.Intelligence"] = new("Set the wearer's Intelligence score to [1]. The enchantment has no effect if their Intelligence score is higher without it.", "Увеличивает показатель интеллекта владельца до [1]. Чары не действуют, если показатель интеллекта выше без них."),
+        ["AbilityOverrideMinimum.Wisdom"] =       new("Set the wearer's Wisdom to [1]. The enchantment has no effect if their Wisdom score is higher without it.", "Увеличивает показатель мудрости владельца до [1]. Чары не действуют, если показатель мудрости выше без них."),
+        ["AbilityOverrideMinimum.Charisma"] =     new("Set the wearer's Charisma score to [1]. The enchantment has no effect if their Charisma score is higher without it.", "Увеличивает показатель харизмы владельца до [1]. Чары не действуют, если показатель харизмы выше без них."),
+
+        // Critical hits
+        ["CriticalHit.Success"] =           new("Guaranteed critical hits", "Гарантированы критические удары"),
+        ["CriticalHit.NoCrit"] =            new("Attackers can't land Critical Hits on the wearer.", "Защищает владельца от критических ударов."),
+        ["CriticalHit.NoCritMiss"] =        new("Protects from critical misses", "Защищает от критических промахов"),
+
+        // Advantage / Disadvantage on checks
+        ["Advantage.Ability"] =             new("Advantage on [1] Checks.", "Преимущество при проверках ([1])."),
+        ["Disadvantage.Ability"] =          new("Disadvantage on [1] Checks.", "Помеха при проверках ([1])."),
+
+        // Saving Throws (generic)
+        ["SavingThrow"] =                   new("[1] Saving Throws", "Испытания: [1]"),
+
+        // Armor type labels
+        ["ArmorType.Clothing"] =            new("Clothing", "Ткань"),
+
+        // Weapon skill
+        ["WeaponSkill"] =                   new("Weapon Skill", "Оружейный навык"),
+        ["WeaponSkills"] =                  new("Weapon Skills", "Оружейные навыки"),
+
+        // Attack label
+        ["Attack"] =                        new("Attack", "Атака"),
+
+        // Encumbrance warnings
+        ["Encumber"] =                      new("Will Encumber [1]", "[1] получит перегрузку"),
+        ["HeavyEncumber"] =                 new("Will Heavily Encumber [1]", "[1] получит сильную перегрузку"),
+        ["ExceedCapacity"] =                new("Will exceed [1]'s carrying capacity", "[1] превысит лимит веса"),
+        ["CapacityExceeded"] =              new("Carrying Capacity Exceeded", "Превышена грузоподъемность"),
+    };
+
+    /// <summary>
+    /// Tries to resolve an engine-style description for a parsed boost.
+    /// Returns null if no engine description matches.
+    /// </summary>
+    public static EngineBoostDesc? GetEngineDescription(string funcName, string[] args)
+    {
+        // Resistance(DmgType, Flags) → key by flags
+        if (funcName == "Resistance" && args.Length >= 2)
+        {
+            var flags = args[1].Trim();
+            if (flags is "Resistant" or "ResistantToMagical" or "ResistantToNonMagical")
+                return EngineDescriptions.GetValueOrDefault("Resistance.Resistant");
+            if (flags is "Immune" or "ImmuneToMagical" or "ImmuneToNonMagical")
+                return EngineDescriptions.GetValueOrDefault("Resistance.Immune");
+            if (flags is "Vulnerable" or "VulnerableToMagical" or "VulnerableToNonMagical")
+                return EngineDescriptions.GetValueOrDefault("Resistance.Vulnerable");
+        }
+
+        // AC(value)
+        if (funcName == "AC")
+            return EngineDescriptions.GetValueOrDefault("AC");
+
+        // WeaponEnchantment(level)
+        if (funcName == "WeaponEnchantment")
+            return EngineDescriptions.GetValueOrDefault("WeaponEnchantment");
+
+        // AbilityOverrideMinimum(Ability, Min)
+        if (funcName == "AbilityOverrideMinimum" && args.Length >= 1)
+        {
+            var ability = args[0].Trim();
+            return EngineDescriptions.GetValueOrDefault($"AbilityOverrideMinimum.{ability}");
+        }
+
+        // CriticalHit(Type, Result, When)
+        if (funcName == "CriticalHit" && args.Length >= 3)
+        {
+            var when = args[2].Trim();
+            if (when is "Always" or "ForcedAlways")
+                return EngineDescriptions.GetValueOrDefault("CriticalHit.Success");
+            if (when == "Never" && args[0].Trim() == "AttackTarget")
+                return EngineDescriptions.GetValueOrDefault("CriticalHit.NoCrit");
+            if (when == "Never" && args[0].Trim() == "AttackRoll")
+                return EngineDescriptions.GetValueOrDefault("CriticalHit.NoCritMiss");
+        }
+
+        // Advantage/Disadvantage on ability checks
+        if (funcName == "Advantage" && args.Length >= 1 && args[0].Trim() == "Ability")
+            return EngineDescriptions.GetValueOrDefault("Advantage.Ability");
+        if (funcName == "Disadvantage" && args.Length >= 1 && args[0].Trim() == "Ability")
+            return EngineDescriptions.GetValueOrDefault("Disadvantage.Ability");
+
+        return null;
+    }
+
+    /// <summary>
+    /// Formats a single boost in game-engine style using EngineDescriptions.
+    /// Returns null if no engine description matches (caller should fall back to FormatSingleBoost).
+    /// The [1] placeholder is replaced with the localized parameter value.
+    /// </summary>
+    public static string? FormatBoostEngineStyle(string funcName, string[] args, Func<string, string>? translate)
+    {
+        var desc = GetEngineDescription(funcName, args);
+        if (desc == null) return null;
+
+        // Pick language: check if translate returns Russian for a known key
+        var lang = translate != null ? translate("_lang") : "en";
+        var template = lang == "ru" ? desc.Ru : desc.En;
+
+        // Determine the [1] value
+        string paramValue = "";
+        if (funcName == "Resistance" && args.Length >= 1)
+            paramValue = Tr($"enum.{args[0].Trim()}", translate);
+        else if (funcName == "AC" && args.Length >= 1)
+            paramValue = FormatNumeric(args[0].Trim());
+        else if (funcName == "WeaponEnchantment" && args.Length >= 1)
+            paramValue = $"+{args[0].Trim()}";
+        else if (funcName == "AbilityOverrideMinimum" && args.Length >= 2)
+            paramValue = args[1].Trim();
+        else if (funcName is "Advantage" or "Disadvantage" && args.Length >= 2)
+            paramValue = Tr($"enum.{args[1].Trim()}", translate);
+
+        return template.Replace("[1]", paramValue);
+    }
+
+    // ═══════════════════════════════════════════════════════════
     // PREVIEW FORMATTING — human-readable boost display
     // ═══════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Converts raw boost string (semicolon-separated) into human-readable lines.
-    /// E.g. "RollBonus(Attack,2,SavingThrow);AC(1)" → "Бонус к броску +2\nКласс брони +1"
-    /// </summary>
-    /// <summary>
     /// Converts raw boost string into human-readable lines.
+    /// Uses engine-style descriptions where available, falls back to label+value format.
     /// Pass a translate function to resolve enum values and boost labels via loca.
-    /// Key format: "enum.XXX" for enum values, "boost.FuncName" for boost labels.
+    /// Key format: "enum.XXX" for enum values, "boost.FuncName" for boost labels, "_lang" for language code.
     /// </summary>
     public static string FormatBoostsForPreview(string rawBoosts, Func<string, string>? translate = null)
     {
@@ -550,6 +701,11 @@ public static class BoostMapping
         var parsed = ParseBoostCall(raw);
         if (parsed == null) return raw;
         var (funcName, args) = parsed.Value;
+
+        // Try engine-style description first (matches how BG3 displays boosts in-game)
+        var engineLine = FormatBoostEngineStyle(funcName, args, translate);
+        if (engineLine != null)
+            return engineLine;
 
         var def = FindBoost(funcName);
         if (def == null) return raw; // unknown boost — show raw

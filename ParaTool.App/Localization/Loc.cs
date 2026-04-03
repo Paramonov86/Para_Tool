@@ -87,8 +87,9 @@ public partial class Loc : ObservableObject
 
     /// <summary>
     /// Get a localized string by key. Returns the key itself if not found.
+    /// Special key "_lang" returns the current language code (e.g. "en", "ru").
     /// </summary>
-    public string this[string key] => _strings.TryGetValue(key, out var val) ? val : key;
+    public string this[string key] => key == "_lang" ? _lang : _strings.TryGetValue(key, out var val) ? val : key;
 
     // === XAML binding properties ===
 
