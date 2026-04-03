@@ -116,6 +116,10 @@ public partial class ConstructorViewModel : ViewModelBase
         _locaService = locaService;
         _iconService = iconService;
 
+        // Set global resolver/loca for SearchPickerChips in BoostBlocksEditor
+        Controls.BoostBlocksEditor.GlobalResolver = resolver;
+        Controls.BoostBlocksEditor.GlobalLocaService = locaService;
+
         if (iconService != null)
         {
             IconBrowser = new IconBrowserVM(iconService);

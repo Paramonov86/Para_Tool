@@ -51,7 +51,7 @@ public class ConditionBlocksEditor : UserControl
         {
             if (e.Property == TextProperty && !_updating) Rebuild();
         };
-        AttachedToVisualTree += (_, _) => { if (!_updating && !string.IsNullOrEmpty(Text)) Rebuild(); };
+        AttachedToVisualTree += (_, _) => { if (!_updating && !_rebuilding && !string.IsNullOrEmpty(Text)) Rebuild(); };
         // Rebuild chips when UI language changes (labels need to update)
         _locHandler = (_, _) => { if (!_updating && IsLoaded) Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (IsLoaded) Rebuild(); }); };
         _scaleHandler = () => { if (!_updating && IsLoaded) Rebuild(); };

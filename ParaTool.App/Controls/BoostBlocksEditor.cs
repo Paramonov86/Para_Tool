@@ -75,13 +75,16 @@ public class BoostBlocksEditor : UserControl
         Localization.Loc.Instance.PropertyChanged += _locHandler;
         FontScale.ScaleChanged += _scaleHandler;
         // Auto-populate Status/Spell lists from ConstructorViewModel when attached
-        AttachedToVisualTree += (_, _) => { TryLoadPickerLists(); if (!_updating && !string.IsNullOrEmpty(Text)) Rebuild(); };
+        AttachedToVisualTree += (_, _) => { TryLoadPickerLists(); if (!_updating && !_rebuilding && !string.IsNullOrEmpty(Text)) Rebuild(); };
     }
 
     /// <summary>Global status/spell/passive lists, set once by ConstructorViewModel.</summary>
     public static string[]? GlobalStatusList { get; set; }
     public static string[]? GlobalSpellList { get; set; }
     public static string[]? GlobalPassiveList { get; set; }
+    /// <summary>Global resolver + loca for resolving AMP/mod display names in pickers.</summary>
+    public static Core.Parsing.StatsResolver? GlobalResolver { get; set; }
+    public static Core.Services.LocaService? GlobalLocaService { get; set; }
 
     private void TryLoadPickerLists()
     {
@@ -390,6 +393,8 @@ public class BoostBlocksEditor : UserControl
                         Items = pickerItems,
                         Watermark = isStatus ? "Search status..." : "Search...",
                         VerticalAlignment = VerticalAlignment.Center,
+                        Resolver = GlobalResolver,
+                        LocaService = GlobalLocaService,
                     };
                     picker.Tag = (rawBoost, paramIdx);
                     picker.PropertyChanged += (s, e2) =>
