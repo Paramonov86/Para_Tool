@@ -70,7 +70,7 @@ public partial class ConstructorView : UserControl
                 if (string.IsNullOrEmpty(name)) return;
                 if (DataContext is ConstructorViewModel vm && vm.SelectedArtifact != null)
                 {
-                    vm.SelectedArtifact.AddExistingPassive(name, vm.StatsResolver);
+                    vm.SelectedArtifact.AddExistingPassive(name, vm.StatsResolver, vm.LocaService);
                     picker.Text = "";
                 }
             };

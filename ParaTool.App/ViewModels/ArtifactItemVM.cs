@@ -324,7 +324,8 @@ public partial class ArtifactItemVM : ObservableObject
 
     public ObservableCollection<PassiveVM> PassiveVMs { get; } = [];
 
-    public void AddExistingPassive(string passiveName, Core.Parsing.StatsResolver? resolver)
+    public void AddExistingPassive(string passiveName, Core.Parsing.StatsResolver? resolver,
+        Core.Services.LocaService? locaService = null)
     {
         // Check if already added
         if (PassiveVMs.Any(p => p.Name.Equals(passiveName, StringComparison.OrdinalIgnoreCase)))
@@ -337,6 +338,8 @@ public partial class ArtifactItemVM : ObservableObject
             Properties = "Highlighted",
         };
 
+        var lang = Localization.Loc.Instance.Lang;
+
         // Resolve fields from stats
         if (resolver != null)
         {
@@ -348,7 +351,44 @@ public partial class ArtifactItemVM : ObservableObject
             if (fields.TryGetValue("StatsFunctors", out var sf)) passive.StatsFunctors = sf;
             if (fields.TryGetValue("StatsFunctorContext", out var sfc)) passive.StatsFunctorContext = sfc;
             if (fields.TryGetValue("Conditions", out var conditions)) passive.Conditions = conditions;
+            if (fields.TryGetValue("DescriptionParams", out var dp)) passive.DescriptionParams = dp;
             if (fields.TryGetValue("Icon", out var icon)) passive.Icon = icon;
+
+            // Resolve DisplayName from loca handle
+            if (fields.TryGetValue("DisplayName", out var dnHandle))
+            {
+                passive.DisplayNameHandle = dnHandle;
+                if (locaService != null)
+                {
+                    var resolved = locaService.ResolveHandle(dnHandle, lang);
+                    if (resolved != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(resolved);
+                    if (lang != "en") { var en = locaService.ResolveHandle(dnHandle, "en"); if (en != null) passive.DisplayName["en"] = BbCode.FromBg3Xml(en); }
+                }
+                // Fallback: vanilla loca
+                if (string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(lang)))
+                {
+                    var vn = Core.Services.VanillaLocaService.GetDisplayName(passiveName, lang);
+                    if (vn != null) passive.DisplayName[lang] = vn;
+                }
+            }
+
+            // Resolve Description from loca handle
+            if (fields.TryGetValue("Description", out var descHandle))
+            {
+                passive.DescriptionHandle = descHandle;
+                if (locaService != null)
+                {
+                    var resolved = locaService.ResolveHandle(descHandle, lang);
+                    if (resolved != null) passive.Description[lang] = BbCode.FromBg3Xml(resolved);
+                    if (lang != "en") { var en = locaService.ResolveHandle(descHandle, "en"); if (en != null) passive.Description["en"] = BbCode.FromBg3Xml(en); }
+                }
+                // Fallback: vanilla loca
+                if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(lang)))
+                {
+                    var vd = Core.Services.VanillaLocaService.GetDescription(passiveName, lang);
+                    if (vd != null) passive.Description[lang] = vd;
+                }
+            }
         }
 
         Artifact.Passives.Add(passive);
