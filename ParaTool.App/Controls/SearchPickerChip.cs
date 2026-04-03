@@ -97,34 +97,48 @@ public class SearchPickerChip : UserControl
             Margin = new Thickness(0, 0, 0, 8),
         };
 
+        // Build display entries: StatId → "LocalizedName (StatId)" for search
+        var lang = Localization.Loc.Instance.Lang;
+        var entries = items.Select(id =>
+        {
+            var displayName = Core.Services.VanillaLocaService.GetDisplayName(id, lang);
+            var label = displayName != null ? $"{displayName}  ({id})" : id;
+            return (Id: id, Label: label);
+        }).ToArray();
+
         // List
         var listBox = new ListBox
         {
             MaxHeight = 400,
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
-            ItemsSource = items,
+            ItemsSource = entries.Select(e => e.Label).ToArray(),
         };
 
         // Style list items
         listBox.SelectionChanged += (_, _) =>
         {
-            if (listBox.SelectedItem is string selected)
+            if (listBox.SelectedIndex >= 0)
             {
-                Text = selected;
+                // Find original entry from filtered list
+                var selectedLabel = listBox.SelectedItem as string;
+                var match = entries.FirstOrDefault(e => e.Label == selectedLabel);
+                Text = match.Id ?? selectedLabel;
                 ClosePicker();
             }
         };
 
-        // Search filter
+        // Search filter — match both localized name and StatId
         searchBox.TextChanged += (_, _) =>
         {
             var query = searchBox.Text?.Trim() ?? "";
             if (string.IsNullOrEmpty(query))
-                listBox.ItemsSource = items;
+                listBox.ItemsSource = entries.Select(e => e.Label).ToArray();
             else
-                listBox.ItemsSource = items.Where(i =>
-                    i.Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray();
+                listBox.ItemsSource = entries
+                    .Where(e => e.Label.Contains(query, StringComparison.OrdinalIgnoreCase)
+                             || e.Id.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    .Select(e => e.Label).ToArray();
         };
 
         var pickerPanel = new StackPanel
