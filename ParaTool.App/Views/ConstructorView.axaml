@@ -690,19 +690,19 @@
                                     Margin="8,0,8,4" Padding="12,6"
                                     IsVisible="{Binding HasBoosts}">
                                 <TextBlock Text="{Binding PreviewBoostsText}" FontSize="{DynamicResource FontSize12}"
-                                           Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                                           Foreground="{DynamicResource GoldBrush}" TextWrapping="Wrap" />
                             </Border>
                             <Border Background="{DynamicResource CardBgBrush}" CornerRadius="6"
                                     Margin="8,0,8,4" Padding="12,6"
                                     IsVisible="{Binding HasMainHandBoosts}">
                                 <TextBlock Text="{Binding PreviewMainHandText}" FontSize="{DynamicResource FontSize12}"
-                                           Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                                           Foreground="{DynamicResource GoldBrush}" TextWrapping="Wrap" />
                             </Border>
                             <Border Background="{DynamicResource CardBgBrush}" CornerRadius="6"
                                     Margin="8,0,8,4" Padding="12,6"
                                     IsVisible="{Binding HasOffHandBoosts}">
                                 <TextBlock Text="{Binding PreviewOffHandText}" FontSize="{DynamicResource FontSize12}"
-                                           Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                                           Foreground="{DynamicResource GoldBrush}" TextWrapping="Wrap" />
                             </Border>
 
                             <!-- ═══ LORE + BOTTOM BAR: combined with gradient overlay ═══ -->
