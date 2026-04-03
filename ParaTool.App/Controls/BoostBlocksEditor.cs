@@ -75,7 +75,7 @@ public class BoostBlocksEditor : UserControl
         Localization.Loc.Instance.PropertyChanged += _locHandler;
         FontScale.ScaleChanged += _scaleHandler;
         // Auto-populate Status/Spell lists from ConstructorViewModel when attached
-        AttachedToVisualTree += (_, _) => TryLoadPickerLists();
+        AttachedToVisualTree += (_, _) => { TryLoadPickerLists(); if (!_updating && !string.IsNullOrEmpty(Text)) Rebuild(); };
     }
 
     /// <summary>Global status/spell/passive lists, set once by ConstructorViewModel.</summary>
