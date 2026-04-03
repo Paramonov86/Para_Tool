@@ -1115,25 +1115,76 @@ public sealed class ModScanner
             }
         }
 
-        // Final AMP fallback: for items still without names, try AMP loca
-        // (covers mod items whose using-chain leads to AMP-only entries not in vanilla loca)
-        foreach (var (uuid, statIds) in uuidToStatIds)
+        // Reverse template lookup: for items still without names, scan mod RootTemplates
+        // for templates that reference StatIds via Stats attribute (template → stats, not stats → template)
+        var unnamed = allItems.Where(i => i.DisplayName == null).Select(i => i.StatId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (unnamed.Count > 0)
         {
-            foreach (var statId in statIds)
+            foreach (var mod in mods)
             {
-                var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
-                if (item == null || item.DisplayName != null) continue;
+                if (string.IsNullOrEmpty(mod.PakPath) || unnamed.Count == 0) continue;
+                try
+                {
+                    using var mfs = File.OpenRead(mod.PakPath);
+                    var mHeader = PakReader.ReadHeader(mfs);
+                    var mEntries = PakReader.ReadFileList(mfs, mHeader);
+                    var rtFiles = mEntries.Where(e =>
+                        e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) &&
+                        e.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase)).ToList();
 
-                if (ampNames.TryGetValue(uuid, out var ampN))
-                {
-                    item.DisplayName = ampN;
-                    item.DisplayNameHandle = ampNh.GetValueOrDefault(uuid);
+                    // Find templates with Stats attribute matching unnamed items
+                    var reverseMap = new Dictionary<string, (string uuid, string? nameHandle, string? descHandle)>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var rtf in rtFiles)
+                    {
+                        var rtData = PakReader.ExtractFileData(mfs, rtf);
+                        var found = RootTemplateIconExtractor.ExtractByStats(rtData, unnamed);
+                        foreach (var (statId, val) in found)
+                            reverseMap.TryAdd(statId, val);
+                    }
+
+                    if (reverseMap.Count > 0)
+                    {
+                        // Collect handles to resolve
+                        var handles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var (_, val) in reverseMap)
+                        {
+                            if (val.nameHandle != null) handles.Add(val.nameHandle.Split(';')[0]);
+                            if (val.descHandle != null) handles.Add(val.descHandle.Split(';')[0]);
+                        }
+
+                        // Resolve from mod loca
+                        var modLoca2 = ItemNameResolver.ReadAllLocalization(mod.PakPath, langCode);
+
+                        foreach (var (statId, (uuid, nh, dh)) in reverseMap)
+                        {
+                            var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
+                            if (item == null) continue;
+
+                            if (nh != null)
+                            {
+                                var handleKey = nh.Split(';')[0];
+                                if (modLoca2.TryGetValue(handleKey, out var name))
+                                {
+                                    item.DisplayName = Core.Localization.BbCode.FromBg3Xml(name);
+                                    item.DisplayNameHandle = handleKey;
+                                }
+                            }
+                            if (dh != null && item.Description == null)
+                            {
+                                var handleKey = dh.Split(';')[0];
+                                if (modLoca2.TryGetValue(handleKey, out var desc))
+                                {
+                                    item.Description = Core.Localization.BbCode.FromBg3Xml(desc);
+                                    item.DescriptionHandle = handleKey;
+                                }
+                            }
+
+                            // Also set icon and update UUID mapping
+                            unnamed.Remove(statId);
+                        }
+                    }
                 }
-                if (item.Description == null && ampDescs.TryGetValue(uuid, out var ampD))
-                {
-                    item.Description = ampD;
-                    item.DescriptionHandle = ampDh.GetValueOrDefault(uuid);
-                }
+                catch (Exception ex) { AppLogger.Warn($"Reverse template scan failed for {mod.PakPath}: {ex.Message}"); }
             }
         }
 
