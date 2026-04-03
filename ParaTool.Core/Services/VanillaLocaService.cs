@@ -10,6 +10,8 @@ public static class VanillaLocaService
 {
     private static readonly string ItemsResource = "ParaTool.Core.Resources.VanillaLoca.vanilla_items_loca.tsv";
     private static readonly string PassivesResource = "ParaTool.Core.Resources.VanillaLoca.vanilla_passives_loca.tsv";
+    private static readonly string StatusesResource = "ParaTool.Core.Resources.VanillaLoca.vanilla_statuses_loca.tsv";
+    private static readonly string SpellsResource = "ParaTool.Core.Resources.VanillaLoca.vanilla_spells_loca.tsv";
 
     public sealed class ItemLoca
     {
@@ -116,28 +118,27 @@ public static class VanillaLocaService
             }
         }
 
-        // Load passives
-        using (var stream = assembly.GetManifestResourceStream(PassivesResource))
+        // Load passives, statuses, spells (same format)
+        foreach (var resource in new[] { PassivesResource, StatusesResource, SpellsResource })
         {
-            if (stream != null)
+            using var stream = assembly.GetManifestResourceStream(resource);
+            if (stream == null) continue;
+            using var reader = new StreamReader(stream);
+            reader.ReadLine(); // skip header
+            string? line;
+            while ((line = reader.ReadLine()) != null)
             {
-                using var reader = new StreamReader(stream);
-                reader.ReadLine(); // skip header
-                string? line;
-                while ((line = reader.ReadLine()) != null)
+                var parts = line.Split('\t');
+                if (parts.Length >= 6)
                 {
-                    var parts = line.Split('\t');
-                    if (parts.Length >= 6)
+                    _passives.TryAdd(parts[0], new PassiveLoca
                     {
-                        _passives.TryAdd(parts[0], new PassiveLoca
-                        {
-                            Type = parts[1],
-                            DisplayName_en = parts[2],
-                            Description_en = parts[3],
-                            DisplayName_ru = parts[4],
-                            Description_ru = parts[5],
-                        });
-                    }
+                        Type = parts[1],
+                        DisplayName_en = parts[2],
+                        Description_en = parts[3],
+                        DisplayName_ru = parts[4],
+                        Description_ru = parts[5],
+                    });
                 }
             }
         }
