@@ -213,17 +213,49 @@
                            Foreground="{StaticResource TextMutedBrush}"
                            HorizontalAlignment="Center" Margin="0,10,0,6" LetterSpacing="2" />
 
-                <StackPanel Grid.Row="1" IsVisible="{Binding HasNoSelection}"
-                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Spacing="12">
-                    <TextBlock Text="&#x1F4E6;" FontSize="40"
-                               HorizontalAlignment="Center" Opacity="0.3" />
-                    <TextBlock Text="{Binding EditorNoSelection, Source={x:Static loc:Loc.Instance}}"
-                               Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize14}"
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center" Opacity="0.5"
-                               LineHeight="22" />
-                </StackPanel>
+                <ScrollViewer Grid.Row="1" IsVisible="{Binding HasNoSelection}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Spacing="16" Margin="24,20" MaxWidth="420">
+                        <!-- Header -->
+                        <StackPanel HorizontalAlignment="Center" Spacing="6">
+                            <TextBlock Text="&#x1F4E6;" FontSize="36"
+                                       HorizontalAlignment="Center" Opacity="0.4" />
+                            <TextBlock Text="{Binding ConstructorGuideTitle, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="{DynamicResource FontSize16}" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentLightBrush}"
+                                       HorizontalAlignment="Center" LetterSpacing="1" />
+                        </StackPanel>
+                        <!-- Steps -->
+                        <Border Background="{StaticResource CardBgBrush}"
+                                CornerRadius="8" Padding="16,14"
+                                BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{Binding ConstructorStep1, Source={x:Static loc:Loc.Instance}}"
+                                           TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{StaticResource TextSecondaryBrush}" LineHeight="20" />
+                                <TextBlock Text="{Binding ConstructorStep2, Source={x:Static loc:Loc.Instance}}"
+                                           TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{StaticResource TextSecondaryBrush}" LineHeight="20" />
+                                <TextBlock Text="{Binding ConstructorStep3, Source={x:Static loc:Loc.Instance}}"
+                                           TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{StaticResource TextSecondaryBrush}" LineHeight="20" />
+                                <TextBlock Text="{Binding ConstructorStep4, Source={x:Static loc:Loc.Instance}}"
+                                           TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{StaticResource TextSecondaryBrush}" LineHeight="20" />
+                                <TextBlock Text="{Binding ConstructorStep5, Source={x:Static loc:Loc.Instance}}"
+                                           TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{StaticResource TextSecondaryBrush}" LineHeight="20" />
+                                <Border Height="1" Background="{StaticResource BorderSubtleBrush}" Margin="0,2" />
+                                <TextBlock Text="{Binding ConstructorStep6, Source={x:Static loc:Loc.Instance}}"
+                                           TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{StaticResource TextSecondaryBrush}" LineHeight="20" />
+                                <TextBlock Text="{Binding ConstructorStep7, Source={x:Static loc:Loc.Instance}}"
+                                           TextWrapping="Wrap" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{StaticResource TextSecondaryBrush}" LineHeight="20" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <ScrollViewer Grid.Row="1" IsVisible="{Binding IsArtifactSelected}" Margin="8,4,8,8">
                     <StackPanel Spacing="12" DataContext="{Binding SelectedArtifact}">

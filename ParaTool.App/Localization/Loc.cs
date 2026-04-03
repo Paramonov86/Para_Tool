@@ -172,6 +172,14 @@ public partial class Loc : ObservableObject
     public string ConstructorPreviewTitle => this["ConstructorPreviewTitle"];
 
     public string EditorNoSelection => this["EditorNoSelection"];
+    public string ConstructorGuideTitle => this["ConstructorGuideTitle"];
+    public string ConstructorStep1 => this["ConstructorStep1"];
+    public string ConstructorStep2 => this["ConstructorStep2"];
+    public string ConstructorStep3 => this["ConstructorStep3"];
+    public string ConstructorStep4 => this["ConstructorStep4"];
+    public string ConstructorStep5 => this["ConstructorStep5"];
+    public string ConstructorStep6 => this["ConstructorStep6"];
+    public string ConstructorStep7 => this["ConstructorStep7"];
     public string CardIdentity => this["CardIdentity"];
     public string CardArmorProps => this["CardArmorProps"];
     public string CardWeaponProps => this["CardWeaponProps"];
