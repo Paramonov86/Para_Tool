@@ -238,7 +238,7 @@ public static partial class BbCodeRenderer
                         var bmp = LoadTooltipIcon(assetName);
                         if (bmp != null)
                         {
-                            var img = new Image { Source = bmp, Width = 16, Height = 16 };
+                            var img = new Image { Source = bmp, Width = 14, Height = 14 };
                             img.Margin = new Thickness(1, 0);
                             inlines.Add(new InlineUIContainer(img));
                             added = true;

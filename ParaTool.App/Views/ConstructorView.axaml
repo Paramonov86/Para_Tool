@@ -617,103 +617,97 @@
                             ToolTip.Tip="{Binding BbTipLineBreak, Source={x:Static loc:Loc.Instance}}" />
                 </WrapPanel>
 
-                <!-- Tooltip preview (inline editable) -->
+                <!-- Tooltip preview (inline editable, matches BG3 in-game style) -->
                 <ScrollViewer Grid.Row="4" IsVisible="{Binding IsArtifactSelected}" Margin="4">
-                    <Border Background="{DynamicResource AppBgBrush}" CornerRadius="10"
-                            BorderBrush="{Binding RarityColor}"
-                            BorderThickness="3,0,0,0"
+                    <Border Background="{DynamicResource AppBgBrush}" CornerRadius="8"
+                            BorderBrush="{DynamicResource GoldBrush}"
+                            BorderThickness="2"
                             VerticalAlignment="Top"
                             DataContext="{Binding SelectedArtifact}">
                         <StackPanel>
-                            <!-- Top: Icon (right) + Name (left) + rarity gradient -->
-                            <Border Background="{Binding RarityGradient}" CornerRadius="10,0,0,0">
+                            <!-- ═══ HEADER: rarity gradient + name + icon ═══ -->
+                            <Border Background="{Binding RarityGradient}" CornerRadius="6,6,0,0">
                                 <Grid ColumnDefinitions="*,Auto" Margin="18,14,14,0">
                                     <StackPanel Grid.Column="0" VerticalAlignment="Top">
-                                        <!-- Name (editable) -->
                                         <TextBox Name="LocaDisplayName"
                                                  Text="{Binding EditDisplayName}" Watermark="{Binding WmItemName, Source={x:Static loc:Loc.Instance}}"
                                                  FontSize="{DynamicResource FontSize18}" FontWeight="Bold"
                                                  Foreground="{Binding RarityColor}"
                                                  Background="Transparent" BorderThickness="0"
                                                  Padding="0" TextWrapping="Wrap" />
-                                        <!-- Rarity + Type -->
                                         <TextBlock Text="{Binding PreviewSubtitle}" FontSize="{DynamicResource FontSize12}"
-                                                   Foreground="{Binding RarityColor}" Margin="0,2,0,0" />
+                                                   Foreground="{Binding RarityColor}" Margin="0,2,0,6" Opacity="0.7" />
                                     </StackPanel>
-                                    <!-- Icon (large, pushed into top-right corner) -->
                                     <Border Grid.Column="1" Width="200" Height="200"
-                                            ClipToBounds="True"
-                                            Background="Transparent"
-                                            Margin="0,-14,-14,0"
-                                            VerticalAlignment="Top"
+                                            ClipToBounds="True" Background="Transparent"
+                                            Margin="0,-14,-14,0" VerticalAlignment="Top"
                                             IsVisible="{Binding HasIcon}">
                                         <Image Source="{Binding IconBitmap}" Stretch="Uniform" />
                                     </Border>
                                 </Grid>
                             </Border>
 
-                            <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="12,10" />
+                            <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="12,8" />
 
-                            <!-- Boosts (display) -->
-                            <TextBlock Text="{Binding PreviewBoostsText}" FontSize="{DynamicResource FontSize12}"
-                                       Foreground="{DynamicResource SuccessBrush}" TextWrapping="Wrap"
-                                       Margin="16,0,16,4" IsVisible="{Binding HasBoosts}" />
+                            <!-- ═══ PASSIVES: on subtle card background ═══ -->
+                            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="6"
+                                    Margin="8,0,8,4" Padding="12,8"
+                                    IsVisible="{Binding HasPassives}">
+                                <ItemsControl ItemsSource="{Binding PassiveVMs}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="vm:PassiveVM">
+                                            <StackPanel Margin="0,0,0,6" IsVisible="{Binding HasVisibleLoca}">
+                                                <TextBox Text="{Binding EditDisplayName}"
+                                                         Watermark="{Binding WmPassiveName, Source={x:Static loc:Loc.Instance}}"
+                                                         FontSize="{DynamicResource FontSize12}" FontWeight="Bold"
+                                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                                         Background="Transparent" BorderThickness="0"
+                                                         Padding="0" Margin="0" MinHeight="0" />
+                                                <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
+                                                         BbParams="{Binding EditDescriptionParams}"
+                                                         FontSize="{DynamicResource FontSize12}"
+                                                         Foreground="{DynamicResource TextSecondaryBrush}"
+                                                         TextWrapping="Wrap"
+                                                         IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                                <TextBox Text="{Binding EditDescription}"
+                                                         Watermark="{Binding WmPassiveDesc, Source={x:Static loc:Loc.Instance}}"
+                                                         FontSize="{DynamicResource FontSize12}"
+                                                         Foreground="{DynamicResource TextSecondaryBrush}"
+                                                         Background="Transparent" BorderThickness="0"
+                                                         Padding="0" TextWrapping="Wrap" AcceptsReturn="True"
+                                                         IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                                <ctrl:ChipListEditor Text="{Binding EditDescriptionParams}"
+                                                         ChipColor="#E67E22"
+                                                         IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
 
-                            <!-- MainHand boosts -->
-                            <TextBlock Text="{Binding PreviewMainHandText}" FontSize="{DynamicResource FontSize12}"
-                                       Foreground="{DynamicResource SuccessBrush}" TextWrapping="Wrap"
-                                       Margin="16,0,16,4" IsVisible="{Binding HasMainHandBoosts}" />
+                            <!-- ═══ BOOSTS: below passives, on card background ═══ -->
+                            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="6"
+                                    Margin="8,0,8,4" Padding="12,6"
+                                    IsVisible="{Binding HasBoosts}">
+                                <TextBlock Text="{Binding PreviewBoostsText}" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{DynamicResource SuccessBrush}" TextWrapping="Wrap" />
+                            </Border>
+                            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="6"
+                                    Margin="8,0,8,4" Padding="12,6"
+                                    IsVisible="{Binding HasMainHandBoosts}">
+                                <TextBlock Text="{Binding PreviewMainHandText}" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{DynamicResource SuccessBrush}" TextWrapping="Wrap" />
+                            </Border>
+                            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="6"
+                                    Margin="8,0,8,4" Padding="12,6"
+                                    IsVisible="{Binding HasOffHandBoosts}">
+                                <TextBlock Text="{Binding PreviewOffHandText}" FontSize="{DynamicResource FontSize12}"
+                                           Foreground="{DynamicResource SuccessBrush}" TextWrapping="Wrap" />
+                            </Border>
 
-                            <!-- OffHand boosts -->
-                            <TextBlock Text="{Binding PreviewOffHandText}" FontSize="{DynamicResource FontSize12}"
-                                       Foreground="{DynamicResource SuccessBrush}" TextWrapping="Wrap"
-                                       Margin="16,0,16,4" IsVisible="{Binding HasOffHandBoosts}" />
-
-                            <!-- Passives: each name + description editable -->
-                            <ItemsControl ItemsSource="{Binding PassiveVMs}"
-                                          Margin="16,0,16,4"
-                                          IsVisible="{Binding HasPassives}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="vm:PassiveVM">
-                                        <Border Margin="0,0,0,6" CornerRadius="0" Padding="0,6"
-                                                IsVisible="{Binding HasVisibleLoca}"
-                                                Background="Transparent">
-                                        <StackPanel>
-                                            <TextBox Text="{Binding EditDisplayName}"
-                                                     Watermark="{Binding WmPassiveName, Source={x:Static loc:Loc.Instance}}"
-                                                     FontSize="{DynamicResource FontSize12}" FontWeight="Bold"
-                                                     Foreground="{DynamicResource TextPrimaryBrush}"
-                                                     Background="Transparent" BorderThickness="0"
-                                                     Padding="0" Margin="0" MinHeight="0" />
-                                            <!-- Passive desc: preview = rendered BB-code with params -->
-                                            <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
-                                                     BbParams="{Binding EditDescriptionParams}"
-                                                     FontSize="{DynamicResource FontSize12}"
-                                                     Foreground="{DynamicResource TextSecondaryBrush}"
-                                                     TextWrapping="Wrap"
-                                                     IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                            <!-- Passive desc: code mode = raw TextBox -->
-                                            <TextBox Text="{Binding EditDescription}"
-                                                     Watermark="{Binding WmPassiveDesc, Source={x:Static loc:Loc.Instance}}"
-                                                     FontSize="{DynamicResource FontSize12}"
-                                                     Foreground="{DynamicResource TextSecondaryBrush}"
-                                                     Background="Transparent" BorderThickness="0"
-                                                     Padding="0" TextWrapping="Wrap"
-                                                     AcceptsReturn="True"
-                                                     IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                            <!-- DescriptionParams chips -->
-                                            <ctrl:ChipListEditor Text="{Binding EditDescriptionParams}"
-                                                     ChipColor="#E67E22"
-                                                     IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                        </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                            <!-- Description / lore — darker background block like in-game -->
+                            <!-- ═══ LORE: dark background block ═══ -->
                             <Border Background="{DynamicResource InputBgBrush}"
-                                    Margin="0,6,0,0" Padding="16,12"
+                                    Margin="0,4,0,0" Padding="16,12"
                                     IsVisible="{Binding HasDescription}">
                                 <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
                                          FontSize="{DynamicResource FontSize12}" FontStyle="Italic"
@@ -722,7 +716,7 @@
                                          IsVisible="{ReflectionBinding DataContext.IsPreviewView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                             </Border>
                             <Border Background="{DynamicResource InputBgBrush}"
-                                    Margin="0,6,0,0" Padding="16,12"
+                                    Margin="0,4,0,0" Padding="16,12"
                                     IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                 <TextBox Name="LocaDescription"
                                          Text="{Binding EditDescription}"
@@ -735,26 +729,21 @@
                                          Padding="0" />
                             </Border>
 
-                            <!-- Bottom bar: weight + price (like in-game tooltip) -->
-                            <Border Background="{Binding RarityGradient}" CornerRadius="0,0,10,10" Padding="16,6">
+                            <!-- ═══ BOTTOM BAR: rarity gradient, weight + price ═══ -->
+                            <Border Background="{Binding RarityGradient}" CornerRadius="0,0,6,6" Padding="16,8">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="0">
-                                    <!-- Weight -->
                                     <TextBlock Text="{Binding EditWeight}"
                                                FontSize="{DynamicResource FontSize12}"
-                                               Foreground="White"
-                                               VerticalAlignment="Center" />
-                                    <TextBlock Text=" kg"
-                                               FontSize="{DynamicResource FontSize11}"
-                                               Foreground="White"
-                                               VerticalAlignment="Center" Margin="0,0,16,0" />
-                                    <!-- Price -->
+                                               Foreground="White" VerticalAlignment="Center" />
+                                    <Image Source="/Assets/TooltipIcons/ico_weight_normal.png"
+                                           Width="14" Height="14"
+                                           VerticalAlignment="Center" Margin="3,0,16,0" />
                                     <TextBlock Text="{Binding EditValueOverride}"
                                                FontSize="{DynamicResource FontSize12}"
-                                               Foreground="White"
-                                               VerticalAlignment="Center" />
+                                               Foreground="White" VerticalAlignment="Center" />
                                     <Image Source="/Assets/TooltipIcons/ico_gold.png"
-                                           Width="16" Height="16"
-                                           VerticalAlignment="Center" Margin="4,0,0,0" />
+                                           Width="14" Height="14"
+                                           VerticalAlignment="Center" Margin="3,0,0,0" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>

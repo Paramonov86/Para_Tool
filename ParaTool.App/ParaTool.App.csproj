@@ -25,6 +25,7 @@
     <AvaloniaResource Include="Assets\app_icon.png" />
     <EmbeddedResource Include="Assets\TooltipIcons\*.png" />
     <AvaloniaResource Include="Assets\TooltipIcons\ico_gold.png" />
+    <AvaloniaResource Include="Assets\TooltipIcons\ico_weight_normal.png" />
   </ItemGroup>
 
   <ItemGroup>
