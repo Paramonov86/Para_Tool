@@ -44,9 +44,15 @@ public partial class MainWindowViewModel : ObservableObject
 
     // Tab visual state
     public IBrush PatcherTabBrush => ActiveTab == "Patcher" ? Themes.ThemeBrushes.Accent : Brushes.Transparent;
-    public IBrush PatcherTabForeground => ActiveTab == "Patcher" ? Themes.ThemeBrushes.TextPrimary : Themes.ThemeBrushes.TextMuted;
+    public IBrush PatcherTabForeground => ActiveTab == "Patcher" ? Brushes.White : Themes.ThemeBrushes.TextMuted;
+    public IBrush PatcherTabBackground => ActiveTab == "Patcher"
+        ? new SolidColorBrush(Themes.ThemeBrushes.Accent.Color, 0.25)
+        : Brushes.Transparent;
     public IBrush ConstructorTabBrush => ActiveTab == "Constructor" ? Themes.ThemeBrushes.Accent : Brushes.Transparent;
-    public IBrush ConstructorTabForeground => ActiveTab == "Constructor" ? Themes.ThemeBrushes.TextPrimary : Themes.ThemeBrushes.TextMuted;
+    public IBrush ConstructorTabForeground => ActiveTab == "Constructor" ? Brushes.White : Themes.ThemeBrushes.TextMuted;
+    public IBrush ConstructorTabBackground => ActiveTab == "Constructor"
+        ? new SolidColorBrush(Themes.ThemeBrushes.Accent.Color, 0.25)
+        : Brushes.Transparent;
 
     public string AppVersion
     {
@@ -92,7 +98,10 @@ public partial class MainWindowViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(PatcherTabBrush));
         OnPropertyChanged(nameof(PatcherTabForeground));
+        OnPropertyChanged(nameof(PatcherTabBackground));
         OnPropertyChanged(nameof(ConstructorTabBrush));
+        OnPropertyChanged(nameof(ConstructorTabForeground));
+        OnPropertyChanged(nameof(ConstructorTabBackground));
         OnPropertyChanged(nameof(ConstructorTabForeground));
     }
 
