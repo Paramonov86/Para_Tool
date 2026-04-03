@@ -335,8 +335,9 @@ public sealed class ConditionSchema
 
             // Distance functions: value is float, not int
             if (name.StartsWith("DistanceTo") && funcParams.Count > 0)
-                foreach (var fp in funcParams.Where(p => p.Name == "value"))
-                    funcParams[funcParams.IndexOf(fp)] = new ConditionParam { Name = "distance", Type = "float" };
+                for (int fi = 0; fi < funcParams.Count; fi++)
+                    if (funcParams[fi].Name == "value")
+                        funcParams[fi] = new ConditionParam { Name = "distance", Type = "float" };
 
             AddFunc(schema, new ConditionDef
             {
