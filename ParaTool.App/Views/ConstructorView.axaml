@@ -738,28 +738,37 @@
                                      Margin="16,0,16,8"
                                      IsVisible="{ReflectionBinding DataContext.IsCodeView, RelativeSource={RelativeSource AncestorType=UserControl}}" />
 
-                            <!-- Price (gold value) -->
-                            <Grid ColumnDefinitions="Auto,Auto,*" Margin="16,4,16,8">
-                                <Image Grid.Column="0"
-                                       Source="/Assets/TooltipIcons/ico_gold.png"
-                                       Width="18" Height="18"
-                                       VerticalAlignment="Center" Margin="0,0,6,0" />
-                                <TextBox Grid.Column="1"
-                                         Text="{Binding EditValueOverride}"
-                                         FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
-                                         Foreground="{DynamicResource GoldBrush}"
-                                         Background="Transparent" BorderThickness="0"
-                                         Padding="0" MinWidth="60"
-                                         VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Text="gp"
-                                           FontSize="{DynamicResource FontSize11}"
-                                           Foreground="{DynamicResource TextMutedBrush}"
-                                           VerticalAlignment="Center" Margin="2,0,0,0" />
-                            </Grid>
-
-                            <!-- Bottom rarity glow -->
-                            <Border Height="24" CornerRadius="0,0,10,10"
-                                    Background="{Binding RarityGlowBottom}" />
+                            <!-- Bottom bar: weight + price (like in-game tooltip) -->
+                            <Border Background="#18FFFFFF" CornerRadius="0,0,10,10" Padding="16,6">
+                                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                                    <!-- Weight -->
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding EditWeight}"
+                                             FontSize="{DynamicResource FontSize12}"
+                                             Foreground="{DynamicResource TextSecondaryBrush}"
+                                             Background="Transparent" BorderThickness="0"
+                                             Padding="0" MinWidth="30" MaxWidth="50"
+                                             VerticalAlignment="Center"
+                                             HorizontalContentAlignment="Right" />
+                                    <TextBlock Grid.Column="1" Text=" kg"
+                                               FontSize="{DynamicResource FontSize11}"
+                                               Foreground="{DynamicResource TextMutedBrush}"
+                                               VerticalAlignment="Center" />
+                                    <!-- Price (right-aligned) -->
+                                    <TextBox Grid.Column="3"
+                                             Text="{Binding EditValueOverride}"
+                                             FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
+                                             Foreground="{DynamicResource GoldBrush}"
+                                             Background="Transparent" BorderThickness="0"
+                                             Padding="0" MinWidth="30" MaxWidth="70"
+                                             VerticalAlignment="Center"
+                                             HorizontalContentAlignment="Right" />
+                                    <Image Grid.Column="4"
+                                           Source="/Assets/TooltipIcons/ico_gold.png"
+                                           Width="14" Height="14"
+                                           VerticalAlignment="Center" Margin="4,0,0,0" />
+                                </Grid>
+                            </Border>
                         </StackPanel>
                     </Border>
                 </ScrollViewer>

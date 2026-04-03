@@ -403,6 +403,8 @@ public partial class ConstructorView : UserControl
         {
             PlacementTarget = source,
             Placement = Avalonia.Controls.PlacementMode.Bottom,
+            PlacementAnchor = Avalonia.Controls.Primitives.PopupPositioning.PopupAnchor.Bottom,
+            PlacementGravity = Avalonia.Controls.Primitives.PopupPositioning.PopupGravity.Bottom,
             IsLightDismissEnabled = true,
             MaxHeight = 400,
             MinWidth = 300,
