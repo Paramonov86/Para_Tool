@@ -60,9 +60,11 @@ public partial class Loc : ObservableObject
 
     public void SetLanguage(string code)
     {
-        Lang = code;
+        _lang = code;
         LoadStrings(code);
-        OnPropertyChanged(string.Empty);
+        // Defer all PropertyChanged notifications to avoid collection-modified crashes
+        // when handlers subscribe/unsubscribe during enumeration
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnPropertyChanged(string.Empty));
     }
 
     private void LoadStrings(string code)
