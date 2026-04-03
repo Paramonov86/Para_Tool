@@ -69,6 +69,7 @@ public class SearchPickerChip : UserControl
         Content = _chip;
 
         PropertyChanged += (_, e) => { if (e.Property == TextProperty) UpdateDisplay(); };
+        AttachedToVisualTree += (_, _) => UpdateDisplay(); // re-resolve after Resolver is set
         Action scaleHandler = () => _valueText.FontSize = FontScale.Of(11);
         FontScale.ScaleChanged += scaleHandler;
         DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= scaleHandler;
@@ -78,9 +79,72 @@ public class SearchPickerChip : UserControl
     private void UpdateDisplay()
     {
         var val = Text?.Trim() ?? "";
-        _valueText.Text = string.IsNullOrEmpty(val) ? "..." : val;
-        _valueText.Foreground = string.IsNullOrEmpty(val)
-            ? ThemeBrushes.TextMuted : ThemeBrushes.TextPrimary;
+        if (string.IsNullOrEmpty(val))
+        {
+            _valueText.Text = "...";
+            _valueText.Foreground = ThemeBrushes.TextMuted;
+            ToolTip.SetTip(_chip, null);
+            return;
+        }
+        var displayName = ResolveDisplayName(val);
+        _valueText.Text = displayName ?? val;
+        _valueText.Foreground = ThemeBrushes.TextPrimary;
+        if (displayName != null)
+            ToolTip.SetTip(_chip, val);
+        else
+            ToolTip.SetTip(_chip, null);
+    }
+
+    /// <summary>Resolve localized display name for a StatId (spell/status/passive).
+    /// Tries current lang, then EN fallback, then walks using-chain.</summary>
+    public static string? ResolveStatDisplayName(string statId, string lang,
+        Core.Parsing.StatsResolver? resolver, Core.Services.LocaService? locaSvc)
+    {
+        // 1. Vanilla loca (current lang, then EN fallback)
+        var name = Core.Services.VanillaLocaService.GetDisplayName(statId, lang);
+        if (name != null) return name;
+        if (lang != "en")
+        {
+            name = Core.Services.VanillaLocaService.GetDisplayName(statId, "en");
+            if (name != null) return name;
+        }
+
+        if (resolver == null) return null;
+
+        // 2. Resolver + LocaService (mod entries with own DisplayName handle)
+        var fields = resolver.ResolveAll(statId);
+        if (fields.TryGetValue("DisplayName", out var handle))
+        {
+            var resolved = locaSvc?.ResolveHandle(handle, lang)
+                        ?? locaSvc?.ResolveHandle(handle, "en");
+            if (resolved != null)
+                return Core.Localization.BbCode.FromBg3Xml(resolved);
+        }
+
+        // 3. Walk using-chain for inherited entries
+        var cur = statId;
+        var allEntries = resolver.AllEntries;
+        for (int d = 0; d < 20 && cur != null; d++)
+        {
+            if (!allEntries.TryGetValue(cur, out var entry) || entry.Using == null) break;
+            cur = entry.Using;
+            name = Core.Services.VanillaLocaService.GetDisplayName(cur, lang);
+            if (name != null) return name;
+            if (lang != "en")
+            {
+                name = Core.Services.VanillaLocaService.GetDisplayName(cur, "en");
+                if (name != null) return name;
+            }
+        }
+        return null;
+    }
+
+    private string? ResolveDisplayName(string statId)
+    {
+        var lang = Localization.Loc.Instance.Lang;
+        return ResolveStatDisplayName(statId, lang,
+            Resolver ?? BoostBlocksEditor.GlobalResolver,
+            LocaService ?? BoostBlocksEditor.GlobalLocaService);
     }
 
     public void OpenPicker()
@@ -107,33 +171,7 @@ public class SearchPickerChip : UserControl
         var locaSvc = LocaService;
         var entries = items.Select(id =>
         {
-            // Try vanilla loca first
-            var displayName = Core.Services.VanillaLocaService.GetDisplayName(id, lang);
-            // Try resolver + LocaService for AMP/mod entries
-            if (displayName == null && resolver != null)
-            {
-                var fields = resolver.ResolveAll(id);
-                if (fields.TryGetValue("DisplayName", out var handle))
-                {
-                    var resolved = locaSvc?.ResolveHandle(handle, lang)
-                                ?? locaSvc?.ResolveHandle(handle, "en");
-                    if (resolved != null)
-                        displayName = Core.Localization.BbCode.FromBg3Xml(resolved);
-                }
-                // Fallback: walk using chain to find vanilla ancestor name
-                if (displayName == null)
-                {
-                    var cur = id;
-                    var allEntries = resolver.AllEntries;
-                    for (int d = 0; d < 20 && cur != null; d++)
-                    {
-                        if (!allEntries.TryGetValue(cur, out var entry) || entry.Using == null) break;
-                        cur = entry.Using;
-                        displayName = Core.Services.VanillaLocaService.GetDisplayName(cur, lang);
-                        if (displayName != null) break;
-                    }
-                }
-            }
+            var displayName = ResolveStatDisplayName(id, lang, resolver, locaSvc);
             var label = displayName != null ? $"{displayName}  ({id})" : id;
             return (Id: id, Label: label);
         }).ToArray();
@@ -160,17 +198,28 @@ public class SearchPickerChip : UserControl
             }
         };
 
-        // Search filter — match both localized name and StatId
+        // Search filter — match both localized name and StatId (debounced)
+        DispatcherTimer? pickerDebounce = null;
         searchBox.TextChanged += (_, _) =>
         {
-            var query = searchBox.Text?.Trim() ?? "";
-            if (string.IsNullOrEmpty(query))
-                listBox.ItemsSource = entries.Select(e => e.Label).ToArray();
-            else
-                listBox.ItemsSource = entries
-                    .Where(e => e.Label.Contains(query, StringComparison.OrdinalIgnoreCase)
-                             || e.Id.Contains(query, StringComparison.OrdinalIgnoreCase))
-                    .Select(e => e.Label).ToArray();
+            pickerDebounce?.Stop();
+            pickerDebounce ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+            pickerDebounce.Tick += FilterTick;
+            pickerDebounce.Start();
+
+            void FilterTick(object? s, EventArgs ev)
+            {
+                pickerDebounce?.Stop();
+                pickerDebounce!.Tick -= FilterTick;
+                var query = searchBox.Text?.Trim() ?? "";
+                if (string.IsNullOrEmpty(query))
+                    listBox.ItemsSource = entries.Select(e => e.Label).ToArray();
+                else
+                    listBox.ItemsSource = entries
+                        .Where(e => e.Label.Contains(query, StringComparison.OrdinalIgnoreCase)
+                                 || e.Id.Contains(query, StringComparison.OrdinalIgnoreCase))
+                        .Select(e => e.Label).ToArray();
+            }
         };
 
         var pickerPanel = new StackPanel

@@ -9,6 +9,7 @@ using ParaTool.Core.Parsing;
 using ParaTool.App.Converters;
 using ParaTool.Core.Localization;
 using ParaTool.Core.Services;
+using Avalonia.Threading;
 using VanillaLoca = ParaTool.Core.Services.VanillaLocaService;
 
 namespace ParaTool.App.ViewModels;
@@ -17,25 +18,33 @@ public partial class BaseItemVM : ObservableObject
 {
     public ItemEntry Entry { get; }
 
+    private string? _cachedLabel;
+    private string? _cachedLabelLang;
+
     /// <summary>Display name: try loca handle for current UI lang, then vanilla, then scan name, then StatId.</summary>
     public string Label
     {
         get
         {
             var lang = Localization.Loc.Instance.Lang;
+            if (_cachedLabel != null && _cachedLabelLang == lang)
+                return _cachedLabel;
+
+            _cachedLabelLang = lang;
             // Try resolve from handle via LocaService (AMP items)
             if (_locaService != null && !string.IsNullOrEmpty(Entry.DisplayNameHandle))
             {
                 var resolved = _locaService.ResolveHandle(Entry.DisplayNameHandle, lang);
-                if (resolved != null) return BbCode.FromBg3Xml(resolved);
+                if (resolved != null) { _cachedLabel = BbCode.FromBg3Xml(resolved); return _cachedLabel; }
             }
             // Try vanilla loca (direct StatId + ancestor from using-chain)
             var vanilla = VanillaLocaService.GetDisplayName(Entry.StatId, lang)
                 ?? (Entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(Entry.LocaAncestorId, lang) : null);
-            if (vanilla != null) return vanilla;
+            if (vanilla != null) { _cachedLabel = vanilla; return _cachedLabel; }
 
             // Fallback to scan name (may be in scan language)
-            return Entry.DisplayName ?? Entry.StatId;
+            _cachedLabel = Entry.DisplayName ?? Entry.StatId;
+            return _cachedLabel;
         }
     }
 
@@ -64,6 +73,7 @@ public partial class BaseItemVM : ObservableObject
         _locaService = locaService;
         Localization.Loc.Instance.PropertyChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            _cachedLabel = null; // invalidate cache on lang change
             OnPropertyChanged(nameof(Label));
             OnPropertyChanged(nameof(FullLabel));
         });
@@ -76,6 +86,7 @@ public partial class ConstructorViewModel : ViewModelBase
     public ObservableCollection<BaseItemVM> FilteredBaseItems { get; } = [];
     public ObservableCollection<NavGroupVM> NavGroups { get; } = [];
     private readonly List<BaseItemVM> _allBaseItems = [];
+    private DispatcherTimer? _searchDebounce;
 
     [ObservableProperty] private ArtifactItemVM? _selectedArtifact;
     [ObservableProperty] private string _searchText = "";
@@ -184,6 +195,18 @@ public partial class ConstructorViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsSearching));
         OnPropertyChanged(nameof(IsNotSearching));
         OnPropertyChanged(nameof(ShowSavedArtifacts));
+
+        _searchDebounce?.Stop();
+        _searchDebounce ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        _searchDebounce.Tick += SearchDebounce_Tick;
+        _searchDebounce.Start();
+    }
+
+    private void SearchDebounce_Tick(object? sender, EventArgs e)
+    {
+        _searchDebounce?.Stop();
+        if (_searchDebounce != null)
+            _searchDebounce.Tick -= SearchDebounce_Tick;
         ApplyFilter();
     }
 
