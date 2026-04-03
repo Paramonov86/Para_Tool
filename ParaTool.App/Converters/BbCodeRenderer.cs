@@ -28,8 +28,10 @@ public static partial class BbCodeRenderer
     // Known Image Info → icon asset file name mapping
     private static readonly Dictionary<string, string> ImageToAsset = new(StringComparer.OrdinalIgnoreCase)
     {
+        // Warnings
         ["SoftWarning"] = "ico_warningSoft",
         ["Warning"] = "ico_warning",
+        // Tooltip misc
         ["Concentration"] = "ico_concentration",
         ["Coin"] = "ico_coin",
         ["AC"] = "ico_AC",
@@ -52,6 +54,42 @@ public static partial class BbCodeRenderer
         ["SpellSlot"] = "ico_spellSlotTT",
         ["RollAttack"] = "ico_roll_attack",
         ["RollSave"] = "ico_roll_save",
+        // Shared icons
+        ["Gold"] = "ico_gold",
+        ["Advantage"] = "ico_advantage",
+        ["Disadvantage"] = "ico_disadvantage",
+        ["Healing"] = "ico_healing",
+        ["Health"] = "ico_health",
+        ["Speed"] = "ico_speed",
+        ["Inspiration"] = "ico_inspiration",
+        ["Spellbook"] = "ico_spellbook",
+        ["Upcasting"] = "ico_upcasting",
+        // Damage types
+        ["DamageAcid"] = "ico_dmg_acid",
+        ["DamageBludgeoning"] = "ico_dmg_blunt",
+        ["DamageCold"] = "ico_dmg_cold",
+        ["DamageFire"] = "ico_dmg_fire",
+        ["DamageForce"] = "ico_dmg_force",
+        ["DamageLightning"] = "ico_dmg_lightning",
+        ["DamageNecrotic"] = "ico_dmg_necrotic",
+        ["DamagePiercing"] = "ico_dmg_piercing",
+        ["DamagePoison"] = "ico_dmg_poison",
+        ["DamagePsychic"] = "ico_dmg_psychic",
+        ["DamageRadiant"] = "ico_dmg_radiant",
+        ["DamageSlashing"] = "ico_dmg_slashing",
+        ["DamageThunder"] = "ico_dmg_thunder",
+        // Resources
+        ["ActionPoint"] = "ActionPoint",
+        ["BonusAction"] = "BonusActionPoint",
+        ["Reaction"] = "ReactionActionPoint",
+        ["Movement"] = "Movement",
+        ["KiPoint"] = "KiPoint",
+        ["SorceryPoint"] = "SorceryPoint",
+        ["Rage"] = "Rage",
+        ["BardicInspiration"] = "BardicInspiration",
+        ["WildShape"] = "WildShape",
+        ["ChannelDivinity"] = "ChannelDivinity",
+        ["SuperiorityDie"] = "SuperiorityDie",
     };
 
     // Fallback Unicode symbols for unmapped Image tags
