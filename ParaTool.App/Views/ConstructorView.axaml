@@ -740,9 +740,10 @@
 
                             <!-- Price (gold value) -->
                             <Grid ColumnDefinitions="Auto,Auto,*" Margin="16,4,16,8">
-                                <TextBlock Grid.Column="0" Text="&#x1FA99;"
-                                           FontSize="{DynamicResource FontSize14}"
-                                           VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <Image Grid.Column="0"
+                                       Source="/Assets/TooltipIcons/ico_gold.png"
+                                       Width="18" Height="18"
+                                       VerticalAlignment="Center" Margin="0,0,6,0" />
                                 <TextBox Grid.Column="1"
                                          Text="{Binding EditValueOverride}"
                                          FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"

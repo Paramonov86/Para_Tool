@@ -71,14 +71,20 @@
                     <Button Command="{Binding SwitchToPatcherCommand}"
                             Background="{Binding PatcherTabBackground}"
                             BorderThickness="0"
-                            CornerRadius="6" Padding="0" Cursor="Hand">
+                            CornerRadius="6" Padding="0" Cursor="Hand"
+                            Name="PatcherTabBtn">
                         <Border Padding="20,6" CornerRadius="6"
                                 BorderThickness="0,0,0,2"
                                 BorderBrush="{Binding PatcherTabBrush}">
-                            <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
-                                       Foreground="{Binding PatcherTabForeground}"
-                                       LetterSpacing="0.5" />
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Name="PinPatcherIcon" Text="&#x1F4CC;" FontSize="9"
+                                           VerticalAlignment="Center" Opacity="0.5"
+                                           IsVisible="False" />
+                                <TextBlock Text="{Binding TabPatcher, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
+                                           Foreground="{Binding PatcherTabForeground}"
+                                           LetterSpacing="0.5" />
+                            </StackPanel>
                         </Border>
                     </Button>
 
@@ -86,14 +92,20 @@
                     <Button Command="{Binding SwitchToConstructorCommand}"
                             Background="{Binding ConstructorTabBackground}"
                             BorderThickness="0"
-                            CornerRadius="6" Padding="0" Cursor="Hand">
+                            CornerRadius="6" Padding="0" Cursor="Hand"
+                            Name="ConstructorTabBtn">
                         <Border Padding="20,6" CornerRadius="6"
                                 BorderThickness="0,0,0,2"
                                 BorderBrush="{Binding ConstructorTabBrush}">
-                            <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
-                                       Foreground="{Binding ConstructorTabForeground}"
-                                       LetterSpacing="0.5" />
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Name="PinConstructorIcon" Text="&#x1F4CC;" FontSize="9"
+                                           VerticalAlignment="Center" Opacity="0.5"
+                                           IsVisible="False" />
+                                <TextBlock Text="{Binding TabConstructor, Source={x:Static loc:Loc.Instance}}"
+                                           FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
+                                           Foreground="{Binding ConstructorTabForeground}"
+                                           LetterSpacing="0.5" />
+                            </StackPanel>
                         </Border>
                     </Button>
 

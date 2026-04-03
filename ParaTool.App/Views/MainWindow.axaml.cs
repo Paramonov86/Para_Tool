@@ -27,10 +27,13 @@ public partial class MainWindow : Window
         if (fontSelector != null)
             fontSelector.SelectionChanged += OnFontSizeChanged;
 
-        var pinPatcher = this.FindControl<TextBlock>("PinPatcherIcon");
-        var pinConstructor = this.FindControl<TextBlock>("PinConstructorIcon");
-        if (pinPatcher != null) pinPatcher.PointerPressed += (_, e) => { SetDefaultTab("Patcher"); e.Handled = true; };
-        if (pinConstructor != null) pinConstructor.PointerPressed += (_, e) => { SetDefaultTab("Constructor"); e.Handled = true; };
+        // Right-click on tab to pin as default
+        var patcherBtn = this.FindControl<Button>("PatcherTabBtn");
+        var constructorBtn = this.FindControl<Button>("ConstructorTabBtn");
+        if (patcherBtn != null)
+            patcherBtn.PointerPressed += (_, e) => { if (e.GetCurrentPoint(null).Properties.IsRightButtonPressed) { SetDefaultTab("Patcher"); e.Handled = true; } };
+        if (constructorBtn != null)
+            constructorBtn.PointerPressed += (_, e) => { if (e.GetCurrentPoint(null).Properties.IsRightButtonPressed) { SetDefaultTab("Constructor"); e.Handled = true; } };
 
         // Show which tab is pinned
         Loaded += (_, _) => UpdatePinIcons();
@@ -58,8 +61,8 @@ public partial class MainWindow : Window
     {
         var pinPatcher = this.FindControl<TextBlock>("PinPatcherIcon");
         var pinConstructor = this.FindControl<TextBlock>("PinConstructorIcon");
-        if (pinPatcher != null) pinPatcher.Opacity = _uiSettings.DefaultTab == "Patcher" ? 1.0 : 0.25;
-        if (pinConstructor != null) pinConstructor.Opacity = _uiSettings.DefaultTab == "Constructor" ? 1.0 : 0.25;
+        if (pinPatcher != null) pinPatcher.IsVisible = _uiSettings.DefaultTab == "Patcher";
+        if (pinConstructor != null) pinConstructor.IsVisible = _uiSettings.DefaultTab == "Constructor";
     }
 
     private void ToggleFullscreen()
