@@ -55,7 +55,13 @@ public class BoostBlocksEditor : UserControl
     /// <summary>Force all live BoostBlocksEditor instances to rebuild their chips.</summary>
     public static event Action? GlobalForceRebuild;
 
-    private void OnGlobalForceRebuild() { if (!_updating && IsLoaded) Rebuild(); }
+    public static void InvokeGlobalForceRebuild() => GlobalForceRebuild?.Invoke();
+
+    private void OnGlobalForceRebuild()
+    {
+        if (!_updating && !_rebuilding && !string.IsNullOrEmpty(Text))
+            Rebuild();
+    }
 
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;

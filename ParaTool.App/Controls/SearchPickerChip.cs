@@ -105,7 +105,8 @@ public class SearchPickerChip : UserControl
         Core.Parsing.StatsResolver? resolver, Core.Services.LocaService? locaSvc)
     {
         // 0. Check active renames from current artifact
-        if (BoostBlocksEditor.ActiveSpellRenames?.TryGetValue(statId, out var spRn) == true)
+        var spellRenames = BoostBlocksEditor.ActiveSpellRenames;
+        if (spellRenames != null && spellRenames.TryGetValue(statId, out var spRn))
         {
             if (spRn.TryGetValue(lang, out var rnName) && !string.IsNullOrEmpty(rnName)) return rnName;
             if (spRn.TryGetValue("en", out var rnEn) && !string.IsNullOrEmpty(rnEn)) return rnEn;

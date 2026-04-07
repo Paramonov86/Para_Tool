@@ -44,8 +44,11 @@ public class ChipListEditor : UserControl
         set => SetValue(SearchItemsProperty, value);
     }
 
-    /// <summary>Fired when user requests rename via context menu. Args: (statId, chipEditor).</summary>
+    /// <summary>Fired when user requests rename via context menu.</summary>
     public event Action<string>? RenameRequested;
+
+    /// <summary>Global rename event from any ChipListEditor instance.</summary>
+    public static event Action<string>? GlobalRenameRequested;
 
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal };
     private readonly TextBox _input;
@@ -117,6 +120,10 @@ public class ChipListEditor : UserControl
         {
             resolverWasNull = false;
             Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (!_updating) Rebuild(); });
+        };
+        BoostBlocksEditor.GlobalForceRebuild += () =>
+        {
+            if (!_updating) Avalonia.Threading.Dispatcher.UIThread.Post(Rebuild);
         };
         DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= scaleHandler;
 
@@ -290,7 +297,7 @@ public class ChipListEditor : UserControl
 
         // Context menu: Rename + Replace
         var renameItem = new MenuItem { Header = Localization.Loc.Instance.CtxRename };
-        renameItem.Click += (_, _) => RenameRequested?.Invoke(value);
+        renameItem.Click += (_, _) => { RenameRequested?.Invoke(value); GlobalRenameRequested?.Invoke(value); };
         var ctxMenu = new ContextMenu();
         ctxMenu.Items.Add(renameItem);
         if (SearchItems is { Length: > 0 })

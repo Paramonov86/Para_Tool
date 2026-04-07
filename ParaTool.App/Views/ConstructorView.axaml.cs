@@ -100,14 +100,8 @@ public partial class ConstructorView : UserControl
             };
         }
 
-        // Spell/Status rename via context menu (ChipListEditor + BoostBlocksEditor)
-        var statusChip = this.FindControl<ChipListEditor>("StatusChipEditor");
-        if (statusChip != null)
-            statusChip.RenameRequested += statId => OnRenameChip(statId, isSpell: false);
-        var spellChip = this.FindControl<ChipListEditor>("SpellChipEditor");
-        if (spellChip != null)
-            spellChip.RenameRequested += statId => OnRenameChip(statId, isSpell: true);
-        // Global: from any BoostBlocksEditor (boosts, functors, mainhand, etc.)
+        // Spell/Status rename via context menu (global events from any chip editor)
+        ChipListEditor.GlobalRenameRequested += statId => OnRenameChip(statId, isSpell: DetectIsSpell(statId));
         BoostBlocksEditor.GlobalRenameRequested += statId => OnRenameChip(statId, isSpell: DetectIsSpell(statId));
 
         // Toggle code/preview button
@@ -234,8 +228,11 @@ public partial class ConstructorView : UserControl
         }
 
         vm.SelectedArtifact.IsDirty = true;
+        // Update active renames reference (may be first rename on this artifact)
+        Controls.BoostBlocksEditor.ActiveSpellRenames = art.SpellRenames;
+        Controls.BoostBlocksEditor.ActiveStatusRenames = art.StatusRenames;
         vm.SelectedArtifact.RefreshAll();
-        BoostBlocksEditor.GlobalForceRebuild?.Invoke();
+        Controls.BoostBlocksEditor.InvokeGlobalForceRebuild();
     }
 
     private void OnLocaLangChanged(string? bg3Lang)
