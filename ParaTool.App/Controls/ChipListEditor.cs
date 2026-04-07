@@ -44,6 +44,9 @@ public class ChipListEditor : UserControl
         set => SetValue(SearchItemsProperty, value);
     }
 
+    /// <summary>Fired when user requests rename via context menu. Args: (statId, chipEditor).</summary>
+    public event Action<string>? RenameRequested;
+
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal };
     private readonly TextBox _input;
     private readonly Button _addBtn;
@@ -240,31 +243,16 @@ public class ChipListEditor : UserControl
             BoostBlocksEditor.GlobalResolver, BoostBlocksEditor.GlobalLocaService);
 
         var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        var textBlock = new TextBox
+        var textBlock = new TextBlock
         {
             Text = displayName ?? value,
             FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = colorBrush,
             VerticalAlignment = VerticalAlignment.Center,
-            IsReadOnly = true,
-            Background = Avalonia.Media.Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            Padding = new Thickness(0),
-            MinHeight = 0,
             Cursor = new Cursor(StandardCursorType.Hand),
         };
         if (displayName != null)
             ToolTip.SetTip(textBlock, value);
-
-        // Click on chip text to replace via search picker
-        if (SearchItems is { Length: > 0 })
-        {
-            textBlock.PointerPressed += (_, e) =>
-            {
-                OpenSearchPicker(value);
-                e.Handled = true;
-            };
-        }
 
         stack.Children.Add(textBlock);
 
@@ -289,7 +277,7 @@ public class ChipListEditor : UserControl
         };
         stack.Children.Add(removeBtn);
 
-        return new Border
+        var border = new Border
         {
             Child = stack,
             Background = new SolidColorBrush(color, 0.15),
@@ -299,5 +287,20 @@ public class ChipListEditor : UserControl
             Padding = new Thickness(8, 3),
             Margin = new Thickness(2),
         };
+
+        // Context menu: Rename + Replace
+        var renameItem = new MenuItem { Header = Localization.Loc.Instance.CtxRename };
+        renameItem.Click += (_, _) => RenameRequested?.Invoke(value);
+        var ctxMenu = new ContextMenu();
+        ctxMenu.Items.Add(renameItem);
+        if (SearchItems is { Length: > 0 })
+        {
+            var replaceItem = new MenuItem { Header = Localization.Loc.Instance.CtxReplace };
+            replaceItem.Click += (_, _) => OpenSearchPicker(value);
+            ctxMenu.Items.Add(replaceItem);
+        }
+        textBlock.ContextMenu = ctxMenu;
+
+        return border;
     }
 }

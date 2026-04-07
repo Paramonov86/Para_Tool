@@ -511,5 +511,11 @@
   "LblThemeFilter": "테마",
   "LblShowThemes": "테마 표시:",
   "LblNoTheme": "테마 없음",
-  "TipOpenInConstructor": "생성기에서 열기"
+  "TipOpenInConstructor": "생성기에서 열기",
+
+  "CtxRename": "이름 바꾸기",
+  "CtxReplace": "바꾸기",
+  "WmSearchCondition": "조건 검색...",
+  "DlgRenameTitle": "이름 바꾸기",
+  "WmNewName": "새 이름..."
 }

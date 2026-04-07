@@ -328,24 +328,28 @@ public partial class ConstructorViewModel : ViewModelBase
         var art = artVm.Artifact;
         var statId = art.UsingBase ?? art.StatId;
 
-        // Item DisplayName: vanilla first, then LocaService
-        var vanillaName = VanillaLocaService.GetDisplayName(statId, lang);
-        if (vanillaName != null)
-            art.DisplayName[lang] = BbCode.FromBg3Xml(vanillaName);
-        else if (!string.IsNullOrEmpty(art.DisplayNameHandle))
+        // Item DisplayName: own handle first, then chain fallback
+        if (!string.IsNullOrEmpty(art.DisplayNameHandle))
         {
             var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
             if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
         }
+        if (string.IsNullOrEmpty(art.DisplayName.GetValueOrDefault(lang)))
+        {
+            var vanillaName = ResolveVanillaLocaChain(statId, lang, isName: true);
+            if (vanillaName != null) art.DisplayName[lang] = BbCode.FromBg3Xml(vanillaName);
+        }
 
-        // Item Description: vanilla first, then LocaService
-        var vanillaDesc = VanillaLocaService.GetDescription(statId, lang);
-        if (vanillaDesc != null)
-            art.Description[lang] = BbCode.FromBg3Xml(vanillaDesc);
-        else if (!string.IsNullOrEmpty(art.DescriptionHandle))
+        // Item Description: own handle first, then chain fallback
+        if (!string.IsNullOrEmpty(art.DescriptionHandle))
         {
             var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
             if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
+        }
+        if (string.IsNullOrEmpty(art.Description.GetValueOrDefault(lang)))
+        {
+            var vanillaDesc = ResolveVanillaLocaChain(statId, lang, isName: false);
+            if (vanillaDesc != null) art.Description[lang] = BbCode.FromBg3Xml(vanillaDesc);
         }
 
         // Passives — vanilla first, then own handle
@@ -404,6 +408,9 @@ public partial class ConstructorViewModel : ViewModelBase
         if (newValue != null)
         {
             newValue.IsSelected = true;
+            // Set active renames for chip display
+            Controls.BoostBlocksEditor.ActiveSpellRenames = newValue.Artifact.SpellRenames;
+            Controls.BoostBlocksEditor.ActiveStatusRenames = newValue.Artifact.StatusRenames;
             // Load loca for current editing language (may differ from scan language)
             if (_resolver != null && _locaService != null)
                 ReloadLocaForCurrentLang(newValue);
@@ -781,17 +788,17 @@ public partial class ConstructorViewModel : ViewModelBase
     {
         var statId = artifact.UsingBase ?? artifact.StatId;
 
-        // Item name/description
+        // Item name/description — walk using-chain for orphan items
         foreach (var lang in new[] { "en", "ru" })
         {
             if (!artifact.DisplayName.ContainsKey(lang) || string.IsNullOrEmpty(artifact.DisplayName.GetValueOrDefault(lang)))
             {
-                var name = VanillaLoca.GetDisplayName(statId, lang);
+                var name = ResolveVanillaLocaChain(statId, lang, isName: true);
                 if (name != null) artifact.DisplayName[lang] = BbCode.FromBg3Xml(name);
             }
             if (!artifact.Description.ContainsKey(lang) || string.IsNullOrEmpty(artifact.Description.GetValueOrDefault(lang)))
             {
-                var desc = VanillaLoca.GetDescription(statId, lang);
+                var desc = ResolveVanillaLocaChain(statId, lang, isName: false);
                 if (desc != null) artifact.Description[lang] = BbCode.FromBg3Xml(desc);
             }
         }
@@ -820,6 +827,42 @@ public partial class ConstructorViewModel : ViewModelBase
     /// <summary>
     /// Resolve handle → text, then convert BG3 XML to BB-code for editor display.
     /// </summary>
+    /// <summary>Walk using-chain to find vanilla loca (DisplayName or Description).</summary>
+    private string? ResolveVanillaLocaChain(string statId, string lang, bool isName)
+    {
+        var current = statId;
+        for (int depth = 0; depth < 20; depth++)
+        {
+            if (current == null) break;
+            var result = isName
+                ? VanillaLocaService.GetDisplayName(current, lang)
+                : VanillaLocaService.GetDescription(current, lang);
+            if (result != null) return result;
+
+            // Try resolving DisplayName handle from resolver → LocaService
+            if (_resolver != null && _locaService != null)
+            {
+                var handleField = _resolver.Resolve(current, isName ? "DisplayName" : "Description");
+                if (!string.IsNullOrEmpty(handleField))
+                {
+                    var handle = Core.Localization.HandleGenerator.Parse(handleField).handle;
+                    if (!string.IsNullOrEmpty(handle))
+                    {
+                        var resolved = _locaService.ResolveHandle(handle, lang);
+                        if (resolved != null) return resolved;
+                    }
+                }
+            }
+
+            // Walk using chain
+            if (_resolver == null || !_resolver.AllEntries.TryGetValue(current, out var entry)
+                || string.IsNullOrEmpty(entry.Using) || entry.Using.Equals(current, StringComparison.OrdinalIgnoreCase))
+                break;
+            current = entry.Using;
+        }
+        return null;
+    }
+
     /// <summary>Find the vanilla passive name by walking the using chain.</summary>
     private string? ResolveVanillaPassiveName(string name, Dictionary<string, string>? _ = null)
     {

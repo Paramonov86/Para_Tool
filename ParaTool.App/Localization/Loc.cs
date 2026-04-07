@@ -274,6 +274,11 @@ public partial class Loc : ObservableObject
     public string LblShowThemes => this["LblShowThemes"];
     public string LblNoTheme => this["LblNoTheme"];
     public string TipOpenInConstructor => this["TipOpenInConstructor"];
+    public string CtxRename => this["CtxRename"];
+    public string CtxReplace => this["CtxReplace"];
+    public string WmSearchCondition => this["WmSearchCondition"];
+    public string DlgRenameTitle => this["DlgRenameTitle"];
+    public string WmNewName => this["WmNewName"];
 
     /// <summary>Get display labels for enum values, using loca with EnumLabels fallback.</summary>
     public string[] GetEnumDisplayLabels(string[] values)

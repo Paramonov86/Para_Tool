@@ -138,6 +138,14 @@ public sealed class ArtifactDefinition
     /// <summary>Handle for Description (generated once).</summary>
     public string DescriptionHandle { get; set; } = "";
 
+    // ─── Spell/Status Renames ──────────────────────────────
+
+    /// <summary>Spell display name overrides: original StatId → new display name per language.</summary>
+    public Dictionary<string, Dictionary<string, string>> SpellRenames { get; set; } = [];
+
+    /// <summary>Status display name overrides: original StatId → new display name per language.</summary>
+    public Dictionary<string, Dictionary<string, string>> StatusRenames { get; set; } = [];
+
     // ─── Icons ──────────────────────────────────────────────
 
     /// <summary>Custom icon: 380×380 DDS BC3 (base64-encoded, null = use atlas icon).</summary>

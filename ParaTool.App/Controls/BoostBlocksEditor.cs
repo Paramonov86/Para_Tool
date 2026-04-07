@@ -46,6 +46,17 @@ public class BoostBlocksEditor : UserControl
         set => SetValue(IsFunctorModeProperty, value);
     }
 
+    /// <summary>Fired when user requests rename of a spell/status via context menu.</summary>
+    public event Action<string>? RenameRequested;
+
+    /// <summary>Global event for rename requests from any BoostBlocksEditor instance.</summary>
+    public static event Action<string>? GlobalRenameRequested;
+
+    /// <summary>Force all live BoostBlocksEditor instances to rebuild their chips.</summary>
+    public static event Action? GlobalForceRebuild;
+
+    private void OnGlobalForceRebuild() { if (!_updating && IsLoaded) Rebuild(); }
+
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;
 
@@ -74,6 +85,7 @@ public class BoostBlocksEditor : UserControl
         _scaleHandler = () => { if (!_updating && IsLoaded) Rebuild(); };
         Localization.Loc.Instance.PropertyChanged += _locHandler;
         FontScale.ScaleChanged += _scaleHandler;
+        GlobalForceRebuild += OnGlobalForceRebuild;
         // Auto-populate Status/Spell lists from ConstructorViewModel when attached
         AttachedToVisualTree += (_, _) => { TryLoadPickerLists(); if (!_updating && !_rebuilding && !string.IsNullOrEmpty(Text)) Rebuild(); };
     }
@@ -82,6 +94,9 @@ public class BoostBlocksEditor : UserControl
     public static string[]? GlobalStatusList { get; set; }
     public static string[]? GlobalSpellList { get; set; }
     public static string[]? GlobalPassiveList { get; set; }
+    /// <summary>Active spell/status renames from current artifact.</summary>
+    public static Dictionary<string, Dictionary<string, string>>? ActiveSpellRenames { get; set; }
+    public static Dictionary<string, Dictionary<string, string>>? ActiveStatusRenames { get; set; }
     /// <summary>Global resolver + loca for resolving AMP/mod display names in pickers.</summary>
     private static Core.Parsing.StatsResolver? _globalResolver;
     public static Core.Parsing.StatsResolver? GlobalResolver
@@ -460,6 +475,14 @@ public class BoostBlocksEditor : UserControl
                         if (e2.Property.Name == "Text" && s is SearchPickerChip sp && sp.Tag is (string rb, int pi) && !_updating)
                             UpdateParam(rb, pi, sp.Text ?? "");
                     };
+                    // Context menu: Rename for spell/status params
+                    var capturedValue = value;
+                    var renameItem = new MenuItem
+                    {
+                        Header = Localization.Loc.Instance.CtxRename
+                    };
+                    renameItem.Click += (_, _) => { RenameRequested?.Invoke(capturedValue); GlobalRenameRequested?.Invoke(capturedValue); };
+                    picker.ContextMenu = new ContextMenu { Items = { renameItem } };
                     stack.Children.Add(picker);
                 }
                 else

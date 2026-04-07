@@ -35,7 +35,8 @@ public static class ArtifactCompiler
     /// <summary>
     /// Compile a single artifact into BG3-ready content.
     /// </summary>
-    public static CompileResult Compile(ArtifactDefinition art, bool isOverride = false)
+    public static CompileResult Compile(ArtifactDefinition art, bool isOverride = false,
+        Parsing.StatsResolver? resolver = null)
     {
         var stats = new StringBuilder();
         var loca = new Dictionary<string, List<(string, string)>>
@@ -315,6 +316,36 @@ public static class ArtifactCompiler
 
             AddLocaEntries(loca, spell.DisplayName, spell.DisplayNameHandle);
             AddLocaEntries(loca, spell.Description, spell.DescriptionHandle);
+        }
+
+        // ─── Spell/Status Rename Overrides ─────────────────
+        foreach (var (origId, names) in art.SpellRenames)
+        {
+            if (names.Count == 0) continue;
+            var handle = HandleGenerator.New();
+            // Resolve SpellType from resolver (required for SpellData)
+            var spellType = resolver?.Resolve(origId, "SpellType") ?? "Target";
+            stats.AppendLine($"new entry \"{origId}\"");
+            stats.AppendLine("type \"SpellData\"");
+            stats.AppendLine($"data \"SpellType\" \"{spellType}\"");
+            stats.AppendLine($"using \"{origId}\"");
+            stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(handle)}\"");
+            stats.AppendLine();
+            AddLocaEntries(loca, names, handle);
+        }
+        foreach (var (origId, names) in art.StatusRenames)
+        {
+            if (names.Count == 0) continue;
+            var handle = HandleGenerator.New();
+            // Resolve StatusType from resolver (required for StatusData)
+            var statusType = resolver?.Resolve(origId, "StatusType") ?? "BOOST";
+            stats.AppendLine($"new entry \"{origId}\"");
+            stats.AppendLine("type \"StatusData\"");
+            stats.AppendLine($"data \"StatusType\" \"{statusType}\"");
+            stats.AppendLine($"using \"{origId}\"");
+            stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(handle)}\"");
+            stats.AppendLine();
+            AddLocaEntries(loca, names, handle);
         }
 
         // ─── Item Localization (stored in RootTemplate, not Stats) ──

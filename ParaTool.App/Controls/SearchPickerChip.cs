@@ -62,7 +62,7 @@ public class SearchPickerChip : UserControl
             Cursor = new Cursor(StandardCursorType.Hand),
         };
 
-        _chip.PointerPressed += (_, e) => { OpenPicker(); e.Handled = true; };
+        _chip.PointerPressed += (_, e) => { if (e.GetCurrentPoint(_chip).Properties.IsLeftButtonPressed) { OpenPicker(); e.Handled = true; } };
         _chip.PointerEntered += (_, _) => _chip.Background = ThemeBrushes.HoverBg;
         _chip.PointerExited += (_, _) => _chip.Background = ThemeBrushes.InputBg;
 
@@ -104,6 +104,18 @@ public class SearchPickerChip : UserControl
     public static string? ResolveStatDisplayName(string statId, string lang,
         Core.Parsing.StatsResolver? resolver, Core.Services.LocaService? locaSvc)
     {
+        // 0. Check active renames from current artifact
+        if (BoostBlocksEditor.ActiveSpellRenames?.TryGetValue(statId, out var spRn) == true)
+        {
+            if (spRn.TryGetValue(lang, out var rnName) && !string.IsNullOrEmpty(rnName)) return rnName;
+            if (spRn.TryGetValue("en", out var rnEn) && !string.IsNullOrEmpty(rnEn)) return rnEn;
+        }
+        if (BoostBlocksEditor.ActiveStatusRenames?.TryGetValue(statId, out var stRn) == true)
+        {
+            if (stRn.TryGetValue(lang, out var rnName) && !string.IsNullOrEmpty(rnName)) return rnName;
+            if (stRn.TryGetValue("en", out var rnEn) && !string.IsNullOrEmpty(rnEn)) return rnEn;
+        }
+
         // 1. Vanilla loca (current lang, then EN fallback)
         var name = Core.Services.VanillaLocaService.GetDisplayName(statId, lang);
         if (name != null) return name;

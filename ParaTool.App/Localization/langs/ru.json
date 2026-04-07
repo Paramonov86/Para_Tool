@@ -515,5 +515,11 @@
   "LblThemeFilter": "Темы",
   "LblShowThemes": "Показать темы:",
   "LblNoTheme": "Без темы",
-  "TipOpenInConstructor": "Открыть в конструкторе"
+  "TipOpenInConstructor": "Открыть в конструкторе",
+
+  "CtxRename": "Переименовать",
+  "CtxReplace": "Заменить",
+  "WmSearchCondition": "Поиск условия...",
+  "DlgRenameTitle": "Переименовать",
+  "WmNewName": "Новое название..."
 }

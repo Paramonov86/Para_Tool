@@ -487,5 +487,11 @@
   "LblThemeFilter": "Temalar",
   "LblShowThemes": "Temaları göster:",
   "LblNoTheme": "Temasız",
-  "TipOpenInConstructor": "Yapıcıda aç"
+  "TipOpenInConstructor": "Yapıcıda aç",
+
+  "CtxRename": "Yeniden adlandır",
+  "CtxReplace": "Değiştir",
+  "WmSearchCondition": "Koşul ara...",
+  "DlgRenameTitle": "Yeniden adlandır",
+  "WmNewName": "Yeni ad..."
 }

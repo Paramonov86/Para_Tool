@@ -100,6 +100,16 @@ public partial class ConstructorView : UserControl
             };
         }
 
+        // Spell/Status rename via context menu (ChipListEditor + BoostBlocksEditor)
+        var statusChip = this.FindControl<ChipListEditor>("StatusChipEditor");
+        if (statusChip != null)
+            statusChip.RenameRequested += statId => OnRenameChip(statId, isSpell: false);
+        var spellChip = this.FindControl<ChipListEditor>("SpellChipEditor");
+        if (spellChip != null)
+            spellChip.RenameRequested += statId => OnRenameChip(statId, isSpell: true);
+        // Global: from any BoostBlocksEditor (boosts, functors, mainhand, etc.)
+        BoostBlocksEditor.GlobalRenameRequested += statId => OnRenameChip(statId, isSpell: DetectIsSpell(statId));
+
         // Toggle code/preview button
         var toggleBtn = this.FindControl<Button>("ToggleCodeViewBtn");
         if (toggleBtn != null)
@@ -141,6 +151,91 @@ public partial class ConstructorView : UserControl
     {
         if (args.PropertyName == nameof(ConstructorViewModel.SelectedArtifact))
             RebuildChips();
+    }
+
+    private bool DetectIsSpell(string statId)
+    {
+        if (DataContext is not ConstructorViewModel vm || vm.StatsResolver == null) return false;
+        var entry = vm.StatsResolver.Get(statId);
+        return entry?.Type is "SpellData";
+    }
+
+    private async void OnRenameChip(string statId, bool isSpell)
+    {
+        if (DataContext is not ConstructorViewModel vm || vm.SelectedArtifact == null) return;
+        var art = vm.SelectedArtifact.Artifact;
+        var renames = isSpell ? art.SpellRenames : art.StatusRenames;
+        var editLang = vm.EditingLang; // use constructor's editing language, not UI lang
+
+        // Get current rename or resolve existing name
+        var currentName = "";
+        if (renames.TryGetValue(statId, out var existing))
+            currentName = existing.GetValueOrDefault(editLang) ?? "";
+        if (string.IsNullOrEmpty(currentName))
+        {
+            currentName = Controls.SearchPickerChip.ResolveStatDisplayName(statId, editLang,
+                vm.StatsResolver, vm.LocaService) ?? statId;
+        }
+
+        // Show inline rename dialog
+        var dialog = new Window
+        {
+            Title = Loc.Instance.DlgRenameTitle,
+            Width = 400, Height = 120,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+            Background = Themes.ThemeBrushes.PanelBg,
+        };
+        var input = new TextBox
+        {
+            Text = currentName,
+            FontSize = 14,
+            Margin = new Thickness(16, 16, 16, 8),
+            Watermark = Loc.Instance.WmNewName,
+        };
+        var okBtn = new Button
+        {
+            Content = "OK", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+            Margin = new Thickness(0, 0, 16, 8), Padding = new Thickness(20, 4),
+            Background = Themes.ThemeBrushes.Accent,
+        };
+        var stack = new StackPanel();
+        stack.Children.Add(input);
+        stack.Children.Add(okBtn);
+        dialog.Content = stack;
+
+        string? result = null;
+        okBtn.Click += (_, _) => { result = input.Text; dialog.Close(); };
+        input.KeyUp += (_, e) => { if (e.Key == Avalonia.Input.Key.Enter) { result = input.Text; dialog.Close(); } };
+
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        if (owner != null)
+            await dialog.ShowDialog(owner);
+        else
+            return;
+
+        if (result == null) return; // cancelled
+
+        var newName = result.Trim();
+        if (string.IsNullOrEmpty(newName) || newName == statId)
+        {
+            // Clear rename
+            renames.Remove(statId);
+        }
+        else
+        {
+            // Save for editing language
+            if (!renames.ContainsKey(statId))
+                renames[statId] = new Dictionary<string, string>();
+            renames[statId][editLang] = newName;
+            // If no EN, copy to EN too as fallback
+            if (editLang != "en" && !renames[statId].ContainsKey("en"))
+                renames[statId]["en"] = newName;
+        }
+
+        vm.SelectedArtifact.IsDirty = true;
+        vm.SelectedArtifact.RefreshAll();
+        BoostBlocksEditor.GlobalForceRebuild?.Invoke();
     }
 
     private void OnLocaLangChanged(string? bg3Lang)

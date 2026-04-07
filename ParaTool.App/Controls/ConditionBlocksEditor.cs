@@ -709,7 +709,7 @@ public class ConditionBlocksEditor : UserControl
         // Search box at top
         var searchBox = new TextBox
         {
-            Watermark = isRu ? "Поиск условия..." : "Search condition...",
+            Watermark = Localization.Loc.Instance.WmSearchCondition,
             FontSize = Services.FontScale.Of(11),
             MinWidth = 200,
             Margin = new Thickness(4),

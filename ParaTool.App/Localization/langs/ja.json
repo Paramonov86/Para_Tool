@@ -487,5 +487,11 @@
   "LblThemeFilter": "テーマ",
   "LblShowThemes": "テーマを表示:",
   "LblNoTheme": "テーマなし",
-  "TipOpenInConstructor": "コンストラクターで開く"
+  "TipOpenInConstructor": "コンストラクターで開く",
+
+  "CtxRename": "名前を変更",
+  "CtxReplace": "置換",
+  "WmSearchCondition": "条件を検索...",
+  "DlgRenameTitle": "名前を変更",
+  "WmNewName": "新しい名前..."
 }

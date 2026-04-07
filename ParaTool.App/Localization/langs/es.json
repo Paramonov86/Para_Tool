@@ -487,5 +487,11 @@
   "LblThemeFilter": "Temas",
   "LblShowThemes": "Mostrar temas:",
   "LblNoTheme": "Sin tema",
-  "TipOpenInConstructor": "Abrir en constructor"
+  "TipOpenInConstructor": "Abrir en constructor",
+
+  "CtxRename": "Renombrar",
+  "CtxReplace": "Reemplazar",
+  "WmSearchCondition": "Buscar condición...",
+  "DlgRenameTitle": "Renombrar",
+  "WmNewName": "Nuevo nombre..."
 }

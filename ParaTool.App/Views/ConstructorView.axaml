@@ -464,11 +464,11 @@
                                 <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
                                 <TextBlock Text="{Binding LblStatuses, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
-                                <ctrl:ChipListEditor Text="{Binding EditStatusOnEquip}" ChipColor="#E67E22"
+                                <ctrl:ChipListEditor Name="StatusChipEditor" Text="{Binding EditStatusOnEquip}" ChipColor="#E67E22"
                                                       SearchItems="{ReflectionBinding DataContext.AllStatuses, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                 <TextBlock Text="{Binding LblSpells, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
-                                <ctrl:ChipListEditor Text="{Binding EditSpellsOnEquip}" ChipColor="#9B59B6"
+                                <ctrl:ChipListEditor Name="SpellChipEditor" Text="{Binding EditSpellsOnEquip}" ChipColor="#9B59B6"
                                                       SearchItems="{ReflectionBinding DataContext.AllSpells, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                             </StackPanel>
                         </Border>

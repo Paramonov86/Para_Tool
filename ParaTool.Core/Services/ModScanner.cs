@@ -294,11 +294,12 @@ public sealed class ModScanner
                             && (prev.Type == "Armor" || prev.Type == "Weapon"))
                             continue;
 
-                        // Merge data: previous base + new overrides (skip empty-over-nonempty)
+                        // Merge data: previous base + new overrides
+                        var isSkel = entry.Data.Count > 0 && entry.Data.Values.All(string.IsNullOrEmpty);
                         var mergedData = new Dictionary<string, string>(prev.Data, StringComparer.OrdinalIgnoreCase);
                         foreach (var kvp in entry.Data)
                         {
-                            if (string.IsNullOrEmpty(kvp.Value)
+                            if (isSkel && string.IsNullOrEmpty(kvp.Value)
                                 && mergedData.TryGetValue(kvp.Key, out var existing2)
                                 && !string.IsNullOrEmpty(existing2))
                                 continue;
@@ -353,13 +354,14 @@ public sealed class ModScanner
                     var effectiveUsing = mergedUsing ?? vanilla.Using;
                     bool sameChain = string.Equals(effectiveUsing, vanilla.Using, StringComparison.OrdinalIgnoreCase);
 
+                    var isSkel2 = modEntry.Data.Count > 0 && modEntry.Data.Values.All(string.IsNullOrEmpty);
                     Dictionary<string, string> finalData;
                     if (sameChain)
                     {
                         finalData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
                         foreach (var kvp in modEntry.Data)
                         {
-                            if (string.IsNullOrEmpty(kvp.Value)
+                            if (isSkel2 && string.IsNullOrEmpty(kvp.Value)
                                 && finalData.TryGetValue(kvp.Key, out var existing2)
                                 && !string.IsNullOrEmpty(existing2))
                                 continue;
@@ -572,10 +574,11 @@ public sealed class ModScanner
                             && (prev.Type == "Armor" || prev.Type == "Weapon"))
                             continue;
 
+                        var isSkel3 = entry.Data.Count > 0 && entry.Data.Values.All(string.IsNullOrEmpty);
                         var mergedData = new Dictionary<string, string>(prev.Data, StringComparer.OrdinalIgnoreCase);
                         foreach (var kvp in entry.Data)
                         {
-                            if (string.IsNullOrEmpty(kvp.Value)
+                            if (isSkel3 && string.IsNullOrEmpty(kvp.Value)
                                 && mergedData.TryGetValue(kvp.Key, out var existing2)
                                 && !string.IsNullOrEmpty(existing2))
                                 continue;
@@ -622,13 +625,14 @@ public sealed class ModScanner
                     // shadow values from the new chain, causing misclassification.
                     bool sameChain = string.Equals(effectiveUsing, vanilla.Using, StringComparison.OrdinalIgnoreCase);
 
+                    var isSkel2 = modEntry.Data.Count > 0 && modEntry.Data.Values.All(string.IsNullOrEmpty);
                     Dictionary<string, string> finalData;
                     if (sameChain)
                     {
                         finalData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
                         foreach (var kvp in modEntry.Data)
                         {
-                            if (string.IsNullOrEmpty(kvp.Value)
+                            if (isSkel2 && string.IsNullOrEmpty(kvp.Value)
                                 && finalData.TryGetValue(kvp.Key, out var existing2)
                                 && !string.IsNullOrEmpty(existing2))
                                 continue;
@@ -818,18 +822,19 @@ public sealed class ModScanner
                 fixedUsing = existing?.Using;
 
             // Merge data: existing fields as base, new entry overrides
-            // Skip empty mod values that would erase non-empty existing data
-            // (BG3 skeleton entries often redeclare fields as empty)
+            // Skeleton detection: entry where ALL data values are empty (only declares fields
+            // without setting them). Real overrides have at least one non-empty value.
+            var isSkeleton = entry.Data.Count > 0 && entry.Data.Values.All(string.IsNullOrEmpty);
             Dictionary<string, string> mergedData;
             if (existing != null)
             {
                 mergedData = new Dictionary<string, string>(existing.Data, StringComparer.OrdinalIgnoreCase);
                 foreach (var kvp in entry.Data)
                 {
-                    if (string.IsNullOrEmpty(kvp.Value)
+                    if (isSkeleton && string.IsNullOrEmpty(kvp.Value)
                         && mergedData.TryGetValue(kvp.Key, out var prev)
                         && !string.IsNullOrEmpty(prev))
-                        continue; // Don't erase existing value with empty
+                        continue; // Don't let skeleton erase existing value
                     mergedData[kvp.Key] = kvp.Value;
                 }
             }

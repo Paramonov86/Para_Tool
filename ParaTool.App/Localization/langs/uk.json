@@ -487,5 +487,11 @@
   "LblThemeFilter": "Теми",
   "LblShowThemes": "Показати теми:",
   "LblNoTheme": "Без теми",
-  "TipOpenInConstructor": "Відкрити в конструкторі"
+  "TipOpenInConstructor": "Відкрити в конструкторі",
+
+  "CtxRename": "Перейменувати",
+  "CtxReplace": "Замінити",
+  "WmSearchCondition": "Пошук умови...",
+  "DlgRenameTitle": "Перейменувати",
+  "WmNewName": "Нова назва..."
 }
