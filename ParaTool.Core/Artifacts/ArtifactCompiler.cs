@@ -95,15 +95,12 @@ public static class ArtifactCompiler
             foreach (var spell in art.SpellsOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 allBoosts.Add($"UnlockSpell({spell})");
         }
-        if (allBoosts.Count > 0)
-        {
-            var boostsStr = string.Join(";", allBoosts);
-            stats.AppendLine($"data \"Boosts\" \"{boostsStr}\"");
-        }
-        if (!string.IsNullOrEmpty(art.BoostsOnEquipMainHand))
-            stats.AppendLine($"data \"BoostsOnEquipMainHand\" \"{art.BoostsOnEquipMainHand}\"");
-        if (!string.IsNullOrEmpty(art.BoostsOnEquipOffHand))
-            stats.AppendLine($"data \"BoostsOnEquipOffHand\" \"{art.BoostsOnEquipOffHand}\"");
+        // Always write Boosts to override inherited value from base
+        var boostsStr = string.Join(";", allBoosts);
+        stats.AppendLine($"data \"Boosts\" \"{boostsStr}\"");
+        // Always write mainhand/offhand boosts
+        stats.AppendLine($"data \"BoostsOnEquipMainHand\" \"{art.BoostsOnEquipMainHand ?? ""}\"");
+        stats.AppendLine($"data \"BoostsOnEquipOffHand\" \"{art.BoostsOnEquipOffHand ?? ""}\"");
         // Build PassivesOnEquip: merge explicit list + all passives from Passives array
         var poeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!string.IsNullOrEmpty(art.PassivesOnEquip))
@@ -112,10 +109,10 @@ public static class ArtifactCompiler
         foreach (var p in art.Passives ?? [])
             if (!string.IsNullOrEmpty(p.Name))
                 poeNames.Add(p.Name);
-        if (poeNames.Count > 0)
-            stats.AppendLine($"data \"PassivesOnEquip\" \"{string.Join(";", poeNames)}\"");
-        if (!string.IsNullOrEmpty(art.StatusOnEquip))
-            stats.AppendLine($"data \"StatusOnEquip\" \"{art.StatusOnEquip}\"");
+        // Always write PassivesOnEquip to override inherited value from base
+        stats.AppendLine($"data \"PassivesOnEquip\" \"{string.Join(";", poeNames)}\"");
+        // Always write StatusOnEquip to override inherited value
+        stats.AppendLine($"data \"StatusOnEquip\" \"{art.StatusOnEquip ?? ""}\"");
 
         stats.AppendLine();
 
