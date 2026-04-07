@@ -594,6 +594,12 @@ public static class EnumLabels
         ["SG_Exhausted"]         = ("Exhausted",    "Истощён"),
         ["SG_Dazed"]             = ("Dazed",        "Оглоушен"),
 
+        // ── Target Context (functor prefix) ─────────────────────
+        ["SELF"]                 = ("Self",      "Себя"),
+        ["SWAP"]                 = ("Target",    "Цель"),
+        ["OBSERVER_TARGET"]      = ("Obs.Tgt",  "Набл.Ц"),
+        ["OBSERVER_SOURCE"]      = ("Obs.Src",  "Набл.И"),
+
         // ── Passive Properties ───────────────────────────────────
         ["Highlighted"]                 = ("Highlight",    "Подсветка"),
         ["IsHidden"]                    = ("Hidden",       "Скрыта"),

@@ -42,6 +42,20 @@ public class VanillaDatabaseTests
     }
 
     [Fact]
+    public void Load_PassiveHasStatsFunctors()
+    {
+        var db = new VanillaDatabase();
+        db.Load();
+
+        var fields = db.Resolver.ResolveAll("MAG_ChargedLightning_Charge_OnDamage_Passive");
+        Assert.True(fields.Count > 0, "Passive should exist");
+        Assert.True(fields.ContainsKey("StatsFunctors"), "Should have StatsFunctors");
+        Assert.True(fields.ContainsKey("StatsFunctorContext"), "Should have StatsFunctorContext");
+        Assert.Contains("ApplyStatus", fields["StatsFunctors"]);
+        Assert.Equal("OnDamage", fields["StatsFunctorContext"]);
+    }
+
+    [Fact]
     public void Load_WeaponEntriesPresent()
     {
         var db = new VanillaDatabase();

@@ -57,3 +57,6 @@ VANILLA_LOCA_TASK.md
 # Test/debug files
 diagnose_lost_items.py
 passive_debug.log
+
+# Local tools
+tools/lsx-converter/

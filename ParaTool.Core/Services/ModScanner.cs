@@ -294,10 +294,16 @@ public sealed class ModScanner
                             && (prev.Type == "Armor" || prev.Type == "Weapon"))
                             continue;
 
-                        // Merge data: previous base + new overrides
+                        // Merge data: previous base + new overrides (skip empty-over-nonempty)
                         var mergedData = new Dictionary<string, string>(prev.Data, StringComparer.OrdinalIgnoreCase);
                         foreach (var kvp in entry.Data)
+                        {
+                            if (string.IsNullOrEmpty(kvp.Value)
+                                && mergedData.TryGetValue(kvp.Key, out var existing2)
+                                && !string.IsNullOrEmpty(existing2))
+                                continue;
                             mergedData[kvp.Key] = kvp.Value;
+                        }
 
                         // Self-referencing Using is a BG3 skeleton pattern — keep the
                         // correct Using from the earlier definition instead
@@ -352,7 +358,13 @@ public sealed class ModScanner
                     {
                         finalData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
                         foreach (var kvp in modEntry.Data)
+                        {
+                            if (string.IsNullOrEmpty(kvp.Value)
+                                && finalData.TryGetValue(kvp.Key, out var existing2)
+                                && !string.IsNullOrEmpty(existing2))
+                                continue;
                             finalData[kvp.Key] = kvp.Value;
+                        }
                     }
                     else
                     {
@@ -562,7 +574,13 @@ public sealed class ModScanner
 
                         var mergedData = new Dictionary<string, string>(prev.Data, StringComparer.OrdinalIgnoreCase);
                         foreach (var kvp in entry.Data)
+                        {
+                            if (string.IsNullOrEmpty(kvp.Value)
+                                && mergedData.TryGetValue(kvp.Key, out var existing2)
+                                && !string.IsNullOrEmpty(existing2))
+                                continue;
                             mergedData[kvp.Key] = kvp.Value;
+                        }
 
                         // Self-referencing Using is a BG3 rebalance pattern — keep prev Using
                         var mergedUsing = entry.Using;
@@ -609,7 +627,13 @@ public sealed class ModScanner
                     {
                         finalData = new Dictionary<string, string>(vanilla.Data, StringComparer.OrdinalIgnoreCase);
                         foreach (var kvp in modEntry.Data)
+                        {
+                            if (string.IsNullOrEmpty(kvp.Value)
+                                && finalData.TryGetValue(kvp.Key, out var existing2)
+                                && !string.IsNullOrEmpty(existing2))
+                                continue;
                             finalData[kvp.Key] = kvp.Value;
+                        }
                     }
                     else
                     {
@@ -796,12 +820,20 @@ public sealed class ModScanner
                 fixedUsing = existing?.Using;
 
             // Merge data: existing fields as base, new entry overrides
+            // Skip empty mod values that would erase non-empty existing data
+            // (BG3 skeleton entries often redeclare fields as empty)
             Dictionary<string, string> mergedData;
             if (existing != null)
             {
                 mergedData = new Dictionary<string, string>(existing.Data, StringComparer.OrdinalIgnoreCase);
                 foreach (var kvp in entry.Data)
+                {
+                    if (string.IsNullOrEmpty(kvp.Value)
+                        && mergedData.TryGetValue(kvp.Key, out var prev)
+                        && !string.IsNullOrEmpty(prev))
+                        continue; // Don't erase existing value with empty
                     mergedData[kvp.Key] = kvp.Value;
+                }
             }
             else
             {

@@ -201,14 +201,17 @@ public class BoostBlocksEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center,
         });
 
-        // Target context tumbler (only shown if data already contains one)
-        if (targetCtx != null)
+        // Target context tumbler — always shown for functors that support it, or if data already contains one
+        var showTargetCtx = targetCtx != null || (IsFunctorMode && TargetContextFunctors.Contains(def.FuncName));
+        if (showTargetCtx)
         {
             var ctxItems = new[] { "—" }.Concat(TargetContextValues).ToArray();
+            var ctxDisplayItems = new[] { "—" }.Concat(Localization.Loc.Instance.GetEnumDisplayLabels(TargetContextValues)).ToArray();
             var ctxChip = new TumblerChipEditor
             {
                 Text = targetCtx ?? "—",
                 Items = ctxItems,
+                DisplayItems = ctxDisplayItems,
                 VerticalAlignment = VerticalAlignment.Center,
             };
             ctxChip.Tag = (rawBoost, -1); // -1 = target context slot
@@ -783,6 +786,9 @@ public class BoostBlocksEditor : UserControl
     }
 
     private static readonly string[] TargetContextValues = ["SELF", "SWAP", "OBSERVER_TARGET", "OBSERVER_SOURCE"];
+
+    /// <summary>Functors that commonly use a target context prefix (SELF/SWAP/etc.).</summary>
+    private static readonly HashSet<string> TargetContextFunctors = ["ApplyStatus", "DealDamage", "RegainHitPoints", "RemoveStatus", "RemoveUniqueStatus", "GainTemporaryHitPoints"];
 
     private void UpdateTargetContext(string rawBoost, string? newCtx)
     {
