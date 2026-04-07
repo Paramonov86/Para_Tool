@@ -158,7 +158,7 @@ public class SearchPickerChip : UserControl
 
     private string? ResolveDisplayName(string statId)
     {
-        var lang = Localization.Loc.Instance.Lang;
+        var lang = BoostBlocksEditor.ActiveEditingLang ?? Localization.Loc.Instance.Lang;
         return ResolveStatDisplayName(statId, lang,
             Resolver ?? BoostBlocksEditor.GlobalResolver,
             LocaService ?? BoostBlocksEditor.GlobalLocaService);

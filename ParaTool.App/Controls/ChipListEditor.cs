@@ -245,7 +245,7 @@ public class ChipListEditor : UserControl
     private Border CreateChip(string value, Color color)
     {
         var colorBrush = new SolidColorBrush(color);
-        var lang = Localization.Loc.Instance.Lang;
+        var lang = BoostBlocksEditor.ActiveEditingLang ?? Localization.Loc.Instance.Lang;
         var displayName = SearchPickerChip.ResolveStatDisplayName(value, lang,
             BoostBlocksEditor.GlobalResolver, BoostBlocksEditor.GlobalLocaService);
 

@@ -269,9 +269,13 @@ public partial class ConstructorView : UserControl
             _lastSelEnd = _lastFocusedLocaBox.SelectionEnd;
         }
 
-        // Click on tab border → switch to that item
+        // Click on tab border → switch to that item (but not on close button)
         if (e.Source is Avalonia.Visual visual)
         {
+            // Skip if clicking the close button
+            var btn = visual as Button ?? visual.FindAncestorOfType<Button>();
+            if (btn?.Name == "CloseTabBtn") return;
+
             var border = visual as Border ?? visual.FindAncestorOfType<Border>();
             if (border?.Name == "TabBorder" && border.DataContext is ArtifactItemVM tabItem
                 && DataContext is ConstructorViewModel vm)

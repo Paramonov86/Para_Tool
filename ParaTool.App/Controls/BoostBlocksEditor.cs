@@ -103,6 +103,8 @@ public class BoostBlocksEditor : UserControl
     /// <summary>Active spell/status renames from current artifact.</summary>
     public static Dictionary<string, Dictionary<string, string>>? ActiveSpellRenames { get; set; }
     public static Dictionary<string, Dictionary<string, string>>? ActiveStatusRenames { get; set; }
+    /// <summary>Current editing language from constructor (for chip display).</summary>
+    public static string? ActiveEditingLang { get; set; }
     /// <summary>Global resolver + loca for resolving AMP/mod display names in pickers.</summary>
     private static Core.Parsing.StatsResolver? _globalResolver;
     public static Core.Parsing.StatsResolver? GlobalResolver

@@ -298,6 +298,7 @@ public partial class ConstructorViewModel : ViewModelBase
 
     partial void OnEditingLangChanged(string value)
     {
+        Controls.BoostBlocksEditor.ActiveEditingLang = value;
         LocaWarning = "";
 
         // Try to load loca for the new language
@@ -316,6 +317,7 @@ public partial class ConstructorViewModel : ViewModelBase
             ReloadLocaForCurrentLang(SelectedArtifact);
 
         SelectedArtifact?.RefreshAll();
+        Controls.BoostBlocksEditor.InvokeGlobalForceRebuild();
     }
 
     /// <summary>
@@ -408,9 +410,10 @@ public partial class ConstructorViewModel : ViewModelBase
         if (newValue != null)
         {
             newValue.IsSelected = true;
-            // Set active renames for chip display
+            // Set active renames and editing lang for chip display
             Controls.BoostBlocksEditor.ActiveSpellRenames = newValue.Artifact.SpellRenames;
             Controls.BoostBlocksEditor.ActiveStatusRenames = newValue.Artifact.StatusRenames;
+            Controls.BoostBlocksEditor.ActiveEditingLang = EditingLang;
             // Load loca for current editing language (may differ from scan language)
             if (_resolver != null && _locaService != null)
                 ReloadLocaForCurrentLang(newValue);
