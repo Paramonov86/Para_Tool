@@ -59,8 +59,11 @@ public sealed class StatsResolver
         if (name == null || depth >= MaxInheritanceDepth) return;
         if (!_entries.TryGetValue(name, out var entry)) return;
 
-        // Resolve parent first so child values override
-        CollectInherited(entry.Using, result, depth + 1);
+        // Resolve parent first so child values override (skip self-ref)
+        var parent = entry.Using;
+        if (parent != null && parent.Equals(name, StringComparison.OrdinalIgnoreCase))
+            parent = null; // Break self-referencing using chain
+        CollectInherited(parent, result, depth + 1);
 
         foreach (var kvp in entry.Data)
             result[kvp.Key] = kvp.Value;

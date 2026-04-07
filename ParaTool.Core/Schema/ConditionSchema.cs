@@ -549,6 +549,9 @@ public sealed class ConditionSchema
         "HasActionResource" or "HasUseCosts" => "Resource",
         "SavingThrow" or "SkillCheck" or "RollDieAgainstDC" => "Roll",
         "Tagged" or "HasAnyTags" or "HasNoTags" => "Tag",
+        // AMP custom conditions
+        "IsSneakAttack" or "IsDischargingLightning" or "IsLeveledSpell" or "IsLeveledSpellStrict"
+            or "IsGameplayStatus" or "IsSpellIdOrChild" or "AttackedWithPassiveSourceWeapon" => "AMP",
         _ when name.StartsWith("Is") => "Check",
         _ when name.StartsWith("Has") => "Check",
         _ => "General"

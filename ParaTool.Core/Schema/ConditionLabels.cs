@@ -738,6 +738,7 @@ public static class ConditionLabels
         ["Resource"] = ("Resource", "Ресурсы"),
         ["Tag"] = ("Tag", "Теги"),
         ["Check"] = ("Check", "Проверки"),
+        ["AMP"] = ("AMP", "AMP"),
         ["General"] = ("General", "Общее"),
     };
 

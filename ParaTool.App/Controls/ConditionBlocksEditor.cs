@@ -703,42 +703,104 @@ public class ConditionBlocksEditor : UserControl
             .GroupBy(f => f.Category)
             .OrderBy(g => g.Key);
 
-        // Most used conditions at top level
-        var favorites = new[] { "Enemy", "Ally", "Self", "Combat", "TurnBased",
-            "HasStatus", "SpellId", "IsWeaponAttack", "IsSpellAttack", "IsMeleeAttack",
-            "IsRangedWeaponAttack", "IsCritical", "IsMiss", "InSurface",
-            "HasShieldEquipped", "Dead", "IsSpell", "IsCantrip", "HasPassive" };
-
+        var userFavs = Core.Services.FavoritesStore.Load();
         var isRu = Localization.Loc.Instance.Lang == "ru";
 
-        foreach (var fav in favorites)
+        // Search box at top
+        var searchBox = new TextBox
         {
-            if (!schema.ByName.TryGetValue(fav, out var def)) continue;
-            var item = new MenuItem { Header = ConditionLabels.GetLabel(fav, isRu), Tag = def };
-            item.Click += (_, _) => AddCondition(def);
-            menu.Items.Add(item);
+            Watermark = isRu ? "Поиск условия..." : "Search condition...",
+            FontSize = Services.FontScale.Of(11),
+            MinWidth = 200,
+            Margin = new Thickness(4),
+        };
+        var searchItem = new MenuItem { Header = searchBox, StaysOpenOnClick = true };
+        menu.Items.Add(searchItem);
+        menu.Items.Add(new Separator());
+
+        // Build all menu items for filtering
+        var allMenuItems = new List<(MenuItem item, MenuItem? parent, string searchText)>();
+
+        // Track favorites section items for in-place updates
+        var favItems = new Dictionary<string, MenuItem>(StringComparer.OrdinalIgnoreCase);
+        var favSeparatorIdx = menu.Items.Count; // index where favorites start
+
+        // User favorites at top
+        void RebuildFavSection()
+        {
+            // Remove old favorites (between favSeparatorIdx and the separator after them)
+            foreach (var fi in favItems.Values)
+                menu.Items.Remove(fi);
+            favItems.Clear();
+
+            var currentFavs = Core.Services.FavoritesStore.Load();
+            int insertIdx = favSeparatorIdx;
+            foreach (var favName in currentFavs.OrderBy(n => ConditionLabels.GetLabel(n, isRu)))
+            {
+                if (!schema.ByName.TryGetValue(favName, out var fDef)) continue;
+                var dName = ConditionLabels.GetLabel(favName, isRu);
+                var fItem = new MenuItem { Header = $"★ {dName}", Tag = fDef };
+                fItem.Click += (_, _) => AddCondition(fDef);
+                menu.Items.Insert(insertIdx++, fItem);
+                favItems[favName] = fItem;
+            }
         }
+        RebuildFavSection();
 
         menu.Items.Add(new Separator());
 
-        // All by category
+        // All by category, sorted by localized name, with star toggle
         foreach (var group in groups)
         {
             var sub = new MenuItem { Header = ConditionLabels.GetCategoryLabel(group.Key, isRu) };
-            foreach (var def in group.OrderBy(d => d.Name))
+            foreach (var def in group.OrderBy(d => ConditionLabels.GetLabel(d.Name, isRu)))
             {
                 var displayName = ConditionLabels.GetLabel(def.Name, isRu);
                 var paramHint = def.Params.Length > 0
                     ? $" ({string.Join(", ", def.Params.Select(p => p.Name))})"
                     : "";
-                var item = new MenuItem { Header = displayName + paramHint, Tag = def };
-                item.Click += (_, _) => AddCondition(def);
+                var isFav = userFavs.Contains(def.Name);
+                var star = isFav ? "★" : "☆";
+
+                var itemPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+                var starBtn = new Button
+                {
+                    Content = star, Padding = new Thickness(0), Background = Avalonia.Media.Brushes.Transparent,
+                    BorderThickness = new Thickness(0), Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+                    FontSize = Services.FontScale.Of(12), Foreground = Themes.ThemeBrushes.Accent,
+                    MinWidth = 0, MinHeight = 0,
+                };
+                var condName = def.Name; // capture
+                starBtn.Click += (s, e2) =>
+                {
+                    e2.Handled = true;
+                    var nowFav = Core.Services.FavoritesStore.Toggle(condName);
+                    if (s is Button b) b.Content = nowFav ? "★" : "☆";
+                    RebuildFavSection();
+                };
+                itemPanel.Children.Add(starBtn);
+                itemPanel.Children.Add(new TextBlock { Text = displayName + paramHint, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+
+                var item = new MenuItem { Header = itemPanel, Tag = def, StaysOpenOnClick = true };
+                item.Click += (_, _) => { AddCondition(def); menu.Close(); };
                 sub.Items.Add(item);
+                allMenuItems.Add((item, sub, $"{displayName} {def.Name}".ToLower()));
             }
             menu.Items.Add(sub);
         }
 
+        // Search filtering
+        searchBox.TextChanged += (_, _) =>
+        {
+            var q = (searchBox.Text ?? "").Trim().ToLower();
+            foreach (var (item, parent, searchText) in allMenuItems)
+            {
+                item.IsVisible = string.IsNullOrEmpty(q) || searchText.Contains(q);
+            }
+        };
+
         menu.Open(this);
+        searchBox.Focus();
     }
 
     private void AddCondition(ConditionDef def)
