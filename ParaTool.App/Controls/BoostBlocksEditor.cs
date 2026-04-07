@@ -231,8 +231,8 @@ public class BoostBlocksEditor : UserControl
             var isOptional = i >= args.Length;
             var value = !isOptional ? args[i] : "";
 
-            // Skip trailing params with no value
-            if (isOptional && string.IsNullOrEmpty(value)) continue;
+            // Skip trailing params with no value (but keep optnum/optbool — they show "—")
+            if (isOptional && string.IsNullOrEmpty(value) && param.Type is not "optnum" and not "optbool") continue;
             var paramIdx = i;
 
             if (param.Type == "hidden")
@@ -250,6 +250,16 @@ public class BoostBlocksEditor : UserControl
             if (def.FuncName is "Advantage" or "Disadvantage" && i == 1 && args.Length > 0
                 && args[0].Trim() is not ("SavingThrow" or "Ability" or "Skill"))
                 continue;
+
+            // Ability/AbilityOverrideMinimum: Savant (optbool) only for Constitution
+            if (def.FuncName is "Ability" or "AbilityOverrideMinimum" && param.Type == "optbool"
+                && args.Length > 0 && !args[0].Trim().Equals("Constitution", StringComparison.OrdinalIgnoreCase))
+            {
+                // Clear stale Savant value when switching away from Con
+                if (!isOptional && !string.IsNullOrEmpty(value))
+                    UpdateParam(rawBoost, paramIdx, "");
+                continue;
+            }
             else if (param.Type == "int")
             {
                 // Integer tumbler chip (allow -1 for infinite duration etc.)
@@ -312,9 +322,47 @@ public class BoostBlocksEditor : UserControl
                     {
                         UpdateParam(rb, pi, tc.Text ?? "");
                         // Changing first param may affect visibility of later params → deferred rebuild
-                        if (pi == 0 && capturedDef.FuncName == "RollBonus")
+                        if (pi == 0 && capturedDef.FuncName is "RollBonus" or "Ability" or "AbilityOverrideMinimum" or "Advantage" or "Disadvantage")
                             Avalonia.Threading.Dispatcher.UIThread.Post(Rebuild);
                     }
+                };
+                stack.Children.Add(chip);
+            }
+            else if (param.Type == "optbool")
+            {
+                // Optional bool: "—" / true / false
+                var boolItems = new[] { "—", "true", "false" };
+                var boolDisplayItems = new[] { "—", "true", "false" };
+                var chip = new TumblerChipEditor
+                {
+                    Text = string.IsNullOrEmpty(value) ? "—" : value,
+                    Items = boolItems,
+                    DisplayItems = boolDisplayItems,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                chip.Tag = (rawBoost, paramIdx);
+                chip.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, tc.Text == "—" ? "" : tc.Text ?? "");
+                };
+                stack.Children.Add(chip);
+            }
+            else if (param.Type == "optnum")
+            {
+                // Optional number: scrollable number with "—" (none) option
+                var chip = new TumblerChipEditor
+                {
+                    Text = string.IsNullOrEmpty(value) ? "—" : value,
+                    Step = 1, MinValue = 0, MaxValue = 999,
+                    AllowNone = true,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                chip.Tag = (rawBoost, paramIdx);
+                chip.PropertyChanged += (s, e2) =>
+                {
+                    if (e2.Property.Name == "Text" && s is TumblerChipEditor tc && tc.Tag is (string rb, int pi))
+                        UpdateParam(rb, pi, tc.Text == "—" ? "" : tc.Text ?? "");
                 };
                 stack.Children.Add(chip);
             }

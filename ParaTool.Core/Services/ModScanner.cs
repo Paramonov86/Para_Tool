@@ -168,7 +168,7 @@ public sealed class ModScanner
             CleanedOldPaks = cleanedOldPaks,
             Resolver = combinedResolver,
             LocaMap = locaMap ?? new(),
-            PakPaths = new[] { ampPakPath }.Concat(nonAmpPaks).ToArray(),
+            PakPaths = nonAmpPaks.Concat(new[] { ampPakPath }).ToArray(), // AMP last = highest priority
             HandleOwnership = handleOwnershipMap ?? new()
         };
     }

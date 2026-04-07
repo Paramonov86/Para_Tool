@@ -61,8 +61,8 @@ public static class ArtifactCompiler
             price = correctPrice;
         stats.AppendLine($"data \"ValueOverride\" \"{price}\"");
 
-        if (art.Unique)
-            stats.AppendLine("data \"Unique\" \"1\"");
+        // Always write Unique explicitly to override inherited value from base
+        stats.AppendLine($"data \"Unique\" \"{(art.Unique ? "1" : "")}\"");
         if (!string.IsNullOrEmpty(art.ComboCategory))
             stats.AppendLine($"data \"ComboCategory\" \"{art.ComboCategory}\"");
         if (art.Weight >= 0)
@@ -127,8 +127,10 @@ public static class ArtifactCompiler
             var p = art.Passives[pi];
             var originalName = p.Name;
             // If passive name doesn't start with artifact StatId, it's inherited — rename
-            if (!originalName.StartsWith(art.StatId, StringComparison.OrdinalIgnoreCase)
-                && p.UsingBase == null)
+            // Also rename when Name == UsingBase (existing passive added via picker)
+            var needsRename = !originalName.StartsWith(art.StatId, StringComparison.OrdinalIgnoreCase)
+                && (p.UsingBase == null || p.UsingBase.Equals(originalName, StringComparison.OrdinalIgnoreCase));
+            if (needsRename)
             {
                 var newName = $"{art.StatId}_Passive_{pi + 1}";
                 passiveRenames[originalName] = newName;

@@ -40,6 +40,11 @@ public class TumblerChipEditor : UserControl
     /// <summary>Optional short display labels (same length as Items). If null, Items shown as-is.</summary>
     public string[]? DisplayItems { get; set; }
 
+    /// <summary>If true, scrolling below MinValue shows "—" (none). Text becomes "—".</summary>
+    public bool AllowNone { get; set; }
+
+    private bool IsNoneValue => AllowNone && _currentValue < MinValue;
+
     private bool IsListMode => Items is { Length: > 0 };
 
     private const int SidesCount = 3;
@@ -277,6 +282,7 @@ public class TumblerChipEditor : UserControl
     }
 
     private string Fmt(double v) =>
+        AllowNone && v < MinValue ? "—" :
         Step < 0.1
             ? v.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
             : (v == (int)v ? ((int)v).ToString()
@@ -285,6 +291,7 @@ public class TumblerChipEditor : UserControl
     private double ParseCurrent()
     {
         var raw = (Text?.Trim() ?? "").Replace(',', '.');
+        if (AllowNone && (raw == "—" || raw == "")) return MinValue - 1;
         return double.TryParse(raw, System.Globalization.NumberStyles.Float,
             System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0;
     }
@@ -575,15 +582,18 @@ public class TumblerChipEditor : UserControl
         else
         {
             var step = EffectiveStep;
+            var noneVal = MinValue - 1;
             for (int i = 0; i < SidesCount; i++)
             {
                 double val = Math.Round(_currentValue + (-(SidesCount - i)) * step, 4);
-                _upperLabels[i].Text = val >= MinValue ? Fmt(val) : "";
+                if (AllowNone && val < MinValue && val >= noneVal - step) _upperLabels[i].Text = "—";
+                else _upperLabels[i].Text = val >= MinValue ? Fmt(val) : "";
             }
             for (int i = 0; i < SidesCount; i++)
             {
                 double val = Math.Round(_currentValue + (i + 1) * step, 4);
-                _lowerLabels[i].Text = val <= MaxValue ? Fmt(val) : "";
+                if (AllowNone && IsNoneValue && val <= MinValue) _lowerLabels[i].Text = Fmt(val < MinValue ? MinValue : val);
+                else _lowerLabels[i].Text = val <= MaxValue ? Fmt(val) : "";
             }
             _valueText.Text = Fmt(_currentValue);
         }
@@ -607,10 +617,22 @@ public class TumblerChipEditor : UserControl
         }
         else
         {
-            var next = Math.Round(_currentValue + steps * EffectiveStep, 4);
-            next = Math.Clamp(next, MinValue, MaxValue);
-            if (Math.Abs(next - _currentValue) < 1e-9) return;
-            _currentValue = next;
+            var noneVal = MinValue - 1;
+            if (AllowNone && IsNoneValue)
+            {
+                // From "—": scroll up → go to MinValue
+                if (steps > 0) { _currentValue = MinValue; }
+                else return;
+            }
+            else
+            {
+                var next = Math.Round(_currentValue + steps * EffectiveStep, 4);
+                var clampMin = AllowNone ? noneVal : MinValue;
+                next = Math.Clamp(next, clampMin, MaxValue);
+                if (AllowNone && next < MinValue) next = noneVal;
+                if (Math.Abs(next - _currentValue) < 1e-9) return;
+                _currentValue = next;
+            }
         }
         RefreshDrum();
     }

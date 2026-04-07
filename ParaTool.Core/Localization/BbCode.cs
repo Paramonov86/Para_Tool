@@ -84,15 +84,15 @@ public static partial class BbCode
             var type = m.Groups[1].Value;
             var tooltip = m.Groups[2].Value;
             var content = m.Groups[3].Value;
-            var tag = type switch
+            return type switch
             {
-                "Status" => "status",
-                "Spell" => "spell",
-                "Passive" => "passive",
-                "ActionResource" => "resource",
-                _ => $"lstag:{type}"
+                "Status" => $"[status={tooltip}]{content}[/status]",
+                "Spell" => $"[spell={tooltip}]{content}[/spell]",
+                "Passive" => $"[passive={tooltip}]{content}[/passive]",
+                "ActionResource" => $"[resource={tooltip}]{content}[/resource]",
+                // Other types (Skills, Ability, etc.) → encode Type in arg for round-trip
+                _ => $"[tip={type}:{tooltip}]{content}[/tip]"
             };
-            return $"[{tag}={tooltip}]{content}[/{tag}]";
         });
 
         // LSTag without Type (tooltip only)
@@ -252,6 +252,14 @@ public static partial class BbCode
 
         if (lsType != null)
             xml = $"&lt;LSTag Type=\"{lsType}\" Tooltip=\"{tooltip}\"&gt;{EscapeXml(content)}&lt;/LSTag&gt;";
+        else if (tooltip.Contains(':'))
+        {
+            // Round-trip encoded type: [tip=Skills:Perception] → <LSTag Type="Skills" Tooltip="Perception">
+            var colonIdx = tooltip.IndexOf(':');
+            var encodedType = tooltip[..colonIdx];
+            var encodedTooltip = tooltip[(colonIdx + 1)..];
+            xml = $"&lt;LSTag Type=\"{encodedType}\" Tooltip=\"{encodedTooltip}\"&gt;{EscapeXml(content)}&lt;/LSTag&gt;";
+        }
         else
             xml = $"&lt;LSTag Tooltip=\"{tooltip}\"&gt;{EscapeXml(content)}&lt;/LSTag&gt;";
 

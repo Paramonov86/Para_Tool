@@ -70,9 +70,9 @@ public static class BoostMapping
         // ── Ability & Stats (#2ECC71) ──
         new("AC", "Armor Class", "Класс брони", "#2ECC71", [new("AC", "+/-", "number")]),
         new("Ability", "Ability Score", "Показатель способности", "#2ECC71",
-            [new("Ability", "Ability", "enum", Abilities), new("Amount", "+/-", "number"), new("Cap", "Cap", "number")]),
+            [new("Ability", "Ability", "enum", Abilities), new("Amount", "+/-", "number"), new("Cap", "Cap", "optnum"), new("Savant", "Savant", "optbool")]),
         new("AbilityOverrideMinimum", "Min Ability", "Минимум способности", "#2ECC71",
-            [new("Ability", "Ability", "enum", Abilities), new("Min", "Min", "number")]),
+            [new("Ability", "Ability", "enum", Abilities), new("Min", "Min", "number"), new("Savant", "Savant", "optbool")]),
         new("NullifyAbilityScore", "Nullify Ability", "Обнулить способность", "#2ECC71",
             [new("Ability", "Ability", "enum", Abilities)]),
         new("ACOverrideFormula", "AC Override Formula", "Формула КБ", "#2ECC71",
@@ -725,9 +725,13 @@ public static class BoostMapping
             var param = def.Params[i];
             if (param.Type == "hidden") continue;
 
-            if (param.Type is "number" or "formula" or "float")
+            if (param.Type is "number" or "formula" or "float" or "optnum")
             {
                 valueParts.Add(FormatNumeric(val));
+            }
+            else if (param.Type == "optbool")
+            {
+                // skip in preview
             }
             else if (param.Type == "dice")
             {

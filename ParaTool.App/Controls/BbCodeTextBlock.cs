@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
+using ParaTool.App.Services;
 using ParaTool.App.Themes;
 
 namespace ParaTool.App.Controls;
@@ -154,6 +155,25 @@ public class BbCodeTextBlock : TextBlock
                     break;
                 case "heal" when !isClosing:
                     pos = AddTaggedSpan(raw, pos, "heal", HealColor, boldStack, italicStack);
+                    break;
+                case "img" when !isClosing && !string.IsNullOrEmpty(arg):
+                    var icon = Converters.BbCodeRenderer.LoadIcon(arg);
+                    if (icon != null)
+                    {
+                        var img = new Avalonia.Controls.Image
+                        {
+                            Source = icon,
+                            Width = FontScale.Of(14),
+                            Height = FontScale.Of(14),
+                            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                            Margin = new Thickness(1, 0),
+                        };
+                        Inlines.Add(new InlineUIContainer { Child = img });
+                    }
+                    else
+                    {
+                        AddRun(Converters.BbCodeRenderer.GetFallbackSymbol(arg), true, false, TipColor);
+                    }
                     break;
                 case "p" when !isClosing:
                     // no-op, just skip

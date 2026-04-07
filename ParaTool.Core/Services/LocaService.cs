@@ -73,7 +73,7 @@ public sealed class LocaService
             {
                 var loca = ItemNameResolver.ReadAllLocalization(pakPath, langCode);
                 foreach (var (handle, text) in loca)
-                    combined.TryAdd(handle, text);
+                    combined[handle] = text; // Last pak wins (BG3 load order)
             }
             catch (Exception ex) { AppLogger.Warn($"LocaService: skipping pak {pakPath}: {ex.Message}"); }
         }

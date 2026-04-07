@@ -128,6 +128,21 @@ public static partial class BbCodeRenderer
         }
     }
 
+    /// <summary>Load icon bitmap for an [img=X] tag name. Returns null if not found.</summary>
+    public static Bitmap? LoadIcon(string imgTag)
+    {
+        if (ImageToAsset.TryGetValue(imgTag, out var assetName))
+            return LoadTooltipIcon(assetName);
+        return null;
+    }
+
+    /// <summary>Get Unicode fallback symbol for an [img=X] tag name.</summary>
+    public static string GetFallbackSymbol(string imgTag)
+    {
+        if (ImageSymbols.TryGetValue(imgTag, out var sym)) return sym;
+        return imgTag.Replace("Tooltip", "").Replace("_", " ");
+    }
+
     /// <summary>
     /// Render BG3 loca XML-escaped text to Avalonia Inlines.
     /// </summary>
