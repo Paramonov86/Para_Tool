@@ -89,6 +89,8 @@ public partial class ConstructorViewModel : ViewModelBase
     private DispatcherTimer? _searchDebounce;
 
     [ObservableProperty] private ArtifactItemVM? _selectedArtifact;
+    public ObservableCollection<ArtifactItemVM> RecentTabs { get; } = [];
+    private const int MaxRecentTabs = 5;
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private string _editingLang = Localization.Loc.Instance.Lang;
     [ObservableProperty] private bool _isCodeView;
@@ -406,6 +408,11 @@ public partial class ConstructorViewModel : ViewModelBase
             if (_resolver != null && _locaService != null)
                 ReloadLocaForCurrentLang(newValue);
             newValue.RefreshAll();
+            // Add to recent tabs
+            RecentTabs.Remove(newValue);
+            RecentTabs.Insert(0, newValue);
+            while (RecentTabs.Count > MaxRecentTabs)
+                RecentTabs.RemoveAt(RecentTabs.Count - 1);
         }
         OnPropertyChanged(nameof(IsArtifactSelected));
         OnPropertyChanged(nameof(HasNoSelection));
@@ -541,9 +548,17 @@ public partial class ConstructorViewModel : ViewModelBase
         if (item.IsPersisted)
             ArtifactStore.Delete(item.Artifact.ArtifactId);
         SavedArtifacts.Remove(item);
+        RecentTabs.Remove(item);
         item.Detach();
         if (SelectedArtifact == item)
-            SelectedArtifact = null;
+            SelectedArtifact = RecentTabs.FirstOrDefault();
+    }
+
+    public void CloseTab(ArtifactItemVM item)
+    {
+        RecentTabs.Remove(item);
+        if (SelectedArtifact == item)
+            SelectedArtifact = RecentTabs.FirstOrDefault();
     }
 
     [RelayCommand]

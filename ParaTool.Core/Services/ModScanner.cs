@@ -742,11 +742,11 @@ public sealed class ModScanner
         {
             return slot switch
             {
-                "Melee Main Weapon" => IsOneHanded(weaponProps) ? "Weapons_1H" : "Weapons",
+                "Melee Main Weapon" => IsOneHanded(weaponProps) ? "Weapons_1H" : "Weapons_2H",
                 "Melee Offhand Weapon" => "Weapons_1H",
-                "Ranged Main Weapon" => "Weapons_2H",
+                "Ranged Main Weapon" => IsOneHanded(weaponProps) ? "Weapons_1H" : "Weapons_2H",
                 "Ranged Offhand Weapon" => "Weapons_1H",
-                _ => "Weapons"
+                _ => IsOneHanded(weaponProps) ? "Weapons_1H" : "Weapons_2H"
             };
         }
 
@@ -771,10 +771,8 @@ public sealed class ModScanner
     private static bool IsOneHanded(string? weaponProps)
     {
         if (string.IsNullOrEmpty(weaponProps)) return false;
-        // If it has Versatile or Two-Handed, it's not strictly 1H for the main pool
-        // But for the sub-pool: Versatile weapons go in Weapons (main) + Weapons_1H
-        // Light, Finesse = 1H indicators
-        return !weaponProps.Contains("Two-Handed", StringComparison.OrdinalIgnoreCase);
+        // Twohanded (no hyphen) is the BG3 property name
+        return !weaponProps.Contains("Twohanded", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsClothArmor(string? armorType)

@@ -725,7 +725,13 @@ public static class BoostMapping
             var param = def.Params[i];
             if (param.Type == "hidden") continue;
 
-            if (param.Type is "number" or "formula" or "float" or "optnum")
+            if (param.Type == "optnum")
+            {
+                // Optional cap: skip if empty/0, show as "(up to N)" otherwise
+                if (!string.IsNullOrEmpty(val) && val != "0")
+                    valueParts.Add($"(up to {val})");
+            }
+            else if (param.Type is "number" or "formula" or "float")
             {
                 valueParts.Add(FormatNumeric(val));
             }

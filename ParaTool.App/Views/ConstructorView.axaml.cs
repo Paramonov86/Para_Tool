@@ -176,6 +176,18 @@ public partial class ConstructorView : UserControl
             _lastSelStart = _lastFocusedLocaBox.SelectionStart;
             _lastSelEnd = _lastFocusedLocaBox.SelectionEnd;
         }
+
+        // Click on tab border → switch to that item
+        if (e.Source is Avalonia.Visual visual)
+        {
+            var border = visual as Border ?? visual.FindAncestorOfType<Border>();
+            if (border?.Name == "TabBorder" && border.DataContext is ArtifactItemVM tabItem
+                && DataContext is ConstructorViewModel vm)
+            {
+                vm.SelectedArtifact = tabItem;
+                e.Handled = true;
+            }
+        }
     }
 
     private void OnGotFocus(object? sender, GotFocusEventArgs e)
@@ -234,6 +246,14 @@ public partial class ConstructorView : UserControl
                 });
             }
             catch { }
+            return;
+        }
+
+        // Close recent tab
+        if (btn.Name == "CloseTabBtn" && btn.Tag is ArtifactItemVM tabItem
+            && DataContext is ConstructorViewModel tabVm)
+        {
+            tabVm.CloseTab(tabItem);
             return;
         }
 
