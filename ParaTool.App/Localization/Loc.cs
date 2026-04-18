@@ -216,6 +216,7 @@ public partial class Loc : ObservableObject
     public string LblProficiency => this["LblProficiency"];
     public string LblWeight => this["LblWeight"];
     public string LblDamage => this["LblDamage"];
+    public string LblDamageType => this["LblDamageType"];
     public string LblVersatile => this["LblVersatile"];
     public string LblDefaultBoosts => this["LblDefaultBoosts"];
     public string LblBoostsMainHand => this["LblBoostsMainHand"];

@@ -236,6 +236,7 @@
   "LblProficiency": "Умение",
   "LblWeight": "Вес",
   "LblDamage": "Урон",
+  "LblDamageType": "Тип урона",
   "LblVersatile": "Универсальное",
   "LblDefaultBoosts": "Эффекты по умолчанию",
   "LblBoostsMainHand": "Основная рука",

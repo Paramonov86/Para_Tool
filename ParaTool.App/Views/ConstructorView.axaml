@@ -383,30 +383,35 @@
                             <StackPanel Spacing="6">
                                 <TextBlock Text="{Binding LblWeapon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
-                                <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding LblDamage, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
                                     <TextBox Grid.Column="1" Text="{Binding EditDamage}" Watermark="1d8"
                                              FontSize="{DynamicResource FontSize12}" Padding="8,4" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
 
-                                    <TextBlock Grid.Row="1" Text="{Binding LblVersatile, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EditVersatileDamage}" Watermark="1d10"
+                                    <TextBlock Grid.Row="1" Text="{Binding LblDamageType, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ctrl:TumblerChipEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditDamageType}"
+                                                           Items="{x:Static vm:ArtifactItemVM.DamageTypeOptions}"
+                                                           Margin="0,6,0,0" HorizontalAlignment="Left" />
+
+                                    <TextBlock Grid.Row="2" Text="{Binding LblVersatile, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding EditVersatileDamage}" Watermark="1d10"
                                              FontSize="{DynamicResource FontSize12}" Padding="8,4" Margin="0,6,0,0" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
 
-                                    <TextBlock Grid.Row="2" Text="{Binding LblDefaultBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:BoostBlocksEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditDefaultBoosts}" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="3" Text="{Binding LblDefaultBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ctrl:BoostBlocksEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditDefaultBoosts}" Margin="0,6,0,0" />
 
-                                    <TextBlock Grid.Row="3" Text="{Binding LblProperties, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:ToggleChipsEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditWeaponProperties}"
+                                    <TextBlock Grid.Row="4" Text="{Binding LblProperties, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ctrl:ToggleChipsEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditWeaponProperties}"
                                                                     Options="{x:Static vm:ArtifactItemVM.WeaponPropertyOptions}" Margin="0,6,0,0" />
 
-                                    <TextBlock Grid.Row="4" Text="{Binding LblBoostsMainHand, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:BoostBlocksEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditBoostsOnEquipMainHand}" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="5" Text="{Binding LblBoostsMainHand, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ctrl:BoostBlocksEditor Grid.Row="5" Grid.Column="1" Text="{Binding EditBoostsOnEquipMainHand}" Margin="0,6,0,0" />
 
-                                    <TextBlock Grid.Row="5" Text="{Binding LblBoostsOffHand, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:BoostBlocksEditor Grid.Row="5" Grid.Column="1" Text="{Binding EditBoostsOnEquipOffHand}" Margin="0,6,0,0" />
+                                    <TextBlock Grid.Row="6" Text="{Binding LblBoostsOffHand, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ctrl:BoostBlocksEditor Grid.Row="6" Grid.Column="1" Text="{Binding EditBoostsOnEquipOffHand}" Margin="0,6,0,0" />
 
-                                    <TextBlock Grid.Row="6" Text="{Binding LblWeight, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:TumblerChipEditor Grid.Row="6" Grid.Column="1" Text="{Binding EditWeight}"
+                                    <TextBlock Grid.Row="7" Text="{Binding LblWeight, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                    <ctrl:TumblerChipEditor Grid.Row="7" Grid.Column="1" Text="{Binding EditWeight}"
                                                            Step="0.01" Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                 </Grid>

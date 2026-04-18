@@ -71,6 +71,9 @@ public sealed class ArtifactDefinition
     /// <summary>Weapon-specific: Damage dice (null = inherit, e.g. "1d8").</summary>
     public string? Damage { get; set; }
 
+    /// <summary>Weapon-specific: Damage Type override (null = inherit, e.g. "Slashing").</summary>
+    public string? DamageType { get; set; }
+
     /// <summary>Weapon-specific: Versatile damage (null = inherit).</summary>
     public string? VersatileDamage { get; set; }
 

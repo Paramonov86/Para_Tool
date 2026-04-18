@@ -117,6 +117,9 @@ public partial class ArtifactItemVM : ObservableObject
     public static string[] ProficiencyOptions => ParaTool.Core.Schema.BoostMapping.ProficiencyTypes;
     public static string[] ProficiencyLabels => ParaTool.Core.Schema.BoostMapping.ProficiencyLabels;
 
+    /// <summary>DamageTypes without "None" — weapons must have a real damage type.</summary>
+    public static string[] DamageTypeOptions => ParaTool.Core.Schema.BoostMapping.DamageTypes[1..];
+
     public static string[] ThemeOptions =>
     [
         "Swamp", "Aquatic", "Shadowfell", "Arcane", "Celestial",
@@ -225,6 +228,12 @@ public partial class ArtifactItemVM : ObservableObject
     {
         get => Artifact.VersatileDamage ?? "";
         set { Artifact.VersatileDamage = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); }
+    }
+
+    public string EditDamageType
+    {
+        get => Artifact.DamageType ?? "";
+        set { Artifact.DamageType = string.IsNullOrWhiteSpace(value) ? null : value; MarkDirty(); OnPropertyChanged(); }
     }
 
     public string EditDefaultBoosts

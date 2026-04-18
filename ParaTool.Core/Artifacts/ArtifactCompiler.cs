@@ -80,6 +80,8 @@ public static class ArtifactCompiler
         // Weapon-specific
         if (art.Damage != null)
             stats.AppendLine($"data \"Damage\" \"{art.Damage}\"");
+        if (!string.IsNullOrEmpty(art.DamageType) && art.DamageType != "None")
+            stats.AppendLine($"data \"Damage Type\" \"{art.DamageType}\"");
         if (art.VersatileDamage != null)
             stats.AppendLine($"data \"VersatileDamage\" \"{art.VersatileDamage}\"");
         if (art.DefaultBoosts != null)

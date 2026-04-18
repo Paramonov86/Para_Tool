@@ -531,6 +531,7 @@ public partial class ConstructorViewModel : ViewModelBase
             art.BoostsOnEquipMainHand = fresh.BoostsOnEquipMainHand;
             art.BoostsOnEquipOffHand = fresh.BoostsOnEquipOffHand;
             art.Damage = fresh.Damage;
+            art.DamageType = fresh.DamageType;
             art.VersatileDamage = fresh.VersatileDamage;
             art.WeaponProperties = fresh.WeaponProperties;
             art.ArmorClass = fresh.ArmorClass;
@@ -670,6 +671,7 @@ public partial class ConstructorViewModel : ViewModelBase
             if (fields.TryGetValue("Proficiency Group", out var pg)) artifact.ProficiencyGroup = pg;
             if (fields.TryGetValue("ComboCategory", out var cc) && !string.IsNullOrEmpty(cc)) artifact.ComboCategory = cc;
             if (fields.TryGetValue("Damage", out var dmg)) artifact.Damage = dmg;
+            if (fields.TryGetValue("Damage Type", out var dmgType)) artifact.DamageType = dmgType;
             if (fields.TryGetValue("VersatileDamage", out var vd)) artifact.VersatileDamage = vd;
             if (fields.TryGetValue("Weapon Properties", out var wp)) artifact.WeaponProperties = wp;
             if (fields.TryGetValue("BoostsOnEquipMainHand", out var boostsMH)) artifact.BoostsOnEquipMainHand = boostsMH;
