@@ -559,6 +559,24 @@ public static class BoostMapping
         // Advantage / Disadvantage on checks
         ["Advantage.Ability"] =             new("Advantage on [1] Checks.", "Преимущество при проверках ([1])."),
         ["Disadvantage.Ability"] =          new("Disadvantage on [1] Checks.", "Помеха при проверках ([1])."),
+        ["Advantage.AttackRoll"] =          new("Advantage on Attack Rolls.", "Преимущество при броске атаки."),
+        ["Disadvantage.AttackRoll"] =       new("Disadvantage on Attack Rolls.", "Помеха при броске атаки."),
+        ["Advantage.AttackTarget"] =        new("Attackers have Disadvantage against the wearer.", "Атакующие получают помеху против владельца."),
+        ["Disadvantage.AttackTarget"] =     new("Attackers have Advantage against the wearer.", "Атакующие получают преимущество против владельца."),
+        ["Advantage.AllSavingThrows"] =     new("Advantage on all Saving Throws.", "Преимущество при всех испытаниях."),
+        ["Disadvantage.AllSavingThrows"] =  new("Disadvantage on all Saving Throws.", "Помеха при всех испытаниях."),
+        ["Advantage.AllAbilities"] =        new("Advantage on all Ability Checks.", "Преимущество при всех проверках характеристик."),
+        ["Disadvantage.AllAbilities"] =     new("Disadvantage on all Ability Checks.", "Помеха при всех проверках характеристик."),
+        ["Advantage.AllSkills"] =           new("Advantage on all Skill Checks.", "Преимущество при всех проверках навыков."),
+        ["Disadvantage.AllSkills"] =        new("Disadvantage on all Skill Checks.", "Помеха при всех проверках навыков."),
+        ["Advantage.Concentration"] =       new("Advantage on Concentration Saving Throws.", "Преимущество при испытаниях концентрации."),
+        ["Disadvantage.Concentration"] =    new("Disadvantage on Concentration Saving Throws.", "Помеха при испытаниях концентрации."),
+        ["Advantage.DeathSavingThrow"] =    new("Advantage on Death Saving Throws.", "Преимущество при испытаниях от смерти."),
+        ["Disadvantage.DeathSavingThrow"] = new("Disadvantage on Death Saving Throws.", "Помеха при испытаниях от смерти."),
+        ["Advantage.SavingThrow"] =         new("Advantage on [1] Saving Throws.", "Преимущество при испытаниях ([1])."),
+        ["Disadvantage.SavingThrow"] =      new("Disadvantage on [1] Saving Throws.", "Помеха при испытаниях ([1])."),
+        ["Advantage.Skill"] =               new("Advantage on [1] Checks.", "Преимущество при проверках ([1])."),
+        ["Disadvantage.Skill"] =            new("Disadvantage on [1] Checks.", "Помеха при проверках ([1])."),
 
         // Saving Throws (generic)
         ["SavingThrow"] =                   new("[1] Saving Throws", "Испытания: [1]"),
@@ -634,11 +652,18 @@ public static class BoostMapping
                 return EngineDescriptions.GetValueOrDefault("CriticalHit.AlwaysCritFail");
         }
 
-        // Advantage/Disadvantage on ability checks
-        if (funcName == "Advantage" && args.Length >= 1 && args[0].Trim() == "Ability")
-            return EngineDescriptions.GetValueOrDefault("Advantage.Ability");
-        if (funcName == "Disadvantage" && args.Length >= 1 && args[0].Trim() == "Ability")
-            return EngineDescriptions.GetValueOrDefault("Disadvantage.Ability");
+        // Advantage/Disadvantage variants
+        if (funcName is "Advantage" or "Disadvantage" && args.Length >= 1)
+        {
+            var ctx = args[0].Trim();
+            // Two-arg variants: Advantage(Ability|SavingThrow|Skill, X)
+            if (args.Length >= 2 && ctx is "Ability" or "SavingThrow" or "Skill")
+                return EngineDescriptions.GetValueOrDefault($"{funcName}.{ctx}");
+            // Single-arg variants: Advantage(AttackRoll), Advantage(AllSavingThrows), etc.
+            if (ctx is "AttackRoll" or "AttackTarget" or "AllSavingThrows" or "AllAbilities"
+                    or "AllSkills" or "Concentration" or "DeathSavingThrow")
+                return EngineDescriptions.GetValueOrDefault($"{funcName}.{ctx}");
+        }
 
         return null;
     }
