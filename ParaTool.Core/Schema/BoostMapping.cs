@@ -578,6 +578,24 @@ public static class BoostMapping
         ["Advantage.Skill"] =               new("Advantage on [1] Checks.", "Преимущество при проверках ([1])."),
         ["Disadvantage.Skill"] =            new("Disadvantage on [1] Checks.", "Помеха при проверках ([1])."),
 
+        // RollBonus (uses FormatNumeric — [1] already has +/- prefix)
+        ["RollBonus.Attack"] =              new("[1] Attack Rolls.", "[1] к броску атаки."),
+        ["RollBonus.SavingThrow"] =         new("[1] Saving Throws.", "[1] к испытаниям."),
+        ["RollBonus.SavingThrowOf"] =       new("[1] [2] Saving Throws.", "[1] к испытаниям ([2])."),
+        ["RollBonus.DeathSavingThrow"] =    new("[1] Death Saving Throws.", "[1] к испытаниям от смерти."),
+
+        // Skill(Skill, Amount) — [1] is amount, [2] is skill
+        ["Skill"] =                         new("[1] to [2] Checks.", "[1] к проверкам ([2])."),
+
+        // Ability(Ability, Amount, [Cap]) — [1] is amount, [2] is ability
+        ["Ability"] =                       new("[2] [1]", "[2] [1]"),
+
+        // Proficiency(Group)
+        ["Proficiency"] =                   new("Grants Proficiency with [1].", "Даёт умение: [1]."),
+
+        // WeaponProperty.Magical (most common item meta-flag)
+        ["WeaponProperty.Magical"] =        new("Counts as Magical for overcoming damage resistance.", "Считается магическим для преодоления устойчивости."),
+
         // Saving Throws (generic)
         ["SavingThrow"] =                   new("[1] Saving Throws", "Испытания: [1]"),
 
@@ -665,6 +683,36 @@ public static class BoostMapping
                 return EngineDescriptions.GetValueOrDefault($"{funcName}.{ctx}");
         }
 
+        // RollBonus(Type, Amount, [AbilityOrSkill])
+        if (funcName == "RollBonus" && args.Length >= 2)
+        {
+            var rollType = args[0].Trim();
+            if (rollType == "Attack")
+                return EngineDescriptions.GetValueOrDefault("RollBonus.Attack");
+            if (rollType == "DeathSavingThrow")
+                return EngineDescriptions.GetValueOrDefault("RollBonus.DeathSavingThrow");
+            if (rollType == "SavingThrow")
+                return args.Length >= 3 && !string.IsNullOrEmpty(args[2].Trim())
+                    ? EngineDescriptions.GetValueOrDefault("RollBonus.SavingThrowOf")
+                    : EngineDescriptions.GetValueOrDefault("RollBonus.SavingThrow");
+        }
+
+        // Skill(Skill, Amount)
+        if (funcName == "Skill" && args.Length >= 2)
+            return EngineDescriptions.GetValueOrDefault("Skill");
+
+        // Ability(Ability, Amount, [Cap])
+        if (funcName == "Ability" && args.Length >= 2)
+            return EngineDescriptions.GetValueOrDefault("Ability");
+
+        // Proficiency(Group)
+        if (funcName == "Proficiency" && args.Length >= 1)
+            return EngineDescriptions.GetValueOrDefault("Proficiency");
+
+        // WeaponProperty(Flag) — only Magical has a human-readable description
+        if (funcName == "WeaponProperty" && args.Length >= 1)
+            return EngineDescriptions.GetValueOrDefault($"WeaponProperty.{args[0].Trim()}");
+
         return null;
     }
 
@@ -682,7 +730,19 @@ public static class BoostMapping
         var lang = translate != null ? translate("_lang") : "en";
         var template = lang == "ru" ? desc.Ru : desc.En;
 
-        // Determine the [1] value
+        // Two-placeholder boosts — substitute both [1] and [2] then return
+        if (funcName == "RollBonus" && args.Length >= 3 && args[0].Trim() == "SavingThrow"
+            && !string.IsNullOrEmpty(args[2].Trim()))
+            return template.Replace("[1]", FormatNumeric(args[1].Trim()))
+                           .Replace("[2]", Tr($"enum.{args[2].Trim()}", translate));
+        if (funcName == "Skill" && args.Length >= 2)
+            return template.Replace("[1]", FormatNumeric(args[1].Trim()))
+                           .Replace("[2]", Tr($"enum.{args[0].Trim()}", translate));
+        if (funcName == "Ability" && args.Length >= 2)
+            return template.Replace("[1]", FormatNumeric(args[1].Trim()))
+                           .Replace("[2]", Tr($"enum.{args[0].Trim()}", translate));
+
+        // Determine the [1] value for single-placeholder boosts
         string paramValue = "";
         if (funcName == "Resistance" && args.Length >= 1)
             paramValue = Tr($"enum.{args[0].Trim()}", translate);
@@ -694,6 +754,10 @@ public static class BoostMapping
             paramValue = args[1].Trim();
         else if (funcName is "Advantage" or "Disadvantage" && args.Length >= 2)
             paramValue = Tr($"enum.{args[1].Trim()}", translate);
+        else if (funcName == "RollBonus" && args.Length >= 2)
+            paramValue = FormatNumeric(args[1].Trim());
+        else if (funcName == "Proficiency" && args.Length >= 1)
+            paramValue = Tr($"enum.{args[0].Trim()}", translate);
 
         return template.Replace("[1]", paramValue);
     }
