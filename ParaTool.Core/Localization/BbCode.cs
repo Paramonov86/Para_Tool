@@ -66,6 +66,10 @@ public static partial class BbCode
             .Replace("&gt;", ">")
             .Replace("&amp;", "&");
 
+        // Bold params must run BEFORE the generic bold regex — otherwise
+        // <b>[1]</b> is rewritten to [b][1][/b] first and the param tag is lost.
+        text = BoldParamRegex().Replace(text, "[dp$1]");
+
         // Convert HTML/LSTag back to BB-code
         text = BoldRegex().Replace(text, "[b]$1[/b]");
         text = ItalicRegex().Replace(text, "[i]$1[/i]");
@@ -97,9 +101,6 @@ public static partial class BbCode
 
         // LSTag without Type (tooltip only)
         text = LsTagSimpleRegex().Replace(text, "[tip=$1]$2[/tip]");
-
-        // Bold params: <b>[N]</b> → [dpN]
-        text = BoldParamRegex().Replace(text, "[dp$1]");
 
         return text;
     }
