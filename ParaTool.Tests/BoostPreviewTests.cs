@@ -239,4 +239,55 @@ public class BoostPreviewTests
         // Should not be empty — fallback to raw or chip rendering
         Assert.NotEmpty(result);
     }
+
+    // ── Reroll / Flags / Single-enum boosts ────────────────────
+
+    [Fact]
+    public void Reroll_Conditional()
+    {
+        Assert.Equal("Reroll Attack rolls of 10 or below.", Preview("Reroll(Attack,10,false)"));
+    }
+
+    [Fact]
+    public void Reroll_Always()
+    {
+        Assert.Equal("Always reroll Damage rolls of 2 or below.",
+            Preview("Reroll(Damage,2,true)"));
+    }
+
+    [Fact]
+    public void IgnoreResistance_FireImmune()
+    {
+        Assert.Equal("Ignore Fire Resistance.", Preview("IgnoreResistance(Fire,Immune)"));
+    }
+
+    [Fact]
+    public void Savant_School()
+    {
+        Assert.Contains("Savant of Evocation", Preview("Savant(Evocation)"));
+    }
+
+    [Fact]
+    public void StatusImmunity_ById()
+    {
+        Assert.Contains("Immune to POISONED", Preview("StatusImmunity(POISONED)"));
+    }
+
+    [Fact]
+    public void Invulnerable_Zero_Args()
+    {
+        Assert.Equal("Invulnerable.", Preview("Invulnerable()"));
+    }
+
+    [Fact]
+    public void CannotBeDisarmed_Zero_Args()
+    {
+        Assert.Equal("Cannot be disarmed.", Preview("CannotBeDisarmed()"));
+    }
+
+    [Fact]
+    public void BlockSpellCast_Zero_Args()
+    {
+        Assert.Equal("Cannot cast spells.", Preview("BlockSpellCast()"));
+    }
 }

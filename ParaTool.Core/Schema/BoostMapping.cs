@@ -612,6 +612,25 @@ public static class BoostMapping
         // TemporaryHP(formula)
         ["TemporaryHP"] =                   new("Grants [1] Temporary Hit Points.", "Даёт [1] временных очков здоровья."),
 
+        // Reroll(Type, Below, Always) — [1] is type, [2] is threshold
+        ["Reroll"] =                        new("Reroll [1] rolls of [2] or below.", "Переброс [1] бросков ≤ [2]."),
+        ["Reroll.Always"] =                 new("Always reroll [1] rolls of [2] or below.", "Всегда перебрасывать [1] ≤ [2]."),
+
+        // IgnoreResistance(DamageType, Level)
+        ["IgnoreResistance"] =              new("Ignore [1] Resistance.", "Игнорирует устойчивость к ([1])."),
+
+        // Savant(School)
+        ["Savant"] =                        new("Savant of [1].", "Знаток школы [1]."),
+
+        // Single-arg named boosts
+        ["StatusImmunity"] =                new("Immune to [1].", "Невосприимчивость к ([1])."),
+
+        // Zero-arg flag boosts
+        ["Invulnerable"] =                  new("Invulnerable.", "Неуязвимость."),
+        ["CannotBeDisarmed"] =              new("Cannot be disarmed.", "Не может быть обезоружен."),
+        ["BlockSpellCast"] =                new("Cannot cast spells.", "Не может произносить заклинания."),
+        ["CriticalDamageOnHit"] =           new("All hits deal critical damage.", "Все попадания наносят критический урон."),
+
         // Saving Throws (generic)
         ["SavingThrow"] =                   new("[1] Saving Throws", "Испытания: [1]"),
 
@@ -740,6 +759,22 @@ public static class BoostMapping
             && args.Length >= 1)
             return EngineDescriptions.GetValueOrDefault(funcName);
 
+        // Reroll(Type, Below, [Always])
+        if (funcName == "Reroll" && args.Length >= 2)
+        {
+            var always = args.Length >= 3 && args[2].Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
+            return EngineDescriptions.GetValueOrDefault(always ? "Reroll.Always" : "Reroll");
+        }
+
+        // Single-enum-arg boosts
+        if (funcName is "IgnoreResistance" or "Savant" or "StatusImmunity" && args.Length >= 1)
+            return EngineDescriptions.GetValueOrDefault(funcName);
+
+        // Zero-arg flag boosts
+        if (funcName is "Invulnerable" or "CannotBeDisarmed" or "BlockSpellCast"
+            or "CriticalDamageOnHit")
+            return EngineDescriptions.GetValueOrDefault(funcName);
+
         return null;
     }
 
@@ -771,6 +806,9 @@ public static class BoostMapping
         if (funcName == "WeaponDamage" && args.Length >= 2 && !string.IsNullOrEmpty(args[1].Trim()))
             return template.Replace("[1]", FormatNumeric(args[0].Trim()))
                            .Replace("[2]", Tr($"enum.{args[1].Trim()}", translate));
+        if (funcName == "Reroll" && args.Length >= 2)
+            return template.Replace("[1]", Tr($"enum.{args[0].Trim()}", translate))
+                           .Replace("[2]", args[1].Trim());
 
         // Determine the [1] value for single-placeholder boosts
         string paramValue = "";
@@ -793,6 +831,8 @@ public static class BoostMapping
             paramValue = FormatNumeric(args[0].Trim());
         else if (funcName == "WeaponDamage" && args.Length >= 1)
             paramValue = FormatNumeric(args[0].Trim());
+        else if (funcName is "IgnoreResistance" or "Savant" or "StatusImmunity" && args.Length >= 1)
+            paramValue = Tr($"enum.{args[0].Trim()}", translate);
 
         return template.Replace("[1]", paramValue);
     }
