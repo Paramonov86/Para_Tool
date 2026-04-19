@@ -596,6 +596,22 @@ public static class BoostMapping
         // WeaponProperty.Magical (most common item meta-flag)
         ["WeaponProperty.Magical"] =        new("Counts as Magical for overcoming damage resistance.", "Считается магическим для преодоления устойчивости."),
 
+        // WeaponDamage(Amount, [Type])
+        ["WeaponDamage"] =                  new("[1] Weapon Damage.", "[1] к урону оружия."),
+        ["WeaponDamage.Typed"] =            new("[1] [2] damage on weapon attacks.", "[1] урона ([2]) при атаках оружием."),
+
+        // IncreaseMaxHP(formula)
+        ["IncreaseMaxHP"] =                 new("Maximum Hit Points [1].", "Максимум очков здоровья [1]."),
+
+        // Initiative(N)
+        ["Initiative"] =                    new("[1] Initiative.", "[1] к инициативе."),
+
+        // SpellSaveDC(N)
+        ["SpellSaveDC"] =                   new("[1] Spell Save DC.", "[1] к КС заклинаний."),
+
+        // TemporaryHP(formula)
+        ["TemporaryHP"] =                   new("Grants [1] Temporary Hit Points.", "Даёт [1] временных очков здоровья."),
+
         // Saving Throws (generic)
         ["SavingThrow"] =                   new("[1] Saving Throws", "Испытания: [1]"),
 
@@ -713,6 +729,17 @@ public static class BoostMapping
         if (funcName == "WeaponProperty" && args.Length >= 1)
             return EngineDescriptions.GetValueOrDefault($"WeaponProperty.{args[0].Trim()}");
 
+        // WeaponDamage(Amount, [Type])
+        if (funcName == "WeaponDamage" && args.Length >= 1)
+            return args.Length >= 2 && !string.IsNullOrEmpty(args[1].Trim())
+                ? EngineDescriptions.GetValueOrDefault("WeaponDamage.Typed")
+                : EngineDescriptions.GetValueOrDefault("WeaponDamage");
+
+        // Single-param numeric boosts
+        if (funcName is "IncreaseMaxHP" or "Initiative" or "SpellSaveDC" or "TemporaryHP"
+            && args.Length >= 1)
+            return EngineDescriptions.GetValueOrDefault(funcName);
+
         return null;
     }
 
@@ -741,6 +768,9 @@ public static class BoostMapping
         if (funcName == "Ability" && args.Length >= 2)
             return template.Replace("[1]", FormatNumeric(args[1].Trim()))
                            .Replace("[2]", Tr($"enum.{args[0].Trim()}", translate));
+        if (funcName == "WeaponDamage" && args.Length >= 2 && !string.IsNullOrEmpty(args[1].Trim()))
+            return template.Replace("[1]", FormatNumeric(args[0].Trim()))
+                           .Replace("[2]", Tr($"enum.{args[1].Trim()}", translate));
 
         // Determine the [1] value for single-placeholder boosts
         string paramValue = "";
@@ -758,6 +788,11 @@ public static class BoostMapping
             paramValue = FormatNumeric(args[1].Trim());
         else if (funcName == "Proficiency" && args.Length >= 1)
             paramValue = Tr($"enum.{args[0].Trim()}", translate);
+        else if (funcName is "IncreaseMaxHP" or "Initiative" or "SpellSaveDC" or "TemporaryHP"
+                 && args.Length >= 1)
+            paramValue = FormatNumeric(args[0].Trim());
+        else if (funcName == "WeaponDamage" && args.Length >= 1)
+            paramValue = FormatNumeric(args[0].Trim());
 
         return template.Replace("[1]", paramValue);
     }
