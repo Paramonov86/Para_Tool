@@ -631,6 +631,24 @@ public static class BoostMapping
         ["BlockSpellCast"] =                new("Cannot cast spells.", "Не может произносить заклинания."),
         ["CriticalDamageOnHit"] =           new("All hits deal critical damage.", "Все попадания наносят критический урон."),
 
+        // ── Functors (used in StatsFunctors field on passives) ──
+        // DealDamage(Amount, [Type])
+        ["DealDamage"] =                    new("Deals [1] damage.", "Наносит [1] урона."),
+        ["DealDamage.Typed"] =              new("Deals [1] [2] damage.", "Наносит [1] урона ([2])."),
+
+        // ApplyStatus([Target], StatusId, Chance, Duration)
+        ["ApplyStatus.Permanent"] =         new("Applies [1] permanently.", "Накладывает [1] перманентно."),
+        ["ApplyStatus.Turns"] =             new("Applies [1] for [2] turns.", "Накладывает [1] на [2] ходов."),
+
+        // RemoveStatus(StatusId)
+        ["RemoveStatus"] =                  new("Removes [1].", "Снимает [1]."),
+
+        // RegainHitPoints(formula)
+        ["RegainHitPoints"] =               new("Heals [1] HP.", "Восстанавливает [1] ОЗ."),
+
+        // GainTemporaryHitPoints(formula)
+        ["GainTemporaryHitPoints"] =        new("Grants [1] Temporary HP.", "Даёт [1] временных ОЗ."),
+
         // Saving Throws (generic)
         ["SavingThrow"] =                   new("[1] Saving Throws", "Испытания: [1]"),
 
@@ -775,6 +793,31 @@ public static class BoostMapping
             or "CriticalDamageOnHit")
             return EngineDescriptions.GetValueOrDefault(funcName);
 
+        // DealDamage(Amount, [Type], [MagicalFlag], [NonlethalFlag])
+        if (funcName == "DealDamage" && args.Length >= 1)
+            return args.Length >= 2 && !string.IsNullOrEmpty(args[1].Trim())
+                ? EngineDescriptions.GetValueOrDefault("DealDamage.Typed")
+                : EngineDescriptions.GetValueOrDefault("DealDamage");
+
+        // ApplyStatus: vanilla uses both 3-arg (Status, Chance, Duration) and 4-arg (Target, Status, Chance, Duration) forms
+        if (funcName == "ApplyStatus" && args.Length >= 3)
+        {
+            // If first arg looks like a target qualifier (SELF/SWAP/OBSERVER), treat as 4-arg form
+            var first = args[0].Trim();
+            var hasTarget = first is "SELF" or "SWAP" or "OBSERVER" or "TARGET" or "OWNER";
+            var durationIdx = hasTarget ? 3 : 2;
+            if (args.Length <= durationIdx) return EngineDescriptions.GetValueOrDefault("ApplyStatus.Permanent");
+            var duration = args[durationIdx].Trim();
+            return duration == "-1"
+                ? EngineDescriptions.GetValueOrDefault("ApplyStatus.Permanent")
+                : EngineDescriptions.GetValueOrDefault("ApplyStatus.Turns");
+        }
+
+        // RemoveStatus / RegainHitPoints / GainTemporaryHitPoints
+        if (funcName is "RemoveStatus" or "RegainHitPoints" or "GainTemporaryHitPoints"
+            && args.Length >= 1)
+            return EngineDescriptions.GetValueOrDefault(funcName);
+
         return null;
     }
 
@@ -809,6 +852,20 @@ public static class BoostMapping
         if (funcName == "Reroll" && args.Length >= 2)
             return template.Replace("[1]", Tr($"enum.{args[0].Trim()}", translate))
                            .Replace("[2]", args[1].Trim());
+        if (funcName == "DealDamage" && args.Length >= 2 && !string.IsNullOrEmpty(args[1].Trim()))
+            return template.Replace("[1]", args[0].Trim())
+                           .Replace("[2]", Tr($"enum.{args[1].Trim()}", translate));
+        if (funcName == "ApplyStatus" && args.Length >= 3)
+        {
+            var first = args[0].Trim();
+            var hasTarget = first is "SELF" or "SWAP" or "OBSERVER" or "TARGET" or "OWNER";
+            var statusId = hasTarget ? args[1].Trim() : args[0].Trim();
+            var durationIdx = hasTarget ? 3 : 2;
+            var duration = args.Length > durationIdx ? args[durationIdx].Trim() : "-1";
+            return duration == "-1"
+                ? template.Replace("[1]", statusId)
+                : template.Replace("[1]", statusId).Replace("[2]", duration);
+        }
 
         // Determine the [1] value for single-placeholder boosts
         string paramValue = "";
@@ -833,6 +890,12 @@ public static class BoostMapping
             paramValue = FormatNumeric(args[0].Trim());
         else if (funcName is "IgnoreResistance" or "Savant" or "StatusImmunity" && args.Length >= 1)
             paramValue = Tr($"enum.{args[0].Trim()}", translate);
+        else if (funcName == "DealDamage" && args.Length >= 1)
+            paramValue = args[0].Trim();
+        else if (funcName == "RemoveStatus" && args.Length >= 1)
+            paramValue = args[0].Trim();
+        else if (funcName is "RegainHitPoints" or "GainTemporaryHitPoints" && args.Length >= 1)
+            paramValue = args[0].Trim();
 
         return template.Replace("[1]", paramValue);
     }

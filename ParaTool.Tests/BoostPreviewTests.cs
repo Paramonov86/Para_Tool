@@ -290,4 +290,62 @@ public class BoostPreviewTests
     {
         Assert.Equal("Cannot cast spells.", Preview("BlockSpellCast()"));
     }
+
+    // ── Functors (StatsFunctors preview) ─────────────────────
+
+    [Fact]
+    public void DealDamage_Typed()
+    {
+        Assert.Equal("Deals 1d6 Fire damage.", Preview("DealDamage(1d6, Fire)"));
+    }
+
+    [Fact]
+    public void DealDamage_Untyped()
+    {
+        Assert.Equal("Deals 1d6 damage.", Preview("DealDamage(1d6)"));
+    }
+
+    [Fact]
+    public void ApplyStatus_Permanent()
+    {
+        Assert.Equal("Applies MY_STATUS permanently.",
+            Preview("ApplyStatus(MY_STATUS,100,-1)"));
+    }
+
+    [Fact]
+    public void ApplyStatus_Turns()
+    {
+        Assert.Equal("Applies BURN for 3 turns.", Preview("ApplyStatus(BURN,100,3)"));
+    }
+
+    [Fact]
+    public void ApplyStatus_WithSelfTarget_4arg()
+    {
+        Assert.Equal("Applies HASTE for 2 turns.", Preview("ApplyStatus(SELF,HASTE,100,2)"));
+    }
+
+    [Fact]
+    public void ApplyStatus_WithSelfTarget_Permanent()
+    {
+        Assert.Equal("Applies POISONED permanently.",
+            Preview("ApplyStatus(SELF,POISONED,100,-1)"));
+    }
+
+    [Fact]
+    public void RemoveStatus_Basic()
+    {
+        Assert.Equal("Removes BURN.", Preview("RemoveStatus(BURN)"));
+    }
+
+    [Fact]
+    public void RegainHitPoints_Formula()
+    {
+        Assert.Equal("Heals 2d4+2 HP.", Preview("RegainHitPoints(2d4+2)"));
+    }
+
+    [Fact]
+    public void GainTemporaryHitPoints()
+    {
+        Assert.Equal("Grants 5 Temporary HP.", Preview("GainTemporaryHitPoints(5)"));
+    }
 }
