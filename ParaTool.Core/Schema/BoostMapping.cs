@@ -552,6 +552,9 @@ public static class BoostMapping
         ["CriticalHit.Success"] =           new("Guaranteed critical hits", "Гарантированы критические удары"),
         ["CriticalHit.NoCrit"] =            new("Attackers can't land Critical Hits on the wearer.", "Защищает владельца от критических ударов."),
         ["CriticalHit.NoCritMiss"] =        new("Protects from critical misses", "Защищает от критических промахов"),
+        ["CriticalHit.NoCritHit"] =         new("Your attacks cannot score critical hits.", "Ваши атаки не могут быть критическими."),
+        ["CriticalHit.TargetAlwaysCrit"] =  new("All attacks against the wearer are critical hits.", "Все атаки по владельцу становятся критическими."),
+        ["CriticalHit.AlwaysCritFail"] =    new("Your attacks always critically fail.", "Ваши атаки всегда проваливаются критически."),
 
         // Advantage / Disadvantage on checks
         ["Advantage.Ability"] =             new("Advantage on [1] Checks.", "Преимущество при проверках ([1])."),
@@ -610,16 +613,25 @@ public static class BoostMapping
             return EngineDescriptions.GetValueOrDefault($"AbilityOverrideMinimum.{ability}");
         }
 
-        // CriticalHit(Type, Result, When)
+        // CriticalHit(Type, Result, When) — 6 meaningful combinations
         if (funcName == "CriticalHit" && args.Length >= 3)
         {
+            var type = args[0].Trim();
+            var result = args[1].Trim();
             var when = args[2].Trim();
-            if (when is "Always" or "ForcedAlways")
-                return EngineDescriptions.GetValueOrDefault("CriticalHit.Success");
-            if (when == "Never" && args[0].Trim() == "AttackTarget")
+            var alwaysOn = when is "Always" or "ForcedAlways";
+            if (type == "AttackTarget" && result == "Success" && when == "Never")
                 return EngineDescriptions.GetValueOrDefault("CriticalHit.NoCrit");
-            if (when == "Never" && args[0].Trim() == "AttackRoll")
+            if (type == "AttackTarget" && result == "Success" && alwaysOn)
+                return EngineDescriptions.GetValueOrDefault("CriticalHit.TargetAlwaysCrit");
+            if (type == "AttackRoll" && result == "Success" && alwaysOn)
+                return EngineDescriptions.GetValueOrDefault("CriticalHit.Success");
+            if (type == "AttackRoll" && result == "Success" && when == "Never")
+                return EngineDescriptions.GetValueOrDefault("CriticalHit.NoCritHit");
+            if (type == "AttackRoll" && result == "Failure" && when == "Never")
                 return EngineDescriptions.GetValueOrDefault("CriticalHit.NoCritMiss");
+            if (type == "AttackRoll" && result == "Failure" && alwaysOn)
+                return EngineDescriptions.GetValueOrDefault("CriticalHit.AlwaysCritFail");
         }
 
         // Advantage/Disadvantage on ability checks
