@@ -17,6 +17,13 @@ public sealed class PatchResult
     public bool Success { get; init; }
     public string? Error { get; init; }
     public int ItemsPatched { get; init; }
+
+    /// <summary>
+    /// Non-fatal warnings collected from ArtifactCompiler while building each artifact's
+    /// stats text (placeholder tokens, missing status references, auto-generated passive
+    /// names). Patching still succeeds; the UI should surface these to the user.
+    /// </summary>
+    public List<string> Warnings { get; init; } = [];
 }
 
 public sealed class AmpPatcher
@@ -130,7 +137,8 @@ public sealed class AmpPatcher
 
             // Step 3.5: Apply artifact overrides from Constructor
             progress?.Report(new PatchProgress { Stage = "Applying artifacts...", Percent = 58 });
-            var artifactCount = await Task.Run(() => ApplyArtifacts(extractDir, statsDir, ampPakPath), ct);
+            var artifactWarnings = new List<string>();
+            var artifactCount = await Task.Run(() => ApplyArtifacts(extractDir, statsDir, ampPakPath, artifactWarnings), ct);
 
             // Step 4: Patch meta.lsx with mod dependencies
             progress?.Report(new PatchProgress { Stage = "Updating dependencies...", Percent = 65 });
@@ -156,7 +164,8 @@ public sealed class AmpPatcher
             return new PatchResult
             {
                 Success = true,
-                ItemsPatched = enabledModItems.Count + modifiedAmpItems.Count + artifactCount
+                ItemsPatched = enabledModItems.Count + modifiedAmpItems.Count + artifactCount,
+                Warnings = artifactWarnings,
             };
         }
         catch (Exception ex)
@@ -253,7 +262,7 @@ public sealed class AmpPatcher
     /// - New items: append Stats + add to TreasureTable
     /// - Both: write Loca XML entries
     /// </summary>
-    private static int ApplyArtifacts(string extractDir, string? statsDir, string ampPakPath)
+    private static int ApplyArtifacts(string extractDir, string? statsDir, string ampPakPath, List<string>? warnings = null)
     {
         var logPath = Path.Combine(Path.GetTempPath(), "paratool_patch_debug.txt");
         var log = new System.Text.StringBuilder();
@@ -287,6 +296,7 @@ public sealed class AmpPatcher
             bool isOverride = art.StatId.Equals(art.UsingBase, StringComparison.OrdinalIgnoreCase);
             log.AppendLine($"  {art.StatId}: isOverride={isOverride} (UsingBase={art.UsingBase})");
             var compiled = ArtifactCompiler.Compile(art, isOverride);
+            warnings?.AddRange(compiled.Warnings);
 
             if (isOverride)
             {

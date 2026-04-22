@@ -500,24 +500,52 @@
                 </Border>
 
                 <!-- Success indicator -->
-                <Border IsVisible="{Binding PatchSuccess}"
-                        Background="#1A2ECC71"
-                        BorderBrush="{DynamicResource SuccessBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="20,12"
-                        HorizontalAlignment="Right">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="&#x2705;"
-                                   FontSize="{DynamicResource FontSize18}"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding PatchSuccessMessage}"
-                                   Foreground="{DynamicResource SuccessBrush}"
-                                   FontSize="{DynamicResource FontSize14}"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                </Border>
+                <StackPanel IsVisible="{Binding PatchSuccess}" Orientation="Vertical" Spacing="8">
+                    <Border Background="#1A2ECC71"
+                            BorderBrush="{DynamicResource SuccessBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="20,12"
+                            HorizontalAlignment="Right">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="&#x2705;"
+                                       FontSize="{DynamicResource FontSize18}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding PatchSuccessMessage}"
+                                       Foreground="{DynamicResource SuccessBrush}"
+                                       FontSize="{DynamicResource FontSize14}"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <!-- Warnings (non-fatal compiler notes) -->
+                    <Border IsVisible="{Binding PatchWarnings.Count}"
+                            Background="#1AF1C40F"
+                            BorderBrush="#F1C40F"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="16,10"
+                            MaxWidth="640"
+                            HorizontalAlignment="Right">
+                        <StackPanel Orientation="Vertical" Spacing="4">
+                            <TextBlock Text="&#x26A0; Warnings"
+                                       Foreground="#F1C40F"
+                                       FontSize="{DynamicResource FontSize13}"
+                                       FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding PatchWarnings}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   FontSize="{DynamicResource FontSize11}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,2,0,0" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 
                 <!-- Error indicator -->
                 <Border IsVisible="{Binding PatchError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

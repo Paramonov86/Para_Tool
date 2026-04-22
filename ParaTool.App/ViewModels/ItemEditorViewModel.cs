@@ -22,6 +22,7 @@ public partial class ItemEditorViewModel : ViewModelBase
     [ObservableProperty] private string? _patchStatus;
     [ObservableProperty] private bool _patchSuccess;
     [ObservableProperty] private string? _patchError;
+    [ObservableProperty] private ObservableCollection<string> _patchWarnings = new();
     [ObservableProperty] private bool _allEnabled = true;
     [ObservableProperty] private string? _patchSuccessMessage;
 
@@ -315,6 +316,10 @@ public partial class ItemEditorViewModel : ViewModelBase
         {
             PatchSuccess = true;
             PatchSuccessMessage = Loc.Instance.PatchSuccessMessage(result.ItemsPatched);
+
+            PatchWarnings.Clear();
+            foreach (var w in result.Warnings)
+                PatchWarnings.Add(w);
 
             // Auto-save last session (with mod-level enabled)
             try

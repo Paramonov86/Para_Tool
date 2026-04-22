@@ -163,6 +163,31 @@ internal static class DiagMode
             return 0;
         }
 
+        // --diag-art: decrypt a saved .art file (by ArtifactId or "latest") and dump its
+        // full JSON contents to stdout. Useful for inspecting what the Constructor
+        // actually persisted without digging through the encrypted blob by hand.
+        var diagArt = args.SkipWhile(a => !a.Equals("--diag-art", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (!string.IsNullOrEmpty(diagArt))
+        {
+            var dir = ArtifactStore.GetArtifactsDir();
+            string artifactId = diagArt;
+            if (diagArt.Equals("latest", StringComparison.OrdinalIgnoreCase))
+            {
+                var latest = new DirectoryInfo(dir).EnumerateFiles("*.art")
+                    .OrderByDescending(f => f.LastWriteTimeUtc)
+                    .FirstOrDefault();
+                if (latest == null) { Console.Error.WriteLine("No .art files found."); return 4; }
+                artifactId = Path.GetFileNameWithoutExtension(latest.Name);
+                Console.WriteLine($"Latest artifact: {latest.Name} (modified {latest.LastWriteTime:yyyy-MM-dd HH:mm:ss})");
+            }
+            var art = ArtifactStore.Load(artifactId);
+            if (art == null) { Console.Error.WriteLine($"Failed to load .art: {artifactId}"); return 4; }
+            var json = System.Text.Json.JsonSerializer.Serialize(art,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+            Console.WriteLine(json);
+            return 0;
+        }
+
         // --diag-handle: resolve a specific loca handle via LocaService (sanity check)
         var diagHandle = args.SkipWhile(a => !a.Equals("--diag-handle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         if (!string.IsNullOrEmpty(diagHandle))
