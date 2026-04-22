@@ -21,7 +21,7 @@ public partial class BaseItemVM : ObservableObject
     private string? _cachedLabel;
     private string? _cachedLabelLang;
 
-    /// <summary>Display name: try loca handle for current UI lang, then vanilla, then scan name, then StatId.</summary>
+    /// <summary>Display name via shared LocaResolver — priority: mod stats handle → vanilla TSV → scan name.</summary>
     public string Label
     {
         get
@@ -31,24 +31,28 @@ public partial class BaseItemVM : ObservableObject
                 return _cachedLabel;
 
             _cachedLabelLang = lang;
-            // Try vanilla loca first (authoritative for vanilla items)
-            var vanilla = VanillaLocaService.GetDisplayName(Entry.StatId, lang)
-                ?? (Entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(Entry.LocaAncestorId, lang) : null);
-            if (vanilla != null) { _cachedLabel = vanilla; return _cachedLabel; }
-            // Try resolve from handle via LocaService (mod items)
-            if (_locaService != null && !string.IsNullOrEmpty(Entry.DisplayNameHandle))
+
+            // Ask the shared resolver — it walks using-chain with correct priority
+            // (mod's own handle beats vanilla entry at same StatId).
+            if (_locaResolver != null)
             {
-                var resolved = _locaService.ResolveHandle(Entry.DisplayNameHandle, lang);
-                if (resolved != null) { _cachedLabel = BbCode.FromBg3Xml(resolved); return _cachedLabel; }
+                var r = _locaResolver.ResolveName(Entry.StatId, lang);
+                if (r.Resolved) { _cachedLabel = r.Value!; return _cachedLabel; }
+                // Also try LocaAncestorId if scanner derived one (rare fallback)
+                if (Entry.LocaAncestorId != null)
+                {
+                    var ar = _locaResolver.ResolveName(Entry.LocaAncestorId, lang);
+                    if (ar.Resolved) { _cachedLabel = ar.Value!; return _cachedLabel; }
+                }
             }
 
-            // Fallback to scan name (may be in scan language)
+            // Final fallback — scan-time text or raw StatId
             _cachedLabel = Entry.DisplayName ?? Entry.StatId;
             return _cachedLabel;
         }
     }
 
-    private LocaService? _locaService;
+    private readonly LocaResolver? _locaResolver;
 
     public string FullLabel
     {
@@ -66,11 +70,11 @@ public partial class BaseItemVM : ObservableObject
 
     public IBrush RarityColor => Themes.ThemeBrushes.GetRarity(Rarity);
 
-    public BaseItemVM(ItemEntry entry, string modName, LocaService? locaService = null)
+    public BaseItemVM(ItemEntry entry, string modName, LocaResolver? locaResolver = null)
     {
         Entry = entry;
         ModName = modName;
-        _locaService = locaService;
+        _locaResolver = locaResolver;
         Localization.Loc.Instance.PropertyChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             _cachedLabel = null; // invalidate cache on lang change
@@ -103,8 +107,10 @@ public partial class ConstructorViewModel : ViewModelBase
 
     public StatsResolver? StatsResolver => _resolver;
     public LocaService? LocaService => _locaService;
+    public LocaResolver? LocaResolver => _locaResolver;
     private readonly StatsResolver? _resolver;
     private readonly LocaService? _locaService;
+    private readonly LocaResolver? _locaResolver;
 
     /// <summary>All status names for SearchPickerChip.</summary>
     public string[] AllStatuses => _cachedStatuses ??= GetStatsOfType("StatusData").ToArray();
@@ -130,6 +136,7 @@ public partial class ConstructorViewModel : ViewModelBase
     {
         _resolver = resolver;
         _locaService = locaService;
+        _locaResolver = resolver != null ? new LocaResolver(resolver, locaService) : null;
         _iconService = iconService;
 
         // Set global resolver/loca for SearchPickerChips in BoostBlocksEditor
@@ -155,7 +162,7 @@ public partial class ConstructorViewModel : ViewModelBase
             var items = new List<BaseItemVM>();
             foreach (var item in mod.Items)
             {
-                var bvm = new BaseItemVM(item.Entry, mod.Name, _locaService);
+                var bvm = new BaseItemVM(item.Entry, mod.Name, _locaResolver);
                 items.Add(bvm);
                 _allBaseItems.Add(bvm);
             }
@@ -760,34 +767,22 @@ public partial class ConstructorViewModel : ViewModelBase
         artifact.DisplayNameHandle = baseItem.Entry.DisplayNameHandle ?? "";
         artifact.DescriptionHandle = baseItem.Entry.DescriptionHandle ?? "";
 
-        // Load localization: vanilla first, then LocaService for mod items
+        // Load localization via shared resolver (mod handle > vanilla TSV priority)
         foreach (var lang in new HashSet<string> { scanLang, EditingLang, "en" })
         {
-            // DisplayName
-            if (!artifact.DisplayName.ContainsKey(lang))
+            if (!artifact.DisplayName.ContainsKey(lang) && _locaResolver != null)
             {
-                var vanillaName = VanillaLocaService.GetDisplayName(baseItem.StatId, lang)
-                    ?? (baseItem.Entry.LocaAncestorId != null ? VanillaLocaService.GetDisplayName(baseItem.Entry.LocaAncestorId, lang) : null);
-                if (vanillaName != null)
-                    artifact.DisplayName[lang] = BbCode.FromBg3Xml(vanillaName);
-                else if (_locaService != null && !string.IsNullOrEmpty(artifact.DisplayNameHandle))
-                {
-                    var resolved = _locaService.ResolveHandle(artifact.DisplayNameHandle, lang);
-                    if (resolved != null) artifact.DisplayName[lang] = BbCode.FromBg3Xml(resolved);
-                }
+                var r = _locaResolver.ResolveName(baseItem.StatId, lang);
+                if (!r.Resolved && baseItem.Entry.LocaAncestorId != null)
+                    r = _locaResolver.ResolveName(baseItem.Entry.LocaAncestorId, lang);
+                if (r.Resolved) artifact.DisplayName[lang] = r.Value!;
             }
-            // Description
-            if (!artifact.Description.ContainsKey(lang))
+            if (!artifact.Description.ContainsKey(lang) && _locaResolver != null)
             {
-                var vanillaDesc = VanillaLocaService.GetDescription(baseItem.StatId, lang)
-                    ?? (baseItem.Entry.LocaAncestorId != null ? VanillaLocaService.GetDescription(baseItem.Entry.LocaAncestorId, lang) : null);
-                if (vanillaDesc != null)
-                    artifact.Description[lang] = BbCode.FromBg3Xml(vanillaDesc);
-                else if (_locaService != null && !string.IsNullOrEmpty(artifact.DescriptionHandle))
-                {
-                    var resolved = _locaService.ResolveHandle(artifact.DescriptionHandle, lang);
-                    if (resolved != null) artifact.Description[lang] = BbCode.FromBg3Xml(resolved);
-                }
+                var r = _locaResolver.ResolveDescription(baseItem.StatId, lang);
+                if (!r.Resolved && baseItem.Entry.LocaAncestorId != null)
+                    r = _locaResolver.ResolveDescription(baseItem.Entry.LocaAncestorId, lang);
+                if (r.Resolved) artifact.Description[lang] = r.Value!;
             }
         }
 
