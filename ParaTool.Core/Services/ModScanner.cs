@@ -1118,11 +1118,18 @@ public sealed class ModScanner
         // registers a stats entry that points at a RootTemplate shipped by mod B,
         // e.g. a class mod registers Artificer flail stats, DnD2024 mod ships the
         // flail template). Scan every mod pak for any unresolved UUID.
+        // AMP items must stay authoritative — skip them in cross-mod resolution
+        // (their names come from AMP pak via Step 2 / Step 3's AMP branch).
+        var ampStatIds = ampMod != null
+            ? new HashSet<string>(ampMod.Items.Select(i => i.StatId), StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         // Scan every mod pak for every UUID in the expanded graph (including
         // ancestor UUIDs from template-parent chains). Propagate the name /
         // handle to ALL statIds under each UUID, even if some of those statIds
         // already have a resolved name — so _1/_2/_3 tiers all get the same
-        // mod-template name when only _1 has a direct template.
+        // mod-template name when only _1 has a direct template. Skip AMP items
+        // because AMP is authoritative for its own StatIds.
         foreach (var mod in mods)
         {
             if (string.IsNullOrEmpty(mod.PakPath)) continue;
@@ -1141,6 +1148,7 @@ public sealed class ModScanner
                 {
                     foreach (var statId in statIds)
                     {
+                        if (ampStatIds.Contains(statId)) continue;  // AMP authoritative
                         if (xNames.TryGetValue(uuid, out var n)) itemNames.TryAdd(statId, n);
                         if (xDescs.TryGetValue(uuid, out var d)) itemDescs.TryAdd(statId, d);
                         if (xNh.TryGetValue(uuid, out var nh)) itemNameHandles.TryAdd(statId, nh);
@@ -1163,41 +1171,56 @@ public sealed class ModScanner
             ? new HashSet<string>(ampMod.Items.Select(i => i.StatId), StringComparer.OrdinalIgnoreCase)
             : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        // Track statIds that already got a name set — prevents a later iteration
+        // (e.g. when the same StatId is registered in two mods with different
+        // RootTemplate UUIDs, hence appears twice in uuidToStatIds) from
+        // overwriting an authoritative AMP value.
+        var namedStatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Pass A: AMP items (authoritative) — set first so any later pass can't override.
         foreach (var (uuid, statIds) in uuidToStatIds)
         {
             foreach (var statId in statIds)
             {
+                if (!ampItemSet.Contains(statId)) continue;
+                if (namedStatIds.Contains(statId)) continue;
+                if (!ampNames.TryGetValue(uuid, out var ampN)) continue;
                 var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
                 if (item == null) continue;
-
-                var isAmpItem = ampItemSet.Contains(statId);
-
-                // Mod-pak name (highest priority for all items)
-                if (itemNames.TryGetValue(statId, out var modN))
-                {
-                    item.DisplayName = modN;
-                    item.DisplayNameHandle = itemNameHandles.GetValueOrDefault(statId);
-                }
-                // AMP name (only for AMP's own items, NOT for other mods)
-                else if (isAmpItem && ampNames.TryGetValue(uuid, out var ampN))
-                {
-                    item.DisplayName = ampN;
-                    item.DisplayNameHandle = ampNh.GetValueOrDefault(uuid);
-                }
-                // else: leave null → vanilla fallback will fill it
-
-                if (itemDescs.TryGetValue(statId, out var modD))
-                {
-                    item.Description = modD;
-                    item.DescriptionHandle = itemDescHandles.GetValueOrDefault(statId);
-                }
-                else if (isAmpItem && ampDescs.TryGetValue(uuid, out var ampD))
+                item.DisplayName = ampN;
+                item.DisplayNameHandle = ampNh.GetValueOrDefault(uuid);
+                if (ampDescs.TryGetValue(uuid, out var ampD))
                 {
                     item.Description = ampD;
                     item.DescriptionHandle = ampDh.GetValueOrDefault(uuid);
                 }
+                if (iconNamesMap.TryGetValue(uuid, out var ampIcon))
+                    item.IconName = ampIcon;
+                namedStatIds.Add(statId);
+            }
+        }
 
-                if (iconNamesMap.TryGetValue(uuid, out var iconName))
+        // Pass B: non-AMP items + AMP items that AMP didn't resolve, via mod paks.
+        foreach (var (uuid, statIds) in uuidToStatIds)
+        {
+            foreach (var statId in statIds)
+            {
+                if (namedStatIds.Contains(statId)) continue;
+                var item = allItems.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
+                if (item == null) continue;
+
+                if (itemNames.TryGetValue(statId, out var modN))
+                {
+                    item.DisplayName = modN;
+                    item.DisplayNameHandle = itemNameHandles.GetValueOrDefault(statId);
+                    namedStatIds.Add(statId);
+                }
+                if (itemDescs.TryGetValue(statId, out var modD) && item.Description == null)
+                {
+                    item.Description = modD;
+                    item.DescriptionHandle = itemDescHandles.GetValueOrDefault(statId);
+                }
+                if (iconNamesMap.TryGetValue(uuid, out var iconName) && item.IconName == null)
                     item.IconName = iconName;
             }
         }

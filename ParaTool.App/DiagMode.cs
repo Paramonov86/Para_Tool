@@ -72,12 +72,13 @@ internal static class DiagMode
             try { locaService.GetLocaMap(lang); } catch { }
         Console.WriteLine($"  extra langs loaded in {step.ElapsedMilliseconds}ms");
 
-        // Build StatId -> ItemEntry map early so --diag-build can use it
+        // Build StatId -> ItemEntry map. AMP wins on collisions — mirror scanner's
+        // authoritative-for-AMP priority. Use TryAdd so first (AMP) stays.
         var itemEntryByStatId = new Dictionary<string, ParaTool.Core.Models.ItemEntry>(StringComparer.OrdinalIgnoreCase);
         if (result.AmpMod != null)
-            foreach (var it in result.AmpMod.Items) itemEntryByStatId[it.StatId] = it;
+            foreach (var it in result.AmpMod.Items) itemEntryByStatId.TryAdd(it.StatId, it);
         foreach (var mod in result.Mods)
-            foreach (var it in mod.Items) itemEntryByStatId[it.StatId] = it;
+            foreach (var it in mod.Items) itemEntryByStatId.TryAdd(it.StatId, it);
 
         // --diag-resolve-uuid: call ItemNameResolver.ResolveFromPakFull on every pak for a UUID
         var diagResolveUuid = args.SkipWhile(a => !a.Equals("--diag-resolve-uuid", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
