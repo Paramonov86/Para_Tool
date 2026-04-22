@@ -79,6 +79,64 @@ internal static class DiagMode
         foreach (var mod in result.Mods)
             foreach (var it in mod.Items) itemEntryByStatId[it.StatId] = it;
 
+        // --diag-resolve-uuid: call ItemNameResolver.ResolveFromPakFull on every pak for a UUID
+        var diagResolveUuid = args.SkipWhile(a => !a.Equals("--diag-resolve-uuid", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (!string.IsNullOrEmpty(diagResolveUuid))
+        {
+            var uuidMap = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase) { [diagResolveUuid] = ["__test"] };
+            foreach (var pak in result.PakPaths)
+            {
+                var (n, dsc, nh, dh) = ItemNameResolver.ResolveFromPakFull(pak, uuidMap, "en");
+                if (n.Count > 0 || nh.Count > 0 || dh.Count > 0)
+                {
+                    n.TryGetValue(diagResolveUuid, out var nameVal);
+                    dsc.TryGetValue(diagResolveUuid, out var descVal);
+                    nh.TryGetValue(diagResolveUuid, out var nameHnd);
+                    dh.TryGetValue(diagResolveUuid, out var descHnd);
+                    Console.WriteLine($"{Path.GetFileName(pak)}:");
+                    Console.WriteLine($"  name={nameVal} nameHandle={nameHnd}");
+                    Console.WriteLine($"  desc={descVal} descHandle={descHnd}");
+                }
+            }
+            return 0;
+        }
+
+        // --diag-parent: show template parent chain for a UUID across all paks
+        var diagParent = args.SkipWhile(a => !a.Equals("--diag-parent", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (!string.IsNullOrEmpty(diagParent))
+        {
+            var graph = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pakPath in result.PakPaths)
+            {
+                var parents = ItemNameResolver.GatherTemplateParents(pakPath);
+                foreach (var (k, v) in parents) graph.TryAdd(k, v);
+            }
+            Console.WriteLine($"Graph size: {graph.Count}");
+            var cur = diagParent;
+            int depth = 0;
+            while (depth < 10)
+            {
+                Console.WriteLine($"  [{depth}] {cur}");
+                if (!graph.TryGetValue(cur, out var parent)) { Console.WriteLine($"  (no parent)"); break; }
+                cur = parent;
+                depth++;
+            }
+            return 0;
+        }
+
+        // --diag-handle: resolve a specific loca handle via LocaService (sanity check)
+        var diagHandle = args.SkipWhile(a => !a.Equals("--diag-handle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (!string.IsNullOrEmpty(diagHandle))
+        {
+            Console.WriteLine($"Handle: {diagHandle}");
+            foreach (var lang in new[] { "en", "ru" })
+            {
+                var text = locaService.ResolveHandle(diagHandle, lang);
+                Console.WriteLine($"  {lang}: {text ?? "(null)"}");
+            }
+            return 0;
+        }
+
         // --diag-build: simulate BuildArtifactFromBase and dump resulting DisplayName dict
         var diagBuild = args.SkipWhile(a => !a.Equals("--diag-build", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         if (!string.IsNullOrEmpty(diagBuild))

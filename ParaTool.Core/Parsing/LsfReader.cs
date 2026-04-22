@@ -140,6 +140,42 @@ public static partial class LsfScanner
     /// Finds the nearest TranslatedString handle to a given UUID in the binary data.
     /// Used to find DisplayName for a GameObjects template identified by its MapKey UUID.
     /// </summary>
+    /// <summary>
+    /// Extract ParentTemplateId value for the given UUID inside the LSF data.
+    /// Returns null if not present (template doesn't inherit from another template).
+    /// </summary>
+    public static string? FindParentTemplateId(byte[] data, string uuid)
+    {
+        if (!IsLsf(data)) return null;
+        var decompressed = TryDecompressLsf(data);
+        if (decompressed == null) return null;
+
+        var text = Encoding.Latin1.GetString(decompressed);
+        int uuidPos = text.IndexOf(uuid, StringComparison.OrdinalIgnoreCase);
+        if (uuidPos < 0) return null;
+
+        // Find node boundaries — next UUID after ours marks the end of this node.
+        var guidRx = GuidRegex();
+        int nextUuidPos = text.Length;
+        foreach (Match m in guidRx.Matches(text))
+        {
+            if (m.Index > uuidPos + 36)
+            {
+                nextUuidPos = m.Index;
+                break;
+            }
+        }
+
+        // Look for "ParentTemplateId=<uuid>" within our node
+        var nodeText = text[uuidPos..nextUuidPos];
+        var ptIdx = nodeText.IndexOf("ParentTemplateId=", StringComparison.OrdinalIgnoreCase);
+        if (ptIdx < 0) return null;
+
+        var after = nodeText[(ptIdx + "ParentTemplateId=".Length)..];
+        var match = guidRx.Match(after);
+        return match.Success ? match.Value : null;
+    }
+
     public static string? FindHandleNearUuid(byte[] data, string uuid)
     {
         var text = Encoding.Latin1.GetString(data);
@@ -159,7 +195,7 @@ public static partial class LsfScanner
         if (IsLsf(data))
         {
             var decompressed = TryDecompressLsf(data);
-            if (decompressed != null && decompressed.Length > data.Length)
+            if (decompressed != null && decompressed.Length > 0)
             {
                 // Search for UUID as text in decompressed binary
                 var uuidBytes = Encoding.UTF8.GetBytes(uuid);

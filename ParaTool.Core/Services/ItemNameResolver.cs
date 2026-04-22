@@ -71,6 +71,66 @@ public sealed class ItemNameResolver
     }
 
     /// <summary>
+    /// Extracts uuid → parentTemplateUuid mapping from every template in a pak.
+    /// Caller merges across paks to get a complete cross-mod template graph.
+    /// </summary>
+    public static Dictionary<string, string> GatherTemplateParents(string pakPath)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var fs = File.OpenRead(pakPath);
+            var header = PakReader.ReadHeader(fs);
+            var entries = PakReader.ReadFileList(fs, header);
+
+            var templateFiles = entries.Where(e =>
+                (e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) ||
+                 e.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
+                (e.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) ||
+                 e.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase) ||
+                 e.Path.Contains("Globals", StringComparison.OrdinalIgnoreCase))).ToList();
+
+            foreach (var entry in templateFiles)
+            {
+                byte[] data;
+                try { data = PakReader.ExtractFileData(fs, entry); }
+                catch { continue; }
+
+                if (!LsfScanner.IsLsf(data)) continue;
+                var decompressed = LsfScanner.TryDecompressLsf(data);
+                if (decompressed == null) continue;
+
+                var text = System.Text.Encoding.Latin1.GetString(decompressed);
+
+                // Match "MapKey=<uuid>" and find the matching ParentTemplateId for
+                // the same node. The serialised form is roughly:
+                //   MapKey=<uuid> ... ParentTemplateId=<parentUuid> ... MapKey=<nextUuid>
+                // so for each MapKey, the first ParentTemplateId before the NEXT
+                // MapKey belongs to it.
+                var mapKeyRx = new System.Text.RegularExpressions.Regex(
+                    @"MapKey=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                var parentRx = new System.Text.RegularExpressions.Regex(
+                    @"ParentTemplateId=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                var mapKeyMatches = mapKeyRx.Matches(text).Cast<System.Text.RegularExpressions.Match>().ToList();
+                for (int i = 0; i < mapKeyMatches.Count; i++)
+                {
+                    var uuid = mapKeyMatches[i].Groups[1].Value;
+                    int start = mapKeyMatches[i].Index + mapKeyMatches[i].Length;
+                    int end = i + 1 < mapKeyMatches.Count ? mapKeyMatches[i + 1].Index : text.Length;
+                    var slice = text[start..end];
+                    var pm = parentRx.Match(slice);
+                    if (pm.Success) result.TryAdd(uuid, pm.Groups[1].Value);
+                }
+            }
+        }
+        catch (Exception ex) { AppLogger.Warn($"GatherTemplateParents failed for {pakPath}: {ex.Message}"); }
+        return result;
+    }
+
+    /// <summary>
     /// Resolves both display names AND descriptions for items.
     /// </summary>
     public static (Dictionary<string, string> names, Dictionary<string, string> descriptions)

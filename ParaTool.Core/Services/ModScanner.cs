@@ -1072,6 +1072,90 @@ public sealed class ModScanner
 
         progress?.Report(new ScanProgress { Stage = "ResolveLoca", Percent = 90 });
 
+        // Step 2.4: Build cross-pak template parent graph (uuid -> parentUuid)
+        // so we can walk template inheritance when the item's own template has
+        // no DisplayName handle (thin template pattern, e.g. DnD2024's Artificer
+        // Flail points at a parent "Wrecking Ball" template).
+        var templateParents = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pakPath in new[] { ampPakPath }.Concat(mods.Select(m => m.PakPath).Where(p => !string.IsNullOrEmpty(p))))
+        {
+            try
+            {
+                var parents = ItemNameResolver.GatherTemplateParents(pakPath!);
+                foreach (var (k, v) in parents) templateParents.TryAdd(k, v);
+            }
+            catch { }
+        }
+
+        // Step 2.45: For UUIDs still unresolved, walk template parent chain and
+        // add ancestor UUIDs that might have handles. Expand uuidToStatIds with
+        // parent UUIDs so subsequent cross-mod scan can find them.
+        var expandedUuidToStatIds = new Dictionary<string, List<string>>(uuidToStatIds, StringComparer.OrdinalIgnoreCase);
+        foreach (var (uuid, statIds) in uuidToStatIds.ToList())
+        {
+            // Walk chain regardless of whether this uuid already resolved —
+            // a mod-specific name on the child template should win, but if it
+            // doesn't exist, the ancestor provides the fallback.
+            var cur = uuid;
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { cur };
+            int depth = 0;
+            while (depth < 10 && templateParents.TryGetValue(cur, out var parentUuid))
+            {
+                if (!seen.Add(parentUuid)) break;
+                if (!expandedUuidToStatIds.ContainsKey(parentUuid))
+                    expandedUuidToStatIds[parentUuid] = [.. statIds];
+                else
+                    foreach (var s in statIds)
+                        if (!expandedUuidToStatIds[parentUuid].Contains(s))
+                            expandedUuidToStatIds[parentUuid].Add(s);
+                cur = parentUuid;
+                depth++;
+            }
+        }
+
+        // Step 2.5: Cross-mod fallback — if a StatId still has no resolved name,
+        // its template UUID might live in a DIFFERENT mod's pak (common when mod A
+        // registers a stats entry that points at a RootTemplate shipped by mod B,
+        // e.g. a class mod registers Artificer flail stats, DnD2024 mod ships the
+        // flail template). Scan every mod pak for any unresolved UUID.
+        // Scan every mod pak for every UUID in the expanded graph (including
+        // ancestor UUIDs from template-parent chains). Propagate the name /
+        // handle to ALL statIds under each UUID, even if some of those statIds
+        // already have a resolved name — so _1/_2/_3 tiers all get the same
+        // mod-template name when only _1 has a direct template.
+        foreach (var mod in mods)
+        {
+            if (string.IsNullOrEmpty(mod.PakPath)) continue;
+            try
+            {
+                var (xNames, xDescs, xNh, xDh) =
+                    ItemNameResolver.ResolveFromPakFull(mod.PakPath, expandedUuidToStatIds, langCode);
+                if (xNames.Count == 0 && xNh.Count == 0) continue;
+
+                // Record handle ownership so other-language loca loads can find
+                // this mod's text for these handles.
+                foreach (var h in xNh.Values) handleOwnership.TryAdd(h, mod.PakPath);
+                foreach (var h in xDh.Values) handleOwnership.TryAdd(h, mod.PakPath);
+
+                foreach (var (uuid, statIds) in expandedUuidToStatIds)
+                {
+                    foreach (var statId in statIds)
+                    {
+                        if (xNames.TryGetValue(uuid, out var n)) itemNames.TryAdd(statId, n);
+                        if (xDescs.TryGetValue(uuid, out var d)) itemDescs.TryAdd(statId, d);
+                        if (xNh.TryGetValue(uuid, out var nh)) itemNameHandles.TryAdd(statId, nh);
+                        if (xDh.TryGetValue(uuid, out var dh)) itemDescHandles.TryAdd(statId, dh);
+                    }
+                }
+
+                // Merge this mod's loca into master for later handle resolution
+                var modLoca = ItemNameResolver.ReadAllLocalization(mod.PakPath, langCode);
+                foreach (var (k, v) in modLoca)
+                    masterLocaMap.TryAdd(k, v);
+            }
+            catch (Exception ex) { AppLogger.Warn($"Cross-mod resolve failed for {mod.PakPath}: {ex.Message}"); }
+        }
+
         // Step 3: Apply names per item
         // AMP items: mod-pak → AMP (AMP is authoritative for its own items)
         // Non-AMP mod items: mod-pak only (skip AMP, vanilla fallback later)

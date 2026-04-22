@@ -208,10 +208,18 @@ public static class ItemDiagnostics
                                     var hitType = textHit ? "text" : binHitLE ? "guid-LE" : "guid-BE";
                                     containingFiles.Add($"{path} [{hitType}]");
                                 }
-                                // Priority: always log RootTemplates/_merged if seen
-                                if (path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) && path.Contains("_merged", StringComparison.OrdinalIgnoreCase))
+                                // Priority: dump any file that contains our UUID
+                                if (textHit || binHitLE || binHitBE)
                                 {
-                                    // Dump raw to disk for manual inspection
+                                    var dumpName = $"raw_{Path.GetFileName(pakPath)}_{Path.GetFileName(path).Replace(".lsf",".bin")}";
+                                    var dumpPath = Path.Combine(DiagDir, dumpName);
+                                    File.WriteAllBytes(dumpPath, raw);
+                                    scanStats.Add(new { path, isLsf, decompOk, rawSize = raw.Length,
+                                        textHit, binHitLE, binHitBE, dumpedTo = dumpPath });
+                                }
+                                else if (path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) && path.Contains("_merged", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    // Fallback: log RootTemplates/_merged even if no hit
                                     var dumpPath = Path.Combine(DiagDir, $"raw_{Path.GetFileName(pakPath)}_RT_merged.bin");
                                     File.WriteAllBytes(dumpPath, raw);
                                     scanStats.Add(new { path, isLsf, decompOk, rawSize = raw.Length,
