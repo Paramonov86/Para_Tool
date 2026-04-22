@@ -103,12 +103,21 @@
                                         <Border Padding="10,8" CornerRadius="6"
                                                 BorderThickness="0,0,3,0" BorderBrush="{Binding RarityColor}"
                                                 Background="{Binding SelectionBackground}">
-                                            <Grid RowDefinitions="Auto,Auto">
-                                                <TextBlock Text="{Binding DisplayLabel}" FontSize="{DynamicResource FontSize13}"
+                                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Text="{Binding DisplayLabel}" FontSize="{DynamicResource FontSize13}"
                                                            FontWeight="SemiBold"
                                                            Foreground="{StaticResource TextPrimaryBrush}"
                                                            TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Grid.Row="1" Text="{Binding EditStatId}" FontSize="{DynamicResource FontSize10}"
+                                                <Button Grid.Column="1" Grid.RowSpan="2"
+                                                        Content="💾"
+                                                        FontSize="{DynamicResource FontSize14}"
+                                                        Padding="6,2" Margin="8,0,0,0"
+                                                        Background="Transparent" BorderThickness="0"
+                                                        VerticalAlignment="Center" Cursor="Hand"
+                                                        ToolTip.Tip="{Binding ShowInExplorerTooltip, Source={x:Static loc:Loc.Instance}}"
+                                                        Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).ShowArtifactInExplorerCommand}"
+                                                        CommandParameter="{Binding}" />
+                                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding EditStatId}" FontSize="{DynamicResource FontSize10}"
                                                            Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" />
                                             </Grid>
                                         </Border>
