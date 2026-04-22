@@ -46,7 +46,8 @@ public static class ItemDiagnostics
         ArtifactDefinition? artifact = null,
         string? iconAtlasKey = null,
         int? iconBitmapWidth = null,
-        int? iconBitmapHeight = null)
+        int? iconBitmapHeight = null,
+        Models.ItemEntry? itemEntry = null)
     {
         var snap = new Dictionary<string, object?>
         {
@@ -70,6 +71,33 @@ public static class ItemDiagnostics
         else if (resolver != null)
         {
             snap["entry"] = "NOT FOUND in resolver";
+        }
+
+        // ── ItemEntry (scanner-level data; has RootTemplate-derived handles) ──
+        if (itemEntry != null)
+        {
+            var rtName = !string.IsNullOrEmpty(itemEntry.DisplayNameHandle) && locaService != null
+                ? new { en = locaService.ResolveHandle(itemEntry.DisplayNameHandle, "en"),
+                        ru = locaService.ResolveHandle(itemEntry.DisplayNameHandle, "ru") }
+                : null;
+            var rtDesc = !string.IsNullOrEmpty(itemEntry.DescriptionHandle) && locaService != null
+                ? new { en = locaService.ResolveHandle(itemEntry.DescriptionHandle, "en"),
+                        ru = locaService.ResolveHandle(itemEntry.DescriptionHandle, "ru") }
+                : null;
+            snap["itemEntry"] = new
+            {
+                statId = itemEntry.StatId,
+                displayName = itemEntry.DisplayName,
+                displayNameHandle = itemEntry.DisplayNameHandle,
+                descriptionHandle = itemEntry.DescriptionHandle,
+                iconName = itemEntry.IconName,
+                locaAncestorId = itemEntry.LocaAncestorId,
+                rootTemplateNameResolved = rtName,
+                rootTemplateDescResolved = rtDesc,
+                detectedRarity = itemEntry.DetectedRarity,
+                detectedPool = itemEntry.DetectedPool,
+                detectedThemes = itemEntry.DetectedThemes,
+            };
         }
 
         // ── Using chain walk ──────────────────────
@@ -288,9 +316,10 @@ public static class ItemDiagnostics
         ArtifactDefinition? artifact = null,
         string? iconAtlasKey = null,
         int? iconW = null, int? iconH = null,
-        string? suffix = null)
+        string? suffix = null,
+        Models.ItemEntry? itemEntry = null)
     {
-        var snap = Capture(statId, resolver, locaService, artifact, iconAtlasKey, iconW, iconH);
+        var snap = Capture(statId, resolver, locaService, artifact, iconAtlasKey, iconW, iconH, itemEntry);
         var safeId = SanitizeFilename(statId);
         var filename = string.IsNullOrEmpty(suffix) ? $"{safeId}.json" : $"{safeId}_{suffix}.json";
         var path = Path.Combine(DiagDir, filename);

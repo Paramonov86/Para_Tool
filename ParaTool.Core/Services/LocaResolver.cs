@@ -5,27 +5,29 @@ using ParaTool.Core.Parsing;
 namespace ParaTool.Core.Services;
 
 /// <summary>
-/// Single source of truth for resolving a BG3 item's display name / description
-/// from the tangle of sources we know about (user's own .art override, mod loca
-/// pak handles, embedded vanilla TSV, using-chain fallbacks).
+/// Single source of truth for resolving a BG3 item's display name / description.
 ///
-/// Priority order (highest wins):
-///   0. User's .art override (if an ArtifactDefinition is supplied and its
-///      DisplayName[lang] is non-empty). Their local edit always wins.
-///   1. Artifact's own handle resolves in loca paks (means they patched once
-///      before and the patched text is what they're looking at).
-///   2. Walk using-chain starting at statId, at each tier:
-///      a. If that tier's stats entry has a Display/Description handle and
-///         LocaService resolves it — use it.
-///      b. Else if the embedded vanilla TSV has a name for that tier — use it.
-///      (nearest ancestor wins — so a mod can override vanilla by declaring
-///      its own handle on the same StatId.)
-///   3. null — nothing found.
+/// IMPORTANT: in BG3 stats text, Armor / Weapon entries do NOT hold loca handles
+/// at all — localisation for items lives in their RootTemplate (LSF). The scanner
+/// extracts that template-level handle into ItemEntry.DisplayNameHandle. Stats
+/// handles (DisplayName / Description fields) only exist on PassiveData,
+/// StatusData, SpellData — not on items.
 ///
-/// Why not vanilla-first? Because mods frequently define their own entry with
-/// a StatId that also exists in vanilla (`using "vanilla_X"`). The mod's loca
-/// MUST beat the vanilla copy with the same StatId, otherwise we'd silently
-/// replace mod names with vanilla ones.
+/// Priority order for items (highest wins):
+///   0. User's .art DisplayName[lang] override — their local edit always wins
+///   1. User art's own handle resolves in loca paks (they patched before)
+///   2. Template handle from scanner (ItemEntry.DisplayNameHandle) — this is
+///      the handle declared on the item's RootTemplate (mod or vanilla)
+///   3. Walk using-chain of stats entries; at each ancestor try embedded
+///      vanilla TSV lookup (which is pre-indexed by StatId from vanilla
+///      templates). Nearest ancestor with a vanilla name wins.
+///   4. null — nothing found
+///
+/// Why walk the stats using-chain for vanilla TSV lookup? Because a mod item
+/// without its own template DisplayName inherits the parent's template through
+/// the `using` chain, and vanilla_items_loca.tsv is keyed by StatId — so
+/// climbing the stats chain eventually lands on a vanilla StatId whose TSV
+/// entry is the inherited display name.
 /// </summary>
 public sealed class LocaResolver
 {
@@ -38,22 +40,29 @@ public sealed class LocaResolver
         _loca = loca;
     }
 
-    public enum Source { UserArt, ArtHandle, StatsHandle, VanillaTsv, NotFound }
+    public enum Source { UserArt, ArtHandle, TemplateHandle, VanillaTsv, NotFound }
 
     public record Result(string? Value, Source Source, string? MatchedAt, int Depth)
     {
         public bool Resolved => Value != null;
     }
 
-    public Result ResolveName(string statId, string lang, ArtifactDefinition? userArt = null)
-        => Resolve(statId, lang, userArt, isName: true);
+    /// <summary>Resolve display name for an item StatId.</summary>
+    /// <param name="templateHandle">RootTemplate-level DisplayName handle from scanner.</param>
+    public Result ResolveName(string statId, string lang,
+        ArtifactDefinition? userArt = null, string? templateHandle = null)
+        => Resolve(statId, lang, userArt, templateHandle, isName: true);
 
-    public Result ResolveDescription(string statId, string lang, ArtifactDefinition? userArt = null)
-        => Resolve(statId, lang, userArt, isName: false);
+    /// <summary>Resolve description for an item StatId.</summary>
+    /// <param name="templateHandle">RootTemplate-level Description handle from scanner.</param>
+    public Result ResolveDescription(string statId, string lang,
+        ArtifactDefinition? userArt = null, string? templateHandle = null)
+        => Resolve(statId, lang, userArt, templateHandle, isName: false);
 
-    private Result Resolve(string statId, string lang, ArtifactDefinition? userArt, bool isName)
+    private Result Resolve(string statId, string lang,
+        ArtifactDefinition? userArt, string? templateHandle, bool isName)
     {
-        // Tier 0: user's .art has their own typed text
+        // Tier 0: user's .art typed text
         if (userArt != null)
         {
             var dict = isName ? userArt.DisplayName : userArt.Description;
@@ -62,7 +71,7 @@ public sealed class LocaResolver
                 return new Result(userVal, Source.UserArt, userArt.StatId, 0);
         }
 
-        // Tier 1: artifact's own handle resolves in loca paks
+        // Tier 1: user's own handle (patched previously — stored in .art)
         if (userArt != null && _loca != null)
         {
             var handle = isName ? userArt.DisplayNameHandle : userArt.DescriptionHandle;
@@ -74,39 +83,29 @@ public sealed class LocaResolver
             }
         }
 
-        // Tier 2: walk using-chain; at each node try stats handle, then vanilla TSV
+        // Tier 2: RootTemplate handle from scanner (caller's responsibility to
+        // pass the right handle — DisplayName or Description depending on isName).
+        if (!string.IsNullOrEmpty(templateHandle) && _loca != null)
+        {
+            var text = _loca.ResolveHandle(templateHandle, lang);
+            if (text != null)
+                return new Result(BbCode.FromBg3Xml(text), Source.TemplateHandle, statId, 0);
+        }
+
+        // Tier 3: walk stats using-chain, try vanilla TSV at each tier
         var cur = statId;
         int depth = 0;
         const int maxDepth = 20;
         while (cur != null && depth < maxDepth)
         {
-            if (!_stats.AllEntries.TryGetValue(cur, out var entry))
-                break;
-
-            // 2a. Stats handle
-            if (_loca != null)
-            {
-                var handleRef = entry.Data.GetValueOrDefault(isName ? "DisplayName" : "Description");
-                if (!string.IsNullOrEmpty(handleRef))
-                {
-                    var parsed = HandleGenerator.Parse(handleRef).handle;
-                    if (!string.IsNullOrEmpty(parsed))
-                    {
-                        var text = _loca.ResolveHandle(parsed, lang);
-                        if (text != null)
-                            return new Result(BbCode.FromBg3Xml(text), Source.StatsHandle, cur, depth);
-                    }
-                }
-            }
-
-            // 2b. Vanilla TSV at this tier
             var vanilla = isName
                 ? VanillaLocaService.GetDisplayName(cur, lang)
                 : VanillaLocaService.GetDescription(cur, lang);
             if (vanilla != null)
                 return new Result(BbCode.FromBg3Xml(vanilla), Source.VanillaTsv, cur, depth);
 
-            // Move up the chain — break on self-reference
+            if (!_stats.AllEntries.TryGetValue(cur, out var entry))
+                break;
             if (entry.Using == null || entry.Using.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))
                 break;
             cur = entry.Using;

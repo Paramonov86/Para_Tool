@@ -32,13 +32,13 @@ public partial class BaseItemVM : ObservableObject
 
             _cachedLabelLang = lang;
 
-            // Ask the shared resolver — it walks using-chain with correct priority
-            // (mod's own handle beats vanilla entry at same StatId).
+            // Ask the shared resolver — walks template handle first, then stats
+            // using-chain for vanilla TSV fallback. Pass scanner-derived template
+            // handle so mod items with custom names beat their vanilla base.
             if (_locaResolver != null)
             {
-                var r = _locaResolver.ResolveName(Entry.StatId, lang);
+                var r = _locaResolver.ResolveName(Entry.StatId, lang, null, Entry.DisplayNameHandle);
                 if (r.Resolved) { _cachedLabel = r.Value!; return _cachedLabel; }
-                // Also try LocaAncestorId if scanner derived one (rare fallback)
                 if (Entry.LocaAncestorId != null)
                 {
                     var ar = _locaResolver.ResolveName(Entry.LocaAncestorId, lang);
@@ -772,14 +772,14 @@ public partial class ConstructorViewModel : ViewModelBase
         {
             if (!artifact.DisplayName.ContainsKey(lang) && _locaResolver != null)
             {
-                var r = _locaResolver.ResolveName(baseItem.StatId, lang);
+                var r = _locaResolver.ResolveName(baseItem.StatId, lang, null, baseItem.Entry.DisplayNameHandle);
                 if (!r.Resolved && baseItem.Entry.LocaAncestorId != null)
                     r = _locaResolver.ResolveName(baseItem.Entry.LocaAncestorId, lang);
                 if (r.Resolved) artifact.DisplayName[lang] = r.Value!;
             }
             if (!artifact.Description.ContainsKey(lang) && _locaResolver != null)
             {
-                var r = _locaResolver.ResolveDescription(baseItem.StatId, lang);
+                var r = _locaResolver.ResolveDescription(baseItem.StatId, lang, null, baseItem.Entry.DescriptionHandle);
                 if (!r.Resolved && baseItem.Entry.LocaAncestorId != null)
                     r = _locaResolver.ResolveDescription(baseItem.Entry.LocaAncestorId, lang);
                 if (r.Resolved) artifact.Description[lang] = r.Value!;

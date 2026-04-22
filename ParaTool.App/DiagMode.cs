@@ -76,6 +76,13 @@ internal static class DiagMode
         var allSavedArtifacts = ArtifactStore.LoadAll();
         var artifactByStatId = allSavedArtifacts.ToDictionary(a => a.StatId, StringComparer.OrdinalIgnoreCase);
 
+        // Build StatId -> ItemEntry map (from all mods) so we can dump ItemEntry-level fields
+        var itemEntryByStatId = new Dictionary<string, ParaTool.Core.Models.ItemEntry>(StringComparer.OrdinalIgnoreCase);
+        if (result.AmpMod != null)
+            foreach (var it in result.AmpMod.Items) itemEntryByStatId[it.StatId] = it;
+        foreach (var mod in result.Mods)
+            foreach (var it in mod.Items) itemEntryByStatId[it.StatId] = it;
+
         var targetStatIds = new List<string>();
         if (diagAll)
         {
@@ -112,7 +119,8 @@ internal static class DiagMode
             try
             {
                 artifactByStatId.TryGetValue(id, out var art);
-                ItemDiagnostics.Dump(id, resolver, locaService, art);
+                itemEntryByStatId.TryGetValue(id, out var itemEntry);
+                ItemDiagnostics.Dump(id, resolver, locaService, art, itemEntry: itemEntry);
                 dumped++;
                 if (dumped % 500 == 0) Console.WriteLine($"  ... {dumped}/{targetStatIds.Count}");
             }
