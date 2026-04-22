@@ -345,6 +345,25 @@ public partial class ConstructorView : UserControl
             return;
         }
 
+        // Open artifacts folder in system file explorer
+        if (btn.Name == "OpenArtifactsFolderBtn")
+        {
+            try
+            {
+                var dir = ParaTool.Core.Artifacts.ArtifactStore.GetArtifactsDir();
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = dir,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                ParaTool.Core.Services.AppLogger.Warn($"OpenArtifactsFolder failed: {ex.Message}");
+            }
+            return;
+        }
+
         // Close recent tab
         if (btn.Name == "CloseTabBtn" && btn.Tag is ArtifactItemVM tabItem
             && DataContext is ConstructorViewModel tabVm)

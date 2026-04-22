@@ -13,7 +13,7 @@
         <Border Grid.Column="0" Background="{StaticResource PanelBgBrush}"
                 CornerRadius="8" MinWidth="180"
                 BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto">
                 <TextBlock Grid.Row="0"
                            Text="{Binding NavTitle, Source={x:Static loc:Loc.Instance}}"
                            FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
@@ -208,8 +208,29 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- Support link -->
+                <!-- Open artifacts folder -->
                 <Border Grid.Row="5" Background="{StaticResource CardBgBrush}"
+                        CornerRadius="6" Padding="8,6" Margin="8,6,8,2"
+                        BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
+                    <Button Background="Transparent" BorderThickness="0"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Padding="0" Cursor="Hand"
+                            Name="OpenArtifactsFolderBtn"
+                            ToolTip.Tip="{Binding OpenArtifactsFolderTooltip, Source={x:Static loc:Loc.Instance}}">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                            <TextBlock Text="📁" FontSize="{DynamicResource FontSize12}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding OpenArtifactsFolder, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="{DynamicResource FontSize11}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentLightBrush}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Border>
+
+                <!-- Support link -->
+                <Border Grid.Row="6" Background="{StaticResource CardBgBrush}"
                         CornerRadius="6" Padding="8,6" Margin="8,6,8,8">
                     <Button Background="Transparent" BorderThickness="0"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"

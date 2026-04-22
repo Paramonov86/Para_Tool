@@ -1,16 +1,13 @@
 {
   "_name": "한국어",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "AppData에서 Mods 폴더를 찾을 수 없습니다! 경로를 수동으로 선택하세요",
   "SelectFolder": "폴더 선택",
-
   "PleaseWait": "잠시만 기다려주세요...",
   "ScanningMods": "아이템이 포함된 모드를 분석 중입니다.",
   "MayTakeTime": "시간이 다소 걸릴 수 있습니다...",
   "ModsScanned": "스캔된 모드:",
   "ModsSelected": "선택된 모드:",
-
   "IntegratorTitle": "Ancient Mega Pack Integrator",
   "EditorTitle": "통합할 아이템 확인",
   "AllMods": "모든 모드",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "Mods 폴더에서 아이템이 포함된 모드 {0}개를 찾았습니다.",
   "ThemesLabel": "테마",
   "ModThemes": "모드 테마",
-
   "PatchingInProgress": "패치 중...",
   "PatchSuccess": "성공!",
   "PatchSuccessMessage": "패치된 아이템 수: {0}",
   "PatchError": "오류:",
-
   "Slot.Clothes": "의복",
   "Slot.Armor": "갑옷",
   "Slot.Shields": "방패",
@@ -41,13 +36,11 @@
   "Slot.Weapons": "무기",
   "Slot.Weapons_1H": "한손",
   "Slot.Weapons_2H": "양손",
-
   "Rarity.Common": "일반",
   "Rarity.Uncommon": "고급",
   "Rarity.Rare": "희귀",
   "Rarity.VeryRare": "매우 희귀",
   "Rarity.Legendary": "전설",
-
   "Theme.Swamp": "늪",
   "Theme.Aquatic": "수중",
   "Theme.Shadowfell": "그림자황야",
@@ -58,7 +51,6 @@
   "Theme.War": "전쟁",
   "Theme.Psionic": "초능력",
   "Theme.Primal": "원시",
-
   "ProfileLabel": "프로필",
   "ProfileSave": "저장",
   "ProfileSaveAs": "다른 이름으로 저장",
@@ -68,7 +60,6 @@
   "ProfileSaved": "프로필 저장됨!",
   "MissingItemsWarning": "이전에 패치된 아이템을 찾을 수 없습니다:",
   "MissingItemsDismiss": "닫기",
-
   "ScanStageMods": "모드 스캔 중...",
   "ScanStageAMP": "AMP 아이템 스캔 중...",
   "ScanStageResolver": "아이템 데이터베이스 구축 중...",
@@ -76,32 +67,27 @@
   "ScanStageTemplates": "템플릿 읽는 중...",
   "ScanStageLoca": "현지화 로딩 중...",
   "ScanStageDone": "완료!",
-
   "SortByName": "이름",
   "SortByRarity": "희귀도",
   "SortByTheme": "테마",
   "SortBySlot": "슬롯",
-
   "FolderPickerTitle": "BG3 Mods 폴더 선택",
   "UpdateCheckTooltip": "업데이트 확인",
-  "UpdateCheckingTooltip": "업데이트 확인 중\u2026",
-  "UpdateAvailableTooltip": "v{0} 사용 가능 \u2014 클릭하여 업데이트",
-  "UpdateDownloadingTooltip": "다운로드 중\u2026 {0}%",
+  "UpdateCheckingTooltip": "업데이트 확인 중…",
+  "UpdateAvailableTooltip": "v{0} 사용 가능 — 클릭하여 업데이트",
+  "UpdateDownloadingTooltip": "다운로드 중… {0}%",
   "UpdateUpToDateTooltip": "최신 버전입니다",
   "UpdateFailedTooltip": "업데이트 확인 실패",
   "RestoreAmpTooltip": "원본 AMP 복원 (패치 취소)",
   "RestoringAmp": "복원 중...",
-
   "TabPatcher": "패처",
   "TabConstructor": "생성기",
-
   "enum.Strength": "힘",
   "enum.Dexterity": "민첩",
   "enum.Constitution": "건강",
   "enum.Intelligence": "지능",
   "enum.Wisdom": "지혜",
   "enum.Charisma": "매력",
-
   "enum.Acrobatics": "곡예",
   "enum.AnimalHandling": "동물 조련",
   "enum.Arcana": "비전학",
@@ -120,7 +106,6 @@
   "enum.SleightOfHand": "손재주",
   "enum.Stealth": "은신",
   "enum.Survival": "생존",
-
   "enum.Slashing": "참격",
   "enum.Piercing": "관통",
   "enum.Bludgeoning": "타격",
@@ -136,28 +121,24 @@
   "enum.Force": "역장",
   "enum.All": "전체",
   "enum.None": "없음",
-
   "enum.Attack": "공격",
-  "enum.Skill": "기술",
-  "enum.SavingThrow": "내성 굴림",
+  "enum.Skill": "Skill",
+  "enum.SavingThrow": "Saving Throw",
   "enum.RawAbility": "능력치 판정",
   "enum.SkillCheck": "기술 판정",
-  "enum.MeleeWeaponAttack": "근접 공격",
-  "enum.RangedWeaponAttack": "원거리 공격",
-  "enum.MeleeSpellAttack": "근접 주문",
-  "enum.RangedSpellAttack": "원거리 주문",
-
+  "enum.MeleeWeaponAttack": "Melee Weapon",
+  "enum.RangedWeaponAttack": "Ranged Weapon",
+  "enum.MeleeSpellAttack": "Melee Spell",
+  "enum.RangedSpellAttack": "Ranged Spell",
   "enum.Resistant": "저항",
   "enum.Immune": "면역",
   "enum.Vulnerable": "취약",
-
   "enum.LightArmor": "경갑",
   "enum.MediumArmor": "중갑",
   "enum.HeavyArmor": "중갑옷",
   "enum.Shields": "방패",
   "enum.SimpleWeapons": "단순 무기",
   "enum.MartialWeapons": "군용 무기",
-
   "boost.AC": "방어도",
   "boost.Ability": "능력치",
   "boost.RollBonus": "굴림 보너스",
@@ -179,7 +160,6 @@
   "boost.MinimumRollResult": "최소 굴림",
   "boost.CriticalHit": "치명타",
   "boost.ReduceCriticalAttackThreshold": "치명타 임계값 감소",
-
   "LblArmor": "방어구",
   "LblWeapon": "무기",
   "LblPassives": "지속 효과",
@@ -231,26 +211,23 @@
   "BbTipLineBreak": "줄 바꿈 [br]",
   "TipToggleCodePreview": "BB-코드 편집기 / 미리보기 전환",
   "LblCardMechanics": "메카닉스",
-
   "enum.Highlighted": "강조",
   "enum.IsHidden": "숨김",
   "enum.IsToggled": "전환",
   "enum.ToggledDefaultOn": "기본 켜짐",
   "enum.ToggledDefaultAddToHotbar": "핫바에",
   "enum.ToggleForParty": "파티용",
-  "enum.OncePerTurn": "1/턴",
+  "enum.OncePerTurn": "Once per Turn",
   "enum.OncePerAttack": "1/공격",
   "enum.OncePerShortRest": "1/짧은 휴식",
   "enum.OncePerLongRest": "1/긴 휴식",
-  "enum.OncePerCombat": "1/전투",
+  "enum.OncePerCombat": "Once per Combat",
   "enum.DisplayBoostInTooltip": "보너스 표시",
   "enum.Temporary": "일시적",
-
   "LblAnd": "그리고",
   "LblOr": "또는",
   "LblNot": "아님",
   "LblThen": "실행",
-
   "NavTitle": "탐색기",
   "NavSearch": "아이템 검색...",
   "NavMyItems": "내 아티팩트",
@@ -260,7 +237,6 @@
   "NavDelete": "삭제",
   "ConstructorEditorTitle": "편집기",
   "ConstructorPreviewTitle": "미리보기",
-
   "EditorNoSelection": "탐색기에서 아이템을 선택하거나\n계승자를 생성하세요",
   "ConstructorGuideTitle": "빠른 시작",
   "ConstructorStep1": "1. 기본 아이템 찾기 — 검색 또는 네비게이터의 그룹을 사용하세요.",
@@ -286,7 +262,6 @@
   "ChipThemes": "테마",
   "BtnSave": "저장",
   "BtnReset": "초기화",
-
   "LblBoosts": "영구 효과",
   "LblStatuses": "적용 상태",
   "LblSpells": "부여 주문",
@@ -297,7 +272,6 @@
   "LblAction": "행동",
   "LblIcon": "아이콘",
   "LblIconBrowser": "아이콘 선택",
-
   "TipFontSize": "글꼴 크기",
   "TipColorTheme": "색상 테마",
   "WmBrowseIcons": "아이콘 찾아보기...",
@@ -305,7 +279,6 @@
   "WmDescriptionLore": "설명 / 배경 (BB-코드)",
   "LblNoIconSelected": "아이콘 미선택",
   "DlgSelectPng": "PNG 아이콘 선택",
-
   "enum.SurfaceNone": "없음",
   "enum.SurfaceWater": "물",
   "enum.SurfaceWaterElectrified": "물 (전기)",
@@ -342,7 +315,6 @@
   "enum.SurfaceWaterDeepRunning": "깊은 물 (흐름)",
   "enum.SurfaceWaterRunning": "물 (흐름)",
   "enum.SurfaceVines": "Vines",
-
   "enum.BelowDamageThreshold": "Below Threshold",
   "enum.ResistantToMagical": "Resist (Magical)",
   "enum.ImmuneToMagical": "Immune (Magical)",
@@ -350,7 +322,6 @@
   "enum.ResistantToNonMagical": "Resist (Non-Magical)",
   "enum.ImmuneToNonMagical": "Immune (Non-Magical)",
   "enum.VulnerableToNonMagical": "Vulnerable (Non-Magical)",
-
   "enum.AttackTarget": "Attack Target",
   "enum.AttackRoll": "Attack Roll",
   "enum.Success": "Success",
@@ -358,31 +329,21 @@
   "enum.Never": "Never",
   "enum.Always": "Always",
   "enum.ForcedAlways": "Forced Always",
-
-  "enum.SavingThrow": "Saving Throw",
   "enum.AllSavingThrows": "All Saving Throws",
   "enum.Ability": "Ability",
   "enum.AllAbilities": "All Abilities",
-  "enum.Skill": "Skill",
   "enum.AllSkills": "All Skills",
   "enum.SourceDialogue": "Dialogue",
   "enum.DeathSavingThrow": "Death Save",
   "enum.Concentration": "Concentration",
-
   "enum.Half": "Half",
   "enum.Flat": "Flat",
   "enum.Threshold": "Threshold",
-
   "enum.DirectHit": "Direct Hit",
-  "enum.MeleeWeaponAttack": "Melee Weapon",
-  "enum.RangedWeaponAttack": "Ranged Weapon",
   "enum.MeleeOffHandWeaponAttack": "Melee Off-Hand",
   "enum.RangedOffHandWeaponAttack": "Ranged Off-Hand",
-  "enum.MeleeSpellAttack": "Melee Spell",
-  "enum.RangedSpellAttack": "Ranged Spell",
   "enum.MeleeUnarmedAttack": "Melee Unarmed",
   "enum.RangedUnarmedAttack": "Ranged Unarmed",
-
   "enum.Light": "Light",
   "enum.Ammunition": "Ammunition",
   "enum.Finesse": "Finesse",
@@ -404,7 +365,6 @@
   "enum.NotSheathable": "Not Sheathable",
   "enum.Unstowable": "Unstowable",
   "enum.AddToHotbar": "Add to Hotbar",
-
   "enum.Cloth": "Cloth",
   "enum.Padded": "Padded",
   "enum.Leather": "Leather",
@@ -418,7 +378,6 @@
   "enum.ChainMail": "Chain Mail",
   "enum.Splint": "Splint",
   "enum.Plate": "Plate",
-
   "enum.Abjuration": "Abjuration",
   "enum.Conjuration": "Conjuration",
   "enum.Divination": "Divination",
@@ -427,16 +386,12 @@
   "enum.Illusion": "Illusion",
   "enum.Necromancy": "Necromancy",
   "enum.Transmutation": "Transmutation",
-
   "enum.Default": "Default",
-  "enum.OncePerTurn": "Once per Turn",
-  "enum.OncePerCombat": "Once per Combat",
   "enum.UntilRest": "Until Rest",
   "enum.OncePerTurnNoRealtime": "Once per Turn (No Realtime)",
   "enum.UntilShortRest": "Until Short Rest",
   "enum.UntilPerRestPerItem": "Per Rest per Item",
   "enum.OncePerShortRestPerItem": "Per Short Rest per Item",
-
   "enum.Ignite": "Ignite",
   "enum.Douse": "Douse",
   "enum.Electrify": "Electrify",
@@ -447,29 +402,24 @@
   "enum.Condense": "Condense",
   "enum.DestroyWater": "Destroy Water",
   "enum.Clear": "Clear",
-
   "enum.Cone": "Cone",
   "enum.Square": "Square",
-  "enum.OriginToEntity": "Origin \u2192 Entity",
-  "enum.OriginToTarget": "Origin \u2192 Target",
-  "enum.TargetToEntity": "Target \u2192 Entity",
+  "enum.OriginToEntity": "Origin → Entity",
+  "enum.OriginToTarget": "Origin → Target",
+  "enum.TargetToEntity": "Target → Entity",
   "enum.Aggressive": "Aggressive",
   "enum.Friendly": "Friendly",
   "enum.Neutral": "Neutral",
-
   "enum.MainHand": "Main Hand",
   "enum.OffHand": "Off-Hand",
   "enum.BothHands": "Both Hands",
-
   "enum.SetMinimum": "Set Minimum",
   "enum.ForceSet": "Force Set",
   "enum.Add": "Add",
   "enum.Multiply": "Multiply",
   "enum.Distribute": "Distribute",
-
   "enum.Ground": "Ground",
   "enum.Cloud": "Cloud",
-
   "enum.Chasm": "Chasm",
   "enum.DoT": "Damage over Time",
   "enum.Electrocution": "Electrocution",
@@ -481,7 +431,6 @@
   "enum.Narcolepsy": "Narcolepsy",
   "enum.PetrifiedShattered": "Petrified Shattered",
   "enum.Sentinel": "Sentinel",
-
   "enum.Living": "Living",
   "enum.Guaranteed": "Guaranteed",
   "enum.Construct": "Construct",
@@ -491,21 +440,17 @@
   "enum.Nonmagical": "Non-Magical",
   "enum.Lethal": "Lethal",
   "enum.Nonlethal": "Non-Lethal",
-
   "enum.Tiny": "Tiny",
   "enum.Small": "Small",
   "enum.Medium": "Medium",
   "enum.Large": "Large",
   "enum.Huge": "Huge",
   "enum.Gargantuan": "Gargantuan",
-
   "enum.SimpleMeleeWeapon": "Simple Melee",
   "enum.SimpleRangedWeapon": "Simple Ranged",
   "enum.MartialMeleeWeapon": "Martial Melee",
   "enum.MartialRangedWeapon": "Martial Ranged",
-
   "enum.WeaponActionDC": "Weapon Action DC",
-
   "TipDefaultTab": "Set current tab as default on startup",
   "WmSearchItems": "아이템 검색...",
   "LblHideDisabled": "비활성 숨기기",
@@ -513,10 +458,11 @@
   "LblShowThemes": "테마 표시:",
   "LblNoTheme": "테마 없음",
   "TipOpenInConstructor": "생성기에서 열기",
-
   "CtxRename": "이름 바꾸기",
   "CtxReplace": "바꾸기",
   "WmSearchCondition": "조건 검색...",
   "DlgRenameTitle": "이름 바꾸기",
-  "WmNewName": "새 이름..."
+  "WmNewName": "새 이름...",
+  "OpenArtifactsFolder": "아티팩트 폴더",
+  "OpenArtifactsFolderTooltip": ".art 파일이 저장된 폴더를 탐색기에서 열기"
 }

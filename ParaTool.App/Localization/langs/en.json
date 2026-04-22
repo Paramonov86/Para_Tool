@@ -1,16 +1,13 @@
 {
   "_name": "English",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "Mods folder not found in AppData! Select path manually",
   "SelectFolder": "Select folder",
-
   "PleaseWait": "Please wait...",
   "ScanningMods": "Scanning mods with items.",
   "MayTakeTime": "This may take some time...",
   "ModsScanned": "Mods scanned:",
   "ModsSelected": "Mods selected:",
-
   "IntegratorTitle": "Ancient Mega Pack Integrator",
   "EditorTitle": "Review items for integration",
   "AllMods": "All mods",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "Found {0} mods with items in Mods folder.",
   "ThemesLabel": "Themes",
   "ModThemes": "Mod themes",
-
   "PatchingInProgress": "Patching...",
   "PatchSuccess": "Success!",
   "PatchSuccessMessage": "Items patched: {0}",
   "PatchError": "Error:",
-
   "Slot.Clothes": "Clothes",
   "Slot.Armor": "Armor",
   "Slot.Shields": "Shields",
@@ -41,13 +36,11 @@
   "Slot.Weapons": "Weapons",
   "Slot.Weapons_1H": "One-handed",
   "Slot.Weapons_2H": "Two-handed",
-
   "Rarity.Common": "Common",
   "Rarity.Uncommon": "Uncommon",
   "Rarity.Rare": "Rare",
   "Rarity.VeryRare": "Very Rare",
   "Rarity.Legendary": "Legendary",
-
   "Theme.Swamp": "Swamp",
   "Theme.Aquatic": "Aquatic",
   "Theme.Shadowfell": "Shadowfell",
@@ -58,7 +51,6 @@
   "Theme.War": "War",
   "Theme.Psionic": "Psionic",
   "Theme.Primal": "Primal",
-
   "ProfileLabel": "Profile",
   "ProfileSave": "Save",
   "ProfileSaveAs": "Save As",
@@ -68,7 +60,6 @@
   "ProfileSaved": "Profile saved!",
   "MissingItemsWarning": "Previously patched items not found:",
   "MissingItemsDismiss": "Dismiss",
-
   "ScanStageMods": "Scanning mods...",
   "ScanStageAMP": "Scanning AMP items...",
   "ScanStageResolver": "Building item database...",
@@ -76,26 +67,21 @@
   "ScanStageTemplates": "Reading templates...",
   "ScanStageLoca": "Loading localization...",
   "ScanStageDone": "Done!",
-
   "SortByName": "Name",
   "SortByRarity": "Rarity",
   "SortByTheme": "Theme",
   "SortBySlot": "Slot",
-
   "FolderPickerTitle": "Select BG3 Mods folder",
   "UpdateCheckTooltip": "Check for updates",
-  "UpdateCheckingTooltip": "Checking for updates\u2026",
-  "UpdateAvailableTooltip": "v{0} available \u2014 click to update",
-  "UpdateDownloadingTooltip": "Downloading\u2026 {0}%",
+  "UpdateCheckingTooltip": "Checking for updates…",
+  "UpdateAvailableTooltip": "v{0} available — click to update",
+  "UpdateDownloadingTooltip": "Downloading… {0}%",
   "UpdateUpToDateTooltip": "Up to date",
   "UpdateFailedTooltip": "Update check failed",
-
   "RestoreAmpTooltip": "Restore original AMP (undo patch)",
   "RestoringAmp": "Restoring...",
-
   "TabPatcher": "PATCHER",
   "TabConstructor": "CONSTRUCTOR",
-
   "NavTitle": "NAVIGATOR",
   "NavSearch": "Search items...",
   "NavMyItems": "MY ARTIFACTS",
@@ -105,16 +91,15 @@
   "NavDelete": "Delete",
   "ConstructorEditorTitle": "EDITOR",
   "ConstructorPreviewTitle": "PREVIEW",
-
   "EditorNoSelection": "Select an item from the navigator\nor create an inheritor",
   "ConstructorGuideTitle": "Quick Start Guide",
-  "ConstructorStep1": "1. Find a base item \u2014 use search or browse groups in the navigator.",
-  "ConstructorStep2": "2. Click the item to open it \u2014 the editor loads all vanilla properties.",
+  "ConstructorStep1": "1. Find a base item — use search or browse groups in the navigator.",
+  "ConstructorStep2": "2. Click the item to open it — the editor loads all vanilla properties.",
   "ConstructorStep3": "3. Scroll down to CREATE NEW ITEM, enter a name, and click Create.",
-  "ConstructorStep4": "4. Edit your item \u2014 change rarity, boosts, passives, description, icon.",
+  "ConstructorStep4": "4. Edit your item — change rarity, boosts, passives, description, icon.",
   "ConstructorStep5": "5. Click SAVE (green button) to persist your changes.",
   "ConstructorStep6": "6. Switch to the PATCHER tab, enable your item, and click PATCH.",
-  "ConstructorStep7": "7. Launch the game \u2014 your modded item will appear in loot!",
+  "ConstructorStep7": "7. Launch the game — your modded item will appear in loot!",
   "CardIdentity": "IDENTITY",
   "CardArmorProps": "ARMOR PROPERTIES",
   "CardWeaponProps": "WEAPON PROPERTIES",
@@ -131,7 +116,6 @@
   "ChipThemes": "THEMES",
   "BtnSave": "SAVE",
   "BtnReset": "RESET",
-
   "LblBoosts": "Permanent effects",
   "LblStatuses": "Applied statuses",
   "LblSpells": "Granted spells",
@@ -142,14 +126,12 @@
   "LblAction": "Action",
   "LblIcon": "ICON",
   "LblIconBrowser": "Choose Icon",
-
   "enum.Strength": "Strength",
   "enum.Dexterity": "Dexterity",
   "enum.Constitution": "Constitution",
   "enum.Intelligence": "Intelligence",
   "enum.Wisdom": "Wisdom",
   "enum.Charisma": "Charisma",
-
   "enum.Acrobatics": "Acrobatics",
   "enum.AnimalHandling": "Animal Handling",
   "enum.Arcana": "Arcana",
@@ -168,7 +150,6 @@
   "enum.SleightOfHand": "Sleight of Hand",
   "enum.Stealth": "Stealth",
   "enum.Survival": "Survival",
-
   "enum.Slashing": "Slashing",
   "enum.Piercing": "Piercing",
   "enum.Bludgeoning": "Bludgeoning",
@@ -184,28 +165,24 @@
   "enum.Force": "Force",
   "enum.All": "All",
   "enum.None": "None",
-
   "enum.Attack": "Attack",
   "enum.Skill": "Skill",
   "enum.SavingThrow": "Saving Throw",
   "enum.RawAbility": "Ability Check",
   "enum.SkillCheck": "Skill Check",
-  "enum.MeleeWeaponAttack": "Melee Attack",
-  "enum.RangedWeaponAttack": "Ranged Attack",
+  "enum.MeleeWeaponAttack": "Melee Weapon",
+  "enum.RangedWeaponAttack": "Ranged Weapon",
   "enum.MeleeSpellAttack": "Melee Spell",
   "enum.RangedSpellAttack": "Ranged Spell",
-
   "enum.Resistant": "Resistance",
   "enum.Immune": "Immunity",
   "enum.Vulnerable": "Vulnerability",
-
   "enum.LightArmor": "Light Armor",
   "enum.MediumArmor": "Medium Armor",
   "enum.HeavyArmor": "Heavy Armor",
   "enum.Shields": "Shields",
   "enum.SimpleWeapons": "Simple Weapons",
   "enum.MartialWeapons": "Martial Weapons",
-
   "boost.AC": "Armor Class",
   "boost.Ability": "Ability Score",
   "boost.RollBonus": "Roll Bonus",
@@ -227,7 +204,6 @@
   "boost.MinimumRollResult": "Minimum Roll",
   "boost.CriticalHit": "Critical Hit",
   "boost.ReduceCriticalAttackThreshold": "Lower Crit Threshold",
-
   "LblArmor": "ARMOR",
   "LblWeapon": "WEAPON",
   "LblPassives": "PASSIVES",
@@ -279,26 +255,23 @@
   "BbTipLineBreak": "Line break [br]",
   "TipToggleCodePreview": "Toggle BB-code editor / preview",
   "LblCardMechanics": "MECHANICS",
-
   "enum.Highlighted": "Highlight",
   "enum.IsHidden": "Hidden",
   "enum.IsToggled": "Toggle",
   "enum.ToggledDefaultOn": "Default On",
   "enum.ToggledDefaultAddToHotbar": "To Hotbar",
   "enum.ToggleForParty": "For Party",
-  "enum.OncePerTurn": "1/Turn",
+  "enum.OncePerTurn": "Once per Turn",
   "enum.OncePerAttack": "1/Attack",
   "enum.OncePerShortRest": "1/Short Rest",
   "enum.OncePerLongRest": "1/Long Rest",
-  "enum.OncePerCombat": "1/Combat",
+  "enum.OncePerCombat": "Once per Combat",
   "enum.DisplayBoostInTooltip": "Show Boost",
   "enum.Temporary": "Temporary",
-
   "LblAnd": "AND",
   "LblOr": "OR",
   "LblNot": "NOT",
   "LblThen": "THEN",
-
   "TipFontSize": "Font size",
   "TipColorTheme": "Color theme",
   "WmBrowseIcons": "Browse icons...",
@@ -306,7 +279,6 @@
   "WmDescriptionLore": "Description / lore (BB-code)",
   "LblNoIconSelected": "No icon selected",
   "DlgSelectPng": "Select PNG icon",
-
   "enum.SurfaceNone": "None",
   "enum.SurfaceWater": "Water",
   "enum.SurfaceWaterElectrified": "Water (Elec.)",
@@ -343,7 +315,6 @@
   "enum.SurfaceWaterDeepRunning": "Deep Water (Flow)",
   "enum.SurfaceWaterRunning": "Water (Flow)",
   "enum.SurfaceVines": "Vines",
-
   "enum.BelowDamageThreshold": "Below Threshold",
   "enum.ResistantToMagical": "Resist (Magical)",
   "enum.ImmuneToMagical": "Immune (Magical)",
@@ -351,7 +322,6 @@
   "enum.ResistantToNonMagical": "Resist (Non-Magical)",
   "enum.ImmuneToNonMagical": "Immune (Non-Magical)",
   "enum.VulnerableToNonMagical": "Vulnerable (Non-Magical)",
-
   "enum.AttackTarget": "Attack Target",
   "enum.AttackRoll": "Attack Roll",
   "enum.Success": "Success",
@@ -359,31 +329,21 @@
   "enum.Never": "Never",
   "enum.Always": "Always",
   "enum.ForcedAlways": "Forced Always",
-
-  "enum.SavingThrow": "Saving Throw",
   "enum.AllSavingThrows": "All Saving Throws",
   "enum.Ability": "Ability",
   "enum.AllAbilities": "All Abilities",
-  "enum.Skill": "Skill",
   "enum.AllSkills": "All Skills",
   "enum.SourceDialogue": "Dialogue",
   "enum.DeathSavingThrow": "Death Save",
   "enum.Concentration": "Concentration",
-
   "enum.Half": "Half",
   "enum.Flat": "Flat",
   "enum.Threshold": "Threshold",
-
   "enum.DirectHit": "Direct Hit",
-  "enum.MeleeWeaponAttack": "Melee Weapon",
-  "enum.RangedWeaponAttack": "Ranged Weapon",
   "enum.MeleeOffHandWeaponAttack": "Melee Off-Hand",
   "enum.RangedOffHandWeaponAttack": "Ranged Off-Hand",
-  "enum.MeleeSpellAttack": "Melee Spell",
-  "enum.RangedSpellAttack": "Ranged Spell",
   "enum.MeleeUnarmedAttack": "Melee Unarmed",
   "enum.RangedUnarmedAttack": "Ranged Unarmed",
-
   "enum.Light": "Light",
   "enum.Ammunition": "Ammunition",
   "enum.Finesse": "Finesse",
@@ -405,7 +365,6 @@
   "enum.NotSheathable": "Not Sheathable",
   "enum.Unstowable": "Unstowable",
   "enum.AddToHotbar": "Add to Hotbar",
-
   "enum.Cloth": "Cloth",
   "enum.Padded": "Padded",
   "enum.Leather": "Leather",
@@ -419,7 +378,6 @@
   "enum.ChainMail": "Chain Mail",
   "enum.Splint": "Splint",
   "enum.Plate": "Plate",
-
   "enum.Abjuration": "Abjuration",
   "enum.Conjuration": "Conjuration",
   "enum.Divination": "Divination",
@@ -428,16 +386,12 @@
   "enum.Illusion": "Illusion",
   "enum.Necromancy": "Necromancy",
   "enum.Transmutation": "Transmutation",
-
   "enum.Default": "Default",
-  "enum.OncePerTurn": "Once per Turn",
-  "enum.OncePerCombat": "Once per Combat",
   "enum.UntilRest": "Until Rest",
   "enum.OncePerTurnNoRealtime": "Once per Turn (No Realtime)",
   "enum.UntilShortRest": "Until Short Rest",
   "enum.UntilPerRestPerItem": "Per Rest per Item",
   "enum.OncePerShortRestPerItem": "Per Short Rest per Item",
-
   "enum.Ignite": "Ignite",
   "enum.Douse": "Douse",
   "enum.Electrify": "Electrify",
@@ -448,7 +402,6 @@
   "enum.Condense": "Condense",
   "enum.DestroyWater": "Destroy Water",
   "enum.Clear": "Clear",
-
   "enum.Cone": "Cone",
   "enum.Square": "Square",
   "enum.OriginToEntity": "Origin → Entity",
@@ -457,20 +410,16 @@
   "enum.Aggressive": "Aggressive",
   "enum.Friendly": "Friendly",
   "enum.Neutral": "Neutral",
-
   "enum.MainHand": "Main Hand",
   "enum.OffHand": "Off-Hand",
   "enum.BothHands": "Both Hands",
-
   "enum.SetMinimum": "Set Minimum",
   "enum.ForceSet": "Force Set",
   "enum.Add": "Add",
   "enum.Multiply": "Multiply",
   "enum.Distribute": "Distribute",
-
   "enum.Ground": "Ground",
   "enum.Cloud": "Cloud",
-
   "enum.Chasm": "Chasm",
   "enum.DoT": "Damage over Time",
   "enum.Electrocution": "Electrocution",
@@ -482,7 +431,6 @@
   "enum.Narcolepsy": "Narcolepsy",
   "enum.PetrifiedShattered": "Petrified Shattered",
   "enum.Sentinel": "Sentinel",
-
   "enum.Living": "Living",
   "enum.Guaranteed": "Guaranteed",
   "enum.Construct": "Construct",
@@ -492,35 +440,31 @@
   "enum.Nonmagical": "Non-Magical",
   "enum.Lethal": "Lethal",
   "enum.Nonlethal": "Non-Lethal",
-
   "enum.Tiny": "Tiny",
   "enum.Small": "Small",
   "enum.Medium": "Medium",
   "enum.Large": "Large",
   "enum.Huge": "Huge",
   "enum.Gargantuan": "Gargantuan",
-
   "enum.SimpleMeleeWeapon": "Simple Melee",
   "enum.SimpleRangedWeapon": "Simple Ranged",
   "enum.MartialMeleeWeapon": "Martial Melee",
   "enum.MartialRangedWeapon": "Martial Ranged",
-
   "enum.WeaponActionDC": "Weapon Action DC",
-
   "TipDefaultTab": "Set current tab as default on startup",
   "WmSearchPassive": "Add existing passive...",
   "LblAddEmptyPassive": "Add empty passive",
-
   "WmSearchItems": "Search items...",
   "LblHideDisabled": "Hide Off",
   "LblThemeFilter": "Themes",
   "LblShowThemes": "Show themes:",
   "LblNoTheme": "No theme",
   "TipOpenInConstructor": "Open in Constructor",
-
   "CtxRename": "Rename",
   "CtxReplace": "Replace",
   "WmSearchCondition": "Search condition...",
   "DlgRenameTitle": "Rename",
-  "WmNewName": "New name..."
+  "WmNewName": "New name...",
+  "OpenArtifactsFolder": "Artifacts Folder",
+  "OpenArtifactsFolderTooltip": "Open the folder where .art files are stored in File Explorer"
 }

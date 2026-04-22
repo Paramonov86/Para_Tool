@@ -1,16 +1,13 @@
 {
   "_name": "Русский",
-
   "AppTitle": "ParaTool",
   "ErrorModsNotFound": "Папка Mods в AppData не найдена! Укажите путь вручную",
   "SelectFolder": "Выбрать папку",
-
   "PleaseWait": "Подождите...",
   "ScanningMods": "Идёт анализ модов с предметами.",
   "MayTakeTime": "Это может занять некоторое время...",
   "ModsScanned": "Модов просканировано:",
   "ModsSelected": "Модов выбрано:",
-
   "IntegratorTitle": "Интегратор Ancient Mega Pack",
   "EditorTitle": "Уточните предметы для интеграции",
   "AllMods": "Все моды",
@@ -23,12 +20,10 @@
   "ModsFoundInfo": "В папке Mods найдено {0} модов, содержащих предметы.",
   "ThemesLabel": "Тематики",
   "ModThemes": "Тематики мода",
-
   "PatchingInProgress": "Идёт патч...",
   "PatchSuccess": "Успешно!",
   "PatchSuccessMessage": "Пропатчено предметов: {0}",
   "PatchError": "Ошибка:",
-
   "Slot.Clothes": "Одежда",
   "Slot.Armor": "Броня",
   "Slot.Shields": "Щиты",
@@ -41,13 +36,11 @@
   "Slot.Weapons": "Оружие",
   "Slot.Weapons_1H": "Одноручное",
   "Slot.Weapons_2H": "Двуручное",
-
   "Rarity.Common": "Обычное",
   "Rarity.Uncommon": "Необычное",
   "Rarity.Rare": "Редкое",
   "Rarity.VeryRare": "Очень редкое",
   "Rarity.Legendary": "Легендарное",
-
   "Theme.Swamp": "Болото",
   "Theme.Aquatic": "Шторм",
   "Theme.Shadowfell": "Тьма",
@@ -58,7 +51,6 @@
   "Theme.War": "Война",
   "Theme.Psionic": "Псионика",
   "Theme.Primal": "Первобытное",
-
   "ProfileLabel": "Профиль",
   "ProfileSave": "Сохранить",
   "ProfileSaveAs": "Сохранить как",
@@ -68,7 +60,6 @@
   "ProfileSaved": "Профиль сохранён!",
   "MissingItemsWarning": "Ранее патченные предметы не найдены:",
   "MissingItemsDismiss": "Закрыть",
-
   "ScanStageMods": "Сканирование модов...",
   "ScanStageAMP": "Сканирование предметов AMP...",
   "ScanStageResolver": "Построение базы предметов...",
@@ -76,26 +67,21 @@
   "ScanStageTemplates": "Чтение шаблонов...",
   "ScanStageLoca": "Загрузка локализации...",
   "ScanStageDone": "Готово!",
-
   "SortByName": "Имя",
   "SortByRarity": "Редкость",
   "SortByTheme": "Тематика",
   "SortBySlot": "Слот",
-
   "FolderPickerTitle": "Выберите папку Mods BG3",
   "UpdateCheckTooltip": "Проверить обновления",
-  "UpdateCheckingTooltip": "Проверка обновлений\u2026",
-  "UpdateAvailableTooltip": "v{0} доступна \u2014 нажмите для обновления",
-  "UpdateDownloadingTooltip": "Загрузка\u2026 {0}%",
+  "UpdateCheckingTooltip": "Проверка обновлений…",
+  "UpdateAvailableTooltip": "v{0} доступна — нажмите для обновления",
+  "UpdateDownloadingTooltip": "Загрузка… {0}%",
   "UpdateUpToDateTooltip": "Актуальная версия",
   "UpdateFailedTooltip": "Ошибка проверки обновлений",
-
   "RestoreAmpTooltip": "Откатить патч AMP",
   "RestoringAmp": "Восстановление...",
-
   "TabPatcher": "ПАТЧЕР",
   "TabConstructor": "КОНСТРУКТОР",
-
   "NavTitle": "НАВИГАТОР",
   "NavSearch": "Поиск предметов...",
   "NavMyItems": "МОИ АРТЕФАКТЫ",
@@ -105,16 +91,15 @@
   "NavDelete": "Удалить",
   "ConstructorEditorTitle": "РЕДАКТОР",
   "ConstructorPreviewTitle": "ПРЕДПРОСМОТР / ЛОКАЛИЗАЦИЯ",
-
   "EditorNoSelection": "Выберите предмет в навигаторе\nили создайте наследника",
   "ConstructorGuideTitle": "Быстрый старт",
-  "ConstructorStep1": "1. Найдите базовый предмет \u2014 используйте поиск или группы в навигаторе.",
-  "ConstructorStep2": "2. Кликните на предмет \u2014 редактор загрузит все ванильные свойства.",
+  "ConstructorStep1": "1. Найдите базовый предмет — используйте поиск или группы в навигаторе.",
+  "ConstructorStep2": "2. Кликните на предмет — редактор загрузит все ванильные свойства.",
   "ConstructorStep3": "3. Прокрутите до СОЗДАТЬ НОВЫЙ ПРЕДМЕТ, введите имя и нажмите Создать.",
-  "ConstructorStep4": "4. Отредактируйте \u2014 измените редкость, бусты, пассивки, описание, иконку.",
+  "ConstructorStep4": "4. Отредактируйте — измените редкость, бусты, пассивки, описание, иконку.",
   "ConstructorStep5": "5. Нажмите СОХРАНИТЬ (зелёная кнопка) для сохранения.",
   "ConstructorStep6": "6. Перейдите во вкладку ПАТЧЕР, включите предмет и нажмите ПРОПАТЧИТЬ.",
-  "ConstructorStep7": "7. Запустите игру \u2014 ваш предмет появится в луте!",
+  "ConstructorStep7": "7. Запустите игру — ваш предмет появится в луте!",
   "CardIdentity": "ИДЕНТИФИКАЦИЯ",
   "CardArmorProps": "СВОЙСТВА БРОНИ",
   "CardWeaponProps": "СВОЙСТВА ОРУЖИЯ",
@@ -131,7 +116,6 @@
   "ChipThemes": "ТЕМАТИКИ",
   "BtnSave": "ПЕРЕЗАПИСАТЬ",
   "BtnReset": "СБРОСИТЬ",
-
   "LblBoosts": "Постоянные эффекты",
   "LblStatuses": "Применяемые статусы",
   "LblSpells": "Даруемые заклинания",
@@ -142,14 +126,12 @@
   "LblAction": "Действие",
   "LblIcon": "ИКОНКА",
   "LblIconBrowser": "Выбрать иконку",
-
   "enum.Strength": "Сила",
   "enum.Dexterity": "Ловкость",
   "enum.Constitution": "Выносливость",
   "enum.Intelligence": "Интеллект",
   "enum.Wisdom": "Мудрость",
   "enum.Charisma": "Харизма",
-
   "enum.Acrobatics": "Акробатика",
   "enum.AnimalHandling": "Уход за животными",
   "enum.Arcana": "Магия",
@@ -168,7 +150,6 @@
   "enum.SleightOfHand": "Ловкость рук",
   "enum.Stealth": "Скрытность",
   "enum.Survival": "Выживание",
-
   "enum.Slashing": "Режущий",
   "enum.Piercing": "Колющий",
   "enum.Bludgeoning": "Дробящий",
@@ -184,28 +165,24 @@
   "enum.Force": "Силовой",
   "enum.All": "Все",
   "enum.None": "Нет",
-
   "enum.Attack": "Атака",
   "enum.Skill": "Навык",
-  "enum.SavingThrow": "Испытание",
+  "enum.SavingThrow": "Спасбросок",
   "enum.RawAbility": "Проверка",
   "enum.SkillCheck": "Навык",
-  "enum.MeleeWeaponAttack": "Ближняя атака",
-  "enum.RangedWeaponAttack": "Дальняя атака",
-  "enum.MeleeSpellAttack": "Ближнее заклинание",
-  "enum.RangedSpellAttack": "Дальнее заклинание",
-
+  "enum.MeleeWeaponAttack": "Ближний бой",
+  "enum.RangedWeaponAttack": "Дальний бой",
+  "enum.MeleeSpellAttack": "Ближняя атака заклинанием",
+  "enum.RangedSpellAttack": "Дальняя атака заклинанием",
   "enum.Resistant": "Устойчивость",
   "enum.Immune": "Невосприимчивость",
   "enum.Vulnerable": "Уязвимость",
-
   "enum.LightArmor": "Лёгкая броня",
   "enum.MediumArmor": "Средняя броня",
   "enum.HeavyArmor": "Тяжёлая броня",
   "enum.Shields": "Щиты",
   "enum.SimpleWeapons": "Простое оружие",
   "enum.MartialWeapons": "Воинское оружие",
-
   "boost.AC": "Класс брони",
   "boost.Ability": "Показатель способности",
   "boost.RollBonus": "Бонус к броску",
@@ -227,7 +204,6 @@
   "boost.MinimumRollResult": "Мин. результат",
   "boost.CriticalHit": "Критический удар",
   "boost.ReduceCriticalAttackThreshold": "Снизить порог крита",
-
   "LblArmor": "БРОНЯ",
   "LblWeapon": "ОРУЖИЕ",
   "LblPassives": "ПАССИВКИ",
@@ -279,21 +255,19 @@
   "BbTipLineBreak": "Перенос строки [br]",
   "TipToggleCodePreview": "Переключить ВВ-код редактор / превью",
   "LblCardMechanics": "МЕХАНИКА",
-
   "enum.Highlighted": "Подсветка",
   "enum.IsHidden": "Скрыта",
   "enum.IsToggled": "Вкл/Выкл",
   "enum.ToggledDefaultOn": "Вкл по умолч.",
   "enum.ToggledDefaultAddToHotbar": "В панель",
   "enum.ToggleForParty": "Для группы",
-  "enum.OncePerTurn": "1/Ход",
+  "enum.OncePerTurn": "Раз в ход",
   "enum.OncePerAttack": "1/Атака",
   "enum.OncePerShortRest": "1/Кор. отдых",
   "enum.OncePerLongRest": "1/Длин. отдых",
-  "enum.OncePerCombat": "1/Бой",
+  "enum.OncePerCombat": "Раз за бой",
   "enum.DisplayBoostInTooltip": "Показ. буст",
   "enum.Temporary": "Временная",
-
   "enum.SurfaceNone": "Нет",
   "enum.SurfaceWater": "Вода",
   "enum.SurfaceWaterElectrified": "Вода (эл.)",
@@ -330,7 +304,6 @@
   "enum.SurfaceWaterDeepRunning": "Глуб. вода (теч.)",
   "enum.SurfaceWaterRunning": "Вода (теч.)",
   "enum.SurfaceVines": "Лозы",
-
   "enum.BelowDamageThreshold": "Ниже порога",
   "enum.ResistantToMagical": "Устойч. (маг.)",
   "enum.ImmuneToMagical": "Иммунитет (маг.)",
@@ -338,7 +311,6 @@
   "enum.ResistantToNonMagical": "Устойч. (немаг.)",
   "enum.ImmuneToNonMagical": "Иммунитет (немаг.)",
   "enum.VulnerableToNonMagical": "Уязв. (немаг.)",
-
   "enum.AttackTarget": "Цель атаки",
   "enum.AttackRoll": "Бросок атаки",
   "enum.Success": "Успех",
@@ -346,31 +318,21 @@
   "enum.Never": "Никогда",
   "enum.Always": "Всегда",
   "enum.ForcedAlways": "Принудительно",
-
-  "enum.SavingThrow": "Спасбросок",
   "enum.AllSavingThrows": "Все спасброски",
   "enum.Ability": "Характеристика",
   "enum.AllAbilities": "Все характеристики",
-  "enum.Skill": "Навык",
   "enum.AllSkills": "Все навыки",
   "enum.SourceDialogue": "Диалог",
   "enum.DeathSavingThrow": "Спасбросок смерти",
   "enum.Concentration": "Концентрация",
-
   "enum.Half": "Половина",
   "enum.Flat": "Фикс.",
   "enum.Threshold": "Порог",
-
   "enum.DirectHit": "Прямое попадание",
-  "enum.MeleeWeaponAttack": "Ближний бой",
-  "enum.RangedWeaponAttack": "Дальний бой",
   "enum.MeleeOffHandWeaponAttack": "Ближний (вторая рука)",
   "enum.RangedOffHandWeaponAttack": "Дальний (вторая рука)",
-  "enum.MeleeSpellAttack": "Ближняя атака заклинанием",
-  "enum.RangedSpellAttack": "Дальняя атака заклинанием",
   "enum.MeleeUnarmedAttack": "Безоружный ближний",
   "enum.RangedUnarmedAttack": "Безоружный дальний",
-
   "enum.Light": "Лёгкое",
   "enum.Ammunition": "Боеприпасы",
   "enum.Finesse": "Фехтовальное",
@@ -392,7 +354,6 @@
   "enum.NotSheathable": "Не убирается",
   "enum.Unstowable": "Не прячется",
   "enum.AddToHotbar": "На панель быстр. доступа",
-
   "enum.Cloth": "Ткань",
   "enum.Padded": "Стёганый",
   "enum.Leather": "Кожаный",
@@ -406,7 +367,6 @@
   "enum.ChainMail": "Кольчуга",
   "enum.Splint": "Наборный",
   "enum.Plate": "Латы",
-
   "enum.Abjuration": "Ограждение",
   "enum.Conjuration": "Вызов",
   "enum.Divination": "Прорицание",
@@ -415,16 +375,12 @@
   "enum.Illusion": "Иллюзия",
   "enum.Necromancy": "Некромантия",
   "enum.Transmutation": "Преобразование",
-
   "enum.Default": "По умолч.",
-  "enum.OncePerTurn": "Раз в ход",
-  "enum.OncePerCombat": "Раз за бой",
   "enum.UntilRest": "До отдыха",
   "enum.OncePerTurnNoRealtime": "Раз в ход (без реалтайма)",
   "enum.UntilShortRest": "До корот. отдыха",
   "enum.UntilPerRestPerItem": "За отдых на предмет",
   "enum.OncePerShortRestPerItem": "За корот. отдых на предмет",
-
   "enum.Ignite": "Поджечь",
   "enum.Douse": "Потушить",
   "enum.Electrify": "Наэлектризовать",
@@ -435,7 +391,6 @@
   "enum.Condense": "Сконденсировать",
   "enum.DestroyWater": "Уничтожить воду",
   "enum.Clear": "Очистить",
-
   "enum.Cone": "Конус",
   "enum.Square": "Квадрат",
   "enum.OriginToEntity": "От источника к сущности",
@@ -444,20 +399,16 @@
   "enum.Aggressive": "Агрессивный",
   "enum.Friendly": "Дружественный",
   "enum.Neutral": "Нейтральный",
-
   "enum.MainHand": "Основная рука",
   "enum.OffHand": "Вторая рука",
   "enum.BothHands": "Обе руки",
-
   "enum.SetMinimum": "Установить минимум",
   "enum.ForceSet": "Принудительно",
   "enum.Add": "Добавить",
   "enum.Multiply": "Умножить",
   "enum.Distribute": "Распределить",
-
   "enum.Ground": "Земля",
   "enum.Cloud": "Облако",
-
   "enum.Chasm": "Пропасть",
   "enum.DoT": "Периодич. урон",
   "enum.Electrocution": "Электрошок",
@@ -469,7 +420,6 @@
   "enum.Narcolepsy": "Нарколепсия",
   "enum.PetrifiedShattered": "Окаменение (разбит)",
   "enum.Sentinel": "Страж",
-
   "enum.Living": "Живой",
   "enum.Guaranteed": "Гарантированно",
   "enum.Construct": "Конструкт",
@@ -479,28 +429,22 @@
   "enum.Nonmagical": "Немагическое",
   "enum.Lethal": "Летальный",
   "enum.Nonlethal": "Нелетальный",
-
   "enum.Tiny": "Крохотный",
   "enum.Small": "Маленький",
   "enum.Medium": "Средний",
   "enum.Large": "Большой",
   "enum.Huge": "Огромный",
   "enum.Gargantuan": "Колоссальный",
-
   "enum.SimpleMeleeWeapon": "Простое ближнее",
   "enum.SimpleRangedWeapon": "Простое дальнобойное",
   "enum.MartialMeleeWeapon": "Воинское ближнее",
   "enum.MartialRangedWeapon": "Воинское дальнобойное",
-
   "enum.WeaponActionDC": "КС действия оружия",
-
   "LblAnd": "И",
   "LblOr": "ИЛИ",
   "LblNot": "НЕ",
   "LblThen": "ТОГДА",
-
   "TipDefaultTab": "Сделать текущую вкладку стартовой",
-
   "TipFontSize": "Размер шрифта",
   "TipColorTheme": "Цветовая тема",
   "WmBrowseIcons": "Обзор иконок...",
@@ -510,17 +454,17 @@
   "DlgSelectPng": "Выбрать PNG иконку",
   "WmSearchPassive": "Добавить пассивку...",
   "LblAddEmptyPassive": "Добавить пустую пассивку",
-
   "WmSearchItems": "Поиск предметов...",
   "LblHideDisabled": "Скрыть откл.",
   "LblThemeFilter": "Темы",
   "LblShowThemes": "Показать темы:",
   "LblNoTheme": "Без темы",
   "TipOpenInConstructor": "Открыть в конструкторе",
-
   "CtxRename": "Переименовать",
   "CtxReplace": "Заменить",
   "WmSearchCondition": "Поиск условия...",
   "DlgRenameTitle": "Переименовать",
-  "WmNewName": "Новое название..."
+  "WmNewName": "Новое название...",
+  "OpenArtifactsFolder": "Папка артефактов",
+  "OpenArtifactsFolderTooltip": "Открыть в проводнике папку, где хранятся .art файлы"
 }

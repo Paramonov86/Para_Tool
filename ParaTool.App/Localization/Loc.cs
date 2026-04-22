@@ -247,6 +247,8 @@ public partial class Loc : ObservableObject
     public string WmTypeAndEnter => this["WmTypeAndEnter"];
     public string LblMadeWith => this["LblMadeWith"];
     public string LblSupportTool => this["LblSupportTool"];
+    public string OpenArtifactsFolder => this["OpenArtifactsFolder"];
+    public string OpenArtifactsFolderTooltip => this["OpenArtifactsFolderTooltip"];
     public string LblIconCount => this["LblIconCount"];
     public string BbTipBold => this["BbTipBold"];
     public string BbTipItalic => this["BbTipItalic"];
