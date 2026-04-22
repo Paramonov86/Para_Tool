@@ -567,6 +567,12 @@ public partial class ConstructorViewModel : ViewModelBase
             art.Description = fresh.Description;
             art.Passives = fresh.Passives;
 
+            // Reset = clear all tombstones (user wants base defaults back)
+            art.RemovedPassives.Clear();
+            art.RemovedSpells.Clear();
+            art.RemovedStatuses.Clear();
+            art.RemovedBoosts.Clear();
+
             SelectedArtifact.RefreshAll();
             SelectedArtifact.IsDirty = false;
         }
@@ -611,6 +617,11 @@ public partial class ConstructorViewModel : ViewModelBase
         clone.StatId += "_Copy";
         clone.DisplayNameHandle = "";
         clone.DescriptionHandle = "";
+        // A duplicate is a new item — tombstones from the original don't carry over.
+        clone.RemovedPassives = [];
+        clone.RemovedSpells = [];
+        clone.RemovedStatuses = [];
+        clone.RemovedBoosts = [];
         // Clear loca handles on passives/statuses/spells to avoid collision with original
         foreach (var p in clone.Passives)
         {

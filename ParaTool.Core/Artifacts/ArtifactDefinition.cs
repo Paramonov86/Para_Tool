@@ -163,6 +163,23 @@ public sealed class ArtifactDefinition
     /// </summary>
     public string? AtlasIconMapKey { get; set; }
 
+    // ─── Tombstones (deliberately removed inherited entries) ──
+
+    /// <summary>
+    /// Passive names the user explicitly removed from this item relative to its base.
+    /// Filtered out in ArtifactCompiler so they don't resurrect from inherited PassivesOnEquip.
+    /// </summary>
+    public List<string> RemovedPassives { get; set; } = [];
+
+    /// <summary>Spell names the user explicitly removed.</summary>
+    public List<string> RemovedSpells { get; set; } = [];
+
+    /// <summary>Status names the user explicitly removed.</summary>
+    public List<string> RemovedStatuses { get; set; } = [];
+
+    /// <summary>Raw boost calls the user explicitly removed (e.g. "WeaponEnchantment(1)").</summary>
+    public List<string> RemovedBoosts { get; set; } = [];
+
     // ─── Patching ────────────────────────────────────────────
 
     /// <summary>Whether this artifact should be patched into the game at all.</summary>

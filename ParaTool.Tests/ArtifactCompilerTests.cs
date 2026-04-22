@@ -355,4 +355,86 @@ public class ArtifactCompilerTests
         Assert.Contains(">My Item<", xml);
         Assert.Contains("</contentList>", xml);
     }
+
+    // ── Tombstones ─────────────────────────────────────────
+
+    [Fact]
+    public void Tombstone_RemovedPassive_NotInPassivesOnEquip()
+    {
+        var art = NewArmor();
+        art.PassivesOnEquip = "StunPassive;KeepMePassive";
+        art.RemovedPassives = ["StunPassive"];
+
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("data \"PassivesOnEquip\"", result.StatsText);
+        Assert.DoesNotContain("StunPassive", result.StatsText);
+        Assert.Contains("KeepMePassive", result.StatsText);
+    }
+
+    [Fact]
+    public void Tombstone_RemovedSpell_NotInBoostsAsUnlockSpell()
+    {
+        var art = NewArmor();
+        art.SpellsOnEquip = "Target_Sickle_l;Shout_Bless";
+        art.RemovedSpells = ["Target_Sickle_l"];
+
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.DoesNotContain("UnlockSpell(Target_Sickle_l)", result.StatsText);
+        Assert.Contains("UnlockSpell(Shout_Bless)", result.StatsText);
+    }
+
+    [Fact]
+    public void Tombstone_RemovedStatus_NotInStatusOnEquip()
+    {
+        var art = NewArmor();
+        art.StatusOnEquip = "INVISIBLE;BLESSED";
+        art.RemovedStatuses = ["BLESSED"];
+
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("data \"StatusOnEquip\" \"INVISIBLE\"", result.StatsText);
+        Assert.DoesNotContain("BLESSED", result.StatsText);
+    }
+
+    [Fact]
+    public void Tombstone_RemovedBoost_NotInBoostsLine()
+    {
+        var art = NewWeapon();
+        art.Boosts = "AC(1);DamageBonus(2,Fire);WeaponEnchantment(1)";
+        art.RemovedBoosts = ["DamageBonus(2,Fire)"];
+
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("AC(1)", result.StatsText);
+        Assert.Contains("WeaponEnchantment(1)", result.StatsText);
+        Assert.DoesNotContain("DamageBonus(2,Fire)", result.StatsText);
+    }
+
+    [Fact]
+    public void Tombstone_EmptyList_NoOp_BackwardsCompatible()
+    {
+        var art = NewArmor();
+        art.PassivesOnEquip = "P1;P2";
+
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("P1", result.StatsText);
+        Assert.Contains("P2", result.StatsText);
+    }
+
+    [Fact]
+    public void Tombstone_PassivesArrayAndTombstone_BothApplied()
+    {
+        var art = NewArmor();
+        art.PassivesOnEquip = "InheritedStun";
+        art.Passives.Add(new PassiveDefinition { Name = "MyCustomPassive" });
+        art.RemovedPassives = ["InheritedStun"];
+
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("MyCustomPassive", result.StatsText);
+        Assert.DoesNotContain("InheritedStun", result.StatsText);
+    }
 }

@@ -92,11 +92,23 @@ public static class ArtifactCompiler
         // Mechanics — merge Boosts + SpellsOnEquip into single "Boosts" line
         var allBoosts = new List<string>();
         if (!string.IsNullOrEmpty(art.Boosts))
-            allBoosts.Add(art.Boosts);
+        {
+            var removedBoosts = new HashSet<string>(art.RemovedBoosts ?? [], StringComparer.OrdinalIgnoreCase);
+            var kept = art.Boosts
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(b => !removedBoosts.Contains(b));
+            var filteredBoosts = string.Join(";", kept);
+            if (!string.IsNullOrEmpty(filteredBoosts))
+                allBoosts.Add(filteredBoosts);
+        }
         if (!string.IsNullOrEmpty(art.SpellsOnEquip))
         {
+            var removedSpells = new HashSet<string>(art.RemovedSpells ?? [], StringComparer.OrdinalIgnoreCase);
             foreach (var spell in art.SpellsOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (removedSpells.Contains(spell)) continue;
                 allBoosts.Add($"UnlockSpell({spell})");
+            }
         }
         // Always write Boosts to override inherited value from base
         var boostsStr = string.Join(";", allBoosts);
@@ -112,10 +124,22 @@ public static class ArtifactCompiler
         foreach (var p in art.Passives ?? [])
             if (!string.IsNullOrEmpty(p.Name))
                 poeNames.Add(p.Name);
+        // Tombstones: drop anything the user explicitly removed
+        foreach (var removed in art.RemovedPassives ?? [])
+            poeNames.Remove(removed);
         // Always write PassivesOnEquip to override inherited value from base
         stats.AppendLine($"data \"PassivesOnEquip\" \"{string.Join(";", poeNames)}\"");
-        // Always write StatusOnEquip to override inherited value
-        stats.AppendLine($"data \"StatusOnEquip\" \"{art.StatusOnEquip ?? ""}\"");
+        // Always write StatusOnEquip to override inherited value (with tombstones applied)
+        var statusOut = art.StatusOnEquip ?? "";
+        if ((art.RemovedStatuses?.Count ?? 0) > 0 && !string.IsNullOrEmpty(statusOut))
+        {
+            var removedStatuses = new HashSet<string>(art.RemovedStatuses!, StringComparer.OrdinalIgnoreCase);
+            var keptStatuses = statusOut
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(s => !removedStatuses.Contains(s));
+            statusOut = string.Join(";", keptStatuses);
+        }
+        stats.AppendLine($"data \"StatusOnEquip\" \"{statusOut}\"");
 
         stats.AppendLine();
 

@@ -337,14 +337,45 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditStatusOnEquip
     {
         get => Artifact.StatusOnEquip;
-        set { Artifact.StatusOnEquip = value ?? ""; MarkDirty(); OnPropertyChanged(); }
+        set
+        {
+            var oldSet = SplitSemicolon(Artifact.StatusOnEquip);
+            var newSet = SplitSemicolon(value ?? "");
+            foreach (var removed in oldSet.Except(newSet, StringComparer.OrdinalIgnoreCase))
+                if (!Artifact.RemovedStatuses.Contains(removed, StringComparer.OrdinalIgnoreCase))
+                    Artifact.RemovedStatuses.Add(removed);
+            foreach (var added in newSet.Except(oldSet, StringComparer.OrdinalIgnoreCase))
+                Artifact.RemovedStatuses.RemoveAll(n => n.Equals(added, StringComparison.OrdinalIgnoreCase));
+
+            Artifact.StatusOnEquip = value ?? "";
+            MarkDirty();
+            OnPropertyChanged();
+        }
     }
 
     public string EditSpellsOnEquip
     {
         get => Artifact.SpellsOnEquip;
-        set { Artifact.SpellsOnEquip = value ?? ""; MarkDirty(); OnPropertyChanged(); }
+        set
+        {
+            var oldSet = SplitSemicolon(Artifact.SpellsOnEquip);
+            var newSet = SplitSemicolon(value ?? "");
+            foreach (var removed in oldSet.Except(newSet, StringComparer.OrdinalIgnoreCase))
+                if (!Artifact.RemovedSpells.Contains(removed, StringComparer.OrdinalIgnoreCase))
+                    Artifact.RemovedSpells.Add(removed);
+            foreach (var added in newSet.Except(oldSet, StringComparer.OrdinalIgnoreCase))
+                Artifact.RemovedSpells.RemoveAll(n => n.Equals(added, StringComparison.OrdinalIgnoreCase));
+
+            Artifact.SpellsOnEquip = value ?? "";
+            MarkDirty();
+            OnPropertyChanged();
+        }
     }
+
+    private static HashSet<string> SplitSemicolon(string? s) =>
+        new(
+            (s ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            StringComparer.OrdinalIgnoreCase);
 
     // Localization
     public string EditDisplayName
@@ -434,14 +465,27 @@ public partial class ArtifactItemVM : ObservableObject
 
         Artifact.Passives.Add(passive);
         PassiveVMs.Add(new PassiveVM(passive, this));
+
+        // Re-adding a previously deleted passive clears its tombstone so the
+        // compiler stops filtering it out.
+        if (!string.IsNullOrEmpty(passive.Name))
+            Artifact.RemovedPassives.RemoveAll(n => n.Equals(passive.Name, StringComparison.OrdinalIgnoreCase));
+
         IsDirty = true;
         OnPropertyChanged(nameof(HasPassives));
     }
 
     public void RemovePassive(PassiveVM pvm)
     {
+        var name = pvm.Passive.Name;
         Artifact.Passives.Remove(pvm.Passive);
         PassiveVMs.Remove(pvm);
+
+        // Tombstone: remember the user deleted this, so compiler doesn't resurrect
+        // it from PassivesOnEquip inherited from the base item.
+        if (!string.IsNullOrEmpty(name) && !Artifact.RemovedPassives.Contains(name, StringComparer.OrdinalIgnoreCase))
+            Artifact.RemovedPassives.Add(name);
+
         IsDirty = true;
         OnPropertyChanged(nameof(HasPassives));
     }
@@ -455,6 +499,9 @@ public partial class ArtifactItemVM : ObservableObject
         };
         Artifact.Passives.Add(passive);
         PassiveVMs.Add(new PassiveVM(passive, this));
+
+        Artifact.RemovedPassives.RemoveAll(n => n.Equals(passive.Name, StringComparison.OrdinalIgnoreCase));
+
         IsDirty = true;
         OnPropertyChanged(nameof(HasPassives));
     }
