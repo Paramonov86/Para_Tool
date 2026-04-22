@@ -72,6 +72,47 @@ internal static class DiagMode
             try { locaService.GetLocaMap(lang); } catch { }
         Console.WriteLine($"  extra langs loaded in {step.ElapsedMilliseconds}ms");
 
+        // Build StatId -> ItemEntry map early so --diag-build can use it
+        var itemEntryByStatId = new Dictionary<string, ParaTool.Core.Models.ItemEntry>(StringComparer.OrdinalIgnoreCase);
+        if (result.AmpMod != null)
+            foreach (var it in result.AmpMod.Items) itemEntryByStatId[it.StatId] = it;
+        foreach (var mod in result.Mods)
+            foreach (var it in mod.Items) itemEntryByStatId[it.StatId] = it;
+
+        // --diag-build: simulate BuildArtifactFromBase and dump resulting DisplayName dict
+        var diagBuild = args.SkipWhile(a => !a.Equals("--diag-build", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (!string.IsNullOrEmpty(diagBuild))
+        {
+            var locaResolver = new ParaTool.Core.Services.LocaResolver(resolver, locaService);
+            var itemEntry = itemEntryByStatId.GetValueOrDefault(diagBuild);
+            var simulated = new Dictionary<string, object?>
+            {
+                ["statId"] = diagBuild,
+                ["itemEntryFound"] = itemEntry != null,
+                ["displayNameHandle"] = itemEntry?.DisplayNameHandle,
+                ["descriptionHandle"] = itemEntry?.DescriptionHandle,
+                ["nameViaResolver"] = new Dictionary<string, object>(),
+                ["descViaResolver"] = new Dictionary<string, object>(),
+                ["handleResolveDirect"] = new Dictionary<string, object>(),
+            };
+            foreach (var lang in new[] { "en", "ru" })
+            {
+                var nr = locaResolver.ResolveName(diagBuild, lang, null, itemEntry?.DisplayNameHandle);
+                var dr = locaResolver.ResolveDescription(diagBuild, lang, null, itemEntry?.DescriptionHandle);
+                ((Dictionary<string, object>)simulated["nameViaResolver"]!)[lang] = new { value = nr.Value, source = nr.Source.ToString(), matched = nr.MatchedAt, depth = nr.Depth };
+                ((Dictionary<string, object>)simulated["descViaResolver"]!)[lang] = new { value = dr.Value, source = dr.Source.ToString(), matched = dr.MatchedAt, depth = dr.Depth };
+                if (!string.IsNullOrEmpty(itemEntry?.DisplayNameHandle))
+                {
+                    var direct = locaService.ResolveHandle(itemEntry.DisplayNameHandle, lang);
+                    ((Dictionary<string, object>)simulated["handleResolveDirect"]!)[lang] = new { resolved = direct };
+                }
+            }
+            var outFile = Path.Combine(ItemDiagnostics.DiagDir, $"build_{diagBuild}.json");
+            File.WriteAllText(outFile, System.Text.Json.JsonSerializer.Serialize(simulated, new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+            Console.WriteLine($"Build simulation dumped: {outFile}");
+            return 0;
+        }
+
         // --diag-uuid: find template by UUID in every pak, dump what's inside
         if (diagUuids.Count > 0)
         {
@@ -90,12 +131,6 @@ internal static class DiagMode
         var allSavedArtifacts = ArtifactStore.LoadAll();
         var artifactByStatId = allSavedArtifacts.ToDictionary(a => a.StatId, StringComparer.OrdinalIgnoreCase);
 
-        // Build StatId -> ItemEntry map (from all mods) so we can dump ItemEntry-level fields
-        var itemEntryByStatId = new Dictionary<string, ParaTool.Core.Models.ItemEntry>(StringComparer.OrdinalIgnoreCase);
-        if (result.AmpMod != null)
-            foreach (var it in result.AmpMod.Items) itemEntryByStatId[it.StatId] = it;
-        foreach (var mod in result.Mods)
-            foreach (var it in mod.Items) itemEntryByStatId[it.StatId] = it;
 
         var targetStatIds = new List<string>();
         if (diagAll)

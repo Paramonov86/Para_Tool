@@ -767,17 +767,20 @@ public partial class ConstructorViewModel : ViewModelBase
         artifact.DisplayNameHandle = baseItem.Entry.DisplayNameHandle ?? "";
         artifact.DescriptionHandle = baseItem.Entry.DescriptionHandle ?? "";
 
-        // Load localization via shared resolver (mod handle > vanilla TSV priority)
+        // Load localization via shared resolver (mod handle > vanilla TSV priority).
+        // Use IsNullOrEmpty, not ContainsKey — ArtifactDefinition initialises
+        // DisplayName/Description with empty strings for en/ru, so ContainsKey
+        // always returns true and the resolver would never run.
         foreach (var lang in new HashSet<string> { scanLang, EditingLang, "en" })
         {
-            if (!artifact.DisplayName.ContainsKey(lang) && _locaResolver != null)
+            if (string.IsNullOrEmpty(artifact.DisplayName.GetValueOrDefault(lang)) && _locaResolver != null)
             {
                 var r = _locaResolver.ResolveName(baseItem.StatId, lang, null, baseItem.Entry.DisplayNameHandle);
                 if (!r.Resolved && baseItem.Entry.LocaAncestorId != null)
                     r = _locaResolver.ResolveName(baseItem.Entry.LocaAncestorId, lang);
                 if (r.Resolved) artifact.DisplayName[lang] = r.Value!;
             }
-            if (!artifact.Description.ContainsKey(lang) && _locaResolver != null)
+            if (string.IsNullOrEmpty(artifact.Description.GetValueOrDefault(lang)) && _locaResolver != null)
             {
                 var r = _locaResolver.ResolveDescription(baseItem.StatId, lang, null, baseItem.Entry.DescriptionHandle);
                 if (!r.Resolved && baseItem.Entry.LocaAncestorId != null)
