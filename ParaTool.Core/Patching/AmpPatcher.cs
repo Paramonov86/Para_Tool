@@ -623,7 +623,7 @@ public sealed class AmpPatcher
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"RootTemplate patching failed: {ex.Message}");
+            Services.AppLogger.Warn($"RootTemplate patching failed: {ex}");
         }
     }
 
@@ -987,7 +987,7 @@ public sealed class AmpPatcher
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"metadata.lsf patch failed: {ex.Message}");
+            Services.AppLogger.Warn($"metadata.lsf patch failed: {ex}");
         }
     }
 

@@ -60,3 +60,6 @@ passive_debug.log
 
 # Local tools
 tools/lsx-converter/
+
+# User scratch folder
+MISC NOT COMMIT/

@@ -70,9 +70,9 @@ public static class BoostMapping
         // ── Ability & Stats (#2ECC71) ──
         new("AC", "Armor Class", "Класс брони", "#2ECC71", [new("AC", "+/-", "number")]),
         new("Ability", "Ability Score", "Показатель способности", "#2ECC71",
-            [new("Ability", "Ability", "enum", Abilities), new("Amount", "+/-", "number"), new("Cap", "Cap", "optnum"), new("Savant", "Savant", "optbool")]),
+            [new("Ability", "Ability", "enum", Abilities), new("Amount", "+/-", "formula"), new("Cap", "Cap", "optnum"), new("Savant", "Savant", "optbool")]),
         new("AbilityOverrideMinimum", "Min Ability", "Минимум способности", "#2ECC71",
-            [new("Ability", "Ability", "enum", Abilities), new("Min", "Min", "number"), new("Savant", "Savant", "optbool")]),
+            [new("Ability", "Ability", "enum", Abilities), new("Min", "Min", "formula"), new("Savant", "Savant", "optbool")]),
         new("NullifyAbilityScore", "Nullify Ability", "Обнулить способность", "#2ECC71",
             [new("Ability", "Ability", "enum", Abilities)]),
         new("ACOverrideFormula", "AC Override Formula", "Формула КБ", "#2ECC71",
@@ -160,7 +160,7 @@ public static class BoostMapping
         // ── Spells & Magic (#9B59B6) ──
         new("SpellSaveDC", "Spell Save DC", "КС заклинаний", "#9B59B6", [new("DC", "+/-", "number")]),
         new("UnlockSpell", "Unlock Spell", "Открыть заклинание", "#9B59B6",
-            [new("SpellId", "Spell", "string"), new("Type", "Type", "enum", UnlockSpellType), new("Guid", "Guid", "string"), new("Cooldown", "Cooldown", "enum", SpellCooldownType), new("Ability", "Ability", "enum", Abilities)]),
+            [new("SpellId", "Spell", "string")]),
         new("UnlockSpellVariant", "Unlock Spell Variant", "Вариант заклинания", "#9B59B6", [new("Mods", "Modifications", "formula")]),
         new("UnlockInterrupt", "Unlock Interrupt", "Открыть ответное", "#9B59B6", [new("Interrupt", "Interrupt", "string")]),
         new("Savant", "Savant", "Знаток школы", "#9B59B6", [new("School", "School", "enum", SpellSchool)]),
@@ -170,7 +170,7 @@ public static class BoostMapping
 
         // ── Resources (#9B59B6) ──
         new("ActionResource", "Action Resource", "Ресурс", "#9B59B6",
-            [new("Resource", "Resource", "enum", ActionResources), new("Amount", "Amount", "float"), new("Level", "Level", "number")]),
+            [new("Resource", "Resource", "enum", ActionResources), new("Amount", "Amount", "float"), new("Level", "Level", "optnum")]),
         new("ActionResourceOverride", "Resource Override", "Переопредел. ресурса", "#9B59B6",
             [new("Resource", "Resource", "enum", ActionResources), new("Amount", "Amount", "float"), new("Level", "Level", "number")]),
         new("ActionResourceMultiplier", "Resource Multiplier", "Множитель ресурса", "#9B59B6",
@@ -236,6 +236,20 @@ public static class BoostMapping
         new("HiddenDuringCinematic", "Hidden in Cinematic", "Скрыт в катсцене", "#8A8494", []),
         new("DialogueBlock", "Block Dialogue", "Блок диалога", "#8A8494", []),
         new("BlockTravel", "Block Travel", "Блок перемещения", "#8A8494", []),
+
+        // ── Missing AMP parity (added 2026-04-22) ──
+        new("ActionResourceConsumeMultiplier", "Resource Consume ×", "Множитель расхода ресурса", "#9B59B6",
+            [new("Resource", "Resource", "enum", ActionResources), new("Mult", "×", "float"), new("Level", "Level", "optnum")]),
+        new("ActionResourcePreventReduction", "Prevent Resource Reduction", "Защита ресурса", "#9B59B6",
+            [new("Resource", "Resource", "enum", ActionResources)]),
+        new("ActiveCharacterLight", "Active Character Light", "Подсветка персонажа", "#8A8494", [new("LightId", "Light", "string")]),
+        new("AiArchetypeOverride", "AI Archetype Override", "Архетип ИИ", "#8A8494",
+            [new("Archetype", "Archetype", "string"), new("Priority", "Priority", "number")]),
+        new("AttackSpellOverride", "Attack Spell Override", "Замена атакующего заклинания", "#9B59B6", [new("SpellId", "Spell", "string")]),
+        new("ConsumeItemBlock", "Block Item Consumption", "Блок расхода предмета", "#8A8494", []),
+        new("FactionOverride", "Faction Override", "Смена фракции", "#8A8494", [new("FactionId", "Faction", "string")]),
+        new("GreatWeaponMaster", "Great Weapon Master", "Мастер двуручного", "#E06040", []),
+        new("IgnoreSurfaceCover", "Ignore Surface Cover", "Игнор. поверхности", "#F1C40F", [new("SurfaceType", "Surface", "enum", SurfaceTypes)]),
     ];
 
     // ═══════════════════════════════════════════════════════════
@@ -252,7 +266,10 @@ public static class BoostMapping
 
         // ── Status Effects ──
         new("ApplyStatus", "Apply Status", "Наложить статус", "#E67E22",
-            [new("StatusId", "Status", "string"), new("Chance", "%", "hidden"), new("Duration", "Turns", "int")]),
+            [new("StatusId", "Status", "string"),
+             new("Chance", "%", "optnum"),
+             new("Duration", "Turns", "int"),
+             new("Condition", "If", "string")]),
         new("ApplyEquipmentStatus", "Apply Equip Status", "Статус экипировки", "#E67E22",
             [new("Slot", "Slot", "enum", StatItemSlot), new("StatusId", "Status", "string"), new("Chance", "%", "hidden"), new("Duration", "Turns", "int")]),
         new("RemoveStatus", "Remove Status", "Снять статус", "#F1C40F", [new("StatusId", "Status", "string")]),
@@ -715,6 +732,55 @@ public static class BoostMapping
         ["IgnoreFallDamage"] =              new("No damage taken from falling.", "Нет урона от падения."),
         ["ProjectileDeflect"] =             new("Deflect projectiles.", "Отражение снарядов."),
         ["CriticalHitExtraDice"] =          new("+[1] critical hit damage dice on [2].", "+[1] доп. кубиков крита ([2])."),
+
+        // Missing boost previews (round-2 extrapolation)
+        ["ACOverrideFormula"] =             new("Armour Class set by formula ([1] + modifiers).", "КБ задаётся формулой ([1] + модификаторы)."),
+        ["AddProficiencyToAC"] =            new("Proficiency bonus added to Armour Class.", "Бонус умения добавляется к КБ."),
+        ["AddProficiencyToDamage"] =        new("Proficiency bonus added to damage.", "Бонус умения добавляется к урону."),
+        ["BlockAbilityModifierFromAC"] =    new("[1] modifier no longer contributes to Armour Class.", "Модификатор [1] не учитывается в КБ."),
+        ["CharacterWeaponDamage"] =         new("[1] [2] damage on weapon attacks.", "[1] урона ([2]) при атаках оружием."),
+        ["CharacterUnarmedDamage"] =        new("[1] [2] damage on unarmed attacks.", "[1] урона ([2]) без оружия."),
+        ["EntityThrowDamage"] =             new("Throwing this deals [1] [2] damage.", "При метании наносит [1] урона ([2])."),
+        ["JumpMaxDistanceBonus"] =          new("Jump distance +[1]m.", "Дистанция прыжка +[1]м."),
+        ["JumpMaxDistanceMultiplier"] =     new("Jump distance ×[1].", "Дистанция прыжка ×[1]."),
+        ["FallDamageMultiplier"] =          new("Fall damage ×[1].", "Урон от падения ×[1]."),
+        ["ScaleMultiplier"] =               new("Size scale ×[1].", "Масштаб ×[1]."),
+        ["ObjectSize"] =                    new("Size change [1].", "Изменение размера [1]."),
+        ["ObjectSizeOverride"] =            new("Size set to [1].", "Размер установлен в [1]."),
+        ["SightRangeAdditive"] =            new("Sight range +[1]m.", "Дальность зрения +[1]м."),
+        ["SightRangeMinimum"] =             new("Sight range at least [1]m.", "Минимальная дальность зрения: [1]м."),
+        ["SightRangeMaximum"] =             new("Sight range at most [1]m.", "Максимальная дальность зрения: [1]м."),
+        ["DarkvisionRange"] =               new("Darkvision [1]m.", "Ночное зрение [1]м."),
+        ["DarkvisionRangeMin"] =            new("Darkvision at least [1]m.", "Ночное зрение минимум [1]м."),
+        ["DarkvisionRangeOverride"] =       new("Darkvision set to [1]m.", "Ночное зрение = [1]м."),
+        ["TwoWeaponFighting"] =             new("Two-Weapon Fighting: ability modifier added to off-hand damage.", "Бой двумя оружиями: модификатор добавляется к урону левой руки."),
+        ["DualWielding"] =                  new("Can dual-wield non-Light weapons.", "Может использовать нелёгкое оружие в паре."),
+        ["Lootable"] =                      new("Can be looted.", "Можно обыскать."),
+        ["ItemReturnToOwner"] =             new("Thrown item returns to owner.", "Брошенный предмет возвращается."),
+        ["BlockTravel"] =                   new("Prevents fast travel.", "Запрещает быстрое перемещение."),
+        ["DialogueBlock"] =                 new("Prevents dialogue.", "Запрещает диалог."),
+        ["Detach"] =                        new("Detached from wearer.", "Отсоединён от владельца."),
+        ["Invisibility"] =                  new("Grants Invisibility.", "Дарует невидимость."),
+        ["Weight"] =                        new("Weight: [1] kg.", "Вес: [1] кг."),
+        ["CarryCapacityMultiplier"] =       new("Carrying capacity ×[1].", "Грузоподъёмность ×[1]."),
+        ["Tag"] =                           new("Adds tag: [1].", "Добавляет тег: [1]."),
+        ["Attribute"] =                     new("Attribute flags: [1].", "Флаги: [1]."),
+        ["NoAOEDamageOnLand"] =             new("No AOE damage on landing.", "Нет АОЕ-урона при приземлении."),
+        ["NonLethal"] =                     new("Non-lethal hits.", "Несмертельные удары."),
+        ["SourceAdvantageOnAttack"] =       new("Attacker gains Advantage on attacks.", "Атакующий получает преимущество."),
+        ["BlockRegainHP"] =                 new("Blocks healing ([1]).", "Блокирует исцеление ([1])."),
+        ["SpellResistance"] =               new("Spell [1]", "Заклинания: [1]"),
+
+        // Functor previews (top-10 by usage)
+        ["RestoreResource"] =               new("Restores [2] [1].", "Восстанавливает [2] [1]."),
+        ["CreateSurface"] =                 new("Creates [1] surface.", "Создаёт поверхность [1]."),
+        ["CreateExplosion"] =               new("Explosion: [1].", "Взрыв: [1]."),
+        ["Summon"] =                        new("Summons [1].", "Призывает [1]."),
+        ["TeleportSource"] =                new("Teleports source.", "Телепортирует источник."),
+        ["UseSpell"] =                      new("Casts [1].", "Применяет [1]."),
+        ["SwapPlaces"] =                    new("Swaps places with target.", "Меняется местами с целью."),
+        ["BreakConcentration"] =            new("Breaks concentration.", "Прерывает концентрацию."),
+        ["RemoveUniqueStatus"] =            new("Removes unique status [1].", "Снимает уникальный статус [1]."),
     };
 
     /// <summary>

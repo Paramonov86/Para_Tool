@@ -83,12 +83,30 @@ public static class VanillaLocaService
         return item != null && !string.IsNullOrEmpty(item.IconName) ? item.IconName : null;
     }
 
+    private static readonly object _loadLock = new();
+
     private static void EnsureLoaded()
     {
         if (_items != null) return;
 
-        _items = new(StringComparer.OrdinalIgnoreCase);
-        _passives = new(StringComparer.OrdinalIgnoreCase);
+        lock (_loadLock)
+        {
+            if (_items != null) return;
+
+            // Build into locals, publish both refs atomically at the end so another
+            // thread can't observe _items != null while _passives is still empty.
+            var items = new Dictionary<string, ItemLoca>(StringComparer.OrdinalIgnoreCase);
+            var passives = new Dictionary<string, PassiveLoca>(StringComparer.OrdinalIgnoreCase);
+            LoadInto(items, passives);
+            _passives = passives;
+            _items = items;
+        }
+    }
+
+    private static void LoadInto(Dictionary<string, ItemLoca> items, Dictionary<string, PassiveLoca> passives)
+    {
+        var _items = items;
+        var _passives = passives;
 
         var assembly = typeof(VanillaLocaService).Assembly;
 

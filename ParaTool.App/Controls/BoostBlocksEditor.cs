@@ -300,38 +300,10 @@ public class BoostBlocksEditor : UserControl
                 continue;
             }
 
-            // RollBonus: 3rd param only needed for SavingThrow/SkillCheck/RawAbility
-            if (def.FuncName == "RollBonus" && i == 2 && args.Length > 0
-                && args[0].Trim() is not ("SavingThrow" or "SkillCheck" or "RawAbility"))
+            // Centralized conditional-visibility rules — see ParaTool.Core.Schema.VisibilityRules
+            if (VisibilityRules.IsHidden(def, i, args))
             {
-                if (!isOptional && !string.IsNullOrEmpty(value))
-                    UpdateParam(rawBoost, paramIdx, "");
-                continue;
-            }
-
-            // Advantage/Disadvantage: 2nd param only needed for specific ability/skill/save
-            if (def.FuncName is "Advantage" or "Disadvantage" && i == 1 && args.Length > 0
-                && args[0].Trim() is not ("SavingThrow" or "Ability" or "Skill"))
-            {
-                if (!isOptional && !string.IsNullOrEmpty(value))
-                    UpdateParam(rawBoost, paramIdx, "");
-                continue;
-            }
-
-            // Ability/AbilityOverrideMinimum: Savant (optbool) only for Constitution
-            if (def.FuncName is "Ability" or "AbilityOverrideMinimum" && param.Type == "optbool"
-                && args.Length > 0 && !args[0].Trim().Equals("Constitution", StringComparison.OrdinalIgnoreCase))
-            {
-                // Clear stale Savant value when switching away from Con
-                if (!isOptional && !string.IsNullOrEmpty(value))
-                    UpdateParam(rawBoost, paramIdx, "");
-                continue;
-            }
-
-            // DamageReduction: Amount (3rd param) only needed for Flat/Threshold
-            if (def.FuncName == "DamageReduction" && i == 2 && args.Length >= 2
-                && args[1].Trim() == "Half")
-            {
+                // Clear stale value so hidden arg doesn't leak to compiled output
                 if (!isOptional && !string.IsNullOrEmpty(value))
                     UpdateParam(rawBoost, paramIdx, "");
                 continue;
@@ -852,6 +824,13 @@ public class BoostBlocksEditor : UserControl
         }
         args[actualIdx] = newValue == "—" ? "" : newValue;
 
+        // Apply conditional-visibility rules — if this edit changed a "governing" arg,
+        // clear dependents that are no longer valid.
+        var def = BoostMapping.Boosts.FirstOrDefault(d => d.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase))
+               ?? BoostMapping.Functors.FirstOrDefault(d => d.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase));
+        if (def != null)
+            args = VisibilityRules.ClearHiddenArgs(def, args);
+
         // Trim trailing empty args
         var trimmedArgs = args.AsEnumerable().ToList();
         while (trimmedArgs.Count > 0 && string.IsNullOrEmpty(trimmedArgs[^1]))
@@ -1043,15 +1022,31 @@ public class BoostBlocksEditor : UserControl
                 "dice" => "1d6",
                 "formula" => "1",
                 "bool" => "true",
-                "enum" => p.EnumValues?.FirstOrDefault() ?? "None",
-                "flags" => p.EnumValues?.FirstOrDefault() ?? "None",
-                "string" => p.Name.Contains("Status") ? "YOURSTATUS" :
-                            p.Name.Contains("Spell") ? "YourSpell" :
-                            p.Name.Contains("Resource") ? "ActionPoint" : "Value",
-                _ => "0"
+                // Optional args start empty so UpdateParam trims them off cleanly.
+                "optnum" => "",
+                "optbool" => "",
+                // Prefer the first *non-empty* enum/flags value (MagicalFlags ships with
+                // an empty sentinel that would otherwise become the default).
+                "enum" => p.EnumValues?.FirstOrDefault(v => !string.IsNullOrEmpty(v)) ?? "",
+                "flags" => p.EnumValues?.FirstOrDefault(v => !string.IsNullOrEmpty(v)) ?? "",
+                // Empty string → watermarked input in UI; no more YOURSTATUS/YourSpell
+                // landing in compiled stats when the user forgets to fill the chip.
+                "string" => p.Name.Contains("Resource") ? "ActionPoint" : "",
+                _ => ""
             };
         }).ToArray();
-        var newBoost = defaultArgs.Length > 0 ? $"{d.FuncName}({string.Join(",", defaultArgs)})" : d.FuncName;
+
+        // Apply conditional-visibility rules so the new chip doesn't start with a
+        // stale dependent arg (e.g. Ability chip on Strength shouldn't ship Savant=true).
+        defaultArgs = VisibilityRules.ClearHiddenArgs(d, defaultArgs);
+
+        // Trim trailing empty defaults (mirrors UpdateParam semantics)
+        while (defaultArgs.Length > 0 && string.IsNullOrEmpty(defaultArgs[^1]))
+            defaultArgs = defaultArgs[..^1];
+
+        var newBoost = defaultArgs.Length > 0
+            ? $"{d.FuncName}({string.Join(",", defaultArgs)})"
+            : $"{d.FuncName}()";
         var current = Text ?? "";
         SyncText(string.IsNullOrEmpty(current) ? newBoost : $"{current};{newBoost}");
     }
@@ -1065,7 +1060,11 @@ public class BoostBlocksEditor : UserControl
     {
         if (_updating) return;
         var parsed = BoostMapping.ParseBoostCall(rawBoost);
-        if (parsed == null) return;
+        if (parsed == null)
+        {
+            Core.Services.AppLogger.Warn($"UpdateTargetContext: failed to parse boost '{rawBoost}' — target context change ignored.");
+            return;
+        }
 
         var (funcName, args) = parsed.Value;
 
