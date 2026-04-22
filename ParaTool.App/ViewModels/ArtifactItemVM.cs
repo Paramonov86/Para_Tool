@@ -492,11 +492,22 @@ public partial class ArtifactItemVM : ObservableObject
 
     public void AddNewPassive()
     {
+        // Generate loca handles upfront so even a newly-added-and-forgotten passive
+        // still gets a stats DisplayName/Description field in the compiled output —
+        // BG3 wouldn't show the passive at all without at least a DisplayName handle.
+        var (nameHandle, descHandle) = Core.Localization.HandleGenerator.NewPair();
+        var name = "Passive_New_" + Guid.NewGuid().ToString("N")[..6];
         var passive = new Core.Artifacts.PassiveDefinition
         {
-            Name = "Passive_New_" + Guid.NewGuid().ToString("N")[..6],
+            Name = name,
             Properties = "Highlighted",
+            DisplayNameHandle = nameHandle,
+            DescriptionHandle = descHandle,
         };
+        // Seed a placeholder display name so the user sees SOMETHING in game rather
+        // than a blank passive row if they forget to fill it in.
+        passive.DisplayName["en"] = "New Passive";
+        passive.DisplayName["ru"] = "Новая пассивка";
         Artifact.Passives.Add(passive);
         PassiveVMs.Add(new PassiveVM(passive, this));
 
