@@ -243,6 +243,10 @@ public partial class Loc : ObservableObject
     public string WmPassiveName => this["WmPassiveName"];
     public string WmNewItemName => this["WmNewItemName"];
     public string WmSearch => this["WmSearch"];
+    public string WmSearchBoost => this["WmSearchBoost"];
+    public string BoostPickerIfBoost => this["BoostPickerIfBoost"];
+    public string BoostPickerIfFunctor => this["BoostPickerIfFunctor"];
+    public string BoostPickerWeaponSection => this["BoostPickerWeaponSection"];
     public string LblCustomOption => this["LblCustomOption"];
     public string WmTypeAndEnter => this["WmTypeAndEnter"];
     public string LblMadeWith => this["LblMadeWith"];

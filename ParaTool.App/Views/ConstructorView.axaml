@@ -422,7 +422,8 @@
                                              Width="80" HorizontalAlignment="Left" />
 
                                     <TextBlock Grid.Row="3" Text="{Binding LblDefaultBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                    <ctrl:BoostBlocksEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditDefaultBoosts}" Margin="0,6,0,0" />
+                                    <ctrl:BoostBlocksEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditDefaultBoosts}"
+                                                            EditorContext="WeaponDefaultBoosts" Margin="0,6,0,0" />
 
                                     <TextBlock Grid.Row="4" Text="{Binding LblProperties, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:ToggleChipsEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditWeaponProperties}"

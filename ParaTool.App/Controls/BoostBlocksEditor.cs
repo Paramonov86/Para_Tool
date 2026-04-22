@@ -13,6 +13,13 @@ using ParaTool.App.Localization;
 
 namespace ParaTool.App.Controls;
 
+public enum BoostEditorContext
+{
+    ItemBoosts,
+    WeaponDefaultBoosts,
+    Functors,
+}
+
 /// <summary>
 /// Renders a semicolon-separated boost/functor string as visual colored blocks.
 /// Each block shows the human-readable label + editable parameters.
@@ -25,6 +32,10 @@ public class BoostBlocksEditor : UserControl
 
     public static readonly StyledProperty<bool> IsFunctorModeProperty =
         AvaloniaProperty.Register<BoostBlocksEditor, bool>(nameof(IsFunctorMode));
+
+    public static readonly StyledProperty<BoostEditorContext> EditorContextProperty =
+        AvaloniaProperty.Register<BoostBlocksEditor, BoostEditorContext>(
+            nameof(EditorContext), BoostEditorContext.ItemBoosts);
 
     public string? Text
     {
@@ -42,8 +53,18 @@ public class BoostBlocksEditor : UserControl
 
     public bool IsFunctorMode
     {
-        get => GetValue(IsFunctorModeProperty);
-        set => SetValue(IsFunctorModeProperty, value);
+        get => EditorContext == BoostEditorContext.Functors || GetValue(IsFunctorModeProperty);
+        set
+        {
+            SetValue(IsFunctorModeProperty, value);
+            if (value) EditorContext = BoostEditorContext.Functors;
+        }
+    }
+
+    public BoostEditorContext EditorContext
+    {
+        get => GetValue(EditorContextProperty);
+        set => SetValue(EditorContextProperty, value);
     }
 
     /// <summary>Fired when user requests rename of a spell/status via context menu.</summary>
@@ -828,17 +849,20 @@ public class BoostBlocksEditor : UserControl
 
     private void OnAddClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        // Open a simple popup to select which boost to add
         var defs = IsFunctorMode ? BoostMapping.Functors : BoostMapping.Boosts;
+        var categoryOrder = IsFunctorMode
+            ? BoostCategories.FunctorCategoryOrder
+            : BoostCategories.BoostCategoryOrder;
         var menu = new ContextMenu();
+        var isRu = Loc.Instance.Lang == "ru";
 
         // IF block available in both functor and boost modes
         {
-            var ifLabel = IsFunctorMode ? "⚡ Conditional (IF)" : "⚡ Conditional Boost (IF)";
+            var ifLabel = IsFunctorMode ? Loc.Instance.BoostPickerIfFunctor : Loc.Instance.BoostPickerIfBoost;
             var ifTemplate = IsFunctorMode
                 ? "IF(Enemy()):ApplyStatus(YOURSTATUS,100,1)"
                 : "IF(Enemy()):AC(1)";
-            var ifItem = new MenuItem { Header = ifLabel, FontWeight = FontWeight.Bold };
+            var ifItem = new MenuItem { Header = $"⚡ {ifLabel}", FontWeight = FontWeight.Bold };
             ifItem.Click += (_, _) =>
             {
                 var current = Text ?? "";
@@ -848,35 +872,160 @@ public class BoostBlocksEditor : UserControl
             menu.Items.Add(new Separator());
         }
 
-        foreach (var def in defs)
+        // Search box
+        var searchBox = new TextBox
         {
-            var item = new MenuItem { Header = GetBlockLabel(def), Tag = def };
-            item.Click += (_, _) =>
+            Watermark = Loc.Instance.WmSearchBoost,
+            FontSize = FontScale.Of(11),
+            MinWidth = 200,
+            Margin = new Thickness(4),
+        };
+        var searchItem = new MenuItem { Header = searchBox, StaysOpenOnClick = true };
+        menu.Items.Add(searchItem);
+        menu.Items.Add(new Separator());
+
+        var allMenuItems = new List<(MenuItem item, string searchText)>();
+
+        // Weapon-specific pinned section
+        if (EditorContext == BoostEditorContext.WeaponDefaultBoosts)
+        {
+            var header = new MenuItem
             {
-                var d = (BoostMapping.BlockDef)item.Tag!;
-                var defaultArgs = d.Params.Select(p => p.Type switch
-                {
-                    "hidden" => "100",
-                    "int" => "1",
-                    "number" => "1",
-                    "float" => "1",
-                    "dice" => "1d6",
-                    "formula" => "1",
-                    "bool" => "true",
-                    "enum" => p.EnumValues?.FirstOrDefault() ?? "None",
-                    "flags" => p.EnumValues?.FirstOrDefault() ?? "None",
-                    "string" => p.Name.Contains("Status") ? "YOURSTATUS" :
-                                p.Name.Contains("Spell") ? "YourSpell" :
-                                p.Name.Contains("Resource") ? "ActionPoint" : "Value",
-                    _ => "0"
-                }).ToArray();
-                var newBoost = defaultArgs.Length > 0 ? $"{d.FuncName}({string.Join(",", defaultArgs)})" : d.FuncName;
-                var current = Text ?? "";
-                SyncText(string.IsNullOrEmpty(current) ? newBoost : $"{current};{newBoost}");
+                Header = $"⚔ {Loc.Instance.BoostPickerWeaponSection}",
+                IsEnabled = false,
+                FontWeight = FontWeight.SemiBold,
             };
-            menu.Items.Add(item);
+            menu.Items.Add(header);
+
+            foreach (var funcName in BoostCategories.WeaponDefaultBoostWhitelist)
+            {
+                var def = defs.FirstOrDefault(d =>
+                    d.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase));
+                if (def == null) continue;
+
+                var displayName = BoostLabels.GetLabel(def, isRu);
+                var item = new MenuItem { Header = displayName, Tag = def };
+                item.Click += (_, _) => { InsertDef(def); menu.Close(); };
+                menu.Items.Add(item);
+            }
+            menu.Items.Add(new Separator());
         }
+
+        // Favorites (rebuildable)
+        var favItems = new Dictionary<string, MenuItem>(StringComparer.OrdinalIgnoreCase);
+        var favSeparatorIdx = menu.Items.Count;
+
+        void RebuildFavSection()
+        {
+            foreach (var fi in favItems.Values)
+                menu.Items.Remove(fi);
+            favItems.Clear();
+
+            var currentFavs = Core.Services.BoostFavoritesStore.Load();
+            int insertIdx = favSeparatorIdx;
+            var sorted = currentFavs
+                .Select(n => (name: n, def: defs.FirstOrDefault(b =>
+                    b.FuncName.Equals(n, StringComparison.OrdinalIgnoreCase))))
+                .Where(x => x.def != null)
+                .OrderBy(x => BoostLabels.GetLabel(x.def!, isRu));
+
+            foreach (var (favName, def) in sorted)
+            {
+                var dName = BoostLabels.GetLabel(def!, isRu);
+                var fItem = new MenuItem { Header = $"★ {dName}", Tag = def };
+                fItem.Click += (_, _) => { InsertDef(def!); menu.Close(); };
+                menu.Items.Insert(insertIdx++, fItem);
+                favItems[favName] = fItem;
+            }
+        }
+        RebuildFavSection();
+
+        menu.Items.Add(new Separator());
+
+        // Categories
+        var userFavs = Core.Services.BoostFavoritesStore.Load();
+        var byCat = defs
+            .GroupBy(d => BoostCategories.GetCategory(d.FuncName))
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var catKey in categoryOrder)
+        {
+            if (!byCat.TryGetValue(catKey, out var catDefs) || catDefs.Count == 0) continue;
+            var sub = new MenuItem { Header = BoostLabels.GetCategoryLabel(catKey, isRu) };
+
+            foreach (var def in catDefs.OrderBy(d => BoostLabels.GetLabel(d, isRu)))
+            {
+                var displayName = BoostLabels.GetLabel(def, isRu);
+                var isFav = userFavs.Contains(def.FuncName);
+                var star = isFav ? "★" : "☆";
+
+                var itemPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+                var starBtn = new Button
+                {
+                    Content = star,
+                    Padding = new Thickness(0),
+                    Background = Brushes.Transparent,
+                    BorderThickness = new Thickness(0),
+                    Cursor = new Cursor(StandardCursorType.Hand),
+                    FontSize = FontScale.Of(12),
+                    Foreground = ThemeBrushes.Accent,
+                    MinWidth = 0, MinHeight = 0,
+                };
+                var funcName = def.FuncName;
+                starBtn.Click += (s, e2) =>
+                {
+                    e2.Handled = true;
+                    var nowFav = Core.Services.BoostFavoritesStore.Toggle(funcName);
+                    if (s is Button b) b.Content = nowFav ? "★" : "☆";
+                    RebuildFavSection();
+                };
+                itemPanel.Children.Add(starBtn);
+                itemPanel.Children.Add(new TextBlock
+                {
+                    Text = displayName,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+
+                var item = new MenuItem { Header = itemPanel, Tag = def, StaysOpenOnClick = true };
+                item.Click += (_, _) => { InsertDef(def); menu.Close(); };
+                sub.Items.Add(item);
+                allMenuItems.Add((item, $"{displayName} {def.FuncName}".ToLower()));
+            }
+            menu.Items.Add(sub);
+        }
+
+        searchBox.TextChanged += (_, _) =>
+        {
+            var q = (searchBox.Text ?? "").Trim().ToLower();
+            foreach (var (item, searchText) in allMenuItems)
+                item.IsVisible = string.IsNullOrEmpty(q) || searchText.Contains(q);
+        };
+
         menu.Open(this);
+        searchBox.Focus();
+    }
+
+    private void InsertDef(BoostMapping.BlockDef d)
+    {
+        var defaultArgs = d.Params.Select(p => p.Type switch
+        {
+            "hidden" => "100",
+            "int" => "1",
+            "number" => "1",
+            "float" => "1",
+            "dice" => "1d6",
+            "formula" => "1",
+            "bool" => "true",
+            "enum" => p.EnumValues?.FirstOrDefault() ?? "None",
+            "flags" => p.EnumValues?.FirstOrDefault() ?? "None",
+            "string" => p.Name.Contains("Status") ? "YOURSTATUS" :
+                        p.Name.Contains("Spell") ? "YourSpell" :
+                        p.Name.Contains("Resource") ? "ActionPoint" : "Value",
+            _ => "0"
+        }).ToArray();
+        var newBoost = defaultArgs.Length > 0 ? $"{d.FuncName}({string.Join(",", defaultArgs)})" : d.FuncName;
+        var current = Text ?? "";
+        SyncText(string.IsNullOrEmpty(current) ? newBoost : $"{current};{newBoost}");
     }
 
     private static readonly string[] TargetContextValues = ["SELF", "SWAP", "OBSERVER_TARGET", "OBSERVER_SOURCE"];
