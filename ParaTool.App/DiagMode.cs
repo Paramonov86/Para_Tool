@@ -32,31 +32,28 @@ internal static class DiagMode
             }
         }
 
-        // Detect mods folder
         var modsPath = ModsFolderDetector.Detect();
         if (modsPath == null)
         {
-            Console.Error.WriteLine("ERROR: Mods folder not found (ModsFolderDetector returned null).");
+            Console.Error.WriteLine("ERROR: Mods folder not found.");
             return 2;
         }
         Console.WriteLine($"Mods folder: {modsPath}");
 
-        // Load vanilla DB
-        Console.Write("Loading vanilla DB... ");
+        var step = System.Diagnostics.Stopwatch.StartNew();
         var vanillaDb = new VanillaDatabase();
         vanillaDb.Load();
-        Console.WriteLine("done.");
+        Console.WriteLine($"  vanilla DB loaded in {step.ElapsedMilliseconds}ms");
 
-        // Scan
-        Console.Write("Scanning mods... ");
+        step.Restart();
         var scanner = new ModScanner(vanillaDb);
         var result = await scanner.ScanAsync(modsPath, "en");
         if (result.Error != null)
         {
-            Console.Error.WriteLine($"\nSCAN ERROR: {result.Error}");
+            Console.Error.WriteLine($"SCAN ERROR: {result.Error}");
             return 3;
         }
-        Console.WriteLine($"done ({result.Mods.Count + (result.AmpMod != null ? 1 : 0)} mods, paks: {result.PakPaths.Length}).");
+        Console.WriteLine($"  mod scan done in {step.ElapsedMilliseconds}ms ({result.Mods.Count + (result.AmpMod != null ? 1 : 0)} mods, {result.PakPaths.Length} paks, {result.Resolver.AllEntries.Count} stats entries)");
 
         var resolver = result.Resolver;
         var locaService = new LocaService(result.PakPaths);
@@ -64,13 +61,10 @@ internal static class DiagMode
         if (result.HandleOwnership.Count > 0)
             locaService.SetHandleOwnership(result.HandleOwnership);
 
-        // Also load English loca (in addition to scan lang)
-        Console.Write("Loading extra languages... ");
+        step.Restart();
         foreach (var lang in new[] { "en", "ru" })
-        {
             try { locaService.GetLocaMap(lang); } catch { }
-        }
-        Console.WriteLine("done.");
+        Console.WriteLine($"  extra langs loaded in {step.ElapsedMilliseconds}ms");
 
         // Collect target items
         var allSavedArtifacts = ArtifactStore.LoadAll();
