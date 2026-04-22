@@ -330,11 +330,19 @@ public partial class ConstructorViewModel : ViewModelBase
         var art = artVm.Artifact;
         var statId = art.UsingBase ?? art.StatId;
 
-        // Item DisplayName: own handle first, then chain fallback
-        if (!string.IsNullOrEmpty(art.DisplayNameHandle))
+        // Fill-if-empty semantics ONLY: we must never clobber the user's own edits.
+        // Their .art file is the source of truth — reloading from loca paks would
+        // leak the previously-patched text back over the latest edits that haven't
+        // been patched yet. (See: A1 in bug backlog — tester bug recurring for weeks)
+
+        // Item DisplayName
+        if (string.IsNullOrEmpty(art.DisplayName.GetValueOrDefault(lang)))
         {
-            var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
-            if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
+            if (!string.IsNullOrEmpty(art.DisplayNameHandle))
+            {
+                var text = _locaService?.ResolveHandle(art.DisplayNameHandle, lang);
+                if (text != null) art.DisplayName[lang] = BbCode.FromBg3Xml(text);
+            }
         }
         if (string.IsNullOrEmpty(art.DisplayName.GetValueOrDefault(lang)))
         {
@@ -342,11 +350,14 @@ public partial class ConstructorViewModel : ViewModelBase
             if (vanillaName != null) art.DisplayName[lang] = BbCode.FromBg3Xml(vanillaName);
         }
 
-        // Item Description: own handle first, then chain fallback
-        if (!string.IsNullOrEmpty(art.DescriptionHandle))
+        // Item Description
+        if (string.IsNullOrEmpty(art.Description.GetValueOrDefault(lang)))
         {
-            var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
-            if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
+            if (!string.IsNullOrEmpty(art.DescriptionHandle))
+            {
+                var text = _locaService?.ResolveHandle(art.DescriptionHandle, lang);
+                if (text != null) art.Description[lang] = BbCode.FromBg3Xml(text);
+            }
         }
         if (string.IsNullOrEmpty(art.Description.GetValueOrDefault(lang)))
         {
@@ -354,44 +365,48 @@ public partial class ConstructorViewModel : ViewModelBase
             if (vanillaDesc != null) art.Description[lang] = BbCode.FromBg3Xml(vanillaDesc);
         }
 
-        // Passives — vanilla first, then own handle
+        // Passives — same fill-if-empty rule
         foreach (var passive in art.Passives)
         {
-            // DisplayName: vanilla first
-            var vPassiveName = VanillaLocaService.GetDisplayName(passive.Name, lang);
-            if (vPassiveName != null)
+            if (string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(lang)))
             {
-                passive.DisplayName[lang] = BbCode.FromBg3Xml(vPassiveName);
-            }
-            else
-            {
-                var pFields = _resolver?.ResolveAll(passive.Name);
-                var nameHandle = !string.IsNullOrEmpty(passive.DisplayNameHandle)
-                    ? passive.DisplayNameHandle
-                    : pFields?.GetValueOrDefault("DisplayName");
-                if (!string.IsNullOrEmpty(nameHandle))
+                var vPassiveName = VanillaLocaService.GetDisplayName(passive.Name, lang);
+                if (vPassiveName != null)
                 {
-                    var text = _locaService?.ResolveHandle(nameHandle, lang);
-                    if (text != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(text);
+                    passive.DisplayName[lang] = BbCode.FromBg3Xml(vPassiveName);
+                }
+                else
+                {
+                    var pFields = _resolver?.ResolveAll(passive.Name);
+                    var nameHandle = !string.IsNullOrEmpty(passive.DisplayNameHandle)
+                        ? passive.DisplayNameHandle
+                        : pFields?.GetValueOrDefault("DisplayName");
+                    if (!string.IsNullOrEmpty(nameHandle))
+                    {
+                        var text = _locaService?.ResolveHandle(nameHandle, lang);
+                        if (text != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(text);
+                    }
                 }
             }
 
-            // Description: vanilla first
-            var vPassiveDesc = VanillaLocaService.GetDescription(passive.Name, lang);
-            if (vPassiveDesc != null)
+            if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(lang)))
             {
-                passive.Description[lang] = BbCode.FromBg3Xml(vPassiveDesc);
-            }
-            else
-            {
-                var pFields = _resolver?.ResolveAll(passive.Name);
-                var descHandle = !string.IsNullOrEmpty(passive.DescriptionHandle)
-                    ? passive.DescriptionHandle
-                    : pFields?.GetValueOrDefault("Description");
-                if (!string.IsNullOrEmpty(descHandle))
+                var vPassiveDesc = VanillaLocaService.GetDescription(passive.Name, lang);
+                if (vPassiveDesc != null)
                 {
-                    var text = _locaService?.ResolveHandle(descHandle, lang);
-                    if (text != null) passive.Description[lang] = BbCode.FromBg3Xml(text);
+                    passive.Description[lang] = BbCode.FromBg3Xml(vPassiveDesc);
+                }
+                else
+                {
+                    var pFields = _resolver?.ResolveAll(passive.Name);
+                    var descHandle = !string.IsNullOrEmpty(passive.DescriptionHandle)
+                        ? passive.DescriptionHandle
+                        : pFields?.GetValueOrDefault("Description");
+                    if (!string.IsNullOrEmpty(descHandle))
+                    {
+                        var text = _locaService?.ResolveHandle(descHandle, lang);
+                        if (text != null) passive.Description[lang] = BbCode.FromBg3Xml(text);
+                    }
                 }
             }
         }

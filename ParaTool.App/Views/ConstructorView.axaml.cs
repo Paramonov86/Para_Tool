@@ -406,8 +406,8 @@ public partial class ConstructorView : UserControl
             return;
         }
 
-        // Icon grid click
-        if (btn.Name == "IconGridBtn" && btn.Tag is IconEntryVM iconVm
+        // Icon grid click — identify by Tag type (Name doesn't propagate in DataTemplates)
+        if (btn.Tag is IconEntryVM iconVm
             && DataContext is ConstructorViewModel ctorVm && ctorVm.IconBrowser != null)
         {
             ctorVm.IconBrowser.SelectIcon(iconVm);

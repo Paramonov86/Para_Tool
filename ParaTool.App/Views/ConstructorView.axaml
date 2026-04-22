@@ -386,16 +386,19 @@
                                 <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding LblDamage, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
                                     <TextBox Grid.Column="1" Text="{Binding EditDamage}" Watermark="1d8"
-                                             FontSize="{DynamicResource FontSize12}" Padding="8,4" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                             FontSize="{DynamicResource FontSize12}" Padding="8,4" Background="{StaticResource InputBgBrush}" CornerRadius="4"
+                                             Width="80" HorizontalAlignment="Left" />
 
                                     <TextBlock Grid.Row="1" Text="{Binding LblDamageType, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:TumblerChipEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditDamageType}"
                                                            Items="{x:Static vm:ArtifactItemVM.DamageTypeOptions}"
+                                                           ChipColors="{x:Static vm:ArtifactItemVM.DamageTypeColors}"
                                                            Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                     <TextBlock Grid.Row="2" Text="{Binding LblVersatile, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding EditVersatileDamage}" Watermark="1d10"
-                                             FontSize="{DynamicResource FontSize12}" Padding="8,4" Margin="0,6,0,0" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                             FontSize="{DynamicResource FontSize12}" Padding="8,4" Margin="0,6,0,0" Background="{StaticResource InputBgBrush}" CornerRadius="4"
+                                             Width="80" HorizontalAlignment="Left" />
 
                                     <TextBlock Grid.Row="3" Text="{Binding LblDefaultBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                     <ctrl:BoostBlocksEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditDefaultBoosts}" Margin="0,6,0,0" />

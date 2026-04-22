@@ -40,6 +40,9 @@ public class TumblerChipEditor : UserControl
     /// <summary>Optional short display labels (same length as Items). If null, Items shown as-is.</summary>
     public string[]? DisplayItems { get; set; }
 
+    /// <summary>Optional: if current Text matches a key, tint chip border and text.</summary>
+    public Dictionary<string, Color>? ChipColors { get; set; }
+
     /// <summary>If true, scrolling below MinValue shows "—" (none). Text becomes "—".</summary>
     public bool AllowNone { get; set; }
 
@@ -264,8 +267,24 @@ public class TumblerChipEditor : UserControl
             if (locaVal != locaKey) display = locaVal;
         }
         _valueText.Text = string.IsNullOrEmpty(display) ? "—" : display;
-        _valueText.Foreground = string.IsNullOrEmpty(val)
-            ? ThemeBrushes.TextMuted : ThemeBrushes.TextPrimary;
+
+        // Colour by value (if a ChipColors map is configured for this tumbler)
+        IBrush? tint = null;
+        if (ChipColors != null && !string.IsNullOrEmpty(val) && ChipColors.TryGetValue(val, out var c))
+            tint = new SolidColorBrush(c);
+
+        if (tint != null)
+        {
+            _valueText.Foreground = tint;
+            if (!_drumOpen) _chip.BorderBrush = tint;
+        }
+        else
+        {
+            _valueText.Foreground = string.IsNullOrEmpty(val)
+                ? ThemeBrushes.TextMuted : ThemeBrushes.TextPrimary;
+            if (!_drumOpen) _chip.BorderBrush = ThemeBrushes.BorderSubtle;
+        }
+
         if (IsListMode) _valueText.FontSize = FontForLength(display.Length);
     }
 
@@ -354,6 +373,9 @@ public class TumblerChipEditor : UserControl
         _chip.Background = ThemeBrushes.InputBg;
         _chip.BorderBrush = ThemeBrushes.BorderSubtle;
         _chip.Cursor = new Cursor(StandardCursorType.Hand);
+
+        // Re-apply colour tint if a ChipColors map is active
+        UpdateChipText();
 
         _upperBg!.IsVisible = false;
         _lowerBg!.IsVisible = false;
