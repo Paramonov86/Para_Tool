@@ -443,7 +443,7 @@
                                                     IsVisible="{Binding HasIcon}">
                                                 <Image Source="{Binding IconBitmap}" Stretch="UniformToFill" />
                                             </Border>
-                                            <TextBlock Text="{Binding Artifact.AtlasIconMapKey, FallbackValue='Browse icons...'}"
+                                            <TextBlock Text="{Binding EditAtlasIconKey, FallbackValue='Browse icons...'}"
                                                        FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource TextSecondaryBrush}"
                                                        VerticalAlignment="Center" />
                                         </StackPanel>

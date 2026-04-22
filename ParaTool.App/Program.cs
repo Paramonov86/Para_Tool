@@ -9,7 +9,7 @@ class Program
         "ParaTool", "crash.log");
 
     [STAThread]
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         // Global exception handlers — log to file
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
@@ -21,9 +21,28 @@ class Program
             e.SetObserved();
         };
 
+        // Headless diagnostic mode — used by devs to dump item resolution state.
+        // Skips the Avalonia UI entirely so the process can run and exit in a
+        // few seconds (scan + dump).
+        if (args.Any(a => a.Equals("--diag", StringComparison.OrdinalIgnoreCase)
+                       || a.Equals("--diag-all", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                return DiagMode.RunAsync(args).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                LogCrash("DiagMode", ex);
+                Console.Error.WriteLine($"DIAG FAILED: {ex}");
+                return 1;
+            }
+        }
+
         try
         {
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            return 0;
         }
         catch (Exception ex)
         {

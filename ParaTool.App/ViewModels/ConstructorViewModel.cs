@@ -965,8 +965,8 @@ public partial class ConstructorViewModel : ViewModelBase
     private void OnIconSelected(string iconName)
     {
         if (SelectedArtifact == null || _iconService == null) return;
-        SelectedArtifact.Artifact.AtlasIconMapKey = iconName;
-        SelectedArtifact.IsDirty = true;
+        // Route through VM setter so bindings refresh
+        SelectedArtifact.EditAtlasIconKey = iconName;
 
         // Load and display the new icon
         var dds = _iconService.GetIconDds(iconName);

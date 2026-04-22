@@ -120,23 +120,9 @@ public partial class ArtifactItemVM : ObservableObject
     /// <summary>DamageTypes without "None" — weapons must have a real damage type.</summary>
     public static string[] DamageTypeOptions => ParaTool.Core.Schema.BoostMapping.DamageTypes[1..];
 
-    /// <summary>Colour-by-damage-type map for DamageType tumbler chip.</summary>
-    public static Dictionary<string, Avalonia.Media.Color> DamageTypeColors { get; } = new()
-    {
-        ["Slashing"]    = Avalonia.Media.Color.FromRgb(0xCF, 0xCF, 0xCF),
-        ["Piercing"]    = Avalonia.Media.Color.FromRgb(0xCF, 0xCF, 0xCF),
-        ["Bludgeoning"] = Avalonia.Media.Color.FromRgb(0xB8, 0x94, 0x6D),
-        ["Fire"]        = Avalonia.Media.Color.FromRgb(0xE8, 0x65, 0x3A),
-        ["Cold"]        = Avalonia.Media.Color.FromRgb(0x79, 0xC8, 0xF0),
-        ["Lightning"]   = Avalonia.Media.Color.FromRgb(0xF4, 0xDA, 0x68),
-        ["Acid"]        = Avalonia.Media.Color.FromRgb(0x85, 0xD1, 0x70),
-        ["Poison"]      = Avalonia.Media.Color.FromRgb(0x9B, 0xCB, 0x4F),
-        ["Necrotic"]    = Avalonia.Media.Color.FromRgb(0x7E, 0x4C, 0x9C),
-        ["Psychic"]     = Avalonia.Media.Color.FromRgb(0xD6, 0x7F, 0xE0),
-        ["Thunder"]     = Avalonia.Media.Color.FromRgb(0x7B, 0x95, 0xD4),
-        ["Radiant"]     = Avalonia.Media.Color.FromRgb(0xF4, 0xD5, 0x7C),
-        ["Force"]       = Avalonia.Media.Color.FromRgb(0xC5, 0x9D, 0xEA),
-    };
+    /// <summary>Colour-by-damage-type map for DamageType tumbler chip — delegates to shared palette.</summary>
+    public static Dictionary<string, Avalonia.Media.Color> DamageTypeColors =>
+        ParaTool.App.Themes.DamageTypePalette.Colors;
 
     public static string[] ThemeOptions =>
     [
@@ -173,6 +159,19 @@ public partial class ArtifactItemVM : ObservableObject
     }
 
     public string EditUsingBase => Artifact.UsingBase;
+
+    /// <summary>Atlas icon key — observable so UI binds refresh when icon is picked.</summary>
+    public string EditAtlasIconKey
+    {
+        get => Artifact.AtlasIconMapKey ?? "";
+        set
+        {
+            if (Artifact.AtlasIconMapKey == value) return;
+            Artifact.AtlasIconMapKey = string.IsNullOrWhiteSpace(value) ? null : value;
+            MarkDirty();
+            OnPropertyChanged();
+        }
+    }
 
     public string EditPool
     {

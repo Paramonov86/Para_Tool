@@ -40,23 +40,9 @@ public class BbCodeTextBlock : TextBlock
     private static readonly SolidColorBrush TipColor = new(Color.Parse("#C8A96E"));
     private static readonly SolidColorBrush ParamColor = new(Color.Parse("#E67E22"));
 
-    // BG3 damage type colors
-    private static readonly Dictionary<string, SolidColorBrush> DamageColors = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Fire"] = new(Color.Parse("#E8602A")),
-        ["Cold"] = new(Color.Parse("#48A8D0")),
-        ["Lightning"] = new(Color.Parse("#60B0E8")),
-        ["Thunder"] = new(Color.Parse("#8868C8")),
-        ["Acid"] = new(Color.Parse("#50E828")),
-        ["Poison"] = new(Color.Parse("#A8B840")),
-        ["Necrotic"] = new(Color.Parse("#6AA85C")),
-        ["Radiant"] = new(Color.Parse("#E8C838")),
-        ["Psychic"] = new(Color.Parse("#C850C0")),
-        ["Force"] = new(Color.Parse("#E03030")),
-        ["Slashing"] = new(Color.Parse("#C0C0C0")),
-        ["Piercing"] = new(Color.Parse("#C0C0C0")),
-        ["Bludgeoning"] = new(Color.Parse("#C0C0C0")),
-    };
+    // BG3 damage type colors — delegated to shared palette (see Themes/DamageTypePalette.cs)
+    private static readonly Dictionary<string, SolidColorBrush> DamageColors =
+        ParaTool.App.Themes.DamageTypePalette.Brushes;
     private static readonly SolidColorBrush HealColor = new(Color.Parse("#48D1CC"));
 
     public BbCodeTextBlock()
