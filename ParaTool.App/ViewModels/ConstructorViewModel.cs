@@ -1065,13 +1065,33 @@ public partial class ConstructorViewModel : ViewModelBase
         // Route through VM setter so bindings refresh
         SelectedArtifact.EditAtlasIconKey = iconName;
 
-        // Load and display the new icon
+        // Try AMP/mod DDS first — that's the primary source for custom icons.
         var dds = _iconService.GetIconDds(iconName);
         if (dds != null)
         {
             var bitmap = DdsBitmapConverter.ToAvaloniaBitmap(dds);
             if (bitmap != null)
+            {
                 SelectedArtifact.IconBitmap = bitmap;
+                return;
+            }
+        }
+
+        // Fallback: vanilla atlas. This is the path that broke vanilla-icon picks on
+        // custom artifacts — without it the map key updated but the bitmap stayed on
+        // whatever was loaded previously.
+        var vanillaAtlas = _vanillaAtlasLazy.Value;
+        var vanillaEntry = vanillaAtlas.LoadIconList()
+            .FirstOrDefault(i => i.Name.Equals(iconName, StringComparison.OrdinalIgnoreCase));
+        if (vanillaEntry != null)
+        {
+            var rgba = vanillaAtlas.ExtractIcon(vanillaEntry);
+            if (rgba != null)
+            {
+                var (w, h) = vanillaAtlas.GetTileSize(vanillaEntry);
+                var bmp = IconEntryVM.RgbaToBitmapStatic(rgba, w, h);
+                if (bmp != null) SelectedArtifact.IconBitmap = bmp;
+            }
         }
     }
 
