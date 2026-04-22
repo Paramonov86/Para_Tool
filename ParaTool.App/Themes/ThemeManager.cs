@@ -231,6 +231,8 @@ public static class ThemeManager
 
         // Switch FluentTheme variant for light/dark themes
         app.RequestedThemeVariant = theme.IsLight ? ThemeVariant.Light : ThemeVariant.Dark;
+
+        DamageTypePalette.RefreshForTheme(theme.IsLight);
     }
 
     private static void SetBrush(Application app, string key, Color color)

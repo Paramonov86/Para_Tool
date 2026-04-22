@@ -201,7 +201,22 @@ public class BoostBlocksEditor : UserControl
         if (def == null)
             return CreateRawBlock(rawBoost);
 
-        var color = Color.Parse(def.Color);
+        // Colour-by-damage-type: if this boost has a DamageType enum param and the current
+        // argument is a concrete damage type, tint the chip by palette instead of by category
+        // so chip and BbCodeTextBlock preview colouring line up.
+        Color color = Color.Parse(def.Color);
+        for (int pi = 0; pi < def.Params.Length && pi < args.Length; pi++)
+        {
+            var p = def.Params[pi];
+            if (p.Type != "enum" || p.EnumValues == null) continue;
+            if (p.EnumValues != BoostMapping.DamageTypes
+                && p.EnumValues != BoostMapping.DamageTypesExtended
+                && p.EnumValues != BoostMapping.AllOrDamageType) continue;
+
+            var dmgValue = args[pi].Trim();
+            var paletteColor = Themes.DamageTypePalette.TryGet(dmgValue);
+            if (paletteColor.HasValue) { color = paletteColor.Value; break; }
+        }
         var colorBrush = new SolidColorBrush(color);
         var bgBrush = new SolidColorBrush(color, 0.15);
 
