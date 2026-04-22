@@ -718,6 +718,84 @@ public static class BoostMapping
     };
 
     /// <summary>
+    /// Returns the EngineDescriptions dictionary key that would match this boost call.
+    /// Used to look up translations in per-language JSON — mirrors GetEngineDescription
+    /// logic but returns the key string instead of the object.
+    /// </summary>
+    public static string? GetEngineDescriptionKey(string funcName, string[] args)
+    {
+        if (funcName == "Resistance" && args.Length >= 2)
+        {
+            var flags = args[1].Trim();
+            if (flags is "Resistant" or "ResistantToMagical" or "ResistantToNonMagical") return "Resistance.Resistant";
+            if (flags is "Immune" or "ImmuneToMagical" or "ImmuneToNonMagical") return "Resistance.Immune";
+            if (flags is "Vulnerable" or "VulnerableToMagical" or "VulnerableToNonMagical") return "Resistance.Vulnerable";
+        }
+        if (funcName == "AC") return "AC";
+        if (funcName == "WeaponEnchantment") return "WeaponEnchantment";
+        if (funcName == "AbilityOverrideMinimum" && args.Length >= 1) return $"AbilityOverrideMinimum.{args[0].Trim()}";
+        if (funcName == "CriticalHit" && args.Length >= 3)
+        {
+            var t = args[0].Trim(); var r = args[1].Trim(); var w = args[2].Trim();
+            var alwaysOn = w is "Always" or "ForcedAlways";
+            if (t == "AttackTarget" && r == "Success" && w == "Never") return "CriticalHit.NoCrit";
+            if (t == "AttackTarget" && r == "Success" && alwaysOn) return "CriticalHit.TargetAlwaysCrit";
+            if (t == "AttackRoll" && r == "Success" && alwaysOn) return "CriticalHit.Success";
+            if (t == "AttackRoll" && r == "Success" && w == "Never") return "CriticalHit.NoCritHit";
+            if (t == "AttackRoll" && r == "Failure" && w == "Never") return "CriticalHit.NoCritMiss";
+            if (t == "AttackRoll" && r == "Failure" && alwaysOn) return "CriticalHit.AlwaysCritFail";
+        }
+        if (funcName is "Advantage" or "Disadvantage" && args.Length >= 1)
+            return $"{funcName}.{args[0].Trim()}";
+        if (funcName == "DamageReduction" && args.Length >= 2) return $"DamageReduction.{args[1].Trim()}";
+        if (funcName == "StatusImmunity" && args.Length >= 1)
+        {
+            var specific = $"StatusImmunity.{args[0].Trim()}";
+            return EngineDescriptions.ContainsKey(specific) ? specific : "StatusImmunity";
+        }
+        if (funcName == "RollBonus" && args.Length >= 2)
+        {
+            var rt = args[0].Trim();
+            var hasThird = args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]);
+            var suffix = hasThird ? $"{rt}Of" : rt;
+            if (EngineDescriptions.ContainsKey($"RollBonus.{suffix}")) return $"RollBonus.{suffix}";
+        }
+        if (funcName == "ApplyStatus" && args.Length >= 3)
+        {
+            var first = args[0].Trim();
+            var hasTarget = first is "SELF" or "SWAP" or "OBSERVER" or "TARGET" or "OWNER";
+            var durationIdx = hasTarget ? 3 : 2;
+            if (args.Length <= durationIdx) return "ApplyStatus.Permanent";
+            var dur = args[durationIdx].Trim();
+            return dur == "-1" ? "ApplyStatus.Permanent" : "ApplyStatus.Turns";
+        }
+        if (funcName == "DealDamage" && args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]))
+            return "DealDamage.Typed";
+        if (funcName == "DamageBonus")
+        {
+            var hasType = args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]);
+            var hasMagical = args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]);
+            if (hasMagical && !hasType) return "DamageBonus.Magical";
+            if (hasType) return "DamageBonus.Typed";
+            return "DamageBonus";
+        }
+        if (funcName == "WeaponDamage" && args.Length >= 1)
+            return args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1])
+                ? "WeaponDamage.Typed" : "WeaponDamage";
+        if (funcName == "Reroll" && args.Length >= 2)
+        {
+            var always = args.Length >= 3 && args[2].Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
+            return always ? "Reroll.Always" : "Reroll";
+        }
+        if (funcName == "WeaponProperty" && args.Length >= 1)
+        {
+            var key = $"WeaponProperty.{args[0].Trim()}";
+            return EngineDescriptions.ContainsKey(key) ? key : null;
+        }
+        return EngineDescriptions.ContainsKey(funcName) ? funcName : null;
+    }
+
+    /// <summary>
     /// Tries to resolve an engine-style description for a parsed boost.
     /// Returns null if no engine description matches.
     /// </summary>
@@ -925,12 +1003,27 @@ public static class BoostMapping
     /// </summary>
     public static string? FormatBoostEngineStyle(string funcName, string[] args, Func<string, string>? translate)
     {
-        var desc = GetEngineDescription(funcName, args);
-        if (desc == null) return null;
+        var descKey = GetEngineDescriptionKey(funcName, args);
+        var desc = descKey != null ? EngineDescriptions.GetValueOrDefault(descKey) : GetEngineDescription(funcName, args);
+        if (desc == null && descKey == null) return null;
 
-        // Pick language: check if translate returns Russian for a known key
+        // Prefer JSON translation (all 13 languages); fall back to in-code En/Ru.
+        string? template = null;
+        if (translate != null && descKey != null)
+        {
+            var jsonKey = $"boost.{descKey}";
+            var translated = translate(jsonKey);
+            if (!string.IsNullOrEmpty(translated) && translated != jsonKey)
+                template = translated;
+        }
+        if (template == null)
+        {
+            var langCode = translate != null ? translate("_lang") : "en";
+            template = langCode == "ru" ? (desc?.Ru ?? desc?.En) : desc?.En;
+        }
+        if (template == null) return null;
+
         var lang = translate != null ? translate("_lang") : "en";
-        var template = lang == "ru" ? desc.Ru : desc.En;
 
         // Two-placeholder boosts — substitute both [1] and [2] then return
         if (funcName == "RollBonus" && args.Length >= 3 && args[0].Trim() == "SavingThrow"
