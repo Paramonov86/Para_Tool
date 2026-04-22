@@ -421,65 +421,79 @@ public static partial class LsfScanner
     }
 
     /// <summary>
-    /// Decompresses all LSF internal sections into a single byte array for text searching.
-    /// Supports LZ4 (compression methods 2, 3, 4). Returns null on failure.
+    /// Decompresses an LSF file into a text-searchable byte buffer by delegating to
+    /// the full LSLib LSFReader. Returns a concatenation of the strings pool + all
+    /// node names + all attribute text values + attribute binary data — enough for
+    /// UUID and loca-handle text searches to find what's there.
+    ///
+    /// The previous hand-rolled header parser broke on newer LSF versions (7/8) and
+    /// returned zero-filled buffers silently, which is why scanner missed every
+    /// handle stored in legacy RootTemplates/_merged.lsf in AMP-style mods.
     /// </summary>
     public static byte[]? TryDecompressLsf(byte[] data)
     {
         try
         {
-            if (!IsLsf(data) || data.Length < 56) return null;
+            if (!IsLsf(data) || data.Length < 16) return null;
 
-            int version = data[4] | (data[5] << 8) | (data[6] << 16) | (data[7] << 24);
-            int comprMethod = data[12];
+            using var ms = new MemoryStream(data, writable: false);
+            using var lsfReader = new LSLib.LSFReader(ms);
+            var resource = lsfReader.Read();
 
-            if (comprMethod == 0) return data; // Already uncompressed
-
-            // Parse section sizes
-            int numSections = version >= 6 ? 5 : 4;
-            int headerSize = 16 + numSections * 8;
-            if (version >= 6) headerSize += 8; // extended fields
-
-            int off = 16;
-            var sections = new List<(int uncompressed, int compressed)>();
-            for (int i = 0; i < numSections; i++)
-            {
-                int u = data[off] | (data[off + 1] << 8) | (data[off + 2] << 16) | (data[off + 3] << 24);
-                off += 4;
-                int c = data[off] | (data[off + 1] << 8) | (data[off + 2] << 16) | (data[off + 3] << 24);
-                off += 4;
-                sections.Add((u, c));
-            }
-
-            // Skip extended header
-            int dataStart = headerSize;
-
-            // Decompress all sections
-            using var result = new MemoryStream();
-            int dataOff = dataStart;
-            foreach (var (u, c) in sections)
-            {
-                if (c == 0 || u == 0)
-                {
-                    result.Write(new byte[u]);
-                    continue;
-                }
-
-                if (dataOff + c > data.Length) break;
-
-                var compressed = data.AsSpan(dataOff, c);
-                var decompressed = new byte[u];
-                DecompressLz4Block(compressed, decompressed);
-                result.Write(decompressed);
-                dataOff += c;
-            }
-
-            return result.ToArray();
+            // Serialise everything the scanner cares about: region/node names and
+            // every attribute value (strings rendered as-is, binary bytes appended).
+            using var outMs = new MemoryStream();
+            foreach (var region in resource.Regions.Values)
+                SerializeNode(region, outMs);
+            return outMs.ToArray();
         }
         catch
         {
             return null;
         }
+    }
+
+    private static void SerializeNode(LSLib.Node node, MemoryStream outMs)
+    {
+        // Write node name
+        if (!string.IsNullOrEmpty(node.Name))
+        {
+            var nameBytes = System.Text.Encoding.Latin1.GetBytes(node.Name + "\n");
+            outMs.Write(nameBytes, 0, nameBytes.Length);
+        }
+
+        // Write every attribute's string value — covers UUIDs (stored as strings),
+        // handle references, tooltip text, paths, and any other string content.
+        foreach (var (attrName, attrValue) in node.Attributes)
+        {
+            if (!string.IsNullOrEmpty(attrName))
+            {
+                var k = System.Text.Encoding.Latin1.GetBytes(attrName + "=");
+                outMs.Write(k, 0, k.Length);
+            }
+            var v = attrValue?.Value?.ToString();
+            if (!string.IsNullOrEmpty(v))
+            {
+                var vb = System.Text.Encoding.Latin1.GetBytes(v + "\n");
+                outMs.Write(vb, 0, vb.Length);
+            }
+            // TranslatedString.ToString emits "Handle;Version" when Value is empty
+            // (the usual case for DisplayName / Description attrs on mod templates),
+            // so we don't duplicate-emit the handle — that would collapse DisplayName
+            // and Description into two matches of the same handle when the scanner
+            // picks "first 2 handles near UUID".
+            if (attrValue?.Value is LSLib.TranslatedString ts
+                && !string.IsNullOrEmpty(ts.Handle)
+                && !string.IsNullOrEmpty(ts.Value))
+            {
+                var hb = System.Text.Encoding.Latin1.GetBytes(ts.Handle + "\n");
+                outMs.Write(hb, 0, hb.Length);
+            }
+        }
+
+        foreach (var child in node.Children.Values)
+            foreach (var c in child)
+                SerializeNode(c, outMs);
     }
 
     private static void DecompressLz4Block(ReadOnlySpan<byte> src, Span<byte> dst)
