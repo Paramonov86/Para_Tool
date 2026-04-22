@@ -191,12 +191,16 @@
                                                 BorderThickness="3,0,0,0"
                                                 BorderBrush="{Binding RarityColor}"
                                                 Background="{StaticResource InputBgBrush}">
-                                            <Grid RowDefinitions="Auto,Auto">
-                                                <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FontSize12}"
+                                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="{DynamicResource FontSize12}"
                                                            Foreground="{StaticResource TextSecondaryBrush}"
                                                            TextWrapping="Wrap"
                                                            ToolTip.Tip="{Binding FullLabel}" />
-                                                <TextBlock Grid.Row="1" Text="{Binding ModName}" FontSize="{DynamicResource FontSize10}"
+                                                <TextBlock Grid.Column="1" Text="{Binding SavedMarker}"
+                                                           FontSize="{DynamicResource FontSize12}"
+                                                           VerticalAlignment="Top" Margin="6,0,0,0"
+                                                           ToolTip.Tip="Saved artifact" />
+                                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding ModName}" FontSize="{DynamicResource FontSize10}"
                                                            Foreground="{StaticResource TextMutedBrush}"
                                                            Margin="0,2,0,0" />
                                             </Grid>

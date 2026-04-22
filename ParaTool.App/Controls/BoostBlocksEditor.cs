@@ -198,8 +198,81 @@ public class BoostBlocksEditor : UserControl
         };
         addBtn.Click += OnAddClick;
         _panel.Children.Add(addBtn);
+
+        // Sort button — only shown when there are 2+ chips, orders them by category
+        // then alphabetically by label. Preserves IF() blocks by leaving them where
+        // they are (they're control-flow, not data effects).
+        if (!string.IsNullOrEmpty(Text))
+        {
+            var sortableParts = Text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (sortableParts.Length >= 2)
+            {
+                var sortBtn = new Button
+                {
+                    Content = "↕",
+                    FontSize = FontScale.Of(12), FontWeight = FontWeight.Bold,
+                    Padding = new Thickness(8, 4),
+                    Margin = new Thickness(2),
+                    CornerRadius = new CornerRadius(10),
+                    Background = BgDefault,
+                    Foreground = ThemeBrushes.TextSecondary,
+                    BorderThickness = new Thickness(1),
+                    BorderBrush = ThemeBrushes.BorderSubtle,
+                    Cursor = new Cursor(StandardCursorType.Hand),
+                };
+                ToolTip.SetTip(sortBtn, Loc.Instance.SortChips);
+                sortBtn.Click += OnSortClick;
+                _panel.Children.Add(sortBtn);
+            }
+        }
+
         _updating = false;
         _rebuilding = false;
+    }
+
+    private void OnSortClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(Text)) return;
+        var parts = Text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        if (parts.Count < 2) return;
+
+        var categoryOrder = IsFunctorMode
+            ? BoostCategories.FunctorCategoryOrder
+            : BoostCategories.BoostCategoryOrder;
+        var categoryRank = categoryOrder
+            .Select((k, i) => (k, i))
+            .ToDictionary(p => p.k, p => p.i, StringComparer.OrdinalIgnoreCase);
+
+        var isRu = Loc.Instance.Lang == "ru";
+        var defs = IsFunctorMode ? BoostMapping.Functors : BoostMapping.Boosts;
+
+        int RankOf(string raw)
+        {
+            // Keep IF blocks at their original spot by ranking them high (end)
+            if (raw.StartsWith("IF(", StringComparison.OrdinalIgnoreCase)) return 9999;
+            var parsed = BoostMapping.ParseBoostCall(raw);
+            if (parsed == null) return 9998;
+            var fn = parsed.Value.Item1;
+            var cat = BoostCategories.GetCategory(fn);
+            return categoryRank.GetValueOrDefault(cat, 500);
+        }
+
+        string LabelOf(string raw)
+        {
+            var parsed = BoostMapping.ParseBoostCall(raw);
+            if (parsed == null) return raw;
+            var def = defs.FirstOrDefault(d => d.FuncName.Equals(parsed.Value.Item1, StringComparison.OrdinalIgnoreCase));
+            return def != null ? BoostLabels.GetLabel(def, isRu) : parsed.Value.Item1;
+        }
+
+        var sorted = parts
+            .Select((raw, idx) => (raw, idx, rank: RankOf(raw), label: LabelOf(raw)))
+            .OrderBy(x => x.rank)
+            .ThenBy(x => x.label, StringComparer.OrdinalIgnoreCase)
+            .Select(x => x.raw)
+            .ToList();
+
+        SyncText(string.Join(";", sorted));
     }
 
     private Control? CreateBlock(string rawBoost)

@@ -676,5 +676,6 @@
   "boost.UseSpell": "Применяет [1].",
   "boost.SwapPlaces": "Меняется местами с целью.",
   "boost.BreakConcentration": "Прерывает концентрацию.",
-  "boost.RemoveUniqueStatus": "Снимает уникальный статус [1]."
+  "boost.RemoveUniqueStatus": "Снимает уникальный статус [1].",
+  "SortChips": "Сортировать по категории"
 }

@@ -70,6 +70,15 @@ public partial class BaseItemVM : ObservableObject
 
     public IBrush RarityColor => Themes.ThemeBrushes.GetRarity(Rarity);
 
+    /// <summary>
+    /// When non-null, this "base item" is actually a user-saved artifact surfaced in
+    /// search results. Clicking it should open the linked VM, not spawn a fresh base.
+    /// </summary>
+    public ArtifactItemVM? LinkedSavedArtifact { get; init; }
+
+    /// <summary>Visual marker text shown in the list for custom saved artifacts.</summary>
+    public string? SavedMarker => LinkedSavedArtifact != null ? "💾" : null;
+
     public BaseItemVM(ItemEntry entry, string modName, LocaResolver? locaResolver = null)
     {
         Entry = entry;
@@ -291,6 +300,20 @@ public partial class ConstructorViewModel : ViewModelBase
                 i.Label.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                 i.StatId.Contains(query, StringComparison.OrdinalIgnoreCase));
 
+        // When a query is active, also surface saved custom artifacts whose StatId or
+        // display name matches. They're wrapped as virtual BaseItemVM entries with a
+        // back-pointer so a click routes straight to the saved VM instead of spawning
+        // a fresh base preview.
+        if (!string.IsNullOrEmpty(query))
+        {
+            var savedMatches = SavedArtifacts
+                .Where(sa =>
+                    sa.Artifact.StatId.Contains(query, StringComparison.OrdinalIgnoreCase)
+                    || (sa.DisplayLabel ?? "").Contains(query, StringComparison.OrdinalIgnoreCase));
+            var savedAsBase = savedMatches.Select(WrapSavedArtifactAsBaseItem).Where(b => b != null).Cast<BaseItemVM>();
+            source = source.Concat(savedAsBase);
+        }
+
         source = CurrentSort switch
         {
             SortMode.Rarity => source.OrderBy(i => NavRarityOrder.GetValueOrDefault(i.Rarity, 99)),
@@ -301,6 +324,29 @@ public partial class ConstructorViewModel : ViewModelBase
 
         foreach (var item in source)
             FilteredBaseItems.Add(item);
+    }
+
+    /// <summary>
+    /// Builds a virtual BaseItemVM whose StatId/Rarity/Pool come from the saved
+    /// ArtifactDefinition and which carries a back-pointer so OpenBaseItem can route
+    /// the click to the existing VM instead of rebuilding a fresh base preview.
+    /// </summary>
+    private BaseItemVM? WrapSavedArtifactAsBaseItem(ArtifactItemVM sa)
+    {
+        var a = sa.Artifact;
+        var entry = new ItemEntry
+        {
+            StatId = a.StatId,
+            StatType = a.StatType ?? "",
+            DetectedRarity = a.Rarity,
+            DetectedPool = a.LootPool,
+            DisplayName = sa.DisplayLabel,
+            DisplayNameHandle = a.DisplayNameHandle,
+        };
+        return new BaseItemVM(entry, "My artifacts", _locaResolver)
+        {
+            LinkedSavedArtifact = sa,
+        };
     }
 
     partial void OnEditingLangChanged(string value)
@@ -459,6 +505,14 @@ public partial class ConstructorViewModel : ViewModelBase
     private void OpenBaseItem(BaseItemVM? baseItem)
     {
         if (baseItem == null) return;
+
+        // User clicked a saved-artifact match surfaced via search — route straight to
+        // the existing VM instead of rebuilding a preview for a different StatId.
+        if (baseItem.LinkedSavedArtifact != null)
+        {
+            SelectedArtifact = baseItem.LinkedSavedArtifact;
+            return;
+        }
 
         // If this base is already open as an unpersisted in-memory preview, reuse that
         // tab instead of spawning a duplicate. We specifically DO NOT hijack to a saved

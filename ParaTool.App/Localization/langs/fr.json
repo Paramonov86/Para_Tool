@@ -676,5 +676,6 @@
   "boost.UseSpell": "Casts [1].",
   "boost.SwapPlaces": "Swaps places with target.",
   "boost.BreakConcentration": "Breaks concentration.",
-  "boost.RemoveUniqueStatus": "Removes unique status [1]."
+  "boost.RemoveUniqueStatus": "Removes unique status [1].",
+  "SortChips": "Trier par catégorie"
 }
