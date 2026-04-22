@@ -47,7 +47,8 @@ public static class ItemDiagnostics
         string? iconAtlasKey = null,
         int? iconBitmapWidth = null,
         int? iconBitmapHeight = null,
-        Models.ItemEntry? itemEntry = null)
+        Models.ItemEntry? itemEntry = null,
+        string[]? pakPaths = null)
     {
         var snap = new Dictionary<string, object?>
         {
@@ -98,6 +99,158 @@ public static class ItemDiagnostics
                 detectedPool = itemEntry.DetectedPool,
                 detectedThemes = itemEntry.DetectedThemes,
             };
+        }
+
+        // ── Per-pak template resolution probe ─────
+        // For items with a known RootTemplate UUID, ask ItemNameResolver what
+        // each pak returns — this surfaces scanner bugs where a handle IS
+        // present in the pak's templates but we fail to extract it.
+        if (resolver != null && pakPaths != null && pakPaths.Length > 0)
+        {
+            var rtUuid = resolver.Resolve(statId, "RootTemplate");
+            if (!string.IsNullOrEmpty(rtUuid))
+            {
+                var uuidMap = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [rtUuid] = [statId]
+                };
+                var perPak = new List<object>();
+                foreach (var pakPath in pakPaths)
+                {
+                    try
+                    {
+                        var (names, descs, nh, dh) =
+                            ItemNameResolver.ResolveFromPakFull(pakPath, uuidMap, "en");
+                        names.TryGetValue(rtUuid, out var n);
+                        descs.TryGetValue(rtUuid, out var d);
+                        nh.TryGetValue(rtUuid, out var nameHandle);
+                        dh.TryGetValue(rtUuid, out var descHandle);
+                        if (n != null || nameHandle != null)
+                            perPak.Add(new
+                            {
+                                pak = Path.GetFileName(pakPath),
+                                uuid = rtUuid,
+                                name = n,
+                                nameHandle,
+                                desc = d,
+                                descHandle,
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        perPak.Add(new { pak = Path.GetFileName(pakPath), error = ex.Message });
+                    }
+                }
+                // Also list template files per pak so we can see scanner's view
+                var pakContents = new List<object>();
+                foreach (var pakPath in pakPaths)
+                {
+                    try
+                    {
+                        using var pfs = File.OpenRead(pakPath);
+                        var hdr = ParaTool.Core.PakReader.ReadHeader(pfs);
+                        var pEntries = ParaTool.Core.PakReader.ReadFileList(pfs, hdr);
+                        var templ = pEntries.Where(e =>
+                            (e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) ||
+                             e.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
+                            (e.Path.Contains("RootTemplate", StringComparison.OrdinalIgnoreCase) ||
+                             e.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase) ||
+                             e.Path.Contains("Global", StringComparison.OrdinalIgnoreCase)))
+                            .Select(e => e.Path).ToArray();
+                        // Which files actually contain the UUID (text OR binary Guid)?
+                        var containingFiles = new List<string>();
+                        var scanStats = new List<object>();
+                        var guidBytes = Guid.TryParse(rtUuid, out var guid) ? guid.ToByteArray() : null;
+                        var guidBytesBE = guidBytes != null ? new byte[]
+                        {
+                            // LSF may store UUIDs in big-endian/raw format too
+                            guidBytes[3], guidBytes[2], guidBytes[1], guidBytes[0],
+                            guidBytes[5], guidBytes[4],
+                            guidBytes[7], guidBytes[6],
+                            guidBytes[8], guidBytes[9], guidBytes[10], guidBytes[11],
+                            guidBytes[12], guidBytes[13], guidBytes[14], guidBytes[15],
+                        } : null;
+                        foreach (var path in templ)
+                        {
+                            try
+                            {
+                                var fe = pEntries.First(e => e.Path == path);
+                                var data = ParaTool.Core.PakReader.ExtractFileData(pfs, fe);
+                                byte[] raw = data;
+                                bool isLsf = ParaTool.Core.Parsing.LsfScanner.IsLsf(data);
+                                bool decompOk = false;
+                                if (isLsf)
+                                {
+                                    var decomp = ParaTool.Core.Parsing.LsfScanner.TryDecompressLsf(data);
+                                    if (decomp != null) { raw = decomp; decompOk = true; }
+                                }
+                                var text = System.Text.Encoding.Latin1.GetString(raw);
+                                bool textHit = text.IndexOf(rtUuid, StringComparison.OrdinalIgnoreCase) >= 0;
+                                bool binHitLE = false, binHitBE = false;
+                                if (guidBytes != null)
+                                {
+                                    for (int i = 0; i <= raw.Length - 16; i++)
+                                    {
+                                        bool le = true, be = true;
+                                        for (int j = 0; j < 16; j++)
+                                        {
+                                            if (le && raw[i + j] != guidBytes[j]) le = false;
+                                            if (be && raw[i + j] != guidBytesBE![j]) be = false;
+                                            if (!le && !be) break;
+                                        }
+                                        if (le) binHitLE = true;
+                                        if (be) binHitBE = true;
+                                        if (binHitLE && binHitBE) break;
+                                    }
+                                }
+                                if (textHit || binHitLE || binHitBE)
+                                {
+                                    var hitType = textHit ? "text" : binHitLE ? "guid-LE" : "guid-BE";
+                                    containingFiles.Add($"{path} [{hitType}]");
+                                }
+                                // Priority: always log RootTemplates/_merged if seen
+                                if (path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) && path.Contains("_merged", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    // Dump raw to disk for manual inspection
+                                    var dumpPath = Path.Combine(DiagDir, $"raw_{Path.GetFileName(pakPath)}_RT_merged.bin");
+                                    File.WriteAllBytes(dumpPath, raw);
+                                    scanStats.Add(new { path, isLsf, decompOk, rawSize = raw.Length,
+                                        textHit, binHitLE, binHitBE,
+                                        dumpedTo = dumpPath,
+                                        rawHeadHex = string.Join(" ", raw.Take(32).Select(b => b.ToString("X2")))
+                                    });
+                                }
+                                else if (scanStats.Count < 5)
+                                    scanStats.Add(new { path, isLsf, decompOk, rawSize = raw.Length });
+                            }
+                            catch (Exception ex) { scanStats.Add(new { path, error = ex.Message }); }
+                        }
+                        var uuidNamedFile = templ.FirstOrDefault(p => p.Contains(rtUuid, StringComparison.OrdinalIgnoreCase));
+                        pakContents.Add(new
+                        {
+                            pak = Path.GetFileName(pakPath),
+                            templateFileCount = templ.Length,
+                            filesContainingUuid = containingFiles.ToArray(),
+                            uuidNamedFileInPak = uuidNamedFile,
+                            rootTemplatesFileCount = templ.Count(p => p.Contains("RootTemplate", StringComparison.OrdinalIgnoreCase)),
+                            rootTemplates_mergedInPak = templ.Any(p => p.Contains("RootTemplate", StringComparison.OrdinalIgnoreCase) && p.Contains("_merged", StringComparison.OrdinalIgnoreCase)),
+                            scanStats = scanStats.ToArray(),
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        pakContents.Add(new { pak = Path.GetFileName(pakPath), error = ex.Message });
+                    }
+                }
+
+                snap["templateProbe"] = new
+                {
+                    rootTemplateUuid = rtUuid,
+                    resultsPerPak = perPak,
+                    hitsCount = perPak.Count,
+                    pakContents,
+                };
+            }
         }
 
         // ── Using chain walk ──────────────────────
@@ -317,9 +470,10 @@ public static class ItemDiagnostics
         string? iconAtlasKey = null,
         int? iconW = null, int? iconH = null,
         string? suffix = null,
-        Models.ItemEntry? itemEntry = null)
+        Models.ItemEntry? itemEntry = null,
+        string[]? pakPaths = null)
     {
-        var snap = Capture(statId, resolver, locaService, artifact, iconAtlasKey, iconW, iconH, itemEntry);
+        var snap = Capture(statId, resolver, locaService, artifact, iconAtlasKey, iconW, iconH, itemEntry, pakPaths);
         var safeId = SanitizeFilename(statId);
         var filename = string.IsNullOrEmpty(suffix) ? $"{safeId}.json" : $"{safeId}_{suffix}.json";
         var path = Path.Combine(DiagDir, filename);

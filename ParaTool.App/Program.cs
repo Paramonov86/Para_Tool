@@ -24,8 +24,7 @@ class Program
         // Headless diagnostic mode — used by devs to dump item resolution state.
         // Skips the Avalonia UI entirely so the process can run and exit in a
         // few seconds (scan + dump).
-        if (args.Any(a => a.Equals("--diag", StringComparison.OrdinalIgnoreCase)
-                       || a.Equals("--diag-all", StringComparison.OrdinalIgnoreCase)))
+        if (args.Any(a => a.StartsWith("--diag", StringComparison.OrdinalIgnoreCase)))
         {
             try
             {

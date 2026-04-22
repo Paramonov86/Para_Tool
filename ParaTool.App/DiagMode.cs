@@ -23,12 +23,18 @@ internal static class DiagMode
         // Parse args
         var diagAll = args.Contains("--diag-all", StringComparer.OrdinalIgnoreCase);
         var diagStatIds = new List<string>();
+        var diagUuids = new List<string>();
         for (int i = 0; i < args.Length; i++)
         {
             if (string.Equals(args[i], "--diag", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
             {
                 foreach (var id in args[i + 1].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                     diagStatIds.Add(id);
+            }
+            if (string.Equals(args[i], "--diag-uuid", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                foreach (var id in args[i + 1].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    diagUuids.Add(id);
             }
         }
 
@@ -65,6 +71,20 @@ internal static class DiagMode
         foreach (var lang in new[] { "en", "ru" })
             try { locaService.GetLocaMap(lang); } catch { }
         Console.WriteLine($"  extra langs loaded in {step.ElapsedMilliseconds}ms");
+
+        // --diag-uuid: find template by UUID in every pak, dump what's inside
+        if (diagUuids.Count > 0)
+        {
+            foreach (var uuid in diagUuids)
+            {
+                var uuidResult = TemplateFinder.FindUuid(uuid, result.PakPaths);
+                var outPath = Path.Combine(ItemDiagnostics.DiagDir, $"uuid_{uuid}.json");
+                File.WriteAllText(outPath, System.Text.Json.JsonSerializer.Serialize(uuidResult,
+                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                Console.WriteLine($"UUID {uuid} → found in {uuidResult.Count} paks. Dumped: {outPath}");
+            }
+            return 0;
+        }
 
         // Collect target items
         var allSavedArtifacts = ArtifactStore.LoadAll();
@@ -114,7 +134,9 @@ internal static class DiagMode
             {
                 artifactByStatId.TryGetValue(id, out var art);
                 itemEntryByStatId.TryGetValue(id, out var itemEntry);
-                ItemDiagnostics.Dump(id, resolver, locaService, art, itemEntry: itemEntry);
+                // Only run per-pak probe for single-item diag (slow: reads every pak)
+                var pakPathsForProbe = diagStatIds.Count > 0 && diagStatIds.Count <= 10 ? result.PakPaths : null;
+                ItemDiagnostics.Dump(id, resolver, locaService, art, itemEntry: itemEntry, pakPaths: pakPathsForProbe);
                 dumped++;
                 if (dumped % 500 == 0) Console.WriteLine($"  ... {dumped}/{targetStatIds.Count}");
             }

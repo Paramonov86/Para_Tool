@@ -415,7 +415,7 @@ public static partial class LsfScanner
     [GeneratedRegex(@"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOptions.Compiled)]
     private static partial Regex GuidRegex();
 
-    private static bool IsLsf(byte[] data)
+    public static bool IsLsf(byte[] data)
     {
         return data.Length >= 4 && data[0] == 'L' && data[1] == 'S' && data[2] == 'O' && data[3] == 'F';
     }
@@ -424,7 +424,7 @@ public static partial class LsfScanner
     /// Decompresses all LSF internal sections into a single byte array for text searching.
     /// Supports LZ4 (compression methods 2, 3, 4). Returns null on failure.
     /// </summary>
-    private static byte[]? TryDecompressLsf(byte[] data)
+    public static byte[]? TryDecompressLsf(byte[] data)
     {
         try
         {
