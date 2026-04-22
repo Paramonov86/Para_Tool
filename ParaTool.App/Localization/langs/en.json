@@ -677,5 +677,7 @@
   "boost.SwapPlaces": "Swaps places with target.",
   "boost.BreakConcentration": "Breaks concentration.",
   "boost.RemoveUniqueStatus": "Removes unique status [1].",
-  "SortChips": "Sort chips by category"
+  "SortChips": "Sort chips by category",
+  "ShowInExplorer": "Show in Explorer",
+  "ShowInExplorerTooltip": "Open .art file in Explorer"
 }

@@ -501,6 +501,28 @@ public partial class ConstructorViewModel : ViewModelBase
 
     // === Open item (NO file creation) ===
 
+    /// <summary>
+    /// Open Windows Explorer with the saved artifact's .art file selected.
+    /// Works with the 💾 marker in search results and the saved-artifacts list.
+    /// </summary>
+    [RelayCommand]
+    private void ShowArtifactInExplorer(ArtifactItemVM? vm)
+    {
+        if (vm == null || !vm.IsPersisted) return;
+        var path = Core.Artifacts.ArtifactStore.GetArtifactPath(vm.Artifact.ArtifactId);
+        if (!File.Exists(path)) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{path}\"",
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex) { Core.Services.AppLogger.Warn($"ShowInExplorer failed: {ex.Message}"); }
+    }
+
     [RelayCommand]
     private void OpenBaseItem(BaseItemVM? baseItem)
     {

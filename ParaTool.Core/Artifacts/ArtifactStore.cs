@@ -117,7 +117,7 @@ public static class ArtifactStore
             File.Delete(path);
     }
 
-    private static string GetArtifactPath(string artifactId)
+    public static string GetArtifactPath(string artifactId)
     {
         return Path.Combine(GetArtifactsDir(), $"{artifactId}.art");
     }

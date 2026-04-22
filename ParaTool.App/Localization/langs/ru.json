@@ -677,5 +677,7 @@
   "boost.SwapPlaces": "Меняется местами с целью.",
   "boost.BreakConcentration": "Прерывает концентрацию.",
   "boost.RemoveUniqueStatus": "Снимает уникальный статус [1].",
-  "SortChips": "Сортировать по категории"
+  "SortChips": "Сортировать по категории",
+  "ShowInExplorer": "Показать в проводнике",
+  "ShowInExplorerTooltip": "Открыть .art в проводнике"
 }

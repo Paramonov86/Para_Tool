@@ -677,5 +677,7 @@
   "boost.SwapPlaces": "Swaps places with target.",
   "boost.BreakConcentration": "Breaks concentration.",
   "boost.RemoveUniqueStatus": "Removes unique status [1].",
-  "SortChips": "Sortuj według kategorii"
+  "SortChips": "Sortuj według kategorii",
+  "ShowInExplorer": "Pokaż w Eksploratorze",
+  "ShowInExplorerTooltip": "Otwórz .art w Eksploratorze"
 }

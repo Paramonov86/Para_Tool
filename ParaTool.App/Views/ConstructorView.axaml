@@ -91,6 +91,9 @@
                                                 <MenuItem Header="{Binding NavDuplicate, Source={x:Static loc:Loc.Instance}}"
                                                           Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).DuplicateArtifactCommand}"
                                                           CommandParameter="{Binding}" />
+                                                <MenuItem Header="{Binding ShowInExplorer, Source={x:Static loc:Loc.Instance}}"
+                                                          Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).ShowArtifactInExplorerCommand}"
+                                                          CommandParameter="{Binding}" />
                                                 <Separator />
                                                 <MenuItem Header="{Binding NavDelete, Source={x:Static loc:Loc.Instance}}"
                                                           Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).DeleteArtifactCommand}"
@@ -196,10 +199,15 @@
                                                            Foreground="{StaticResource TextSecondaryBrush}"
                                                            TextWrapping="Wrap"
                                                            ToolTip.Tip="{Binding FullLabel}" />
-                                                <TextBlock Grid.Column="1" Text="{Binding SavedMarker}"
-                                                           FontSize="{DynamicResource FontSize12}"
-                                                           VerticalAlignment="Top" Margin="6,0,0,0"
-                                                           ToolTip.Tip="Saved artifact" />
+                                                <Button Grid.Column="1" IsVisible="{Binding SavedMarker, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                        Content="{Binding SavedMarker}"
+                                                        FontSize="{DynamicResource FontSize12}"
+                                                        Padding="4,0" Margin="6,0,0,0"
+                                                        Background="Transparent" BorderThickness="0"
+                                                        VerticalAlignment="Top" Cursor="Hand"
+                                                        ToolTip.Tip="{Binding ShowInExplorerTooltip, Source={x:Static loc:Loc.Instance}}"
+                                                        Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).ShowArtifactInExplorerCommand}"
+                                                        CommandParameter="{Binding LinkedSavedArtifact}" />
                                                 <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding ModName}" FontSize="{DynamicResource FontSize10}"
                                                            Foreground="{StaticResource TextMutedBrush}"
                                                            Margin="0,2,0,0" />

@@ -675,5 +675,7 @@
   "boost.SwapPlaces": "Swaps places with target.",
   "boost.BreakConcentration": "Breaks concentration.",
   "boost.RemoveUniqueStatus": "Removes unique status [1].",
-  "SortChips": "카테고리별 정렬"
+  "SortChips": "카테고리별 정렬",
+  "ShowInExplorer": "탐색기에서 표시",
+  "ShowInExplorerTooltip": ".art 파일을 탐색기에서 열기"
 }

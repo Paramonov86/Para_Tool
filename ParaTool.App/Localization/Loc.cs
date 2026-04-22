@@ -248,6 +248,8 @@ public partial class Loc : ObservableObject
     public string BoostPickerIfFunctor => this["BoostPickerIfFunctor"];
     public string BoostPickerWeaponSection => this["BoostPickerWeaponSection"];
     public string SortChips => this["SortChips"];
+    public string ShowInExplorer => this["ShowInExplorer"];
+    public string ShowInExplorerTooltip => this["ShowInExplorerTooltip"];
     public string LblCustomOption => this["LblCustomOption"];
     public string WmTypeAndEnter => this["WmTypeAndEnter"];
     public string LblMadeWith => this["LblMadeWith"];
