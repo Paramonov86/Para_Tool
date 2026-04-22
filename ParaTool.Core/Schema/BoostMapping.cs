@@ -479,6 +479,53 @@ public static class BoostMapping
     // PARSING
     // ═══════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Cleans up a semicolon-separated Boosts string, fixing known legacy quirks
+    /// that would otherwise make BG3 silently ignore the boost. Currently:
+    ///   - Ability(X, Y, 0)             → Ability(X, Y)
+    ///   - AbilityOverrideMinimum(X, 0) → AbilityOverrideMinimum(X)  (when 2nd arg is "0")
+    ///   - strips empty trailing args for any func that lands with them
+    /// Returns the fixed string (same string when no changes needed).
+    /// </summary>
+    public static string SanitizeBoosts(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return raw;
+
+        var parts = raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var changed = false;
+        for (int i = 0; i < parts.Length; i++)
+        {
+            var original = parts[i];
+            // Don't touch IF-blocks (their payload is arbitrary)
+            if (original.StartsWith("IF", StringComparison.OrdinalIgnoreCase) && original.Contains(':'))
+                continue;
+            var parsed = ParseBoostCall(original);
+            if (parsed == null) continue;
+            var (fn, args) = parsed.Value;
+
+            bool isCappable = fn.Equals("Ability", StringComparison.OrdinalIgnoreCase)
+                           || fn.Equals("AbilityOverrideMinimum", StringComparison.OrdinalIgnoreCase);
+            if (isCappable && args.Length >= 3)
+            {
+                var cap = args[^1].Trim();
+                if (cap == "0" || cap.Length == 0)
+                {
+                    args = args[..^1];
+                    changed = true;
+                }
+            }
+            // Trim trailing empties
+            while (args.Length > 0 && string.IsNullOrWhiteSpace(args[^1]))
+            {
+                args = args[..^1];
+                changed = true;
+            }
+            if (!ReferenceEquals(args, parsed.Value.args) || changed)
+                parts[i] = args.Length > 0 ? $"{fn}({string.Join(",", args)})" : $"{fn}()";
+        }
+        return changed ? string.Join(";", parts) : raw;
+    }
+
     public static (string funcName, string[] args)? ParseBoostCall(string raw)
     {
         raw = raw.Trim();

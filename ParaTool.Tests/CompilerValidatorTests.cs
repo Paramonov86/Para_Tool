@@ -70,4 +70,23 @@ public class CompilerValidatorTests
         var r = ArtifactCompiler.Compile(art);
         Assert.DoesNotContain(r.Warnings, w => w.Contains("SG_Frightened"));
     }
+
+    [Fact]
+    public void Ability_CapZero_StrippedFromOutput()
+    {
+        var art = NewArmor();
+        art.Boosts = "Ability(Constitution,1,0)";
+        var r = ArtifactCompiler.Compile(art);
+        Assert.Contains("Ability(Constitution,1)", r.StatsText);
+        Assert.DoesNotContain("Ability(Constitution,1,0)", r.StatsText);
+    }
+
+    [Fact]
+    public void Ability_CapNonZero_Preserved()
+    {
+        var art = NewArmor();
+        art.Boosts = "Ability(Strength,2,24)";
+        var r = ArtifactCompiler.Compile(art);
+        Assert.Contains("Ability(Strength,2,24)", r.StatsText);
+    }
 }
