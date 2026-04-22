@@ -79,9 +79,21 @@ public sealed class AmpPatcher
             progress?.Report(new PatchProgress { Stage = "Creating backup...", Percent = 5 });
             await Task.Run(() => AmpBackupService.EnsureBackup(ampPakPath), ct);
 
-            // Step 1: Extract AMP pak
+            // Step 1: Extract from BACKUP (clean original), not the current AMP pak.
+            // The current pak may already contain previous patches — extracting from
+            // it would cause each round of patching to accumulate cruft (duplicate
+            // stats entries, stale overrides, orphan loca). With backup-sourced extract
+            // every patch starts from the pristine baseline and applies the full set
+            // of user artifacts fresh.
+            //
+            // When AMP updates, AmpBackupService.EnsureBackup auto-recreates the backup
+            // from the new pak, so the user's artifacts/overrides/pool settings apply
+            // to the new AMP automatically on the next patch click.
             progress?.Report(new PatchProgress { Stage = "Extracting AMP pak...", Percent = 10 });
-            await Task.Run(() => PakReader.ExtractAll(ampPakPath, extractDir), ct);
+            var extractSource = AmpBackupService.HasBackup(ampPakPath)
+                ? AmpBackupService.GetBackupPath(ampPakPath)
+                : ampPakPath;
+            await Task.Run(() => PakReader.ExtractAll(extractSource, extractDir), ct);
 
             // Step 2: Find and patch TreasureTable.txt (in-place insertion)
             progress?.Report(new PatchProgress { Stage = "Patching loot lists...", Percent = 30 });
@@ -89,17 +101,11 @@ public sealed class AmpPatcher
             if (ttPath == null)
                 return new PatchResult { Success = false, Error = "TreasureTable.txt not found in AMP pak." };
 
-            // Use stored original TT if available, otherwise store current as original
-            string ttText;
-            if (OriginalTtStore.HasValidOriginal(ampPakPath))
-            {
-                ttText = OriginalTtStore.Load()!;
-            }
-            else
-            {
-                ttText = await File.ReadAllTextAsync(ttPath, ct);
-                OriginalTtStore.Store(ampPakPath, ttText);
-            }
+            // The extract now comes from the pristine backup, so the TT we read is
+            // already the original. Keep OriginalTtStore in sync for other scanners
+            // that still rely on it (e.g. ModScanner's AmpMod loader).
+            var ttText = await File.ReadAllTextAsync(ttPath, ct);
+            OriginalTtStore.Store(ampPakPath, ttText);
 
             var patchedTt = TreasureTablePatcher.Patch(ttText, allItemsForTt);
             await File.WriteAllTextAsync(ttPath, patchedTt, ct);
