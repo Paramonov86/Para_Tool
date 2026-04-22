@@ -80,6 +80,44 @@ internal static class DiagMode
         foreach (var mod in result.Mods)
             foreach (var it in mod.Items) itemEntryByStatId.TryAdd(it.StatId, it);
 
+        // --diag-templates: dump full LSF-aware template metadata for templates whose
+        // Stats attribute matches a substring pattern (across every scanned pak).
+        // Great for confirming whether the "all cloaks share one handle" is an LSF
+        // extraction bug or genuine data duplication. Usage: --diag-templates MAG_Cloak
+        var diagTemplates = args.SkipWhile(a => !a.Equals("--diag-templates", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (!string.IsNullOrEmpty(diagTemplates))
+        {
+            foreach (var pak in result.PakPaths)
+            {
+                using var fs = File.OpenRead(pak);
+                var header = ParaTool.Core.PakReader.ReadHeader(fs);
+                var entries = ParaTool.Core.PakReader.ReadFileList(fs, header);
+                foreach (var entry in entries.Where(e =>
+                    (e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) ||
+                     e.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
+                    (e.Path.Contains("RootTemplate", StringComparison.OrdinalIgnoreCase) ||
+                     e.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase))))
+                {
+                    byte[] data;
+                    try { data = ParaTool.Core.PakReader.ExtractFileData(fs, entry); } catch { continue; }
+                    var meta = RootTemplateIconExtractor.ExtractFullMetadata(data);
+                    foreach (var (uuid, m) in meta)
+                    {
+                        if (m.stats == null || !m.stats.Contains(diagTemplates, StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        Console.WriteLine($"{Path.GetFileName(pak)}/{Path.GetFileName(entry.Path)}");
+                        Console.WriteLine($"  UUID: {uuid}");
+                        Console.WriteLine($"  Stats: {m.stats}");
+                        Console.WriteLine($"  nameHandle: {m.nameHandle}");
+                        Console.WriteLine($"  descHandle: {m.descHandle}");
+                        Console.WriteLine($"  parent: {m.parent}");
+                        Console.WriteLine($"  icon: {m.icon}");
+                    }
+                }
+            }
+            return 0;
+        }
+
         // --diag-resolve-uuid: call ItemNameResolver.ResolveFromPakFull on every pak for a UUID
         var diagResolveUuid = args.SkipWhile(a => !a.Equals("--diag-resolve-uuid", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         if (!string.IsNullOrEmpty(diagResolveUuid))

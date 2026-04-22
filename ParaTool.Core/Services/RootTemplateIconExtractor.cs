@@ -115,4 +115,62 @@ public static class RootTemplateIconExtractor
                 ExtractFromNode(child, result);
         }
     }
+
+    /// <summary>
+    /// Full template metadata: MapKey UUID → (nameHandle, descHandle, icon, stats, parent).
+    /// LSF-structure-aware — each attribute belongs to the node it's defined in, so
+    /// merged files containing many templates don't mix up handles across templates.
+    /// </summary>
+    public static Dictionary<string, (string? nameHandle, string? descHandle, string? icon, string? stats, string? parent)>
+        ExtractFullMetadata(byte[] data)
+    {
+        var result = new Dictionary<string, (string? nameHandle, string? descHandle, string? icon, string? stats, string? parent)>(
+            StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var ms = new MemoryStream(data);
+            var reader = new LSFReader(ms);
+            var resource = reader.Read();
+            foreach (var region in resource.Regions.Values)
+                ExtractFullMetadataFromNode(region, result);
+        }
+        catch { }
+        return result;
+    }
+
+    private static void ExtractFullMetadataFromNode(Node node,
+        Dictionary<string, (string? nameHandle, string? descHandle, string? icon, string? stats, string? parent)> result)
+    {
+        string? mapKey = null, nameHandle = null, descHandle = null, icon = null, stats = null, parent = null;
+
+        foreach (var attr in node.Attributes)
+        {
+            var key = attr.Key;
+            if (key.Equals("MapKey", StringComparison.OrdinalIgnoreCase))
+                mapKey = attr.Value.Value?.ToString();
+            else if (key.Equals("Icon", StringComparison.OrdinalIgnoreCase))
+                icon = attr.Value.Value?.ToString();
+            else if (key.Equals("Stats", StringComparison.OrdinalIgnoreCase))
+                stats = attr.Value.Value?.ToString();
+            else if (key.Equals("ParentTemplateId", StringComparison.OrdinalIgnoreCase))
+                parent = attr.Value.Value?.ToString();
+            else if (key.Equals("DisplayName", StringComparison.OrdinalIgnoreCase))
+            {
+                if (attr.Value.Value is TranslatedString ts) nameHandle = ts.Handle;
+                else nameHandle = attr.Value.Value?.ToString();
+            }
+            else if (key.Equals("Description", StringComparison.OrdinalIgnoreCase))
+            {
+                if (attr.Value.Value is TranslatedString ts) descHandle = ts.Handle;
+                else descHandle = attr.Value.Value?.ToString();
+            }
+        }
+
+        if (mapKey != null)
+            result.TryAdd(mapKey, (nameHandle, descHandle, icon, stats, parent));
+
+        foreach (var childList in node.Children)
+            foreach (var child in childList.Value)
+                ExtractFullMetadataFromNode(child, result);
+    }
 }

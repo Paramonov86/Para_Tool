@@ -911,27 +911,101 @@ public sealed class ModScanner
 
         progress?.Report(new ScanProgress { Stage = "ResolveTemplates", Percent = 65 });
 
-        // For each item, walk the using chain to find the first ancestor with a RootTemplate UUID
-        // Build: UUID → list of StatIds that resolve to it
+        // === Build LSF-structure-aware template metadata map across ALL paks ===
+        // Why: the legacy uuid→handle lookup uses byte-proximity heuristics in merged
+        // .lsf files (FindHandlesForUuidsEx). In merged files packing hundreds of
+        // templates contiguously, the "first handle after UUID" regularly belongs to
+        // a neighboring template, which is why distinct cloaks all collapse to
+        // "Master's Cloak of Fortitude". This pass parses the LSF tree properly so
+        // each attribute is tied to the node it was defined in.
+        //
+        // Two maps come out of this:
+        //  * uuidToTemplateMeta: UUID → (nameHandle, descHandle, icon, stats, parent, pakPath)
+        //  * statsToOwnUuid:    StatId → UUID (for items whose template declares Stats=<StatId>)
+        //    Needed because tiered AMP items (MAG_Cloak24_1/2/3) have no RT field in
+        //    their stats entry; without this, they walk up to MAG_Cloak24's RT and
+        //    collapse to the parent's name.
+        var allStatIdsSet = new HashSet<string>(
+            allItems.Select(i => i.StatId), StringComparer.OrdinalIgnoreCase);
+        var uuidToTemplateMeta = new Dictionary<string, (string? nameHandle, string? descHandle, string? icon, string? stats, string? parent, string pakPath)>(
+            StringComparer.OrdinalIgnoreCase);
+        var statsToOwnUuid = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        void ScanPakTemplates(string pakPath)
+        {
+            try
+            {
+                using var fs = File.OpenRead(pakPath);
+                var header = PakReader.ReadHeader(fs);
+                var entries = PakReader.ReadFileList(fs, header);
+                var rtFiles = entries.Where(e =>
+                    (e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) ||
+                     e.Path.EndsWith(".lsx", StringComparison.OrdinalIgnoreCase)) &&
+                    (e.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) ||
+                     e.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase) ||
+                     e.Path.Contains("Globals", StringComparison.OrdinalIgnoreCase))).ToList();
+                foreach (var rtFile in rtFiles)
+                {
+                    byte[] data;
+                    try { data = PakReader.ExtractFileData(fs, rtFile); }
+                    catch { continue; }
+                    var meta = RootTemplateIconExtractor.ExtractFullMetadata(data);
+                    foreach (var (uuid, val) in meta)
+                    {
+                        // First pak to declare a UUID wins (AMP scanned first)
+                        if (!uuidToTemplateMeta.ContainsKey(uuid))
+                            uuidToTemplateMeta[uuid] = (val.nameHandle, val.descHandle, val.icon, val.stats, val.parent, pakPath);
+
+                        if (val.stats != null && allStatIdsSet.Contains(val.stats))
+                            statsToOwnUuid.TryAdd(val.stats, uuid);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Warn($"Template scan failed for {pakPath}: {ex.Message}");
+            }
+        }
+
+        // AMP first: AMP items should prefer AMP's own templates over any mod-side duplicates.
+        ScanPakTemplates(ampPakPath);
+        foreach (var mod in mods)
+            if (!string.IsNullOrEmpty(mod.PakPath))
+                ScanPakTemplates(mod.PakPath);
+
+        AppLogger.Info($"Template metadata: {uuidToTemplateMeta.Count} templates, {statsToOwnUuid.Count}/{allItems.Count} items with own templates");
+
+        // For each item, find its RootTemplate UUID:
+        //  1. Prefer own template (Stats=<StatId> reverse lookup) — authoritative per-item
+        //  2. Fallback: walk stats using-chain to find first ancestor with RootTemplate
         var uuidToStatIds = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        var statIdToOwnUuid = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var item in allItems)
         {
-            var current = item.StatId;
-            int depth = 0;
             string? foundUuid = null;
 
-            while (current != null && depth < 20)
+            if (statsToOwnUuid.TryGetValue(item.StatId, out var ownUuid))
             {
-                var entry = resolver.Get(current);
-                if (entry != null && entry.Data.TryGetValue("RootTemplate", out var uuid)
-                    && !string.IsNullOrEmpty(uuid))
+                foundUuid = ownUuid;
+                statIdToOwnUuid[item.StatId] = ownUuid;
+            }
+            else
+            {
+                var current = item.StatId;
+                int depth = 0;
+                while (current != null && depth < 20)
                 {
-                    foundUuid = uuid;
-                    break;
+                    var entry = resolver.Get(current);
+                    if (entry != null && entry.Data.TryGetValue("RootTemplate", out var uuid)
+                        && !string.IsNullOrEmpty(uuid))
+                    {
+                        foundUuid = uuid;
+                        break;
+                    }
+                    current = entry?.Using;
+                    depth++;
                 }
-                current = entry?.Using;
-                depth++;
             }
 
             if (foundUuid != null)
@@ -1090,7 +1164,12 @@ public sealed class ModScanner
         // Step 2.45: For UUIDs still unresolved, walk template parent chain and
         // add ancestor UUIDs that might have handles. Expand uuidToStatIds with
         // parent UUIDs so subsequent cross-mod scan can find them.
-        var expandedUuidToStatIds = new Dictionary<string, List<string>>(uuidToStatIds, StringComparer.OrdinalIgnoreCase);
+        // CRITICAL: deep-copy the lists — a Dictionary copy-ctor is shallow, so
+        // mutating expandedUuidToStatIds[k] directly mutates uuidToStatIds[k] too,
+        // which poisons Pass 0 downstream (AMP cloaks all inheriting one handle).
+        var expandedUuidToStatIds = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (k, v) in uuidToStatIds)
+            expandedUuidToStatIds[k] = [.. v];
         foreach (var (uuid, statIds) in uuidToStatIds.ToList())
         {
             // Walk chain regardless of whether this uuid already resolved —
@@ -1176,6 +1255,70 @@ public sealed class ModScanner
         // RootTemplate UUIDs, hence appears twice in uuidToStatIds) from
         // overwriting an authoritative AMP value.
         var namedStatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Pass 0: Authoritative LSF-structure-aware assignment, keyed by item (not
+        // by uuidToStatIds). Each item has a single authoritative UUID — own template
+        // via statIdToOwnUuid when present, else the stats-chain RT. Walk ParentTemplateId
+        // when the own template has no DisplayName/Description (thin-template pattern).
+        // Handles come from proper LSF tree parsing (ExtractFullMetadata), not from
+        // byte-proximity heuristics — that's the fix for "100 cloaks share one name".
+        string? ResolveHandleViaMeta(string startUuid, Func<(string? nameHandle, string? descHandle, string? icon, string? stats, string? parent, string pakPath), string?> pick)
+        {
+            var cur = startUuid;
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int depth = 0;
+            while (depth < 15 && cur != null && seen.Add(cur))
+            {
+                if (!uuidToTemplateMeta.TryGetValue(cur, out var meta)) return null;
+                var picked = pick(meta);
+                if (!string.IsNullOrEmpty(picked)) return picked;
+                cur = meta.parent;
+                depth++;
+            }
+            return null;
+        }
+
+        foreach (var item in allItems)
+        {
+            if (namedStatIds.Contains(item.StatId)) continue;
+
+            // Authoritative UUID: prefer own template, else fall back to stats-chain RT.
+            string? itemUuid = null;
+            if (statIdToOwnUuid.TryGetValue(item.StatId, out var ownU)) itemUuid = ownU;
+            else
+            {
+                var cur = item.StatId;
+                int depth = 0;
+                while (cur != null && depth < 20)
+                {
+                    var entry = resolver.Get(cur);
+                    if (entry != null && entry.Data.TryGetValue("RootTemplate", out var uuid) && !string.IsNullOrEmpty(uuid))
+                    { itemUuid = uuid; break; }
+                    cur = entry?.Using;
+                    depth++;
+                }
+            }
+            if (itemUuid == null) continue;
+
+            var nh = ResolveHandleViaMeta(itemUuid, m => m.nameHandle);
+            var dh = ResolveHandleViaMeta(itemUuid, m => m.descHandle);
+            var ic = ResolveHandleViaMeta(itemUuid, m => m.icon);
+
+            if (nh != null && masterLocaMap.TryGetValue(nh, out var nameText))
+            {
+                item.DisplayName = Core.Localization.BbCode.FromBg3Xml(nameText);
+                item.DisplayNameHandle = nh;
+                namedStatIds.Add(item.StatId);
+            }
+            if (dh != null && masterLocaMap.TryGetValue(dh, out var descText))
+            {
+                item.Description = Core.Localization.BbCode.FromBg3Xml(descText);
+                item.DescriptionHandle = dh;
+            }
+            if (ic != null) item.IconName = ic;
+        }
+
+        AppLogger.Info($"Pass 0 (LSF-aware): named {namedStatIds.Count}/{allItems.Count} items");
 
         // Pass A: AMP items (authoritative) — set first so any later pass can't override.
         foreach (var (uuid, statIds) in uuidToStatIds)
