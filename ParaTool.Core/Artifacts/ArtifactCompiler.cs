@@ -156,9 +156,15 @@ public static class ArtifactCompiler
                 && (p.UsingBase == null || p.UsingBase.Equals(originalName, StringComparison.OrdinalIgnoreCase));
             if (needsRename)
             {
+                // Only chain UsingBase → originalName if originalName actually exists in
+                // BG3/mod data. Otherwise we'd emit `using "UnknownPassive"` which BG3
+                // silently drops — pure-custom passive must stay UsingBase=null.
+                var hasRealBase = resolver?.AllEntries.ContainsKey(originalName) == true
+                                  || Services.VanillaLocaService.GetPassive(originalName) != null;
+
                 var newName = $"{art.StatId}_Passive_{pi + 1}";
                 passiveRenames[originalName] = newName;
-                p.UsingBase = originalName; // inherit from original
+                p.UsingBase = hasRealBase ? originalName : null;
                 p.Name = newName;
             }
         }

@@ -440,11 +440,14 @@ public partial class ConstructorViewModel : ViewModelBase
             if (_resolver != null && _locaService != null)
                 ReloadLocaForCurrentLang(newValue);
             newValue.RefreshAll();
-            // Add to recent tabs
-            RecentTabs.Remove(newValue);
-            RecentTabs.Insert(0, newValue);
-            while (RecentTabs.Count > MaxRecentTabs)
-                RecentTabs.RemoveAt(RecentTabs.Count - 1);
+            // Add to recent tabs (MRU — existing tabs keep their order so switching
+            // doesn't shuffle them; only brand-new tabs jump to the front).
+            if (!RecentTabs.Contains(newValue))
+            {
+                RecentTabs.Insert(0, newValue);
+                while (RecentTabs.Count > MaxRecentTabs)
+                    RecentTabs.RemoveAt(RecentTabs.Count - 1);
+            }
         }
         OnPropertyChanged(nameof(IsArtifactSelected));
         OnPropertyChanged(nameof(HasNoSelection));
@@ -614,7 +617,14 @@ public partial class ConstructorViewModel : ViewModelBase
         if (clone == null) return;
         clone.ArtifactId = Guid.NewGuid().ToString();
         clone.TemplateUuid = Guid.NewGuid().ToString();
-        clone.StatId += "_Copy";
+        var baseStatId = clone.StatId + "_Copy";
+        clone.StatId = baseStatId;
+        int copySuffix = 2;
+        while (SavedArtifacts.Any(a => a.Artifact.StatId.Equals(clone.StatId, StringComparison.OrdinalIgnoreCase)))
+        {
+            clone.StatId = $"{baseStatId}_{copySuffix}";
+            copySuffix++;
+        }
         clone.DisplayNameHandle = "";
         clone.DescriptionHandle = "";
         // A duplicate is a new item — tombstones from the original don't carry over.

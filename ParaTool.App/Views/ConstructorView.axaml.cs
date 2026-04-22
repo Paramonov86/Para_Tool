@@ -504,7 +504,7 @@ public partial class ConstructorView : UserControl
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"PNG upload error: {ex.Message}");
+            Core.Services.AppLogger.Warn($"PNG upload error: {ex}");
         }
     }
 

@@ -303,12 +303,20 @@ public class BoostBlocksEditor : UserControl
             // RollBonus: 3rd param only needed for SavingThrow/SkillCheck/RawAbility
             if (def.FuncName == "RollBonus" && i == 2 && args.Length > 0
                 && args[0].Trim() is not ("SavingThrow" or "SkillCheck" or "RawAbility"))
+            {
+                if (!isOptional && !string.IsNullOrEmpty(value))
+                    UpdateParam(rawBoost, paramIdx, "");
                 continue;
+            }
 
             // Advantage/Disadvantage: 2nd param only needed for specific ability/skill/save
             if (def.FuncName is "Advantage" or "Disadvantage" && i == 1 && args.Length > 0
                 && args[0].Trim() is not ("SavingThrow" or "Ability" or "Skill"))
+            {
+                if (!isOptional && !string.IsNullOrEmpty(value))
+                    UpdateParam(rawBoost, paramIdx, "");
                 continue;
+            }
 
             // Ability/AbilityOverrideMinimum: Savant (optbool) only for Constitution
             if (def.FuncName is "Ability" or "AbilityOverrideMinimum" && param.Type == "optbool"
@@ -319,7 +327,17 @@ public class BoostBlocksEditor : UserControl
                     UpdateParam(rawBoost, paramIdx, "");
                 continue;
             }
-            else if (param.Type == "int")
+
+            // DamageReduction: Amount (3rd param) only needed for Flat/Threshold
+            if (def.FuncName == "DamageReduction" && i == 2 && args.Length >= 2
+                && args[1].Trim() == "Half")
+            {
+                if (!isOptional && !string.IsNullOrEmpty(value))
+                    UpdateParam(rawBoost, paramIdx, "");
+                continue;
+            }
+
+            if (param.Type == "int")
             {
                 // Integer tumbler chip (allow -1 for infinite duration etc.)
                 var chip = new TumblerChipEditor
@@ -381,7 +399,8 @@ public class BoostBlocksEditor : UserControl
                     {
                         UpdateParam(rb, pi, tc.Text ?? "");
                         // Changing first param may affect visibility of later params → deferred rebuild
-                        if (pi == 0 && capturedDef.FuncName is "RollBonus" or "Ability" or "AbilityOverrideMinimum" or "Advantage" or "Disadvantage")
+                        if ((pi == 0 && capturedDef.FuncName is "RollBonus" or "Ability" or "AbilityOverrideMinimum" or "Advantage" or "Disadvantage")
+                            || (pi == 1 && capturedDef.FuncName == "DamageReduction"))
                             Avalonia.Threading.Dispatcher.UIThread.Post(Rebuild);
                     }
                 };
@@ -431,7 +450,7 @@ public class BoostBlocksEditor : UserControl
                 {
                     Text = value,
                     Step = param.Type == "float" ? 0.1 : 1,
-                    MinValue = 0, MaxValue = 999,
+                    MinValue = -999, MaxValue = 999,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 chip.Tag = (rawBoost, paramIdx);
@@ -838,7 +857,7 @@ public class BoostBlocksEditor : UserControl
         while (trimmedArgs.Count > 0 && string.IsNullOrEmpty(trimmedArgs[^1]))
             trimmedArgs.RemoveAt(trimmedArgs.Count - 1);
 
-        var newBoost = trimmedArgs.Count > 0 ? $"{funcName}({string.Join(",", trimmedArgs)})" : funcName;
+        var newBoost = trimmedArgs.Count > 0 ? $"{funcName}({string.Join(",", trimmedArgs)})" : $"{funcName}()";
 
         var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
         var idx = parts.IndexOf(rawBoost);
@@ -1007,21 +1026,30 @@ public class BoostBlocksEditor : UserControl
 
     private void InsertDef(BoostMapping.BlockDef d)
     {
-        var defaultArgs = d.Params.Select(p => p.Type switch
+        var defaultArgs = d.Params.Select(p =>
         {
-            "hidden" => "100",
-            "int" => "1",
-            "number" => "1",
-            "float" => "1",
-            "dice" => "1d6",
-            "formula" => "1",
-            "bool" => "true",
-            "enum" => p.EnumValues?.FirstOrDefault() ?? "None",
-            "flags" => p.EnumValues?.FirstOrDefault() ?? "None",
-            "string" => p.Name.Contains("Status") ? "YOURSTATUS" :
-                        p.Name.Contains("Spell") ? "YourSpell" :
-                        p.Name.Contains("Resource") ? "ActionPoint" : "Value",
-            _ => "0"
+            // Ability/AbilityOverrideMinimum: pre-fill Cap=24 so the user isn't silently
+            // capped at BG3's default 20 when they leave it blank.
+            if (p.Type == "optnum" && p.Name == "Cap"
+                && d.FuncName is "Ability" or "AbilityOverrideMinimum")
+                return "24";
+
+            return p.Type switch
+            {
+                "hidden" => "100",
+                "int" => "1",
+                "number" => "1",
+                "float" => "1",
+                "dice" => "1d6",
+                "formula" => "1",
+                "bool" => "true",
+                "enum" => p.EnumValues?.FirstOrDefault() ?? "None",
+                "flags" => p.EnumValues?.FirstOrDefault() ?? "None",
+                "string" => p.Name.Contains("Status") ? "YOURSTATUS" :
+                            p.Name.Contains("Spell") ? "YourSpell" :
+                            p.Name.Contains("Resource") ? "ActionPoint" : "Value",
+                _ => "0"
+            };
         }).ToArray();
         var newBoost = defaultArgs.Length > 0 ? $"{d.FuncName}({string.Join(",", defaultArgs)})" : d.FuncName;
         var current = Text ?? "";

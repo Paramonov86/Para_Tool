@@ -275,14 +275,30 @@ public class ArtifactCompilerTests
     public void Passive_CustomName_Renamed_And_UsingBaseSet()
     {
         var art = NewArmor("ARM_X");
+        // Real vanilla passive so the resolver confirms the base exists
         art.Passives = [
-            new PassiveDefinition { Name = "MAG_Vanilla_Passive", UsingBase = null }
+            new PassiveDefinition { Name = "MAG_AbsoluteProtector_Shield_Passive", UsingBase = null }
         ];
         var result = ArtifactCompiler.Compile(art);
 
-        // Renamed to {StatId}_Passive_1 with using=original
+        // Renamed to {StatId}_Passive_1 with using=original (real vanilla base)
         Assert.Contains("new entry \"ARM_X_Passive_1\"", result.StatsText);
-        Assert.Contains("using \"MAG_Vanilla_Passive\"", result.StatsText);
+        Assert.Contains("using \"MAG_AbsoluteProtector_Shield_Passive\"", result.StatsText);
+    }
+
+    [Fact]
+    public void Passive_UnknownBaseName_UsingBase_StaysNull()
+    {
+        // Unknown passive name (not in vanilla or mod data) → UsingBase must NOT be set,
+        // otherwise BG3 silently drops the passive due to broken inheritance.
+        var art = NewArmor("ARM_X");
+        art.Passives = [
+            new PassiveDefinition { Name = "Totally_Fake_Passive_Xyz", UsingBase = null }
+        ];
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("new entry \"ARM_X_Passive_1\"", result.StatsText);
+        Assert.DoesNotContain("using \"Totally_Fake_Passive_Xyz\"", result.StatsText);
     }
 
     // ── Pricing safety net ─────────────────────────────────
@@ -427,6 +443,8 @@ public class ArtifactCompilerTests
     [Fact]
     public void Tombstone_PassivesArrayAndTombstone_BothApplied()
     {
+        // Custom passive with no real base gets renamed to {StatId}_Passive_N;
+        // tombstoned inherited name must not appear anywhere.
         var art = NewArmor();
         art.PassivesOnEquip = "InheritedStun";
         art.Passives.Add(new PassiveDefinition { Name = "MyCustomPassive" });
@@ -434,7 +452,7 @@ public class ArtifactCompilerTests
 
         var result = ArtifactCompiler.Compile(art);
 
-        Assert.Contains("MyCustomPassive", result.StatsText);
+        Assert.Contains($"{art.StatId}_Passive_1", result.StatsText);
         Assert.DoesNotContain("InheritedStun", result.StatsText);
     }
 }

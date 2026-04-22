@@ -50,7 +50,7 @@ public static class BoostMapping
     public static readonly string[] DeathTypes = ["None", "Acid", "Chasm", "DoT", "Electrocution", "Explode", "Falling", "Incinerate", "KnockedDown", "Lifetime", "Narcolepsy", "PetrifiedShattered", "Sentinel"];
     public static readonly string[] ResurrectTypes = ["Living", "Guaranteed", "Construct", "Undead"];
     public static readonly string[] SummonDurations = ["UntilLongRest", "Permanent"];
-    public static readonly string[] MagicalFlags = ["Magical", "Nonmagical"];
+    public static readonly string[] MagicalFlags = ["", "Magical", "Nonmagical"];
     public static readonly string[] NonlethalFlags = ["Lethal", "Nonlethal"];
     public static readonly string[] SizeCategories = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"];
     public static readonly string[] EngineStatusTypes = ["DYING", "HEAL", "KNOCKED_DOWN", "TELEPORT_FALLING", "BOOST", "REACTION", "STORY_FROZEN", "SNEAKING", "UNLOCK", "FEAR", "SMELLY", "INVISIBLE", "ROTATE", "MATERIAL", "CLIMBING", "INCAPACITATED", "INSURFACE", "POLYMORPHED", "EFFECT", "DEACTIVATED", "DOWNED"];
@@ -89,7 +89,9 @@ public static class BoostMapping
         new("RollBonus", "Roll Bonus", "Бонус к броску", "#E06040",
             [new("RollType", "Type", "enum", StatsRollType), new("Bonus", "Bonus", "formula"), new("AbilityOrSkill", "Ability/Skill", "enum", AbilityOrSkill)]),
         new("DamageBonus", "Damage Bonus", "Бонус к урону", "#E06040",
-            [new("Amount", "Amount", "formula"), new("DamageType", "Type", "enum", DamageTypes)]),
+            [new("Amount", "Amount", "formula"),
+             new("DamageType", "Type", "enum", DamageTypes),
+             new("Magical", "Flag", "enum", MagicalFlags)]),
         new("CharacterWeaponDamage", "Extra Weapon Damage", "Доп. урон оружием", "#E06040",
             [new("Amount", "Amount", "formula"), new("DamageType", "Type", "enum", DamageTypes)]),
         new("CharacterUnarmedDamage", "Unarmed Damage", "Урон без оружия", "#E06040",
@@ -117,7 +119,7 @@ public static class BoostMapping
         new("CriticalHitExtraDice", "Extra Crit Dice", "Доп. кубики крита", "#E06040",
             [new("Dice", "Dice", "number"), new("AttackType", "Attack", "enum", AttackType)]),
         new("ReduceCriticalAttackThreshold", "Lower Crit Threshold", "Снизить порог крита", "#E06040",
-            [new("Threshold", "By", "number"), new("StatusId", "Status", "string")]),
+            [new("Threshold", "By", "number")]),
         new("CriticalDamageOnHit", "Crit Damage on Hit", "Крит. урон при попадании", "#E06040", []),
 
         // ── Resistance & Immunity (#F1C40F) ──
@@ -667,6 +669,52 @@ public static class BoostMapping
         ["HeavyEncumber"] =                 new("Will Heavily Encumber [1]", "[1] получит сильную перегрузку"),
         ["ExceedCapacity"] =                new("Will exceed [1]'s carrying capacity", "[1] превысит лимит веса"),
         ["CapacityExceeded"] =              new("Carrying Capacity Exceeded", "Превышена грузоподъемность"),
+
+        // DamageReduction(DmgType, Method, [Amount])
+        ["DamageReduction.Flat"] =          new("[3] [1] damage resistance (flat).", "Снижает получаемый урон [1] на [3]."),
+        ["DamageReduction.Half"] =          new("Halves incoming [1] damage.", "Половинный урон [1]."),
+        ["DamageReduction.Threshold"] =     new("[1] damage below [3] is ignored.", "Игнорирует урон [1] ниже [3]."),
+
+        // AreaDamageEvade — zero arg
+        ["AreaDamageEvade"] =               new("Successful Dexterity Saving Throw against area damage negates it entirely.", "Успешное испытание ловкости против АОЕ сводит урон к нулю."),
+
+        // DamageBonus(Amount, [Type], [Magical])
+        ["DamageBonus"] =                   new("[1] damage on hit.", "[1] урона при попадании."),
+        ["DamageBonus.Typed"] =             new("[1] [2] damage on hit.", "[1] урона ([2]) при попадании."),
+        ["DamageBonus.Magical"] =           new("[1] magical damage on hit.", "[1] магического урона при попадании."),
+
+        // MovementSpeedLimit(Type)
+        ["MovementSpeedLimit"] =            new("Movement is limited to [1] speed.", "Перемещение ограничено: [1]."),
+
+        // ReduceCriticalAttackThreshold(N)
+        ["ReduceCriticalAttackThreshold"] = new("Critical Hits occur on a roll of [1] lower.", "Критические удары случаются при броске на [1] меньше."),
+
+        // RollBonus extra contexts
+        ["RollBonus.SkillCheck"] =          new("[1] to Skill Checks.", "[1] к проверкам навыков."),
+        ["RollBonus.SkillCheckOf"] =        new("[1] to [2] Checks.", "[1] к проверкам ([2])."),
+        ["RollBonus.RawAbility"] =          new("[1] to Ability Checks.", "[1] к проверкам характеристик."),
+        ["RollBonus.RawAbilityOf"] =        new("[1] to [2] Checks.", "[1] к проверкам ([2])."),
+        ["RollBonus.MeleeWeaponAttack"] =   new("[1] to Melee Weapon Attack Rolls.", "[1] к атакам оружием ближнего боя."),
+        ["RollBonus.RangedWeaponAttack"] =  new("[1] to Ranged Weapon Attack Rolls.", "[1] к атакам оружием дальнего боя."),
+        ["RollBonus.MeleeSpellAttack"] =    new("[1] to Melee Spell Attack Rolls.", "[1] к атакам заклинаниями ближнего боя."),
+        ["RollBonus.RangedSpellAttack"] =   new("[1] to Ranged Spell Attack Rolls.", "[1] к атакам заклинаниями дальнего боя."),
+
+        // StatusImmunity — named status groups
+        ["StatusImmunity.SG_Frightened"] =  new("Immunity to Frightened.", "Невосприимчивость к испугу."),
+        ["StatusImmunity.SG_Charmed"] =     new("Immunity to Charmed.", "Невосприимчивость к очарованию."),
+        ["StatusImmunity.SG_Poisoned"] =    new("Immunity to Poisoned.", "Невосприимчивость к отравлению."),
+        ["StatusImmunity.SG_Stunned"] =     new("Immunity to Stunned.", "Невосприимчивость к оглушению."),
+        ["StatusImmunity.SG_Prone"] =       new("Cannot be knocked Prone.", "Невозможно сбить с ног."),
+        ["StatusImmunity.SG_Paralyzed"] =   new("Immunity to Paralysis.", "Невосприимчивость к параличу."),
+        ["StatusImmunity.SG_Restrained"] =  new("Immunity to Restrained.", "Невосприимчивость к обездвиживанию."),
+        ["StatusImmunity.SG_Blinded"] =     new("Immunity to Blindness.", "Невосприимчивость к слепоте."),
+        ["StatusImmunity.SG_Incapacitated"] = new("Immunity to Incapacitated.", "Невосприимчивость к недееспособности."),
+        ["StatusImmunity.SG_Sleeping"] =    new("Immunity to magical Sleep.", "Невосприимчивость к магическому сну."),
+
+        // Additional one-liner boosts
+        ["IgnoreFallDamage"] =              new("No damage taken from falling.", "Нет урона от падения."),
+        ["ProjectileDeflect"] =             new("Deflect projectiles.", "Отражение снарядов."),
+        ["CriticalHitExtraDice"] =          new("+[1] critical hit damage dice on [2].", "+[1] доп. кубиков крита ([2])."),
     };
 
     /// <summary>
@@ -817,6 +865,55 @@ public static class BoostMapping
         if (funcName is "RemoveStatus" or "RegainHitPoints" or "GainTemporaryHitPoints"
             && args.Length >= 1)
             return EngineDescriptions.GetValueOrDefault(funcName);
+
+        // DamageReduction(DmgType, Method, [Amount])
+        if (funcName == "DamageReduction" && args.Length >= 2)
+        {
+            var method = args[1].Trim();
+            return EngineDescriptions.GetValueOrDefault($"DamageReduction.{method}");
+        }
+
+        if (funcName == "AreaDamageEvade")
+            return EngineDescriptions.GetValueOrDefault("AreaDamageEvade");
+
+        // DamageBonus(Amount, [Type], [Magical])
+        if (funcName == "DamageBonus")
+        {
+            var hasType = args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]);
+            var hasMagical = args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]);
+            if (hasMagical && !hasType) return EngineDescriptions.GetValueOrDefault("DamageBonus.Magical");
+            if (hasType)                return EngineDescriptions.GetValueOrDefault("DamageBonus.Typed");
+            return EngineDescriptions.GetValueOrDefault("DamageBonus");
+        }
+
+        if (funcName == "MovementSpeedLimit")
+            return EngineDescriptions.GetValueOrDefault("MovementSpeedLimit");
+
+        if (funcName == "ReduceCriticalAttackThreshold")
+            return EngineDescriptions.GetValueOrDefault("ReduceCriticalAttackThreshold");
+
+        // StatusImmunity(StatusId) — match known SG_ groups
+        if (funcName == "StatusImmunity" && args.Length >= 1)
+        {
+            var key = $"StatusImmunity.{args[0].Trim()}";
+            if (EngineDescriptions.ContainsKey(key))
+                return EngineDescriptions.GetValueOrDefault(key);
+            return EngineDescriptions.GetValueOrDefault("StatusImmunity");
+        }
+
+        // RollBonus(Type, Bonus, [Ability/Skill]) — extra contexts
+        if (funcName == "RollBonus" && args.Length >= 2)
+        {
+            var rollType = args[0].Trim();
+            var hasThirdArg = args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]);
+            var suffix = hasThirdArg ? $"{rollType}Of" : rollType;
+            if (EngineDescriptions.ContainsKey($"RollBonus.{suffix}"))
+                return EngineDescriptions.GetValueOrDefault($"RollBonus.{suffix}");
+        }
+
+        if (funcName == "IgnoreFallDamage") return EngineDescriptions.GetValueOrDefault("IgnoreFallDamage");
+        if (funcName == "ProjectileDeflect") return EngineDescriptions.GetValueOrDefault("ProjectileDeflect");
+        if (funcName == "CriticalHitExtraDice") return EngineDescriptions.GetValueOrDefault("CriticalHitExtraDice");
 
         return null;
     }
