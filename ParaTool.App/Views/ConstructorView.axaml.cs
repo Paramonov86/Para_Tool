@@ -752,8 +752,17 @@ public partial class ConstructorView : UserControl
                 cursorOffset = 4;
                 break;
             case "p":
-                insert = "[p1]";
-                cursorOffset = 4;
+                {
+                    // Use [dp] (bold dynamic param) — matches vanilla BG3 descriptions
+                    // which almost always use the bold variant for damage/formula params.
+                    // Auto-increment so the second click gives [dp2], third [dp3], etc.
+                    int maxIdx = 0;
+                    foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, @"\[d?p(\d+)\]"))
+                        if (int.TryParse(m.Groups[1].Value, out var n) && n > maxIdx) maxIdx = n;
+                    var next = maxIdx + 1;
+                    insert = $"[dp{next}]";
+                    cursorOffset = insert.Length;
+                }
                 break;
             case "status":
                 insert = $"[status=STATUS_ID]{selected}[/status]";

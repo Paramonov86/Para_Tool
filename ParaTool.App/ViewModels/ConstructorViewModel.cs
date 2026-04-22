@@ -460,17 +460,19 @@ public partial class ConstructorViewModel : ViewModelBase
     {
         if (baseItem == null) return;
 
-        // Check if already saved
-        var existing = SavedArtifacts.FirstOrDefault(a => a.Artifact.UsingBase == baseItem.StatId);
-        if (existing != null)
+        // If this base is already open as an unpersisted in-memory preview, reuse that
+        // tab instead of spawning a duplicate. We specifically DO NOT hijack to a saved
+        // derivative with the same UsingBase — the user picked the base from search and
+        // expects to see the base. Saved derivatives are reachable from the left list.
+        var openPreview = RecentTabs.FirstOrDefault(a =>
+            !a.IsPersisted && a.SourceStatId == baseItem.StatId);
+        if (openPreview != null)
         {
-            FillFromVanillaLoca(existing.Artifact);
-            existing.LoadPassivesFromArtifact();
-            SelectedArtifact = existing;
+            SelectedArtifact = openPreview;
             return;
         }
 
-        // Create in-memory working copy (NOT saved to disk)
+        // Create a fresh in-memory working copy (NOT saved to disk)
         var artifact = BuildArtifactFromBase(baseItem);
         var vm = new ArtifactItemVM(artifact) { SourceStatId = baseItem.StatId, IsPersisted = false, GetEditingLang = () => EditingLang };
         vm.LoadPassivesFromArtifact();
