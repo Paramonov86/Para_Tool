@@ -825,27 +825,17 @@ public sealed class AmpPatcher
                 { Value = art.AtlasIconMapKey };
         }
 
-        // Ensure EquipmentTypeID is set — prevents items ending up in wrong slot
-        if (!goNode.Attributes.ContainsKey("EquipmentTypeID"))
-        {
-            // Map stat type to BG3 EquipmentTypeID UUID
-            var eqTypeId = GetEquipmentTypeId(art.StatType, art.UsingBase);
-            if (eqTypeId != null)
-            {
-                goNode.Attributes["EquipmentTypeID"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                    { Value = eqTypeId };
-            }
-        }
+        // EquipmentTypeID is intentionally NOT set — it's the weapon-class / equipment-class
+        // UUID (one per Greataxe / Longsword / Shortbow / etc.), not a slot ID. Vanilla leaf
+        // templates rarely declare it; BG3 inherits it from the parent template chain via
+        // ParentTemplateId. Hardcoding any single UUID broke melee animations (unarmed) and
+        // bow animations (throwing) because the placeholder value didn't match the real class.
 
         using var outFs = File.Create(lsfPath);
         var writer = new LSLib.LSFWriter(outFs);
         writer.Write(resource);
     }
 
-    /// <summary>
-    /// Get BG3 EquipmentTypeID UUID based on stat type.
-    /// These are vanilla BG3 equipment slot UUIDs from Shared.pak.
-    /// </summary>
     private static LSLib.Node? FindTemplateInMerged(string mergedPath, string uuid)
     {
         if (!File.Exists(mergedPath)) return null;
@@ -901,37 +891,6 @@ public sealed class AmpPatcher
         {
             Services.AppLogger.Warn($"FindTemplateInSharedPak failed: {ex.Message}");
         }
-        return null;
-    }
-
-    private static string? GetEquipmentTypeId(string statType, string? usingBase)
-    {
-        // Weapons always go in melee/ranged weapon slot — BG3 determines from template
-        if (statType == "Weapon")
-            return "2ef8e830-1759-4335-b4db-e498e41b1afe"; // Melee Main Weapon
-
-        // Armor — determine slot from base name patterns
-        if (statType == "Armor" && usingBase != null)
-        {
-            var b = usingBase.ToUpperInvariant();
-            if (b.Contains("AMULET") || b.Contains("NECK"))
-                return "e4133b20-a10f-4a97-9e2e-4e07e1c7a9e0"; // Amulet
-            if (b.Contains("RING"))
-                return "af06a192-1a52-41fb-a46f-ae7a1010cd15"; // Ring
-            if (b.Contains("CLOAK") || b.Contains("MANTLE"))
-                return "3e2d74e3-3631-4a22-b71b-95565dbc13e9"; // Cloak
-            if (b.Contains("HELMET") || b.Contains("HAT") || b.Contains("CIRCLET") || b.Contains("CROWN"))
-                return "aedd3574-39a3-4b47-a20a-34e4f90c02fd"; // Helmet
-            if (b.Contains("GLOVES") || b.Contains("GAUNTLET"))
-                return "6d37abad-5eb8-4e98-9963-e4e514d2959a"; // Gloves
-            if (b.Contains("BOOTS") || b.Contains("SHOES"))
-                return "29a5e2b2-0e67-4355-8e40-469aabd16498"; // Boots
-            if (b.Contains("SHIELD"))
-                return "a3ce6f42-1fd3-4880-a330-5765f7a35c24"; // Shield
-            // Chest armor (default for ARM_ prefix)
-            return "6a084c55-76e8-4528-9510-3b63ec290cd0"; // Chest
-        }
-
         return null;
     }
 
