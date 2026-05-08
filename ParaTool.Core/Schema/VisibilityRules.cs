@@ -40,6 +40,19 @@ public static class VisibilityRules
         return false;
     }
 
+    /// <summary>
+    /// True if the given param participates in a visibility rule. Used by the chip
+    /// renderer to force-render context-dependent slots (instead of skipping them
+    /// as "trailing empty optional") when the governing arg currently enables them.
+    /// </summary>
+    public static bool HasRule(BoostMapping.BlockDef def, int paramIdx)
+    {
+        if (!_rules.TryGetValue(def.FuncName, out var rules)) return false;
+        foreach (var r in rules)
+            if (r.DependentParamIdx == paramIdx) return true;
+        return false;
+    }
+
     public static string[] ClearHiddenArgs(BoostMapping.BlockDef def, string[] args)
     {
         if (!_rules.TryGetValue(def.FuncName, out var rules) || args.Length == 0)

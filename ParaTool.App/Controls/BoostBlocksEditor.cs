@@ -381,8 +381,14 @@ public class BoostBlocksEditor : UserControl
             var value = !isOptional ? args[i] : "";
 
             // Skip trailing params with no value (but keep optnum/optbool — they show "—",
-            // and fresh chips render every slot so the user can fill required params).
-            if (!isFreshChip && isOptional && string.IsNullOrEmpty(value) && param.Type is not "optnum" and not "optbool") continue;
+            // fresh chips render every slot so required params are fillable, and params
+            // gated by VisibilityRules render whenever the governing arg enables them
+            // even if the dependent slot got trimmed off — otherwise switching e.g.
+            // Advantage from AttackRoll → SavingThrow would not re-expose the Arg2 picker).
+            if (!isFreshChip
+                && !VisibilityRules.HasRule(def, i)
+                && isOptional && string.IsNullOrEmpty(value)
+                && param.Type is not "optnum" and not "optbool") continue;
             var paramIdx = i;
 
             if (param.Type == "hidden")
