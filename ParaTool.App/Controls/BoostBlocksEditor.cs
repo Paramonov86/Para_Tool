@@ -91,8 +91,20 @@ public class BoostBlocksEditor : UserControl
     {
         var locaKey = $"boost.{def.FuncName}";
         var locaVal = Localization.Loc.Instance[locaKey];
-        if (locaVal != locaKey) return locaVal;
+        // boost.* JSON entries are engine-description templates ("Immune to [1].")
+        // used for in-game-style preview rendering, NOT chip labels. If the value
+        // contains an [N] placeholder, fall through to the dedicated short label
+        // from BoostMapping (e.g. "Невосприимч. к статусу"); otherwise the chip
+        // would render with a literal "[1]" next to its parameter picker.
+        if (locaVal != locaKey && !ContainsBoostPlaceholder(locaVal)) return locaVal;
         return Localization.Loc.Instance.Lang == "ru" ? def.LabelRu : def.Label;
+    }
+
+    private static bool ContainsBoostPlaceholder(string text)
+    {
+        for (int i = 0; i < text.Length - 1; i++)
+            if (text[i] == '[' && char.IsDigit(text[i + 1])) return true;
+        return false;
     }
 
     private static SolidColorBrush BgDefault => Themes.ThemeBrushes.InputBg;
@@ -357,14 +369,20 @@ public class BoostBlocksEditor : UserControl
 
         // Parameters — render only params that have values (don't show empty optional trailing params)
         var renderCount = Math.Max(args.Length, 0);
+        // A freshly-inserted chip whose defaults all trimmed to empty (e.g. StatusImmunity,
+        // Tag, UnlockSpell, FactionOverride — boosts whose only/required param is a
+        // string with no sensible default) parses back as zero-arg. Without rendering
+        // its params, the chip is unfillable. Force-render every slot in that case.
+        var isFreshChip = args.Length == 0 && def.Params.Length > 0;
         for (int i = 0; i < Math.Min(def.Params.Length, Math.Max(renderCount, def.Params.Length)); i++)
         {
             var param = def.Params[i];
             var isOptional = i >= args.Length;
             var value = !isOptional ? args[i] : "";
 
-            // Skip trailing params with no value (but keep optnum/optbool — they show "—")
-            if (isOptional && string.IsNullOrEmpty(value) && param.Type is not "optnum" and not "optbool") continue;
+            // Skip trailing params with no value (but keep optnum/optbool — they show "—",
+            // and fresh chips render every slot so the user can fill required params).
+            if (!isFreshChip && isOptional && string.IsNullOrEmpty(value) && param.Type is not "optnum" and not "optbool") continue;
             var paramIdx = i;
 
             if (param.Type == "hidden")
