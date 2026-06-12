@@ -37,6 +37,14 @@ public sealed class ArtifactDefinition
     /// </summary>
     public string UsingBase { get; set; } = "";
 
+    /// <summary>
+    /// Equip slot as the raw BG3 stats value ("Cloak", "Helmet", "Ring", "Melee Main Weapon", …),
+    /// resolved from the base item's using-chain. Written explicitly so the item never falls back
+    /// to the wrong slot (Helmet) when stat-inheritance / load-order fails to resolve it.
+    /// Null = don't emit (let inheritance decide).
+    /// </summary>
+    public string? Slot { get; set; }
+
     // ─── Template ───────────────────────────────────────────
 
     /// <summary>

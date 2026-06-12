@@ -59,6 +59,29 @@ public class ArtifactCompilerTests
     }
 
     [Fact]
+    public void Compile_WritesSlot_Explicitly_WhenSet()
+    {
+        // Slot must be emitted verbatim so items don't fall back to the Helmet slot
+        // when using-chain inheritance fails. Works for armor and weapons alike.
+        var armor = NewArmor();
+        armor.Slot = "Cloak";
+        Assert.Contains("data \"Slot\" \"Cloak\"", ArtifactCompiler.Compile(armor).StatsText);
+
+        var weapon = NewWeapon();
+        weapon.Slot = "Melee Main Weapon";
+        Assert.Contains("data \"Slot\" \"Melee Main Weapon\"", ArtifactCompiler.Compile(weapon).StatsText);
+    }
+
+    [Fact]
+    public void Compile_OmitsSlot_WhenUnknown()
+    {
+        // No Slot and no resolver → don't emit a bogus/empty Slot line.
+        var art = NewArmor();
+        art.Slot = null;
+        Assert.DoesNotContain("data \"Slot\"", ArtifactCompiler.Compile(art).StatsText);
+    }
+
+    [Fact]
     public void Compile_SkipsRootTemplate_WhenIsOverride()
     {
         var art = NewArmor();

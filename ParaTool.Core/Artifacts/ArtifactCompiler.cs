@@ -112,6 +112,16 @@ public static class ArtifactCompiler
         stats.AppendLine($"using \"{art.UsingBase}\"");
         if (!isOverride && !string.IsNullOrEmpty(art.TemplateUuid))
             stats.AppendLine($"data \"RootTemplate\" \"{art.TemplateUuid}\"");
+        // Write the equip Slot explicitly (armor AND weapons). The RootTemplate carries no
+        // slot — it lives only in stats — and relying on the using-chain to inherit it is
+        // fragile (load-order / missing parents), which is why items collapsed into the
+        // Helmet slot. Emitting the resolved value makes the slot deterministic.
+        // Fall back to resolving from the base for older artifacts saved without a Slot.
+        var slotOut = art.Slot;
+        if (string.IsNullOrEmpty(slotOut) && resolver != null && !string.IsNullOrEmpty(art.UsingBase))
+            slotOut = resolver.Resolve(art.UsingBase, "Slot");
+        if (!string.IsNullOrEmpty(slotOut))
+            stats.AppendLine($"data \"Slot\" \"{slotOut}\"");
         stats.AppendLine($"data \"Rarity\" \"{art.Rarity}\"");
         // Ensure price matches rarity via PricingGrid (final safety net)
         var pool = art.LootPool ?? "Armor";

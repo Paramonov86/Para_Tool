@@ -778,6 +778,11 @@ public partial class ConstructorViewModel : ViewModelBase
             if (fields.TryGetValue("RootTemplate", out var rtUuid) && !string.IsNullOrEmpty(rtUuid))
                 artifact.ParentTemplateUuid = rtUuid;
 
+            // Capture the resolved equip slot (inherited through the using-chain) so the
+            // compiler can write it explicitly — otherwise items can fall back to Helmet.
+            if (fields.TryGetValue("Slot", out var slotVal) && !string.IsNullOrEmpty(slotVal))
+                artifact.Slot = slotVal;
+
             if (fields.TryGetValue("Boosts", out var boosts)) artifact.Boosts = boosts;
             if (fields.TryGetValue("PassivesOnEquip", out var passives)) artifact.PassivesOnEquip = passives;
             if (fields.TryGetValue("StatusOnEquip", out var statuses)) artifact.StatusOnEquip = statuses;
