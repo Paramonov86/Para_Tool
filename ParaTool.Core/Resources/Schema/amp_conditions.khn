@@ -1,6 +1,26 @@
 -- AMP Custom Conditions for UnlockSpellVariant
 -- This file contains custom Khonsu conditions for AMP mod
 
+-- ========== BLADE_WARD / MAGE_ARMOR umbrella checks ==========
+-- Items applying these via StatusOnEquip need item-friendly variants (vanilla
+-- MAGE_ARMOR self-removes when WearingArmor, vanilla BLADE_WARD ticks down).
+-- Anything that checks "wearer has any flavour of Blade Ward / Mage Armor"
+-- should use these helpers instead of raw HasStatus('BLADE_WARD'/'MAGE_ARMOR').
+function IsBladeWarded(entity)
+    entity = entity or context.Target
+    return HasStatus('BLADE_WARD', entity)
+         | HasStatus('MAG_BLADE_WARD', entity)
+         | HasStatus('MAG_MONK_MOUNTAIN_BLADE_WARD', entity)
+end
+
+function IsMageArmored(entity)
+    entity = entity or context.Target
+    return HasStatus('MAGE_ARMOR', entity)
+         | HasStatus('MAG_SELUNITE_MAGE_ARMOR', entity)
+         | HasStatus('LOW_ROLAN_MAGE_ARMOR', entity)
+         | HasStatus('AMP_Hatul_MAGE_ARMOR', entity)
+end
+
 -- ========== MONKEY-PATCH: IsSpellChildOrVariantFromContext FIX ==========
 -- BUG: IsSpellChildOrVariantFromContext checks CombatAIOverrideSpell which is blank
 -- for most spells. When context has no spell (surface damage, throw, etc.),
@@ -25,11 +45,40 @@ function IsLeveledSpell()
     return HasSpellFlag(SpellFlags.Spell) & ~HasCantripSpellLevel()
 end
 
+-- Check if spell is a true cantrip excluding all Booming Blade variants
+-- Used for shards that affect cantrips but must NOT trigger on Booming Blade
+function IsTrueCantrip()
+    return IsCantrip() &
+           ~SpellId('Target_BoomingBlade') &
+           ~SpellId('Target_BoomingBladeEx') &
+           ~SpellId('Target_BoomingBlade_ClassSpell')
+end
+
+-- Check if spell is any Booming Blade variant
+-- Used for items that exclude Booming Blade from damage rider effects
+function IsBoomingBlade()
+    return SpellId('Target_BoomingBlade')
+         | SpellId('Target_BoomingBladeEx')
+         | SpellId('Target_BoomingBlade_ClassSpell')
+end
+
+-- Check if spell is Barkskin base or any child/variant
+-- Used for AMP_WildRegeneration to apply SpellSlot replacement to all variants
+function IsBarkskin()
+    return IsSpellIdOrChild('Target_Barkskin')
+end
+
 -- Alternative version with more explicit checks
 function IsLeveledSpellStrict()
     return HasSpellFlag(SpellFlags.Spell) &
            ConditionResult(context.HitDescription.SpellLevel >= 1) &
            (HasUseCosts('SpellSlot') | HasUseCosts('WarlockSpellSlot'))
+end
+
+-- Check if spell costs a Bonus Action
+-- Used for Juggler shard to convert Bonus Action spell costs into Action costs
+function IsBonusActionSpell()
+    return HasUseCosts('BonusActionPoint', true)
 end
 
 -- Check if status is a gameplay-affecting status (not technical)
@@ -466,7 +515,7 @@ end
 -- Check if status is any burning variant
 -- Used for fire cloak effects - triggers on any fire damage over time status
 -- Includes: BURNING, BURNING_HELLFIRE, BURNING_HOLY, BURNING_AZER, BURNING_LAVA,
---           MAG_INFERNAL_BURNING, HAV_MAG_INFERNAL_FIRE, MAG_FIRE_HEAT, BURNING_TRAPWALL
+--           MAG_INFERNAL_BURNING, HAV_MAG_INFERNAL_FIRE, MAG_FIRE_HEAT, BURNING_TRAPWALL, AMP_DOOMFLAME_HELLFIRE
 function IsBurningStatus()
     return StatusId('BURNING')
     | StatusId('BURNING_HELLFIRE')
@@ -477,6 +526,7 @@ function IsBurningStatus()
     | StatusId('HAV_MAG_INFERNAL_FIRE')
     | StatusId('MAG_FIRE_HEAT')
     | StatusId('BURNING_TRAPWALL')
+    | StatusId('AMP_DOOMFLAME_HELLFIRE')
 end
 
 -- Check if entity has any burning status applied
@@ -493,6 +543,7 @@ function HasBurningStatus(entity)
     | HasStatus('HAV_MAG_INFERNAL_FIRE', entity)
     | HasStatus('MAG_FIRE_HEAT', entity)
     | HasStatus('BURNING_TRAPWALL', entity)
+    | HasStatus('AMP_DOOMFLAME_HELLFIRE', entity)
 end
 
 -- ========== FORCE DAMAGE SPELL CHECK ==========
@@ -542,6 +593,13 @@ function IsRage()
     | IsSpellIdOrChild('Shout_Rage_Frenzy')
     | IsSpellIdOrChild('Shout_Rage_WildMagic')
     | IsSpellIdOrChild('Shout_Rage_Boar')
+end
+
+-- Rage AND the caster still has a WildShape charge to spend.
+-- Shaman's Garb Primal Rite: the wildshape-cost Rage variant only applies while a
+-- WildShape charge exists, so at 0 charges Rage falls back to its normal cost.
+function IsRageWithWildShape()
+    return IsRage() & HasActionResource('WildShape', 1, 0, false, false, context.Source)
 end
 
 -- ========== HEALING SUPPORT SPELL CHECK ==========
@@ -869,6 +927,46 @@ function AMP_CharismaGreaterThan(value, entity)
     return ConditionResult(entity.Charisma > value)
 end
 
+-- Check if entity's Dexterity is strictly higher than all other abilities
+function IsDexterityHighest(entity)
+    entity = entity or context.Target
+    local dex = entity.Dexterity
+    return ConditionResult(
+        dex > entity.Strength and
+        dex > entity.Constitution and
+        dex > entity.Intelligence and
+        dex > entity.Wisdom and
+        dex > entity.Charisma
+    )
+end
+
+-- Check if entity's Intelligence is strictly higher than all other abilities
+function IsIntelligenceHighest(entity)
+    entity = entity or context.Target
+    local int = entity.Intelligence
+    return ConditionResult(
+        int > entity.Strength and
+        int > entity.Dexterity and
+        int > entity.Constitution and
+        int > entity.Wisdom and
+        int > entity.Charisma
+    )
+end
+
+-- Check if entity's Strength is strictly higher than all other abilities
+-- Used for Force Maul exhaustion check - debuff when STR is not the highest
+function IsStrengthHighest(entity)
+    entity = entity or context.Target
+    local str = entity.Strength
+    return ConditionResult(
+        str > entity.Dexterity and
+        str > entity.Constitution and
+        str > entity.Intelligence and
+        str > entity.Wisdom and
+        str > entity.Charisma
+    )
+end
+
 -- ========== CHILL TOUCH SPELL CHECK ==========
 
 -- Check if spell is Chill Touch or any of its variants
@@ -947,6 +1045,28 @@ function IsSlow(entity)
     | HasStatus('AMP_GAMBLERS_SLOW_MODIFIED', entity)
 end
 
+-- ========== HASTE STATUS CHECK ==========
+
+-- Check if entity has any variant of Haste status
+-- Includes: base HASTE, Celestial, TAD Mind Sanctuary, Surface, Gambler's modified
+function IsHasted(entity)
+    entity = entity or context.Target
+    return HasStatus('HASTE', entity)
+    | HasStatus('MAG_CELESTIAL_HASTE', entity)
+    | HasStatus('TAD_MIND_SANCTUARY_HASTE', entity)
+    | HasStatus('HASTE_SURFACE', entity)
+    | HasStatus('AMP_GAMBLERS_HASTE_MODIFIED', entity)
+end
+
+-- ========== TIME-AFFECTED CHECK ==========
+
+-- Check if entity has any Haste or Slow variant
+-- Combines IsHasted() and IsSlow() for unified time-manipulation check
+function IsAffectedByTime(entity)
+    entity = entity or context.Target
+    return IsHasted(entity) | IsSlow(entity)
+end
+
 -- ========== FORCE DAMAGE RESISTANCE CHECK ==========
 
 -- Check if entity is resistant to Force damage
@@ -1023,8 +1143,493 @@ function IsWizardIceStorm(entity)
     return Tagged('WIZARD', entity) & IsSpellIdOrChild('Target_IceStorm')
 end
 
+-- Check if entity has no divine patron tag (none of the 10 Pledge gods)
+-- Used for Atheist armor shards — true for non-clerics and clerics of unlisted deities
+function IsAtheist(entity)
+    entity = entity or context.Source
+    return ~Tagged('CLERIC_MYSTRA', entity) &
+           ~Tagged('CLERIC_SELUNE', entity) &
+           ~Tagged('CLERIC_SHAR', entity) &
+           ~Tagged('CLERIC_TYR', entity) &
+           ~Tagged('CLERIC_TALOS', entity) &
+           ~Tagged('CLERIC_ILMATER', entity) &
+           ~Tagged('CLERIC_LOLTH', entity) &
+           ~Tagged('CLERIC_LOVIATAR', entity) &
+           ~Tagged('CLERIC_LATHANDER', entity) &
+           ~Tagged('CLERIC_MIELIKKI', entity)
+end
+
 function IsBurningAgony()
     return IsSpellIdOrChild('Projectile_Fireball') |
            IsSpellIdOrChild('Target_FlameStrike')
 end
 
+-- Check if spell is Hold Person or any of its variants
+-- Used for paralysis-related effects
+function IsParalysis()
+    return IsSpellIdOrChild('Target_HoldPerson')
+end
+
+-- Ring42 Fateweaver: SetRoll interrupt filters
+-- Fatal(5) = offensive only, Balanced(10) = both, Giant(15) = defensive only
+
+function Ring42_Fatal_Interesting()
+    if context.InterruptedRoll.RollCritical ~= RollCritical.None then
+        return ConditionResult(false)
+    end
+    local rollSuccess = context.InterruptedRoll.Total >= context.InterruptedRoll.Difficulty
+    local dc = context.InterruptedRoll.Difficulty
+
+    if HasInterruptedAttack().Result then
+        return ConditionResult(Enemy(context.Observer, context.Source).Result and rollSuccess and dc > 5)
+    end
+    if HasInterruptedSavingThrow().Result then
+        return ConditionResult(Enemy(context.Observer, context.Target).Result and rollSuccess and dc > 5)
+    end
+    return ConditionResult(false)
+end
+
+function Ring42_Balanced_Interesting()
+    if context.InterruptedRoll.RollCritical ~= RollCritical.None then
+        return ConditionResult(false)
+    end
+    local rollSuccess = context.InterruptedRoll.Total >= context.InterruptedRoll.Difficulty
+    local dc = context.InterruptedRoll.Difficulty
+
+    if HasInterruptedAttack().Result then
+        local isEnemy = Enemy(context.Observer, context.Source).Result
+        if isEnemy then
+            return ConditionResult(rollSuccess and dc > 10)
+        end
+        return ConditionResult(not rollSuccess and dc <= 10)
+    end
+    if HasInterruptedSavingThrow().Result then
+        local isEnemy = Enemy(context.Observer, context.Target).Result
+        if isEnemy then
+            return ConditionResult(rollSuccess and dc > 10)
+        end
+        return ConditionResult(not rollSuccess and dc <= 10)
+    end
+    return ConditionResult(false)
+end
+
+function Ring42_Giant_Interesting()
+    if context.InterruptedRoll.RollCritical ~= RollCritical.None then
+        return ConditionResult(false)
+    end
+    local rollSuccess = context.InterruptedRoll.Total >= context.InterruptedRoll.Difficulty
+    local dc = context.InterruptedRoll.Difficulty
+
+    if HasInterruptedAttack().Result then
+        return ConditionResult(not Enemy(context.Observer, context.Source).Result and not rollSuccess and dc <= 15)
+    end
+    if HasInterruptedSavingThrow().Result then
+        return ConditionResult(not Enemy(context.Observer, context.Target).Result and not rollSuccess and dc <= 15)
+    end
+    return ConditionResult(false)
+end
+
+function IsCharismaGEWisdom(entity)
+    entity = entity or context.Source
+    return ConditionResult(entity.Charisma >= entity.Wisdom)
+end
+
+-- ========== THE UNMADE LIBRARY (Boots #8) ==========
+
+-- Checks if the cast spell matches the active school marker on the caster
+-- Default entity = context.Source (OnCast passive context)
+function IsMatchingSchool(entity)
+    entity = entity or context.Source
+    return (HasStatus('AMP_ARCANE_SCHOOL_EVOCATION', entity) & IsSpellOfSchool(SpellSchool.Evocation))
+         | (HasStatus('AMP_ARCANE_SCHOOL_ABJURATION', entity) & IsSpellOfSchool(SpellSchool.Abjuration))
+         | (HasStatus('AMP_ARCANE_SCHOOL_CONJURATION', entity) & IsSpellOfSchool(SpellSchool.Conjuration))
+         | (HasStatus('AMP_ARCANE_SCHOOL_NECROMANCY', entity) & IsSpellOfSchool(SpellSchool.Necromancy))
+         | (HasStatus('AMP_ARCANE_SCHOOL_TRANSMUTATION', entity) & IsSpellOfSchool(SpellSchool.Transmutation))
+         | (HasStatus('AMP_ARCANE_SCHOOL_DIVINATION', entity) & IsSpellOfSchool(SpellSchool.Divination))
+         | (HasStatus('AMP_ARCANE_SCHOOL_ENCHANTMENT', entity) & IsSpellOfSchool(SpellSchool.Enchantment))
+         | (HasStatus('AMP_ARCANE_SCHOOL_ILLUSION', entity) & IsSpellOfSchool(SpellSchool.Illusion))
+end
+
+-- Arcane Recovery spell (includes all child variants)
+function IsArcaneRecovery()
+    return IsSpellIdOrChild('Shout_ArcaneRecovery')
+end
+
+-- Intelligence higher than all other ability scores
+function IsIntelligenceHighest(entity)
+    entity = entity or context.Source
+    return ConditionResult(
+        entity.Intelligence > entity.Strength
+        and entity.Intelligence > entity.Dexterity
+        and entity.Intelligence > entity.Constitution
+        and entity.Intelligence > entity.Wisdom
+        and entity.Intelligence > entity.Charisma
+    )
+end
+
+function IsMeleeAttackSpell()
+    return IsSpellIdOrChild('Target_MainHandAttack')
+    | IsSpellIdOrChild('Target_OffhandAttack')
+    | IsSpellIdOrChild('Target_UnarmedAttack')
+    | IsSpellIdOrChild('Target_UnarmedStrike_Monk')
+    | IsSpellIdOrChild('Target_PommelStrike')
+    | IsSpellIdOrChild('Target_Slash')
+    | IsSpellIdOrChild('Target_Slash_New')
+    | IsSpellIdOrChild('Target_PiercingThrust')
+    | ManeuverAndWeaponActionCheck()
+end
+
+
+-- ========== AMP Ilmater Expansion ==========
+-- True when the current spell cast is one of the 40 Ilmater Stigma prayers
+-- (10 schools x 4 tiers). Used by Flare (Ring T3-T4) for OnStatusApply
+-- filtering, by Unbroken (Cloak T3-T4) to discount the Action cost of a
+-- prayer, and by any future passive that must react specifically to the
+-- casting of an Ilmater prayer rather than to any spell. IsSpellIdOrChild
+-- also catches child variants so UnlockSpellVariant-derived forms still
+-- register as Ilmater prayers.
+function IsAMPIlmaterPrayer()
+    return IsSpellIdOrChild('AMP_Ilmater_Prayer_Communion_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Communion_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Communion_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Communion_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Anchoring_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Anchoring_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Anchoring_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Anchoring_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Sealing_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Sealing_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Sealing_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Sealing_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Temperance_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Temperance_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Temperance_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Temperance_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Preaching_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Preaching_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Preaching_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Preaching_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Thread_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Thread_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Thread_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Thread_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Prophet_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Prophet_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Prophet_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Prophet_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Pain_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Pain_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Pain_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Pain_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Bone_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Bone_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Bone_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Bone_4')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Martyrdom_1')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Martyrdom_2')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Martyrdom_3')
+         | IsSpellIdOrChild('AMP_Ilmater_Prayer_Martyrdom_4')
+end
+
+
+-- IsAMPIlmaterStigmaApplied — true when the status driving the current
+-- StatsFunctor context is one of the 30 Ilmater Stigma variants (Amulet
+-- tiers 1-4, Ring, Diadem tiers 1-4, Robe, Cloak, Gloves, Boots, Helmet
+-- tiers 1-4, MediumArmor tiers 1-4, HeavyArmor tiers 1-4). Use inside
+-- OnStatusApply passives that must only fire for stigma applications.
+function IsAMPIlmaterStigmaApplied()
+    return StatusId('AMP_STIGMA_AMULET_1') | StatusId('AMP_STIGMA_AMULET_2') |
+           StatusId('AMP_STIGMA_AMULET_3') | StatusId('AMP_STIGMA_AMULET_4') |
+           StatusId('AMP_STIGMA_RING') |
+           StatusId('AMP_STIGMA_DIADEM_1') | StatusId('AMP_STIGMA_DIADEM_2') |
+           StatusId('AMP_STIGMA_DIADEM_3') | StatusId('AMP_STIGMA_DIADEM_4') |
+           StatusId('AMP_STIGMA_ROBE') |
+           StatusId('AMP_STIGMA_CLOAK') |
+           StatusId('AMP_STIGMA_GLOVES') |
+           StatusId('AMP_STIGMA_BOOTS') |
+           StatusId('AMP_STIGMA_HELMET_1') | StatusId('AMP_STIGMA_HELMET_2') |
+           StatusId('AMP_STIGMA_HELMET_3') | StatusId('AMP_STIGMA_HELMET_4') |
+           StatusId('AMP_STIGMA_MEDIUMARMOR_1') | StatusId('AMP_STIGMA_MEDIUMARMOR_2') |
+           StatusId('AMP_STIGMA_MEDIUMARMOR_3') | StatusId('AMP_STIGMA_MEDIUMARMOR_4') |
+           StatusId('AMP_STIGMA_HEAVYARMOR_1') | StatusId('AMP_STIGMA_HEAVYARMOR_2') |
+           StatusId('AMP_STIGMA_HEAVYARMOR_3') | StatusId('AMP_STIGMA_HEAVYARMOR_4')
+end
+
+
+-- HasAnyAMPIlmaterStigma — true when the given entity carries any of the
+-- 30 Ilmater Stigma variants. Used for the Bless fallback inside prayer
+-- SpellProperties (a second stigma on the same target becomes Bless
+-- instead of a duplicate), and for passives gated on "ally under any
+-- Stigma" (Amulet Anointing, Ring WatchfulEye, MediumArmor Recompense,
+-- HeavyArmor Intercession, etc.).
+function HasAnyAMPIlmaterStigma(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+
+-- HasForeignStigma_X — true when the given entity carries any Ilmater
+-- Stigma that does NOT belong to artifact category X. One helper per
+-- artifact category (Amulet, Ring, Diadem, Robe, Cloak, Gloves, Boots,
+-- Helmet, MediumArmor, HeavyArmor). Used for passives gated on "another
+-- Stigma on the ally" — the condition must exclude the item's own stigma
+-- tiers, otherwise the passive self-triggers whenever the wearer places
+-- their own Stigma.
+
+function HasForeignStigma_Amulet(entity)
+    return HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_Ring(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_Diadem(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_Robe(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_Cloak(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_Gloves(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_Boots(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_Helmet(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_MediumArmor(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_1', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_HEAVYARMOR_3', entity) | HasStatus('AMP_STIGMA_HEAVYARMOR_4', entity)
+end
+
+function HasForeignStigma_HeavyArmor(entity)
+    return HasStatus('AMP_STIGMA_AMULET_1', entity) | HasStatus('AMP_STIGMA_AMULET_2', entity) |
+           HasStatus('AMP_STIGMA_AMULET_3', entity) | HasStatus('AMP_STIGMA_AMULET_4', entity) |
+           HasStatus('AMP_STIGMA_RING', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_1', entity) | HasStatus('AMP_STIGMA_DIADEM_2', entity) |
+           HasStatus('AMP_STIGMA_DIADEM_3', entity) | HasStatus('AMP_STIGMA_DIADEM_4', entity) |
+           HasStatus('AMP_STIGMA_ROBE', entity) |
+           HasStatus('AMP_STIGMA_CLOAK', entity) |
+           HasStatus('AMP_STIGMA_GLOVES', entity) |
+           HasStatus('AMP_STIGMA_BOOTS', entity) |
+           HasStatus('AMP_STIGMA_HELMET_1', entity) | HasStatus('AMP_STIGMA_HELMET_2', entity) |
+           HasStatus('AMP_STIGMA_HELMET_3', entity) | HasStatus('AMP_STIGMA_HELMET_4', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_1', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_2', entity) |
+           HasStatus('AMP_STIGMA_MEDIUMARMOR_3', entity) | HasStatus('AMP_STIGMA_MEDIUMARMOR_4', entity)
+end
+
+-- ========== NEGATIVE STATUS CHECK ==========
+
+-- Check if entity has any "negative" status (debuff/control/DoT).
+-- SG_Condition covers the bulk of vanilla debuffs (stunned, frightened,
+-- restrained, charmed, paralysed, sleeping, prone, blinded, poisoned,
+-- diseased, cursed, bleeding, etc.). Statuses outside any group are listed
+-- explicitly. Default entity = context.Source (the wearer).
+function HasNegativeStatus(entity)
+    entity = entity or context.Source
+    return HasStatus('SG_Stunned', entity) |
+           HasStatus('SG_Frightened', entity) |
+           HasStatus('SG_Restrained', entity) |
+           HasStatus('SG_Charmed', entity) |
+           HasStatus('SG_Incapacitated', entity) |
+           HasStatus('SG_Paralyzed', entity) |
+           HasStatus('SG_Petrified', entity) |
+           HasStatus('SG_Polymorph', entity) |
+           HasStatus('SG_Confused', entity) |
+           HasStatus('SG_Cursed', entity) |
+           HasStatus('SG_Disease', entity) |
+           HasStatus('SG_Poisoned', entity) |
+           HasStatus('SG_Sleeping', entity) |
+           HasStatus('SG_Dominated', entity) |
+           HasStatus('SG_Mad', entity) |
+           HasStatus('SG_Taunted', entity) |
+           HasStatus('SG_Blinded', entity) |
+           HasStatus('SG_Prone', entity) |
+           HasStatus('BURNING', entity) |
+           HasStatus('BLEEDING', entity) |
+           HasStatus('POISONED', entity) |
+           HasStatus('BLINDED', entity) |
+           HasStatus('MAG_FROST', entity) |
+           HasStatus('MAG_THUNDER_REVERBERATION', entity)
+end
+
+function IsWildMagic(entity)
+    return IsSpellChildOrVariantFromContext('Projectile_WildMagic') |
+           IsSpellChildOrVariantFromContext('Target_WildMagic') |
+           IsSpellChildOrVariantFromContext('Shout_WildMagic')
+end
+
+function IsInflictWounds(entity)
+    return IsSpellChildOrVariantFromContext('Target_InflictWounds') |
+           IsSpellChildOrVariantFromContext('AMP_Target_InflictWounds')
+end
+
+function IsArcaneLock(entity)
+    return IsSpellChildOrVariantFromContext('Target_ArcaneLock')
+end
+
+-- Check if entity stands on a liquid surface (water, blood, oil, poison, lava, grease, etc.)
+-- Used for Thunder Ring T3: liquid-surface aura that applies Reverberation on turn start.
+function IsLiquidSurface(entity)
+    entity = entity or context.Target
+    return InSurface('SurfaceWater', entity) |
+           InSurface('SurfaceWaterElectrified', entity) |
+           InSurface('SurfaceWaterFrozen', entity) |
+           InSurface('SurfaceBlood', entity) |
+           InSurface('SurfaceBloodElectrified', entity) |
+           InSurface('SurfaceBloodFrozen', entity) |
+           InSurface('SurfacePoison', entity) |
+           InSurface('SurfaceOil', entity) |
+           InSurface('SurfaceLava', entity) |
+           InSurface('SurfaceGrease', entity) |
+           InSurface('SurfaceWyvernPoison', entity) |
+           InSurface('SurfaceDeepwater', entity) |
+           InSurface('SurfaceAlcohol', entity) |
+           InSurface('SurfaceBloodSilver', entity) |
+           InSurface('SurfaceCausticBrine', entity) |
+           InSurface('SurfaceSewer', entity)
+end
+
+-- Esoteric Combat (Valdryn) kick gating, ported from KickMaster mod.
+-- Active when: not in beast shape, no melee weapon in main hand, no shield equipped.
+function AMP_KM_CanKick()
+    return ~HasStatus('SG_Polymorph_BeastShape', context.Source)
+         & ~WieldingWeapon('Melee', false, false, context.Source)
+         & ~HasShieldEquipped(context.Source)
+end
