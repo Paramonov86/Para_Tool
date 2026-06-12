@@ -118,6 +118,42 @@ internal static class DiagMode
             return 0;
         }
 
+        // --diag-template-node: fully parse a RootTemplate GameObject by UUID and dump its
+        // complete attribute set + child-node tree. Settles whether equip-slot info lives on
+        // the template (Equipment child, Slot attr) or purely in the stats entry.
+        var diagTemplateNode = args.SkipWhile(a => !a.Equals("--diag-template-node", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (!string.IsNullOrEmpty(diagTemplateNode))
+        {
+            foreach (var pak in result.PakPaths)
+            {
+                using var fs = File.OpenRead(pak);
+                var header = ParaTool.Core.PakReader.ReadHeader(fs);
+                var entries = ParaTool.Core.PakReader.ReadFileList(fs, header);
+                foreach (var entry in entries.Where(e =>
+                    e.Path.EndsWith(".lsf", StringComparison.OrdinalIgnoreCase) &&
+                    (e.Path.Contains("RootTemplates", StringComparison.OrdinalIgnoreCase) ||
+                     e.Path.Contains("_merged", StringComparison.OrdinalIgnoreCase))))
+                {
+                    byte[] data;
+                    try { data = ParaTool.Core.PakReader.ExtractFileData(fs, entry); } catch { continue; }
+                    ParaTool.Core.LSLib.Resource res;
+                    try { using var ms = new MemoryStream(data); var rdr = new ParaTool.Core.LSLib.LSFReader(ms); res = rdr.Read(); }
+                    catch { continue; }
+                    if (!res.Regions.TryGetValue("Templates", out var region)) continue;
+                    if (!region.Children.TryGetValue("GameObjects", out var gos)) continue;
+                    var match = gos.FirstOrDefault(n =>
+                        n.Attributes.TryGetValue("MapKey", out var mk) &&
+                        diagTemplateNode.Equals(mk.Value?.ToString(), StringComparison.OrdinalIgnoreCase));
+                    if (match == null) continue;
+                    Console.WriteLine($"=== {Path.GetFileName(pak)}/{entry.Path} ===");
+                    DumpNode(match, 0);
+                    return 0;
+                }
+            }
+            Console.WriteLine($"Template {diagTemplateNode} not found in any scanned pak.");
+            return 0;
+        }
+
         // --diag-resolve-uuid: call ItemNameResolver.ResolveFromPakFull on every pak for a UUID
         var diagResolveUuid = args.SkipWhile(a => !a.Equals("--diag-resolve-uuid", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         if (!string.IsNullOrEmpty(diagResolveUuid))
@@ -325,5 +361,17 @@ internal static class DiagMode
 
         Console.WriteLine($"Done in {sw.Elapsed.TotalSeconds:F1}s. Summary: {summaryPath}");
         return 0;
+    }
+
+    /// <summary>Recursively print a template node's attributes and child tree.</summary>
+    private static void DumpNode(ParaTool.Core.LSLib.Node node, int depth)
+    {
+        var indent = new string(' ', depth * 2);
+        Console.WriteLine($"{indent}<{node.Name}>  ({node.Children.Sum(c => c.Value.Count)} child groups: {string.Join(", ", node.Children.Keys)})");
+        foreach (var (k, v) in node.Attributes.OrderBy(a => a.Key))
+            Console.WriteLine($"{indent}  {k} [{v.Type}] = {v.Value}");
+        foreach (var (_, list) in node.Children)
+            foreach (var child in list)
+                DumpNode(child, depth + 1);
     }
 }
