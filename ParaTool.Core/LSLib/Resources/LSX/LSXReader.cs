@@ -151,6 +151,9 @@ public class LSXReader(Stream stream) : IDisposable
                 Handle = reader.GetAttribute("handle") ?? "",
                 Arguments = new List<TranslatedFSStringArgument>()
             };
+            var fsVersionStr = reader.GetAttribute("version");
+            if (fsVersionStr != null)
+                fs.Version = ushort.Parse(fsVersionStr);
             var argCount = reader.GetAttribute("arguments");
             // Arguments are parsed as child elements if present
             node.Attributes[id] = new NodeAttribute(attrType) { Value = fs };
