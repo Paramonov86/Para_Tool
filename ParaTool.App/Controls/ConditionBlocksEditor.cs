@@ -646,6 +646,22 @@ public class ConditionBlocksEditor : UserControl
             }
         };
 
+        // The parent WrapPanel measures this group with infinite width, so the inner
+        // editor's own WrapPanel never wraps and its "+" button overflows past the
+        // rounded border. Clamp the inner editor to the outer editor's rendered width
+        // so its chips (and the "+") wrap inside the box. (Bug: "+ spawns outside the box".)
+        void ClampInnerWidth()
+        {
+            var w = Bounds.Width;
+            innerEditor.MaxWidth = w > 60 ? w - 40 : double.PositiveInfinity;
+        }
+        void BoundsWatcher(object? _, AvaloniaPropertyChangedEventArgs ev)
+        {
+            if (ev.Property == BoundsProperty) ClampInnerWidth();
+        }
+        innerEditor.AttachedToVisualTree += (_, _) => { PropertyChanged += BoundsWatcher; ClampInnerWidth(); };
+        innerEditor.DetachedFromVisualTree += (_, _) => { PropertyChanged -= BoundsWatcher; };
+
         var stack = new StackPanel { Spacing = 2, Children = { header, innerEditor } };
 
         return new Border
