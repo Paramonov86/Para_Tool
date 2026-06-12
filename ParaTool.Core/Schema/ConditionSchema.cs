@@ -37,7 +37,7 @@ public sealed class ConditionParam
 /// Complete BG3 condition function schema — loaded once from embedded resources.
 /// Provides autocomplete, parameter types, and chip definitions for the Condition editor.
 /// </summary>
-public sealed class ConditionSchema
+public sealed partial class ConditionSchema
 {
     private static ConditionSchema? _instance;
     private static readonly object _lock = new();
@@ -56,6 +56,30 @@ public sealed class ConditionSchema
             }
             return _instance;
         }
+    }
+
+    [GeneratedRegex(@"\bHasNoTags\(")]
+    private static partial Regex HasNoTagsRegex();
+    [GeneratedRegex(@"\bHasAnyTags\(")]
+    private static partial Regex HasAnyTagsRegex();
+
+    /// <summary>
+    /// Rewrite tag-list conditions into the proven Tagged() form. BG3's HasNoTags(tagList,target)
+    /// and HasAnyTags(tagList,target) expect a table; ParaTool's chips emit a single tag, which the
+    /// engine silently mis-evaluates (the condition never gates — reported as "Has No Tags SORCERER
+    /// does nothing"). AMP itself always uses ~Tagged (= not Tagged) for this, never HasNoTags.
+    /// For a single tag: HasNoTags('X') ≡ not Tagged('X'); HasAnyTags('X') ≡ Tagged('X').
+    /// The args (tag + optional target entity) carry over unchanged since Tagged(tag,target) has
+    /// the same shape. A rare "not HasNoTags(...)" double-negative is collapsed.
+    /// </summary>
+    public static string NormalizeTagConditions(string? condition)
+    {
+        if (string.IsNullOrEmpty(condition)) return condition ?? "";
+        var result = HasNoTagsRegex().Replace(condition, "not Tagged(");
+        result = HasAnyTagsRegex().Replace(result, "Tagged(");
+        while (result.Contains("not not "))
+            result = result.Replace("not not ", "");
+        return result;
     }
 
     // ── Known enum types for typed parameters ──────────────────

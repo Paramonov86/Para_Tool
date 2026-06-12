@@ -81,6 +81,33 @@ public class ArtifactCompilerTests
         Assert.DoesNotContain("data \"Slot\"", ArtifactCompiler.Compile(art).StatsText);
     }
 
+    [Theory]
+    [InlineData("HasNoTags('SORCERER')", "not Tagged('SORCERER')")]
+    [InlineData("HasAnyTags('WIZARD')", "Tagged('WIZARD')")]
+    [InlineData("Tagged('WIZARD') and HasNoTags('SORCERER')",
+                "Tagged('WIZARD') and not Tagged('SORCERER')")]
+    [InlineData("HasNoTags('X','context.Source')", "not Tagged('X','context.Source')")]
+    [InlineData("not HasNoTags('X')", "Tagged('X')")] // double-negative collapses
+    [InlineData("Tagged('WIZARD')", "Tagged('WIZARD')")] // untouched
+    public void NormalizeTagConditions_RewritesTagListFunctions(string input, string expected)
+    {
+        Assert.Equal(expected, ParaTool.Core.Schema.ConditionSchema.NormalizeTagConditions(input));
+    }
+
+    [Fact]
+    public void Compile_Passive_RewritesHasNoTags_InBoostConditions()
+    {
+        var art = NewArmor();
+        art.Passives.Add(new ParaTool.Core.Artifacts.PassiveDefinition
+        {
+            Name = "TEST_Armor_Passive_1",
+            BoostConditions = "Tagged('WIZARD') and HasNoTags('SORCERER')",
+        });
+        var text = ArtifactCompiler.Compile(art).StatsText;
+        Assert.Contains("data \"BoostConditions\" \"Tagged('WIZARD') and not Tagged('SORCERER')\"", text);
+        Assert.DoesNotContain("HasNoTags", text);
+    }
+
     [Fact]
     public void Compile_SkipsRootTemplate_WhenIsOverride()
     {

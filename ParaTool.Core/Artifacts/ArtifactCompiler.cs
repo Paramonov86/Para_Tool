@@ -281,6 +281,10 @@ public static class ArtifactCompiler
             // both the validation and the stats output see the fixed version.
             passive.Boosts = BoostMapping.SanitizeBoosts(passive.Boosts ?? "");
             passive.StatsFunctors = BoostMapping.SanitizeBoosts(passive.StatsFunctors ?? "");
+            // Rewrite HasNoTags/HasAnyTags (which BG3 can't gate from a single tag) into
+            // the proven not Tagged()/Tagged() form, so e.g. "Has No Tags SORCERER" works.
+            passive.BoostConditions = ConditionSchema.NormalizeTagConditions(passive.BoostConditions ?? "");
+            passive.Conditions = ConditionSchema.NormalizeTagConditions(passive.Conditions ?? "");
 
             // Validate every chip-bearing field once per passive
             ValidatePlaceholders(passive.Name, "passive Boosts", passive.Boosts, warnings);
