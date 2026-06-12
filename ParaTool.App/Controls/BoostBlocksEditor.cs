@@ -1002,12 +1002,14 @@ public class BoostBlocksEditor : UserControl
                 var item = new MenuItem { Header = displayName, Tag = def };
                 item.Click += (_, _) => { InsertDef(def); menu.Close(); };
                 menu.Items.Add(item);
+                allMenuItems.Add((item, $"{displayName} {def.FuncName}".ToLower()));
             }
             menu.Items.Add(new Separator());
         }
 
         // Favorites (rebuildable)
         var favItems = new Dictionary<string, MenuItem>(StringComparer.OrdinalIgnoreCase);
+        var favSearchItems = new List<(MenuItem item, string searchText)>();
         var favSeparatorIdx = menu.Items.Count;
 
         void RebuildFavSection()
@@ -1015,6 +1017,7 @@ public class BoostBlocksEditor : UserControl
             foreach (var fi in favItems.Values)
                 menu.Items.Remove(fi);
             favItems.Clear();
+            favSearchItems.Clear();
 
             var currentFavs = Core.Services.BoostFavoritesStore.Load();
             int insertIdx = favSeparatorIdx;
@@ -1031,6 +1034,7 @@ public class BoostBlocksEditor : UserControl
                 fItem.Click += (_, _) => { InsertDef(def!); menu.Close(); };
                 menu.Items.Insert(insertIdx++, fItem);
                 favItems[favName] = fItem;
+                favSearchItems.Add((fItem, $"{dName} {favName}".ToLower()));
             }
         }
         RebuildFavSection();
@@ -1043,10 +1047,12 @@ public class BoostBlocksEditor : UserControl
             .GroupBy(d => BoostCategories.GetCategory(d.FuncName))
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
 
+        var subMenus = new List<(MenuItem sub, List<(MenuItem item, string searchText)> children)>();
         foreach (var catKey in categoryOrder)
         {
             if (!byCat.TryGetValue(catKey, out var catDefs) || catDefs.Count == 0) continue;
             var sub = new MenuItem { Header = BoostLabels.GetCategoryLabel(catKey, isRu) };
+            var subChildren = new List<(MenuItem item, string searchText)>();
 
             foreach (var def in catDefs.OrderBy(d => BoostLabels.GetLabel(d, isRu)))
             {
@@ -1084,9 +1090,12 @@ public class BoostBlocksEditor : UserControl
                 var item = new MenuItem { Header = itemPanel, Tag = def, StaysOpenOnClick = true };
                 item.Click += (_, _) => { InsertDef(def); menu.Close(); };
                 sub.Items.Add(item);
-                allMenuItems.Add((item, $"{displayName} {def.FuncName}".ToLower()));
+                var entry = (item, $"{displayName} {def.FuncName}".ToLower());
+                allMenuItems.Add(entry);
+                subChildren.Add(entry);
             }
             menu.Items.Add(sub);
+            subMenus.Add((sub, subChildren));
         }
 
         searchBox.TextChanged += (_, _) =>
@@ -1094,10 +1103,16 @@ public class BoostBlocksEditor : UserControl
             var q = (searchBox.Text ?? "").Trim().ToLower();
             foreach (var (item, searchText) in allMenuItems)
                 item.IsVisible = string.IsNullOrEmpty(q) || searchText.Contains(q);
+            foreach (var (item, searchText) in favSearchItems)
+                item.IsVisible = string.IsNullOrEmpty(q) || searchText.Contains(q);
+            // category headers: visible only while they still contain a match
+            foreach (var (sub, children) in subMenus)
+                sub.IsVisible = string.IsNullOrEmpty(q) || children.Any(c => c.searchText.Contains(q));
         };
 
         menu.Open(this);
-        searchBox.Focus();
+        // focus after the popup actually presents, otherwise the menu steals it back
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => searchBox.Focus(), Avalonia.Threading.DispatcherPriority.Input);
     }
 
     private void InsertDef(BoostMapping.BlockDef d)
