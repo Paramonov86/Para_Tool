@@ -20,6 +20,16 @@ public class BoostParserTests
     }
 
     [Fact]
+    public void FormulaValues_IncludeNegatives()
+    {
+        // Negative ability penalties (e.g. Ability(Charisma,-2)) must be selectable
+        // in the formula tumbler — users repeatedly reported they couldn't enter them.
+        Assert.Contains("-1", BoostMapping.FormulaValues);
+        Assert.Contains("-2", BoostMapping.FormulaValues);
+        Assert.Contains("-5", BoostMapping.FormulaValues);
+    }
+
+    [Fact]
     public void Simple_SingleArg()
     {
         var r = BoostMapping.ParseBoostCall("AC(1)");

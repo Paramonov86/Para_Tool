@@ -387,6 +387,8 @@ public static class BoostMapping
     /// <summary>Numbers 1-100 + dice 1d4..10d20, sorted by average value.</summary>
     public static readonly string[] FormulaValues =
     [
+        // Negatives first (ascending order) — penalties like Ability(Charisma,-2)
+        "-10", "-9", "-8", "-7", "-6", "-5", "-4", "-3", "-2", "-1", "0",
         "1", "2", "1d4", "3", "1d6", "4", "1d8", "2d4", "5", "1d10", "6", "1d12", "2d6", "7", "3d4",
         "8", "2d8", "9", "10", "4d4", "3d6", "1d20", "11", "2d10", "12", "5d4", "13", "2d12", "3d8", "14", "4d6",
         "15", "6d4", "16", "3d10", "17", "5d6", "7d4", "18", "4d8", "19", "3d12", "20", "8d4", "2d20", "21", "6d6",
