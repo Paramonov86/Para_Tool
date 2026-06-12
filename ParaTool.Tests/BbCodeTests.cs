@@ -36,6 +36,15 @@ public class BbCodeTests
     }
 
     [Fact]
+    public void ToXml_LiteralNewline_BecomesBr()
+    {
+        // User pressing Enter in the description box → literal \n must become <br>,
+        // otherwise BG3 collapses it to a space and the text renders on one line.
+        Assert.Equal("a&lt;br&gt;b", BbCode.ToBg3Xml("a\nb"));
+        Assert.Equal("a&lt;br&gt;b", BbCode.ToBg3Xml("a\r\nb"));
+    }
+
+    [Fact]
     public void ToXml_Status_LsTag()
     {
         var result = BbCode.ToBg3Xml("[status=STUNNED]Stunned[/status]");

@@ -41,12 +41,16 @@ public static partial class BbCode
                 }
             }
 
-            // Escape regular XML characters
+            // Escape regular XML characters. Literal line breaks (the user pressing
+            // Enter in the description box) must become &lt;br&gt; — BG3 collapses raw
+            // newlines to a space, so otherwise multi-line text renders on one line.
             sb.Append(bbcode[pos] switch
             {
                 '<' => "&lt;",
                 '>' => "&gt;",
                 '&' => "&amp;",
+                '\n' => "&lt;br&gt;",
+                '\r' => "",
                 _ => bbcode[pos].ToString()
             });
             pos++;
