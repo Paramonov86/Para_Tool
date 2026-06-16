@@ -583,12 +583,35 @@ public partial class ConstructorViewModel : ViewModelBase
         SelectedArtifact.Artifact.Passives = SelectedArtifact.PassiveVMs
             .Select(p => p.Passive).ToList();
 
+        // Prevent duplicate saves of the same item. A not-yet-persisted preview gets a fresh
+        // ArtifactId every time a base item is opened, so re-opening "Дварфийский щит" and
+        // saving again used to create a NEW .art file instead of overwriting — and two saved
+        // artifacts with the same StatId also collide in the generated mod (duplicate
+        // `new entry "<StatId>"`). If this preview's StatId already belongs to a saved
+        // artifact, take over that artifact's on-disk identity and overwrite it in place.
+        if (!SelectedArtifact.IsPersisted)
+        {
+            var existing = SavedArtifacts.FirstOrDefault(a =>
+                !ReferenceEquals(a, SelectedArtifact) &&
+                a.Artifact.StatId.Equals(SelectedArtifact.Artifact.StatId, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                SelectedArtifact.Artifact.ArtifactId = existing.Artifact.ArtifactId;
+                SelectedArtifact.Artifact.TemplateUuid = existing.Artifact.TemplateUuid;
+                var idx = SavedArtifacts.IndexOf(existing);
+                RecentTabs.Remove(existing);
+                existing.Detach();
+                SavedArtifacts[idx] = SelectedArtifact; // replace the old VM in place
+            }
+        }
+
         ArtifactStore.Save(SelectedArtifact.Artifact);
 
         if (!SelectedArtifact.IsPersisted)
         {
             SelectedArtifact.IsPersisted = true;
-            SavedArtifacts.Add(SelectedArtifact);
+            if (!SavedArtifacts.Contains(SelectedArtifact))
+                SavedArtifacts.Add(SelectedArtifact);
         }
 
         SelectedArtifact.IsDirty = false;
