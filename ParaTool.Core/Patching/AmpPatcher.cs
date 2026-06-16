@@ -651,11 +651,22 @@ public sealed class AmpPatcher
 
             // ── New artifacts: create individual {uuid}.lsf files ──
             File.AppendAllText(rtLog, $"Creating {newArtifacts.Count} new RootTemplates in {rtDir}\n");
+            Dictionary<string, (object? equip, string? parent)>? chainIndex = null;
             foreach (var art in newArtifacts)
             {
+                // For weapons, resolve the EquipmentTypeID the template would inherit and write
+                // it explicitly (animation set). Inheritance via ParentTemplateId is fragile
+                // across paks; an unresolved EquipmentTypeID means the wrong/default animation.
+                object? equipType = null;
+                if (string.Equals(art.StatType, "Weapon", StringComparison.OrdinalIgnoreCase))
+                {
+                    chainIndex ??= BuildTemplateChainIndex(rtDir, ampPakPath);
+                    equipType = ResolveEquipmentTypeId(art.ParentTemplateUuid, chainIndex);
+                    File.AppendAllText(rtLog, $"  {art.StatId}: EquipmentTypeID={(equipType?.ToString() ?? "(none)")}\n");
+                }
                 var lsfPath = Path.Combine(rtDir, $"{art.TemplateUuid}.lsf");
                 File.AppendAllText(rtLog, $"  Creating: {lsfPath} (ParentTemplate={art.ParentTemplateUuid})\n");
-                CreateTemplateLsf(lsfPath, art, ampPakPath);
+                CreateTemplateLsf(lsfPath, art, ampPakPath, equipType);
             }
         }
         catch (Exception ex)
@@ -734,7 +745,8 @@ public sealed class AmpPatcher
     /// Create an individual {uuid}.lsf by cloning the parent template and replacing key fields.
     /// This preserves Equipment/Slot/Visuals from the parent.
     /// </summary>
-    private static void CreateTemplateLsf(string lsfPath, ArtifactDefinition art, string ampPakPath)
+    private static void CreateTemplateLsf(string lsfPath, ArtifactDefinition art, string ampPakPath,
+        object? equipmentTypeId = null)
     {
         // Find parent template LSF to clone from
         var rtDir = Path.GetDirectoryName(lsfPath)!;
@@ -846,11 +858,18 @@ public sealed class AmpPatcher
                 { Value = art.AtlasIconMapKey };
         }
 
-        // EquipmentTypeID is intentionally NOT set — it's the weapon-class / equipment-class
-        // UUID (one per Greataxe / Longsword / Shortbow / etc.), not a slot ID. Vanilla leaf
-        // templates rarely declare it; BG3 inherits it from the parent template chain via
-        // ParentTemplateId. Hardcoding any single UUID broke melee animations (unarmed) and
-        // bow animations (throwing) because the placeholder value didn't match the real class.
+        // EquipmentTypeID is the weapon-class / equipment-class UUID (one per Greataxe /
+        // Longsword / Shortbow / etc.) that drives the animation set — how the character holds
+        // and swings the item. Vanilla leaf templates rarely declare it; BG3 inherits it from
+        // the parent template chain via ParentTemplateId. That inheritance is fragile across
+        // paks, and when it fails a custom weapon plays the wrong/default animation. So for
+        // weapons we resolve the REAL value by walking the parent chain (mod _merged + vanilla
+        // Shared.pak) and write it explicitly here. This is NOT a hardcoded guess — it is
+        // exactly the value that would be inherited, so it cannot mismatch the weapon class.
+        // For armor/shields equipmentTypeId is null and nothing is written (they don't use it).
+        if (equipmentTypeId != null)
+            goNode.Attributes["EquipmentTypeID"] = new LSLib.NodeAttribute(LSLib.AttributeType.UUID)
+                { Value = equipmentTypeId };
 
         using var outFs = File.Create(lsfPath);
         var writer = new LSLib.LSFWriter(outFs);
@@ -911,6 +930,92 @@ public sealed class AmpPatcher
         catch (Exception ex)
         {
             Services.AppLogger.Warn($"FindTemplateInSharedPak failed: {ex.Message}");
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Build a UUID → (EquipmentTypeID value, ParentTemplateId) index from the mod's
+    /// RootTemplates/_merged.lsf plus vanilla Shared.pak, so the EquipmentTypeID a weapon
+    /// would inherit can be resolved by walking the parent chain and written explicitly.
+    /// </summary>
+    private static Dictionary<string, (object? equip, string? parent)> BuildTemplateChainIndex(
+        string rtDir, string ampPakPath)
+    {
+        var index = new Dictionary<string, (object? equip, string? parent)>(StringComparer.OrdinalIgnoreCase);
+
+        void Ingest(LSLib.Resource res)
+        {
+            if (!res.Regions.TryGetValue("Templates", out var region)) return;
+            if (!region.Children.TryGetValue("GameObjects", out var nodes)) return;
+            foreach (var n in nodes)
+            {
+                if (!n.Attributes.TryGetValue("MapKey", out var mk)) continue;
+                var key = mk.Value?.ToString();
+                if (string.IsNullOrEmpty(key) || index.ContainsKey(key)) continue;
+                object? equip = n.Attributes.TryGetValue("EquipmentTypeID", out var et) ? et.Value : null;
+                var parent = n.Attributes.TryGetValue("ParentTemplateId", out var pt) ? pt.Value?.ToString() : null;
+                index[key] = (equip, string.IsNullOrEmpty(parent) ? null : parent);
+            }
+        }
+
+        // Mod _merged.lsf — holds the AMP leaf/intermediate templates (e.g. the item's parent).
+        try
+        {
+            var mergedPath = Path.Combine(rtDir, "_merged.lsf");
+            if (File.Exists(mergedPath))
+            {
+                using var fs = File.OpenRead(mergedPath);
+                Ingest(new LSLib.LSFReader(fs).Read());
+            }
+        }
+        catch (Exception ex) { Services.AppLogger.Warn($"Chain index (mod merged) failed: {ex.Message}"); }
+
+        // Vanilla Shared.pak — the root of the chain, where EquipmentTypeID actually lives.
+        try
+        {
+            var dataDir = Path.GetDirectoryName(ampPakPath);
+            var sharedPak = dataDir != null ? Path.Combine(dataDir, "Shared.pak") : null;
+            if (sharedPak != null && File.Exists(sharedPak))
+            {
+                using var pakStream = File.OpenRead(sharedPak);
+                var header = PakReader.ReadHeader(pakStream);
+                var entries = PakReader.ReadFileList(pakStream, header);
+                var rtEntry = entries.FirstOrDefault(e =>
+                    e.Path.Contains("RootTemplates/_merged.lsf", StringComparison.OrdinalIgnoreCase));
+                if (rtEntry.Path != null)
+                {
+                    var data = PakReader.ExtractFileData(pakStream, rtEntry);
+                    using var ms = new System.IO.MemoryStream(data);
+                    Ingest(new LSLib.LSFReader(ms).Read());
+                }
+            }
+        }
+        catch (Exception ex) { Services.AppLogger.Warn($"Chain index (shared) failed: {ex.Message}"); }
+
+        return index;
+    }
+
+    /// <summary>
+    /// Walk the ParentTemplateId chain from startUuid and return the first non-empty
+    /// EquipmentTypeID value found, or null if none is defined anywhere in the chain.
+    /// </summary>
+    private static object? ResolveEquipmentTypeId(
+        string? startUuid, Dictionary<string, (object? equip, string? parent)> index)
+    {
+        var current = startUuid;
+        int depth = 0;
+        while (!string.IsNullOrEmpty(current) && depth < 20)
+        {
+            if (!index.TryGetValue(current, out var node)) return null;
+            if (node.equip != null)
+            {
+                var s = node.equip.ToString();
+                if (!string.IsNullOrEmpty(s) && s != "00000000-0000-0000-0000-000000000000")
+                    return node.equip;
+            }
+            current = node.parent;
+            depth++;
         }
         return null;
     }
