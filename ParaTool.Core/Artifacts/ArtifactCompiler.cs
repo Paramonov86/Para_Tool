@@ -122,6 +122,44 @@ public static class ArtifactCompiler
             slotOut = resolver.Resolve(art.UsingBase, "Slot");
         if (!string.IsNullOrEmpty(slotOut))
             stats.AppendLine($"data \"Slot\" \"{slotOut}\"");
+
+        // Over-insure equipment-type identity. BG3 resolves `using`-inheritance across
+        // stat files/mods at load time, and it silently fails on bad load order or a
+        // missing parent. When it does, the engine mis-classifies the item: e.g. a shield
+        // whose `Shield "Yes"` did not inherit is treated as an off-hand WEAPON — held in
+        // the hand instead of strapped, a versatile main-hand weapon goes two-handed, and
+        // the wrong hold/animation set plays. Re-emit the base's identity/behaviour fields
+        // explicitly so they no longer depend on inheritance. User-supplied values (written
+        // further below) come after these, so they always win on duplicate keys.
+        if (resolver != null && !string.IsNullOrEmpty(art.UsingBase))
+        {
+            var baseFields = resolver.ResolveAll(art.UsingBase);
+            void ForceFromBase(string key, bool skip)
+            {
+                if (skip) return;
+                if (baseFields.TryGetValue(key, out var v) && !string.IsNullOrEmpty(v))
+                    stats.AppendLine($"data \"{key}\" \"{v}\"");
+            }
+            bool hasProf = !string.IsNullOrEmpty(art.ProficiencyGroup) && art.ProficiencyGroup != "None";
+            if (art.StatType == "Armor")
+            {
+                ForceFromBase("Shield", skip: false);
+                ForceFromBase("Armor Class Ability", skip: false);
+                ForceFromBase("Proficiency Group", skip: hasProf);
+            }
+            else if (art.StatType == "Weapon")
+            {
+                ForceFromBase("Weapon Group", skip: false);
+                ForceFromBase("Weapon Properties", skip: art.WeaponProperties != null);
+                ForceFromBase("Proficiency Group", skip: hasProf);
+                ForceFromBase("Damage Type", skip: !string.IsNullOrEmpty(art.DamageType) && art.DamageType != "None");
+                ForceFromBase("Damage", skip: art.Damage != null);
+                ForceFromBase("WeaponRange", skip: false);
+                ForceFromBase("VersatileDamage", skip: art.VersatileDamage != null);
+                ForceFromBase("Projectile", skip: false);
+            }
+        }
+
         stats.AppendLine($"data \"Rarity\" \"{art.Rarity}\"");
         // Ensure price matches rarity via PricingGrid (final safety net)
         var pool = art.LootPool ?? "Armor";

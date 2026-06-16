@@ -224,6 +224,58 @@ internal static class DiagMode
             return 0;
         }
 
+        // --diag-compile: compile a saved .art (by ArtifactId or "latest") the same way the
+        // patcher does — resolver = all scanned pak stats + vanilla (vanilla added LAST so
+        // canonical bases win over self-referential mod overrides). Prints the resolved
+        // identity fields and the full stat block. Used to confirm equipment-type identity
+        // (e.g. shield `Shield "Yes"`) is now emitted explicitly rather than left to inheritance.
+        var diagCompile = args.SkipWhile(a => !a.Equals("--diag-compile", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (!string.IsNullOrEmpty(diagCompile))
+        {
+            var dir = ArtifactStore.GetArtifactsDir();
+            string artifactId = diagCompile;
+            if (diagCompile.Equals("latest", StringComparison.OrdinalIgnoreCase))
+            {
+                var latest = new DirectoryInfo(dir).EnumerateFiles("*.art")
+                    .OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+                if (latest == null) { Console.Error.WriteLine("No .art files found."); return 4; }
+                artifactId = Path.GetFileNameWithoutExtension(latest.Name);
+                Console.WriteLine($"Latest artifact: {latest.Name}");
+            }
+            var art = ArtifactStore.Load(artifactId);
+            if (art == null) { Console.Error.WriteLine($"Failed to load .art: {artifactId}"); return 4; }
+
+            var compileResolver = new ParaTool.Core.Parsing.StatsResolver();
+            foreach (var pak in result.PakPaths)
+            {
+                using var fs = File.OpenRead(pak);
+                var header = ParaTool.Core.PakReader.ReadHeader(fs);
+                var entries = ParaTool.Core.PakReader.ReadFileList(fs, header);
+                foreach (var e in entries.Where(e =>
+                    e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
+                    e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)))
+                {
+                    byte[] data;
+                    try { data = ParaTool.Core.PakReader.ExtractFileData(fs, e); } catch { continue; }
+                    try { compileResolver.AddEntries(ParaTool.Core.Parsing.StatsParser.Parse(System.Text.Encoding.UTF8.GetString(data))); } catch { }
+                }
+            }
+            compileResolver.AddEntries(vanillaDb.Resolver.AllEntries.Values);
+
+            bool isOverride = art.StatId.Equals(art.UsingBase, StringComparison.OrdinalIgnoreCase);
+            var baseFields = compileResolver.ResolveAll(art.UsingBase);
+            Console.WriteLine($"== ResolveAll('{art.UsingBase}') identity fields ==");
+            foreach (var k in new[] { "Slot", "Shield", "Proficiency Group", "Armor Class Ability",
+                "Weapon Group", "Weapon Properties", "Damage Type", "Damage", "WeaponRange", "VersatileDamage", "Projectile" })
+                if (baseFields.TryGetValue(k, out var v)) Console.WriteLine($"  {k} = \"{v}\"");
+            Console.WriteLine();
+
+            var compiled = ArtifactCompiler.Compile(art, isOverride, compileResolver);
+            Console.WriteLine("== Compiled stat block ==");
+            Console.WriteLine(compiled.StatsText);
+            return 0;
+        }
+
         // --diag-handle: resolve a specific loca handle via LocaService (sanity check)
         var diagHandle = args.SkipWhile(a => !a.Equals("--diag-handle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         if (!string.IsNullOrEmpty(diagHandle))

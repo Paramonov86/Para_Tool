@@ -295,13 +295,34 @@ public sealed class AmpPatcher
         var overrideArtifacts = new List<ArtifactDefinition>();
         int count = 0;
 
+        // Build a resolver (AMP stats + vanilla bases) so the compiler can re-emit the
+        // identity/behaviour fields an item would otherwise only inherit via `using`.
+        // Vanilla is added LAST so the canonical base entries win on name conflicts —
+        // AMP redefines `_Shield_Magic` etc. with a self-referential `using`, which would
+        // otherwise truncate the chain before it reaches vanilla `_Shield` (where
+        // `Shield "Yes"` lives). Without a resolver here, Compile() ran with null and the
+        // explicit-Slot/identity safety net was dead at patch time.
+        var resolver = new Parsing.StatsResolver();
+        foreach (var sf in Directory.GetFiles(statsDir, "*.txt"))
+        {
+            try { resolver.AddEntries(Parsing.StatsParser.Parse(File.ReadAllText(sf))); }
+            catch (Exception ex) { log.AppendLine($"  resolver: skip {Path.GetFileName(sf)}: {ex.Message}"); }
+        }
+        try
+        {
+            var vdb = new Services.VanillaDatabase();
+            vdb.Load();
+            resolver.AddEntries(vdb.Resolver.AllEntries.Values);
+        }
+        catch (Exception ex) { log.AppendLine($"  resolver: vanilla load failed: {ex.Message}"); }
+
         foreach (var art in artifacts)
         {
             // Override = same StatId as UsingBase (modifying existing item)
             // New = different StatId (creating new item, even if leftover from previous patch exists in stats)
             bool isOverride = art.StatId.Equals(art.UsingBase, StringComparison.OrdinalIgnoreCase);
             log.AppendLine($"  {art.StatId}: isOverride={isOverride} (UsingBase={art.UsingBase})");
-            var compiled = ArtifactCompiler.Compile(art, isOverride);
+            var compiled = ArtifactCompiler.Compile(art, isOverride, resolver);
             warnings?.AddRange(compiled.Warnings);
 
             if (isOverride)
@@ -495,7 +516,7 @@ public sealed class AmpPatcher
             var byFile = new Dictionary<string, StringBuilder>();
             foreach (var art in newArtifacts)
             {
-                var compiled = ArtifactCompiler.Compile(art, false);
+                var compiled = ArtifactCompiler.Compile(art, false, resolver);
                 string targetFile = statIdToFile.TryGetValue(art.UsingBase, out var baseFile)
                     ? baseFile : statFiles[^1];
 
