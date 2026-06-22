@@ -231,6 +231,11 @@ public partial class Loc : ObservableObject
     public string TipMoveTabRight => this["TipMoveTabRight"];
     public string TipDragSection => this["TipDragSection"];
 
+    // Action journal
+    public string TabJournal => this["TabJournal"];
+    public string JrnTitle => this["JrnTitle"];
+    public string JrnEmpty => this["JrnEmpty"];
+
     public string LblBoosts => this["LblBoosts"];
     public string LblStatuses => this["LblStatuses"];
     public string LblSpells => this["LblSpells"];

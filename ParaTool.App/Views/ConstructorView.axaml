@@ -280,8 +280,9 @@
                                FontSize="{DynamicResource FontSize13}" FontWeight="SemiBold"
                                Foreground="{StaticResource TextMutedBrush}"
                                HorizontalAlignment="Center" Margin="0,10,0,2" LetterSpacing="2" />
-                    <ItemsControl ItemsSource="{Binding RecentTabs}" Margin="4,0,4,4"
-                                  IsVisible="{Binding IsArtifactSelected}">
+                    <WrapPanel Orientation="Horizontal" Margin="4,0,4,4" VerticalAlignment="Bottom"
+                               IsVisible="{Binding IsArtifactSelected}">
+                    <ItemsControl ItemsSource="{Binding RecentTabs}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel Orientation="Horizontal" />
@@ -332,6 +333,16 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                        <!-- Permanent Journal tab (accent) at the end of the strip -->
+                        <Button Name="JournalTabBtn"
+                                Background="{DynamicResource AccentBrush}" Foreground="White"
+                                CornerRadius="6,6,0,0" Padding="10,3" Margin="4,0,0,0"
+                                BorderThickness="0" Cursor="Hand" VerticalAlignment="Bottom"
+                                FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold"
+                                ToolTip.Tip="{Binding JrnTitle, Source={x:Static loc:Loc.Instance}}">
+                            <TextBlock Text="{Binding TabJournal, Source={x:Static loc:Loc.Instance}}" />
+                        </Button>
+                    </WrapPanel>
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1" IsVisible="{Binding HasNoSelection}">
@@ -378,7 +389,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <ScrollViewer Grid.Row="1" IsVisible="{Binding IsArtifactSelected}" Margin="8,4,8,8">
+                <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowFieldEditor}" Margin="8,4,8,8">
                     <StackPanel Name="EditorSections" Spacing="12" DataContext="{Binding SelectedArtifact}">
                         <!-- Rarity -->
                         <Border Tag="Rarity" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
@@ -729,6 +740,36 @@
                                 </Button>
                             </StackPanel>
                         </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Journal (unified action log) -->
+                <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowJournalView}" Margin="8,4,8,8">
+                    <StackPanel Spacing="2" DataContext="{Binding SelectedArtifact}">
+                        <TextBlock Text="{Binding JrnTitle, Source={x:Static loc:Loc.Instance}}"
+                                   FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" Margin="2,2,0,8" />
+                        <TextBlock Text="{Binding JrnEmpty, Source={x:Static loc:Loc.Instance}}"
+                                   IsVisible="{Binding !HasJournal}"
+                                   FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" Margin="2,8" />
+                        <ItemsControl ItemsSource="{Binding Journal}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Name="JournalEntryBtn" Tag="{Binding}"
+                                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                            Background="{StaticResource CardBgBrush}" BorderThickness="0"
+                                            CornerRadius="6" Padding="10,7" Margin="0,0,0,4" Cursor="Hand"
+                                            Opacity="{Binding IsFuture, Converter={x:Static ctrl:BoolToDimConverter.Instance}}">
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <TextBlock Text="{Binding Time}" FontSize="{DynamicResource FontSize10}"
+                                                       Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FontSize12}"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </ScrollViewer>
 

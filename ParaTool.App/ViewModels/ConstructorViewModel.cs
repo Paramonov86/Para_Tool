@@ -149,6 +149,22 @@ public partial class ConstructorViewModel : ViewModelBase
     public bool IsArtifactSelected => SelectedArtifact != null;
     public bool HasNoSelection => SelectedArtifact == null;
 
+    // Journal ("Журнал") pseudo-tab — shows the unified action log instead of the field editor.
+    [ObservableProperty] private bool _isJournalView;
+    partial void OnIsJournalViewChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowFieldEditor));
+        OnPropertyChanged(nameof(ShowJournalView));
+    }
+    public bool ShowFieldEditor => IsArtifactSelected && !IsJournalView;
+    public bool ShowJournalView => IsArtifactSelected && IsJournalView;
+
+    public void ShowJournal() => IsJournalView = true;
+
+    /// <summary>Jump the selected artifact's state to a journal entry (clicked in the Journal tab).</summary>
+    public void JumpToJournalEntry(ArtifactItemVM.JournalEntry entry)
+        => SelectedArtifact?.JumpToHistory(entry.HistoryIndex);
+
     [ObservableProperty] private string _locaWarning = "";
 
     public IconBrowserVM? IconBrowser { get; private set; }
@@ -515,8 +531,11 @@ public partial class ConstructorViewModel : ViewModelBase
                 EvictTabsIfNeeded();
             }
         }
+        IsJournalView = false; // selecting an item shows its field editor, not the journal
         OnPropertyChanged(nameof(IsArtifactSelected));
         OnPropertyChanged(nameof(HasNoSelection));
+        OnPropertyChanged(nameof(ShowFieldEditor));
+        OnPropertyChanged(nameof(ShowJournalView));
     }
 
     // === Open item (NO file creation) ===

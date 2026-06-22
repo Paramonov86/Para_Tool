@@ -686,5 +686,16 @@
   "boost.RemoveUniqueStatus": "Снимает уникальный статус [1].",
   "SortChips": "Сортировать по категории",
   "ShowInExplorer": "Показать в проводнике",
-  "ShowInExplorerTooltip": "Открыть .art в проводнике"
+  "ShowInExplorerTooltip": "Открыть .art в проводнике",
+  "TabJournal": "Журнал",
+  "JrnTitle": "Журнал действий",
+  "JrnEmpty": "Пока нет действий",
+  "JrnEdit": "Изменение",
+  "JrnStatId": "Stat ID",
+  "JrnWeaponProps": "Свойства оружия",
+  "JrnMainHand": "Бусты основной руки",
+  "JrnOffHand": "Бусты второй руки",
+  "JrnAddPassive": "Добавлена пассивка",
+  "JrnRemovePassive": "Удалена пассивка",
+  "JrnRevert": "Откат версии"
 }

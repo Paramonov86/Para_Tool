@@ -686,5 +686,16 @@
   "boost.RemoveUniqueStatus": "Removes unique status [1].",
   "SortChips": "Sort chips by category",
   "ShowInExplorer": "Show in Explorer",
-  "ShowInExplorerTooltip": "Open .art file in Explorer"
+  "ShowInExplorerTooltip": "Open .art file in Explorer",
+  "TabJournal": "Journal",
+  "JrnTitle": "Action journal",
+  "JrnEmpty": "No actions yet",
+  "JrnEdit": "Edit",
+  "JrnStatId": "Stat ID",
+  "JrnWeaponProps": "Weapon properties",
+  "JrnMainHand": "Main-hand boosts",
+  "JrnOffHand": "Off-hand boosts",
+  "JrnAddPassive": "Add passive",
+  "JrnRemovePassive": "Remove passive",
+  "JrnRevert": "Revert version"
 }

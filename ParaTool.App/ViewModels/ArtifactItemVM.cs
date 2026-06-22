@@ -559,24 +559,57 @@ public partial class ArtifactItemVM : ObservableObject
 
     // === Helpers ===
 
-    private void MarkDirty() => RecordEdit();
+    private void MarkDirty([System.Runtime.CompilerServices.CallerMemberName] string? action = null)
+        => RecordEdit(action);
 
-    // === Item-level undo/redo (Ctrl+Z / Ctrl+Shift+Z) ===
-    // Snapshots the whole ArtifactDefinition. Rapid edits are coalesced into a single
-    // undo step via a 500ms debounce so typing doesn't flood the stack.
+    // === Unified action journal + undo/redo (Ctrl+Z / Ctrl+Shift+Z) ===
+    // Linear history of full ArtifactDefinition snapshots with a cursor. Every editable
+    // action is logged here (fields, boosts, passives, conditions...) so the Journal tab
+    // shows one unified timeline and Ctrl+Z just walks the cursor back. Rapid edits to the
+    // same burst are coalesced (500ms debounce) into one entry.
 
-    private readonly ArtifactUndoStack _undo = new();
-    private string? _committedJson;     // snapshot of the last settled (committed) state
-    private bool _suppressUndo;         // true while restoring — don't record those changes
+    /// <summary>One step in the action journal (shown in the Journal tab).</summary>
+    public sealed class JournalEntry
+    {
+        public string Label { get; init; } = "";
+        public string Time { get; init; } = "";
+        public bool IsFuture { get; init; }   // undone (redo-able) — shown dimmed
+        public int HistoryIndex { get; init; } // index into _hist this action produced
+    }
+
+    private sealed class HistNode
+    {
+        public string Json = "";
+        public string Label = "";
+        public string Time = "";
+    }
+
+    /// <summary>Newest-first list of logged actions for the Journal tab.</summary>
+    public ObservableCollection<JournalEntry> Journal { get; } = [];
+    public bool HasJournal => Journal.Count > 0;
+
+    private readonly List<HistNode> _hist = [];
+    private int _cursor = -1;
+    private bool _suppressUndo;
     private DispatcherTimer? _undoDebounce;
+    private string? _pendingLabel;
+    private const int MaxHistory = 30;
 
-    /// <summary>Mark dirty and schedule an undo snapshot for the current edit burst.</summary>
-    internal void RecordEdit()
+    /// <summary>Raised after an undo/redo/jump restore so the view can rebuild code-behind chips.</summary>
+    public event Action? Restored;
+
+    /// <summary>Mark dirty and schedule a journal snapshot for the current edit burst.
+    /// <paramref name="action"/> defaults to the calling member name (the Edit* setter or
+    /// the passive add/remove method) which maps to a localized journal label.</summary>
+    internal void RecordEdit([System.Runtime.CompilerServices.CallerMemberName] string? action = null)
     {
         IsDirty = true;
         if (_suppressUndo) return;
 
-        _committedJson ??= ArtifactUndoStack.Snapshot(Artifact);
+        if (_hist.Count == 0) ResetUndoBaseline();
+        // First edit of a burst sets the burst's label.
+        if (_undoDebounce is not { IsEnabled: true })
+            _pendingLabel = LabelFor(action);
 
         _undoDebounce ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _undoDebounce.Stop();
@@ -587,78 +620,172 @@ public partial class ArtifactItemVM : ObservableObject
 
     private void OnUndoBurstSettled(object? sender, EventArgs e) => CommitUndoBurst();
 
-    /// <summary>Push the pre-burst baseline onto the undo stack and re-baseline.</summary>
+    /// <summary>Commit the in-flight burst as a new journal entry at the cursor.</summary>
     private void CommitUndoBurst()
     {
         _undoDebounce?.Stop();
+        if (_hist.Count == 0) { ResetUndoBaseline(); return; }
         var current = ArtifactUndoStack.Snapshot(Artifact);
-        if (_committedJson == null) { _committedJson = current; return; }
-        if (_committedJson == current) return; // nothing actually changed
-        _undo.PushUndo(_committedJson);
-        _undo.ClearRedo();
-        _committedJson = current;
+        if (current == _hist[_cursor].Json) return; // nothing actually changed
+
+        // Truncate any redo branch (we're committing a new action past the cursor).
+        if (_cursor < _hist.Count - 1)
+            _hist.RemoveRange(_cursor + 1, _hist.Count - _cursor - 1);
+
+        _hist.Add(new HistNode { Json = current, Label = _pendingLabel ?? GenericLabel(), Time = NowStr() });
+        _cursor = _hist.Count - 1;
+        _pendingLabel = null;
+
+        // Cap depth (drop oldest, keep baseline semantics by shifting).
+        while (_hist.Count > MaxHistory) { _hist.RemoveAt(0); _cursor--; }
+
+        RebuildJournal();
     }
 
-    /// <summary>Re-sync the undo baseline to the current state (after a programmatic load).</summary>
+    /// <summary>Initialise the history baseline at the current state (item open / programmatic load).</summary>
     internal void ResetUndoBaseline()
     {
         _undoDebounce?.Stop();
-        _committedJson = ArtifactUndoStack.Snapshot(Artifact);
+        _hist.Clear();
+        _hist.Add(new HistNode { Json = ArtifactUndoStack.Snapshot(Artifact), Label = "", Time = NowStr() });
+        _cursor = 0;
+        _pendingLabel = null;
+        RebuildJournal();
     }
 
-    /// <summary>Ctrl+Z. Returns true if a step was undone.</summary>
+    /// <summary>Ctrl+Z — step the cursor back one action.</summary>
     internal bool ApplyUndo()
     {
-        CommitUndoBurst(); // settle any in-flight edits first
-        var prev = _undo.PopUndo();
-        if (prev == null) return false;
-        _undo.PushRedo(_committedJson ?? ArtifactUndoStack.Snapshot(Artifact));
-        RestoreFrom(prev);
+        CommitUndoBurst();
+        if (_cursor <= 0) return false;
+        _cursor--;
+        RestoreCurrent();
         return true;
     }
 
-    /// <summary>Ctrl+Shift+Z. Returns true if a step was redone.</summary>
+    /// <summary>Ctrl+Shift+Z — step the cursor forward one action.</summary>
     internal bool ApplyRedo()
     {
         CommitUndoBurst();
-        var next = _undo.PopRedo();
-        if (next == null) return false;
-        _undo.PushUndo(_committedJson ?? ArtifactUndoStack.Snapshot(Artifact));
-        RestoreFrom(next);
+        if (_cursor >= _hist.Count - 1) return false;
+        _cursor++;
+        RestoreCurrent();
         return true;
     }
 
-    /// <summary>Revert to a saved version snapshot, recording it as an undoable step.</summary>
+    /// <summary>Jump to a specific history state (clicked in the Journal tab).</summary>
+    internal void JumpToHistory(int historyIndex)
+    {
+        CommitUndoBurst();
+        if (historyIndex < 0 || historyIndex >= _hist.Count || historyIndex == _cursor) return;
+        _cursor = historyIndex;
+        RestoreCurrent();
+    }
+
+    /// <summary>Revert to a saved version snapshot, recorded as a journal action.</summary>
     internal void RevertTo(ArtifactDefinition version)
     {
         CommitUndoBurst();
-        _undo.PushUndo(_committedJson ?? ArtifactUndoStack.Snapshot(Artifact));
-        _undo.ClearRedo();
+        if (_hist.Count == 0) ResetUndoBaseline();
         _suppressUndo = true;
         try
         {
-            Artifact.CopyFrom(version); // version is a throwaway deserialized snapshot
-            _committedJson = ArtifactUndoStack.Snapshot(Artifact);
+            Artifact.CopyFrom(version); // throwaway deserialized snapshot
             IsDirty = true;
             RefreshAll();
         }
         finally { _suppressUndo = false; }
+        // Log the revert as a new action.
+        if (_cursor < _hist.Count - 1)
+            _hist.RemoveRange(_cursor + 1, _hist.Count - _cursor - 1);
+        _hist.Add(new HistNode { Json = ArtifactUndoStack.Snapshot(Artifact), Label = LabelFor("Revert"), Time = NowStr() });
+        _cursor = _hist.Count - 1;
+        while (_hist.Count > MaxHistory) { _hist.RemoveAt(0); _cursor--; }
+        RebuildJournal();
     }
 
-    private void RestoreFrom(string json)
+    private void RestoreCurrent()
     {
-        var snap = ArtifactUndoStack.Deserialize(json);
+        var snap = ArtifactUndoStack.Deserialize(_hist[_cursor].Json);
         if (snap == null) return;
         _suppressUndo = true;
         try
         {
             Artifact.CopyFrom(snap);
-            _committedJson = ArtifactUndoStack.Snapshot(Artifact);
             IsDirty = true;
-            RefreshAll(); // also reloads passives from the artifact
+            RefreshAll();
         }
         finally { _suppressUndo = false; }
+        RebuildJournal();
+        Restored?.Invoke();
     }
+
+    private void RebuildJournal()
+    {
+        Journal.Clear();
+        // Actions are _hist[1..]; _hist[0] is the opening baseline. Newest first.
+        for (int i = _hist.Count - 1; i >= 1; i--)
+            Journal.Add(new JournalEntry
+            {
+                Label = _hist[i].Label,
+                Time = _hist[i].Time,
+                IsFuture = i > _cursor,
+                HistoryIndex = i,
+            });
+        OnPropertyChanged(nameof(HasJournal));
+    }
+
+    private static string NowStr() => DateTime.Now.ToString("HH:mm:ss");
+    private static string GenericLabel() => Loc.Instance["JrnEdit"];
+
+    /// <summary>Resolve an action key to a localized journal label (reusing existing Loc keys).</summary>
+    private static string LabelFor(string? action)
+    {
+        if (!string.IsNullOrEmpty(action) && ActionLabelKeys.TryGetValue(action, out var locKey))
+            return Loc.Instance[locKey];
+        return GenericLabel();
+    }
+
+    /// <summary>Maps an edit action (property/method name) to a Loc key for the journal label.</summary>
+    private static readonly Dictionary<string, string> ActionLabelKeys = new()
+    {
+        ["EditStatId"] = "JrnStatId",
+        ["EditRarity"] = "FieldRarity",
+        ["EditPool"] = "ChipSlot",
+        ["ToggleTheme"] = "ChipThemes",
+        ["EditUnique"] = "LblUnique",
+        ["EditWeight"] = "LblWeight",
+        ["EditValueOverride"] = "FieldValue",
+        ["EditArmorClass"] = "LblArmorClass",
+        ["EditArmorType"] = "LblArmorType",
+        ["EditProficiencyGroup"] = "LblProficiency",
+        ["EditDamage"] = "LblDamage",
+        ["EditDamageType"] = "LblDamageType",
+        ["EditVersatileDamage"] = "LblVersatile",
+        ["EditWeaponProperties"] = "JrnWeaponProps",
+        ["EditDefaultBoosts"] = "LblDefaultBoosts",
+        ["EditBoosts"] = "LblBoosts",
+        ["EditBoostsOnEquipMainHand"] = "JrnMainHand",
+        ["EditBoostsOnEquipOffHand"] = "JrnOffHand",
+        ["EditPassivesOnEquip"] = "LblPassives",
+        ["EditStatusOnEquip"] = "LblStatuses",
+        ["EditSpellsOnEquip"] = "LblSpells",
+        ["EditDisplayName"] = "FieldName",
+        ["EditDescription"] = "FieldDescription",
+        ["EditAtlasIconKey"] = "LblIcon",
+        ["AddExistingPassive"] = "JrnAddPassive",
+        ["AddNewPassive"] = "JrnAddPassive",
+        ["RemovePassive"] = "JrnRemovePassive",
+        ["EditProperties"] = "LblProperties",
+        ["EditBoostContext"] = "LblBoosts",
+        ["EditBoostConditions"] = "LblCondition",
+        ["EditConditions"] = "LblCondition",
+        ["EditStatsFunctors"] = "LblAction",
+        ["EditStatsFunctorContext"] = "LblAction",
+        ["EditDescriptionParams"] = "FieldDescription",
+        ["EditIcon"] = "LblIcon",
+        ["Revert"] = "JrnRevert",
+    };
 
     // Debounce preview updates to avoid UI lag on every keystroke
     private DispatcherTimer? _previewDebounce;

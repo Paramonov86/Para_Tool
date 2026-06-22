@@ -114,9 +114,25 @@ public partial class ConstructorView : UserControl
 
         // Editor section drag-reorder (once the visual tree is realized).
         Loaded += (_, _) => { if (!_sectionsWired) { _sectionsWired = true; SetupSectionReorder(); } };
+
+        // Window-level Ctrl+Z/Ctrl+Shift+Z (focus-independent).
+        AttachedToVisualTree += (_, _) =>
+        {
+            _topLevel = TopLevel.GetTopLevel(this);
+            _topLevel?.AddHandler(KeyDownEvent, OnTopLevelKeyDown, RoutingStrategies.Tunnel);
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            _topLevel?.RemoveHandler(KeyDownEvent, OnTopLevelKeyDown);
+            _topLevel = null;
+        };
     }
 
     private bool _sectionsWired;
+    private TopLevel? _topLevel;
+    private ArtifactItemVM? _restoredSub;
+
+    private void OnArtifactRestored() => RebuildChips();
 
     private void OnToggleCodeView(object? sender, RoutedEventArgs e)
     {
@@ -149,7 +165,13 @@ public partial class ConstructorView : UserControl
     private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         if (args.PropertyName == nameof(ConstructorViewModel.SelectedArtifact))
+        {
+            // Re-wire the Restored event so undo/redo/jump rebuilds the code-behind chips.
+            if (_restoredSub != null) _restoredSub.Restored -= OnArtifactRestored;
+            _restoredSub = (DataContext as ConstructorViewModel)?.SelectedArtifact;
+            if (_restoredSub != null) _restoredSub.Restored += OnArtifactRestored;
             RebuildChips();
+        }
     }
 
     private bool DetectIsSpell(string statId)
@@ -248,25 +270,28 @@ public partial class ConstructorView : UserControl
             vm.EditingLang = _currentLocaLang;
     }
 
+    // Undo/Redo is handled at the window level (OnTopLevelKeyDown) so it works regardless of
+    // which control has focus — clicking a chip rebuilds and drops focus, so a view-level
+    // handler would never see Ctrl+Z. The unified action journal is the single source of truth.
+    private void OnTopLevelKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.Key is not (Key.Z or Key.Y)) return;
+        if (!IsEffectivelyVisible) return; // only when the Constructor view is on screen
+        if (DataContext is not ConstructorViewModel vm || vm.SelectedArtifact == null) return;
+        // Let a focused TextBox keep its own fine-grained text undo.
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox) return;
+
+        bool redo = (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Shift)) || e.Key == Key.Y;
+        bool ok = redo ? vm.SelectedArtifact.ApplyRedo() : vm.SelectedArtifact.ApplyUndo();
+        if (ok)
+        {
+            RebuildChips(); // rarity/pool/theme chips are built in code-behind
+            e.Handled = true;
+        }
+    }
+
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        // Item-level Undo/Redo (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y). Handled on the bubble phase
-        // and only if no inner control (a TextBox's own undo, or a condition chip editor)
-        // already consumed it — giving natural layering: text → chips → whole-item.
-        if (e.Route == RoutingStrategies.Bubble && !e.Handled
-            && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key is Key.Z or Key.Y
-            && DataContext is ConstructorViewModel undoVm && undoVm.SelectedArtifact != null)
-        {
-            bool redo = (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Shift)) || e.Key == Key.Y;
-            bool ok = redo ? undoVm.SelectedArtifact.ApplyRedo() : undoVm.SelectedArtifact.ApplyUndo();
-            if (ok)
-            {
-                RebuildChips(); // rarity/pool/theme chips are built in code-behind
-                e.Handled = true;
-            }
-            return;
-        }
-
         // Enter in single-line TextBox → lose focus (but not inside ChipListEditor — it uses Enter to add chips)
         if (e.Key == Key.Enter && e.Source is TextBox tb && !tb.AcceptsReturn)
         {
@@ -410,6 +435,21 @@ public partial class ConstructorView : UserControl
             && histVm.SelectedArtifact != null)
         {
             ShowVersionHistory(btn, histVm);
+            return;
+        }
+
+        // Journal tab — switch the editor area to the action log
+        if (btn.Name == "JournalTabBtn" && DataContext is ConstructorViewModel jrnVm)
+        {
+            jrnVm.ShowJournal();
+            return;
+        }
+
+        // Journal entry — jump the item's state to that point
+        if (btn.Name == "JournalEntryBtn" && btn.Tag is ArtifactItemVM.JournalEntry entry
+            && DataContext is ConstructorViewModel jeVm)
+        {
+            jeVm.JumpToJournalEntry(entry);
             return;
         }
 
@@ -1085,6 +1125,12 @@ public partial class ConstructorView : UserControl
 
     // === Editor section drag-reorder ===
 
+    private Border? _dragHoverCard;
+    private void ClearDragHover()
+    {
+        if (_dragHoverCard != null) { _dragHoverCard.Opacity = 1; _dragHoverCard = null; }
+    }
+
     private void SetupSectionReorder()
     {
         var sp = this.FindControl<StackPanel>("EditorSections");
@@ -1109,21 +1155,36 @@ public partial class ConstructorView : UserControl
 
     private void WireSectionDrag(StackPanel sp, Border card, Control handle)
     {
-        handle.PointerPressed += (_, e) =>
+        handle.PointerPressed += async (_, e) =>
         {
             if (!e.GetCurrentPoint(handle).Properties.IsLeftButtonPressed) return;
+            e.Handled = true;
             var data = new Avalonia.Input.DataObject();
             data.Set("SectionKey", (string)card.Tag!);
-            try { _ = Avalonia.Input.DragDrop.DoDragDrop(e, data, Avalonia.Input.DragDropEffects.Move); }
+            card.Opacity = 0.4; // ghost: the dragged section visibly lifts
+            try { await Avalonia.Input.DragDrop.DoDragDrop(e, data, Avalonia.Input.DragDropEffects.Move); }
             catch { }
-            e.Handled = true;
+            finally { card.Opacity = 1; }
         };
 
         Avalonia.Input.DragDrop.SetAllowDrop(card, true);
         card.AddHandler(Avalonia.Input.DragDrop.DragOverEvent, (_, e) =>
-            e.DragEffects = e.Data.Contains("SectionKey") ? Avalonia.Input.DragDropEffects.Move : Avalonia.Input.DragDropEffects.None);
+        {
+            bool ok = e.Data.Contains("SectionKey");
+            e.DragEffects = ok ? Avalonia.Input.DragDropEffects.Move : Avalonia.Input.DragDropEffects.None;
+            // Drop-target cue: dim the hovered card (but not the source being dragged).
+            bool isSource = e.Data.Get("SectionKey") is string k && (card.Tag as string) == k;
+            if (ok && !isSource && !ReferenceEquals(card, _dragHoverCard))
+            {
+                ClearDragHover();
+                _dragHoverCard = card;
+                card.Opacity = 0.75;
+            }
+        });
+        card.AddHandler(Avalonia.Input.DragDrop.DragLeaveEvent, (_, _) => { if (ReferenceEquals(card, _dragHoverCard)) ClearDragHover(); });
         card.AddHandler(Avalonia.Input.DragDrop.DropEvent, (_, e) =>
         {
+            ClearDragHover();
             if (e.Data.Get("SectionKey") is not string fromKey) return;
             var from = sp.Children.OfType<Border>().FirstOrDefault(b => (b.Tag as string) == fromKey);
             if (from == null || ReferenceEquals(from, card)) return;

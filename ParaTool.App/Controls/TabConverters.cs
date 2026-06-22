@@ -49,3 +49,12 @@ public class BoolToPinBrushConverter : IValueConverter
         value is true ? ThemeBrushes.Accent : ThemeBrushes.TextMuted;
     public object ConvertBack(object? value, Type t, object? p, CultureInfo c) => false;
 }
+
+/// <summary>Bool → dimmed opacity (0.45) when true (undone/future), full otherwise.</summary>
+public class BoolToDimConverter : IValueConverter
+{
+    public static readonly BoolToDimConverter Instance = new();
+    public object Convert(object? value, Type t, object? p, CultureInfo c) =>
+        value is true ? 0.45 : 1.0;
+    public object ConvertBack(object? value, Type t, object? p, CultureInfo c) => false;
+}
