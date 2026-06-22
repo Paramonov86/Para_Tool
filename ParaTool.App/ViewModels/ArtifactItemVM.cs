@@ -745,7 +745,7 @@ public partial class ArtifactItemVM : ObservableObject
     /// <summary>True once any action has been logged (more than just the baseline).</summary>
     public bool HasActions => _hist.Count > 1;
 
-    private static string NowStr() => DateTime.Now.ToString("HH:mm:ss");
+    private static string NowStr() => DateTime.Now.ToString("T", Loc.Instance.Culture);
     private static string GenericLabel() => Loc.Instance["JrnEdit"];
 
     /// <summary>Resolve an action key to a localized journal label (reusing existing Loc keys).</summary>

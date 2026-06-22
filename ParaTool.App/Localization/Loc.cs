@@ -91,6 +91,18 @@ public partial class Loc : ObservableObject
     /// </summary>
     private Dictionary<string, string>? _enStrings;
 
+    /// <summary>CultureInfo for the current UI language — drives locale-correct date/number
+    /// formatting (e.g. en → US M/d/yyyy 12h, ru → dd.MM.yyyy 24h).</summary>
+    public CultureInfo Culture
+    {
+        get
+        {
+            var code = Lang switch { "en" => "en-US", "zh" => "zh-CN", "pt" => "pt-BR", _ => Lang };
+            try { return CultureInfo.GetCultureInfo(code); }
+            catch { return CultureInfo.CurrentCulture; }
+        }
+    }
+
     public string this[string key]
     {
         get

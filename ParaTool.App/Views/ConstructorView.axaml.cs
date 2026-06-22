@@ -840,7 +840,7 @@ public partial class ConstructorView : UserControl
                 var name = v.Artifact?.DisplayName.GetValueOrDefault(vm.EditingLang)
                     ?? v.Artifact?.DisplayName.GetValueOrDefault("en")
                     ?? v.Artifact?.StatId ?? "";
-                var when = v.SavedAt.ToLocalTime().ToString("dd.MM HH:mm");
+                var when = v.SavedAt.ToLocalTime().ToString("g", Loc.Instance.Culture);
                 listBox.Items.Add(new ListBoxItem
                 {
                     Content = $"{when}  ·  {name}", Tag = v.Artifact,
