@@ -327,6 +327,9 @@ public partial class ConstructorView : UserControl
             if (border?.Name == "TabBorder" && border.DataContext is ArtifactItemVM tabItem
                 && DataContext is ConstructorViewModel vm)
             {
+                // Leave the Journal view (clicking the already-selected tab won't change
+                // SelectedArtifact, so we must clear the journal flag explicitly).
+                vm.IsJournalView = false;
                 vm.SelectedArtifact = tabItem;
                 e.Handled = true;
             }
