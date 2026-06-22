@@ -5,10 +5,20 @@ namespace ParaTool.App.Services;
 
 public sealed class UiSettings
 {
-    public string Theme { get; set; } = "Paramonov";
+    public string Theme { get; set; } = "BG3";
     public int FontSizeIndex { get; set; } = 1; // 0=S, 1=M, 2=L
     public string DefaultTab { get; set; } = "Patcher"; // "Patcher" or "Constructor"
     public string? Language { get; set; } // null = system default
+
+    // Remembered sort state (per list)
+    public string ConstructorSort { get; set; } = "Name";
+    public bool ConstructorSortDesc { get; set; }
+    public string PatcherSort { get; set; } = "Name";
+    public string PatcherSecondarySort { get; set; } = "Name";
+    public bool PatcherSortDesc { get; set; }
+
+    /// <summary>Remembered order of the Constructor editor sections (by section key).</summary>
+    public List<string>? EditorSectionOrder { get; set; }
 }
 
 public static class UiSettingsService

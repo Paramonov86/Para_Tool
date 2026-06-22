@@ -7,6 +7,7 @@ using ParaTool.Core.Artifacts;
 using ParaTool.Core.Models;
 using ParaTool.Core.Parsing;
 using ParaTool.App.Converters;
+using ParaTool.App.Services;
 using ParaTool.Core.Localization;
 using ParaTool.Core.Services;
 using Avalonia.Threading;
@@ -111,8 +112,19 @@ public partial class ConstructorViewModel : ViewModelBase
     [ObservableProperty] private bool _sortDescending;
     public bool IsPreviewView => !IsCodeView;
     partial void OnIsCodeViewChanged(bool value) => OnPropertyChanged(nameof(IsPreviewView));
-    partial void OnCurrentSortChanged(SortMode value) => ApplySort();
-    partial void OnSortDescendingChanged(bool value) => ApplySort();
+    partial void OnCurrentSortChanged(SortMode value) { ApplySort(); PersistSort(); }
+    partial void OnSortDescendingChanged(bool value) { ApplySort(); PersistSort(); }
+
+    private bool _loadingSettings;
+
+    private void PersistSort()
+    {
+        if (_loadingSettings) return;
+        var s = UiSettingsService.Load();
+        s.ConstructorSort = CurrentSort.ToString();
+        s.ConstructorSortDesc = SortDescending;
+        UiSettingsService.Save(s);
+    }
 
     public StatsResolver? StatsResolver => _resolver;
     public LocaService? LocaService => _locaService;
@@ -159,6 +171,13 @@ public partial class ConstructorViewModel : ViewModelBase
         }
         LoadSavedArtifacts();
         SavedArtifacts.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(HasSavedArtifacts)); OnPropertyChanged(nameof(ShowSavedArtifacts)); };
+
+        // Restore persisted sort preference (no re-save while loading).
+        _loadingSettings = true;
+        var ui = UiSettingsService.Load();
+        if (Enum.TryParse<SortMode>(ui.ConstructorSort, out var sm)) _currentSort = sm;
+        _sortDescending = ui.ConstructorSortDesc;
+        _loadingSettings = false;
     }
 
     public void SetBaseItems(IEnumerable<ModVM> mods)
@@ -486,13 +505,14 @@ public partial class ConstructorViewModel : ViewModelBase
             if (_resolver != null && _locaService != null)
                 ReloadLocaForCurrentLang(newValue);
             newValue.RefreshAll();
+            newValue.ResetUndoBaseline(); // baseline after programmatic loca load
             // Add to recent tabs (MRU — existing tabs keep their order so switching
-            // doesn't shuffle them; only brand-new tabs jump to the front).
+            // doesn't shuffle them; new tabs jump to the front, but after the pinned block).
             if (!RecentTabs.Contains(newValue))
             {
-                RecentTabs.Insert(0, newValue);
-                while (RecentTabs.Count > MaxRecentTabs)
-                    RecentTabs.RemoveAt(RecentTabs.Count - 1);
+                int pinnedCount = RecentTabs.Count(t => t.IsPinned);
+                RecentTabs.Insert(pinnedCount, newValue);
+                EvictTabsIfNeeded();
             }
         }
         OnPropertyChanged(nameof(IsArtifactSelected));
@@ -678,6 +698,7 @@ public partial class ConstructorViewModel : ViewModelBase
             art.RemovedBoosts.Clear();
 
             SelectedArtifact.RefreshAll();
+            SelectedArtifact.ResetUndoBaseline();
             SelectedArtifact.IsDirty = false;
         }
     }
@@ -702,6 +723,63 @@ public partial class ConstructorViewModel : ViewModelBase
         RecentTabs.Remove(item);
         if (SelectedArtifact == item)
             SelectedArtifact = RecentTabs.FirstOrDefault();
+    }
+
+    // === Tab reorder / pin ===
+
+    /// <summary>Evict the last UNPINNED tab when over the cap; never evict pinned tabs.</summary>
+    private void EvictTabsIfNeeded()
+    {
+        while (RecentTabs.Count > MaxRecentTabs)
+        {
+            int idx = -1;
+            for (int i = RecentTabs.Count - 1; i >= 0; i--)
+                if (!RecentTabs[i].IsPinned) { idx = i; break; }
+            if (idx < 0) break; // all pinned — leave them
+            RecentTabs.RemoveAt(idx);
+        }
+    }
+
+    public void MoveTabLeft(ArtifactItemVM item)
+    {
+        int i = RecentTabs.IndexOf(item);
+        if (i > 0) RecentTabs.Move(i, i - 1);
+    }
+
+    public void MoveTabRight(ArtifactItemVM item)
+    {
+        int i = RecentTabs.IndexOf(item);
+        if (i >= 0 && i < RecentTabs.Count - 1) RecentTabs.Move(i, i + 1);
+    }
+
+    public void TogglePin(ArtifactItemVM item)
+    {
+        item.IsPinned = !item.IsPinned;
+        RegroupPinnedTabs();
+    }
+
+    /// <summary>Stable reorder so pinned tabs sit at the front, preserving relative order.</summary>
+    private void RegroupPinnedTabs()
+    {
+        var ordered = RecentTabs.Where(t => t.IsPinned)
+            .Concat(RecentTabs.Where(t => !t.IsPinned)).ToList();
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            int cur = RecentTabs.IndexOf(ordered[i]);
+            if (cur != i) RecentTabs.Move(cur, i);
+        }
+    }
+
+    /// <summary>Revert the selected artifact to a saved version snapshot (from the ↺ history button).</summary>
+    public void RevertToVersion(ArtifactDefinition version)
+    {
+        if (SelectedArtifact == null) return;
+        SelectedArtifact.RevertTo(version);
+        ArtifactStore.Save(SelectedArtifact.Artifact);
+        SelectedArtifact.IsDirty = false;
+        SaveToastText = Localization.Loc.Instance.Lang == "ru" ? "Откат ✓" : "Reverted ✓";
+        ShowSaveToast = true;
+        _ = HideSaveToastAsync();
     }
 
     [RelayCommand]

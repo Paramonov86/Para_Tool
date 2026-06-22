@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using ParaTool.App.Localization;
 using ParaTool.Core.Schema;
 using ParaTool.App.Services;
@@ -27,7 +28,23 @@ public class ConditionBlocksEditor : UserControl
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;
     private List<CondToken> _tokens = [];
-    private readonly Stack<string> _undoStack = new(); // for Ctrl+Z
+    private const int MaxUndo = 10; // history depth for Ctrl+Z / Ctrl+Shift+Z
+    private readonly List<string> _undoStack = new();
+    private readonly List<string> _redoStack = new();
+
+    private static void PushCapped(List<string> stack, string v)
+    {
+        stack.Add(v);
+        if (stack.Count > MaxUndo) stack.RemoveAt(0);
+    }
+
+    /// <summary>Record the current Text on the undo stack and start a fresh redo branch.
+    /// Used by the add-menu paths that set Text directly (bypassing SyncFromTokens).</summary>
+    private void PushUndoSnapshot()
+    {
+        PushCapped(_undoStack, Text ?? "");
+        _redoStack.Clear();
+    }
 
     private static SolidColorBrush FgFunc => Themes.ThemeBrushes.Get("SuccessBrush");
     private static SolidColorBrush BgFunc => new(Themes.ThemeBrushes.Get("SuccessBrush").Color, 0.1);
@@ -59,11 +76,33 @@ public class ConditionBlocksEditor : UserControl
         FontScale.ScaleChanged += _scaleHandler;
         AddHandler(KeyDownEvent, (_, e) =>
         {
-            if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control) && _undoStack.Count > 0)
+            if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
+
+            // Only the innermost editor under the focused element handles the shortcut, so a
+            // nested group editor undoes its own changes instead of the outer one (Tunnel
+            // fires outer→inner, so the outer must bow out when the source lives deeper).
+            if ((e.Source as Visual)?.FindAncestorOfType<ConditionBlocksEditor>() != this
+                && !ReferenceEquals(e.Source, this))
+                return;
+
+            bool redo = (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Shift)) || e.Key == Key.Y;
+            bool undo = e.Key == Key.Z && !e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+
+            if (undo && _undoStack.Count > 0)
             {
-                _updating = true;
-                Text = _undoStack.Pop();
-                _updating = false;
+                PushCapped(_redoStack, Text ?? "");
+                var prev = _undoStack[^1];
+                _undoStack.RemoveAt(_undoStack.Count - 1);
+                _updating = true; Text = prev; _updating = false;
+                Rebuild();
+                e.Handled = true;
+            }
+            else if (redo && _redoStack.Count > 0)
+            {
+                PushCapped(_undoStack, Text ?? "");
+                var next = _redoStack[^1];
+                _redoStack.RemoveAt(_redoStack.Count - 1);
+                _updating = true; Text = next; _updating = false;
                 Rebuild();
                 e.Handled = true;
             }
@@ -704,10 +743,12 @@ public class ConditionBlocksEditor : UserControl
         {
             var current = Text ?? "";
             var addition = "(Enemy())";
+            PushUndoSnapshot();
             _updating = true;
             Text = string.IsNullOrEmpty(current) ? addition : $"{current} and {addition}";
             _updating = false;
             Rebuild();
+            Focus();
         };
         menu.Items.Add(groupItem);
         menu.Items.Add(new Separator());
@@ -719,7 +760,6 @@ public class ConditionBlocksEditor : UserControl
             .GroupBy(f => f.Category)
             .OrderBy(g => g.Key);
 
-        var userFavs = Core.Services.FavoritesStore.Load();
         var isRu = Localization.Loc.Instance.Lang == "ru";
 
         // Search box at top
@@ -733,9 +773,6 @@ public class ConditionBlocksEditor : UserControl
         var searchItem = new MenuItem { Header = searchBox, StaysOpenOnClick = true };
         menu.Items.Add(searchItem);
         menu.Items.Add(new Separator());
-
-        // Build all menu items for filtering
-        var allMenuItems = new List<(MenuItem item, MenuItem? parent, string searchText)>();
 
         // Track favorites section items for in-place updates
         var favItems = new Dictionary<string, MenuItem>(StringComparer.OrdinalIgnoreCase);
@@ -765,53 +802,78 @@ public class ConditionBlocksEditor : UserControl
 
         menu.Items.Add(new Separator());
 
-        // All by category, sorted by localized name, with star toggle
+        // Factory: one condition menu-item (star toggle + localized label + add-on-click).
+        // Reused for both the category submenus and the flat search-results list.
+        MenuItem MakeCondItem(ConditionDef def)
+        {
+            var displayName = ConditionLabels.GetLabel(def.Name, isRu);
+            var paramHint = def.Params.Length > 0
+                ? $" ({string.Join(", ", def.Params.Select(p => p.Name))})"
+                : "";
+            var isFav = Core.Services.FavoritesStore.Load().Contains(def.Name);
+
+            var itemPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            var starBtn = new Button
+            {
+                Content = isFav ? "★" : "☆", Padding = new Thickness(0), Background = Avalonia.Media.Brushes.Transparent,
+                BorderThickness = new Thickness(0), Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+                FontSize = Services.FontScale.Of(12), Foreground = Themes.ThemeBrushes.Accent,
+                MinWidth = 0, MinHeight = 0,
+            };
+            var condName = def.Name; // capture
+            starBtn.Click += (s, e2) =>
+            {
+                e2.Handled = true;
+                var nowFav = Core.Services.FavoritesStore.Toggle(condName);
+                if (s is Button b) b.Content = nowFav ? "★" : "☆";
+                RebuildFavSection();
+            };
+            itemPanel.Children.Add(starBtn);
+            itemPanel.Children.Add(new TextBlock { Text = displayName + paramHint, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+
+            var item = new MenuItem { Header = itemPanel, Tag = def, StaysOpenOnClick = true };
+            item.Click += (_, _) => { AddCondition(def); menu.Close(); };
+            return item;
+        }
+
+        // All by category, sorted by localized name. Track (def, searchText) for flat search.
+        var allConds = new List<(ConditionDef def, string search)>();
+        var categoryMenus = new List<MenuItem>();
         foreach (var group in groups)
         {
-            var sub = new MenuItem { Header = ConditionLabels.GetCategoryLabel(group.Key, isRu) };
+            var catLabel = ConditionLabels.GetCategoryLabel(group.Key, isRu);
+            var sub = new MenuItem { Header = catLabel };
             foreach (var def in group.OrderBy(d => ConditionLabels.GetLabel(d.Name, isRu)))
             {
-                var displayName = ConditionLabels.GetLabel(def.Name, isRu);
-                var paramHint = def.Params.Length > 0
-                    ? $" ({string.Join(", ", def.Params.Select(p => p.Name))})"
-                    : "";
-                var isFav = userFavs.Contains(def.Name);
-                var star = isFav ? "★" : "☆";
-
-                var itemPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-                var starBtn = new Button
-                {
-                    Content = star, Padding = new Thickness(0), Background = Avalonia.Media.Brushes.Transparent,
-                    BorderThickness = new Thickness(0), Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
-                    FontSize = Services.FontScale.Of(12), Foreground = Themes.ThemeBrushes.Accent,
-                    MinWidth = 0, MinHeight = 0,
-                };
-                var condName = def.Name; // capture
-                starBtn.Click += (s, e2) =>
-                {
-                    e2.Handled = true;
-                    var nowFav = Core.Services.FavoritesStore.Toggle(condName);
-                    if (s is Button b) b.Content = nowFav ? "★" : "☆";
-                    RebuildFavSection();
-                };
-                itemPanel.Children.Add(starBtn);
-                itemPanel.Children.Add(new TextBlock { Text = displayName + paramHint, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
-
-                var item = new MenuItem { Header = itemPanel, Tag = def, StaysOpenOnClick = true };
-                item.Click += (_, _) => { AddCondition(def); menu.Close(); };
-                sub.Items.Add(item);
-                allMenuItems.Add((item, sub, $"{displayName} {def.Name}".ToLower()));
+                sub.Items.Add(MakeCondItem(def));
+                allConds.Add((def, $"{ConditionLabels.GetLabel(def.Name, isRu)} {def.Name} {catLabel}".ToLower()));
             }
+            categoryMenus.Add(sub);
             menu.Items.Add(sub);
         }
 
-        // Search filtering
+        // Flat search: while a query is active, hide categories + favourites and show a flat
+        // list of EVERY match (across all categories) directly in the menu root, so matches
+        // buried in collapsed submenus are actually visible.
+        var flatItems = new List<MenuItem>();
         searchBox.TextChanged += (_, _) =>
         {
             var q = (searchBox.Text ?? "").Trim().ToLower();
-            foreach (var (item, parent, searchText) in allMenuItems)
+            foreach (var fi in flatItems) menu.Items.Remove(fi);
+            flatItems.Clear();
+
+            bool searching = q.Length > 0;
+            foreach (var c in categoryMenus) c.IsVisible = !searching;
+            foreach (var fav in favItems.Values) fav.IsVisible = !searching;
+
+            if (searching)
             {
-                item.IsVisible = string.IsNullOrEmpty(q) || searchText.Contains(q);
+                foreach (var (def, search) in allConds.Where(x => x.search.Contains(q)))
+                {
+                    var it = MakeCondItem(def);
+                    menu.Items.Add(it);
+                    flatItems.Add(it);
+                }
             }
         };
 
@@ -837,10 +899,12 @@ public class ConditionBlocksEditor : UserControl
         var call = args.Length > 0 ? $"{def.Name}({string.Join(",", args)})" : $"{def.Name}()";
 
         var current = Text ?? "";
+        PushUndoSnapshot(); // record so the added condition can be undone
         _updating = true;
         Text = string.IsNullOrEmpty(current) ? call : $"{current} and {call}";
         _updating = false;
         Rebuild();
+        Focus(); // keep keyboard focus after the popup closes so Ctrl+Z reaches us
     }
 
     // ── Token removal ──────────────────────────────────────────
@@ -917,7 +981,8 @@ public class ConditionBlocksEditor : UserControl
 
         var oldText = Text ?? "";
         if (!string.IsNullOrEmpty(oldText))
-            _undoStack.Push(oldText);
+            PushCapped(_undoStack, oldText);
+        _redoStack.Clear(); // a fresh edit starts a new history branch
 
         _updating = true;
         Text = SerializeTokens(tokens);

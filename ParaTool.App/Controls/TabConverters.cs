@@ -31,3 +31,21 @@ public class BoolToFgConverter : IValueConverter
         value is true ? ThemeBrushes.TextPrimary : ThemeBrushes.TextMuted;
     public object ConvertBack(object? value, Type t, object? p, CultureInfo c) => false;
 }
+
+/// <summary>Bool → filled diamond when pinned, hollow when not.</summary>
+public class BoolToPinGlyphConverter : IValueConverter
+{
+    public static readonly BoolToPinGlyphConverter Instance = new();
+    public object Convert(object? value, Type t, object? p, CultureInfo c) =>
+        value is true ? "◆" : "◇"; // ◆ / ◇
+    public object ConvertBack(object? value, Type t, object? p, CultureInfo c) => false;
+}
+
+/// <summary>Bool → accent brush when pinned, muted otherwise.</summary>
+public class BoolToPinBrushConverter : IValueConverter
+{
+    public static readonly BoolToPinBrushConverter Instance = new();
+    public object Convert(object? value, Type t, object? p, CultureInfo c) =>
+        value is true ? ThemeBrushes.Accent : ThemeBrushes.TextMuted;
+    public object ConvertBack(object? value, Type t, object? p, CultureInfo c) => false;
+}

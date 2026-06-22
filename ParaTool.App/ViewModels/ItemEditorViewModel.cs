@@ -71,6 +71,14 @@ public partial class ItemEditorViewModel : ViewModelBase
                 OnPropertyChanged(nameof(MissingItemsText));
         });
         RefreshProfileList();
+
+        // Restore persisted sort preference (no re-save while loading).
+        _loadingSettings = true;
+        var ui = ParaTool.App.Services.UiSettingsService.Load();
+        if (Enum.TryParse<SortMode>(ui.PatcherSort, out var ps)) _currentSort = ps;
+        if (Enum.TryParse<SortMode>(ui.PatcherSecondarySort, out var ss)) _secondarySort = ss;
+        _sortDescending = ui.PatcherSortDesc;
+        _loadingSettings = false;
     }
 
     partial void OnIsPatchingChanged(bool value)
@@ -82,9 +90,21 @@ public partial class ItemEditorViewModel : ViewModelBase
     partial void OnIsRestoringChanged(bool value) => OnPropertyChanged(nameof(ShowRestoreButton));
     partial void OnHasBackupChanged(bool value) => OnPropertyChanged(nameof(ShowRestoreButton));
     partial void OnPatchErrorChanged(string? value) => OnPropertyChanged(nameof(ShowPatchButton));
-    partial void OnCurrentSortChanged(SortMode value) => ApplySort();
-    partial void OnSecondarySortChanged(SortMode value) => ApplySort();
-    partial void OnSortDescendingChanged(bool value) => ApplySort();
+    partial void OnCurrentSortChanged(SortMode value) { ApplySort(); PersistSort(); }
+    partial void OnSecondarySortChanged(SortMode value) { ApplySort(); PersistSort(); }
+    partial void OnSortDescendingChanged(bool value) { ApplySort(); PersistSort(); }
+
+    private bool _loadingSettings;
+
+    private void PersistSort()
+    {
+        if (_loadingSettings) return;
+        var s = ParaTool.App.Services.UiSettingsService.Load();
+        s.PatcherSort = CurrentSort.ToString();
+        s.PatcherSecondarySort = SecondarySort.ToString();
+        s.PatcherSortDesc = SortDescending;
+        ParaTool.App.Services.UiSettingsService.Save(s);
+    }
     partial void OnSearchTextChanged(string? value) => ApplyFilters();
     partial void OnHideDisabledChanged(bool value) => ApplyFilters();
 

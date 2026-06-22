@@ -203,6 +203,75 @@ public sealed class ArtifactDefinition
 
     /// <summary>Themes for thematic loot tables.</summary>
     public List<string> LootThemes { get; set; } = [];
+
+    /// <summary>
+    /// Copy every content field from <paramref name="other"/> into this instance, while
+    /// preserving this artifact's own on-disk identity (<see cref="ArtifactId"/> and
+    /// <see cref="TemplateUuid"/>). Used by Reset, item-level Undo/Redo and version revert.
+    /// NOTE: takes ownership of <paramref name="other"/>'s collection references — callers
+    /// pass throwaway instances (a fresh build or a deserialized snapshot), so the source is
+    /// never reused afterwards.
+    /// </summary>
+    public void CopyFrom(ArtifactDefinition other)
+    {
+        FormatVersion = other.FormatVersion;
+        CreatedAt = other.CreatedAt;
+        // Identity (ArtifactId / TemplateUuid) intentionally NOT copied — keep our own.
+
+        StatId = other.StatId;
+        StatType = other.StatType;
+        UsingBase = other.UsingBase;
+        Slot = other.Slot;
+        ParentTemplateUuid = other.ParentTemplateUuid;
+
+        Rarity = other.Rarity;
+        ComboCategory = other.ComboCategory;
+        ValueOverride = other.ValueOverride;
+        Unique = other.Unique;
+        Weight = other.Weight;
+        ArmorClass = other.ArmorClass;
+        ArmorType = other.ArmorType;
+        ProficiencyGroup = other.ProficiencyGroup;
+        Damage = other.Damage;
+        DamageType = other.DamageType;
+        VersatileDamage = other.VersatileDamage;
+        DefaultBoosts = other.DefaultBoosts;
+        WeaponProperties = other.WeaponProperties;
+
+        Boosts = other.Boosts;
+        PassivesOnEquip = other.PassivesOnEquip;
+        StatusOnEquip = other.StatusOnEquip;
+        SpellsOnEquip = other.SpellsOnEquip;
+        BoostsOnEquipMainHand = other.BoostsOnEquipMainHand;
+        BoostsOnEquipOffHand = other.BoostsOnEquipOffHand;
+
+        Passives = other.Passives;
+        Statuses = other.Statuses;
+        Spells = other.Spells;
+
+        DisplayName = other.DisplayName;
+        Description = other.Description;
+        DescriptionParams = other.DescriptionParams;
+        DisplayNameHandle = other.DisplayNameHandle;
+        DescriptionHandle = other.DescriptionHandle;
+
+        SpellRenames = other.SpellRenames;
+        StatusRenames = other.StatusRenames;
+
+        IconMainDdsBase64 = other.IconMainDdsBase64;
+        IconConsoleDdsBase64 = other.IconConsoleDdsBase64;
+        AtlasIconMapKey = other.AtlasIconMapKey;
+
+        RemovedPassives = other.RemovedPassives;
+        RemovedSpells = other.RemovedSpells;
+        RemovedStatuses = other.RemovedStatuses;
+        RemovedBoosts = other.RemovedBoosts;
+
+        PatchEnabled = other.PatchEnabled;
+        AddToLoot = other.AddToLoot;
+        LootPool = other.LootPool;
+        LootThemes = other.LootThemes;
+    }
 }
 
 /// <summary>

@@ -296,11 +296,32 @@
                                         BorderBrush="{Binding IsSelected, Converter={x:Static ctrl:BoolToBrushConverter.Instance}}"
                                         Background="{Binding IsSelected, Converter={x:Static ctrl:BoolToBgConverter.Instance}}">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <Button Name="TabPinBtn" Tag="{Binding}"
+                                                Content="{Binding IsPinned, Converter={x:Static ctrl:BoolToPinGlyphConverter.Instance}}"
+                                                Foreground="{Binding IsPinned, Converter={x:Static ctrl:BoolToPinBrushConverter.Instance}}"
+                                                FontSize="9" Padding="2,0" MinWidth="0" MinHeight="0"
+                                                Background="Transparent" BorderThickness="0"
+                                                Cursor="Hand" VerticalAlignment="Center"
+                                                ToolTip.Tip="{Binding TipPinTab, Source={x:Static loc:Loc.Instance}}" />
                                         <TextBlock Text="{Binding PreviewName}"
                                                    FontSize="{DynamicResource FontSize10}"
                                                    Foreground="{Binding IsSelected, Converter={x:Static ctrl:BoolToFgConverter.Instance}}"
                                                    VerticalAlignment="Center" MaxWidth="120"
                                                    TextTrimming="CharacterEllipsis" />
+                                        <Button Name="TabMoveLeftBtn" Content="‹" Tag="{Binding}"
+                                                IsVisible="{Binding IsSelected}"
+                                                FontSize="11" Padding="2,0" MinWidth="0" MinHeight="0"
+                                                Background="Transparent" BorderThickness="0"
+                                                Foreground="{StaticResource TextMutedBrush}"
+                                                Cursor="Hand" VerticalAlignment="Center"
+                                                ToolTip.Tip="{Binding TipMoveTabLeft, Source={x:Static loc:Loc.Instance}}" />
+                                        <Button Name="TabMoveRightBtn" Content="›" Tag="{Binding}"
+                                                IsVisible="{Binding IsSelected}"
+                                                FontSize="11" Padding="2,0" MinWidth="0" MinHeight="0"
+                                                Background="Transparent" BorderThickness="0"
+                                                Foreground="{StaticResource TextMutedBrush}"
+                                                Cursor="Hand" VerticalAlignment="Center"
+                                                ToolTip.Tip="{Binding TipMoveTabRight, Source={x:Static loc:Loc.Instance}}" />
                                         <Button Name="CloseTabBtn" Content="✕" Tag="{Binding}"
                                                 FontSize="8" Padding="2,0" MinWidth="0" MinHeight="0"
                                                 Background="Transparent" BorderThickness="0"
@@ -358,37 +379,57 @@
                 </ScrollViewer>
 
                 <ScrollViewer Grid.Row="1" IsVisible="{Binding IsArtifactSelected}" Margin="8,4,8,8">
-                    <StackPanel Spacing="12" DataContext="{Binding SelectedArtifact}">
+                    <StackPanel Name="EditorSections" Spacing="12" DataContext="{Binding SelectedArtifact}">
                         <!-- Rarity -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
+                        <Border Tag="Rarity" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize12}"
+                                           ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding FieldRarity, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <WrapPanel Name="RarityChips" />
                             </StackPanel>
                         </Border>
                         <!-- Slot -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
+                        <Border Tag="Slot" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize12}"
+                                           ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding ChipSlot, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <WrapPanel Name="PoolChips" />
                             </StackPanel>
                         </Border>
                         <!-- Themes -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
+                        <Border Tag="Themes" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize12}"
+                                           ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding ChipThemes, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <WrapPanel Name="ThemeChips" />
                             </StackPanel>
                         </Border>
                         <!-- Armor properties -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
+                        <Border Tag="Armor" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
                                 IsVisible="{Binding IsArmor}">
                             <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize11}"
+                                           ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding LblArmor, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding LblArmorClass, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"
                                                IsVisible="{Binding ShowArmorClass}" />
@@ -420,11 +461,16 @@
                         </Border>
 
                         <!-- Weapon properties -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
+                        <Border Tag="Weapon" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
                                 IsVisible="{Binding IsWeapon}">
                             <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize11}"
+                                           ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding LblWeapon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Text="{Binding LblDamage, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
                                     <TextBox Grid.Column="1" Text="{Binding EditDamage}" Watermark="1d8"
@@ -469,11 +515,16 @@
                         </Border>
 
                         <!-- Icon selector -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
+                        <Border Tag="Icon" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize12}"
+                                           ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding LblIcon, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <Grid ColumnDefinitions="*,Auto">
                                     <!-- Browse existing -->
                                     <Button Command="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).OpenIconBrowserCommand}"
@@ -505,11 +556,16 @@
                         </Border>
 
                         <!-- Mechanics -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
+                        <Border Tag="Mechanics" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
                             <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize11}"
+                                           ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding CardMechanics, Source={x:Static loc:Loc.Instance}}"
-                                           FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1"
+                                           FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold" Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center"
                                            ToolTip.Tip="{Binding LblCardMechanics, Source={x:Static loc:Loc.Instance}}" />
+                                </StackPanel>
                                 <TextBlock Text="{Binding LblBoosts, Source={x:Static loc:Loc.Instance}}"
                                            FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
                                 <ctrl:BoostBlocksEditor Text="{Binding EditBoosts}" />
@@ -524,11 +580,16 @@
                             </StackPanel>
                         </Border>
                         <!-- Passives -->
-                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
+                        <Border Tag="Passives" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12"
                                 ClipToBounds="False">
                             <StackPanel Spacing="6" ClipToBounds="False">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize11}"
+                                           ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
                                 <TextBlock Text="{Binding LblPassives, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" />
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center" />
+                                </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,4">
                                     <ctrl:SearchPickerChip Name="PassivePickerChip"
                                         Items="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).AllPassives}"
@@ -680,6 +741,14 @@
                             FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
                             Padding="30,10" CornerRadius="8" Cursor="Hand">
                         <TextBlock Text="{Binding BtnSave, Source={x:Static loc:Loc.Instance}}" />
+                    </Button>
+                    <Button Name="HistoryBtn"
+                            Background="{DynamicResource SuccessBrush}" Foreground="White"
+                            FontSize="{DynamicResource FontSize16}" FontWeight="Bold"
+                            Padding="11,9" CornerRadius="8" Cursor="Hand" BorderThickness="0"
+                            VerticalAlignment="Center"
+                            ToolTip.Tip="{Binding TipVersionHistory, Source={x:Static loc:Loc.Instance}}">
+                        <TextBlock Text="↺" />
                     </Button>
                     <Border IsVisible="{ReflectionBinding DataContext.ShowSaveToast, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             Background="#1A2ECC71" BorderBrush="#2ECC71" BorderThickness="1"

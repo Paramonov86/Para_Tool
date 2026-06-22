@@ -111,7 +111,12 @@ public partial class ConstructorView : UserControl
             toggleBtn.Content = "\ud83d\udc41"; // eye = preview mode (default)
             toggleBtn.Click += OnToggleCodeView;
         }
+
+        // Editor section drag-reorder (once the visual tree is realized).
+        Loaded += (_, _) => { if (!_sectionsWired) { _sectionsWired = true; SetupSectionReorder(); } };
     }
+
+    private bool _sectionsWired;
 
     private void OnToggleCodeView(object? sender, RoutedEventArgs e)
     {
@@ -245,6 +250,23 @@ public partial class ConstructorView : UserControl
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
+        // Item-level Undo/Redo (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y). Handled on the bubble phase
+        // and only if no inner control (a TextBox's own undo, or a condition chip editor)
+        // already consumed it — giving natural layering: text → chips → whole-item.
+        if (e.Route == RoutingStrategies.Bubble && !e.Handled
+            && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key is Key.Z or Key.Y
+            && DataContext is ConstructorViewModel undoVm && undoVm.SelectedArtifact != null)
+        {
+            bool redo = (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Shift)) || e.Key == Key.Y;
+            bool ok = redo ? undoVm.SelectedArtifact.ApplyRedo() : undoVm.SelectedArtifact.ApplyUndo();
+            if (ok)
+            {
+                RebuildChips(); // rarity/pool/theme chips are built in code-behind
+                e.Handled = true;
+            }
+            return;
+        }
+
         // Enter in single-line TextBox → lose focus (but not inside ChipListEditor — it uses Enter to add chips)
         if (e.Key == Key.Enter && e.Source is TextBox tb && !tb.AcceptsReturn)
         {
@@ -369,6 +391,25 @@ public partial class ConstructorView : UserControl
             && DataContext is ConstructorViewModel tabVm)
         {
             tabVm.CloseTab(tabItem);
+            return;
+        }
+
+        // Tab reorder / pin
+        if (btn.Tag is ArtifactItemVM tabTarget && DataContext is ConstructorViewModel tabReVm)
+        {
+            switch (btn.Name)
+            {
+                case "TabMoveLeftBtn": tabReVm.MoveTabLeft(tabTarget); return;
+                case "TabMoveRightBtn": tabReVm.MoveTabRight(tabTarget); return;
+                case "TabPinBtn": tabReVm.TogglePin(tabTarget); return;
+            }
+        }
+
+        // Version history dropdown (green ↺ button)
+        if (btn.Name == "HistoryBtn" && DataContext is ConstructorViewModel histVm
+            && histVm.SelectedArtifact != null)
+        {
+            ShowVersionHistory(btn, histVm);
             return;
         }
 
@@ -718,6 +759,92 @@ public partial class ConstructorView : UserControl
         }
     }
 
+    private void ShowVersionHistory(Button source, ConstructorViewModel vm)
+    {
+        var art = vm.SelectedArtifact?.Artifact;
+        if (art == null) return;
+
+        var versions = ParaTool.Core.Artifacts.ArtifactStore.LoadVersions(art.ArtifactId);
+
+        var popup = new Avalonia.Controls.Primitives.Popup
+        {
+            PlacementTarget = source,
+            Placement = Avalonia.Controls.PlacementMode.Top,
+            IsLightDismissEnabled = true,
+            MaxHeight = 320, MinWidth = 220,
+        };
+
+        var listBox = new ListBox
+        {
+            MaxHeight = 300, Background = Avalonia.Media.Brushes.Transparent,
+            BorderThickness = new Avalonia.Thickness(0),
+        };
+
+        if (versions.Count == 0)
+        {
+            listBox.Items.Add(new ListBoxItem
+            {
+                Content = Loc.Instance.LblNoVersions, IsEnabled = false,
+                FontSize = FontScale.Of(11), Foreground = Themes.ThemeBrushes.TextMuted,
+            });
+        }
+        else
+        {
+            // Newest first
+            for (int i = versions.Count - 1; i >= 0; i--)
+            {
+                var v = versions[i];
+                var name = v.Artifact?.DisplayName.GetValueOrDefault(vm.EditingLang)
+                    ?? v.Artifact?.DisplayName.GetValueOrDefault("en")
+                    ?? v.Artifact?.StatId ?? "";
+                var when = v.SavedAt.ToLocalTime().ToString("dd.MM HH:mm");
+                listBox.Items.Add(new ListBoxItem
+                {
+                    Content = $"{when}  ·  {name}", Tag = v.Artifact,
+                    FontSize = FontScale.Of(11), Foreground = Themes.ThemeBrushes.TextSecondary,
+                });
+            }
+        }
+
+        listBox.SelectionChanged += (_, _) =>
+        {
+            if (listBox.SelectedItem is not ListBoxItem sel
+                || sel.Tag is not ParaTool.Core.Artifacts.ArtifactDefinition version) return;
+            popup.IsOpen = false;
+            vm.RevertToVersion(version);
+        };
+
+        popup.Child = new Border
+        {
+            Child = new StackPanel
+            {
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = Loc.Instance.LblVersionHistory, FontSize = FontScale.Of(11),
+                        FontWeight = Avalonia.Media.FontWeight.SemiBold,
+                        Foreground = Themes.ThemeBrushes.TextMuted,
+                        Margin = new Avalonia.Thickness(2, 0, 0, 4),
+                    },
+                    listBox,
+                },
+            },
+            Background = Themes.ThemeBrushes.PanelBg,
+            BorderBrush = Themes.ThemeBrushes.BorderSubtle,
+            BorderThickness = new Avalonia.Thickness(1),
+            CornerRadius = new Avalonia.CornerRadius(8),
+            Padding = new Avalonia.Thickness(8),
+        };
+
+        if (source.Parent is Avalonia.Controls.Panel parentPanel)
+        {
+            parentPanel.Children.Add(popup);
+            popup.IsOpen = true;
+            popup.Closed += (_, _) => parentPanel.Children.Remove(popup);
+        }
+    }
+
     private void InsertBbCode(TextBox tb, string tag)
     {
         // Use saved selection (live selection resets when BB button clicked)
@@ -954,6 +1081,85 @@ public partial class ConstructorView : UserControl
             tt.X = -i * dx;
             await System.Threading.Tasks.Task.Delay(16, ct);
         }
+    }
+
+    // === Editor section drag-reorder ===
+
+    private void SetupSectionReorder()
+    {
+        var sp = this.FindControl<StackPanel>("EditorSections");
+        if (sp == null) return;
+
+        ApplySectionOrder(sp);
+
+        foreach (var card in sp.Children.OfType<Border>().Where(b => b.Tag is string).ToList())
+        {
+            var handle = FindSectionHandle(card);
+            if (handle != null) WireSectionDrag(sp, card, handle);
+        }
+    }
+
+    private static Control? FindSectionHandle(Visual card)
+    {
+        foreach (var d in card.GetVisualDescendants())
+            if (d is Control c && (c.Tag as string) == "SectionHandle")
+                return c;
+        return null;
+    }
+
+    private void WireSectionDrag(StackPanel sp, Border card, Control handle)
+    {
+        handle.PointerPressed += (_, e) =>
+        {
+            if (!e.GetCurrentPoint(handle).Properties.IsLeftButtonPressed) return;
+            var data = new Avalonia.Input.DataObject();
+            data.Set("SectionKey", (string)card.Tag!);
+            try { _ = Avalonia.Input.DragDrop.DoDragDrop(e, data, Avalonia.Input.DragDropEffects.Move); }
+            catch { }
+            e.Handled = true;
+        };
+
+        Avalonia.Input.DragDrop.SetAllowDrop(card, true);
+        card.AddHandler(Avalonia.Input.DragDrop.DragOverEvent, (_, e) =>
+            e.DragEffects = e.Data.Contains("SectionKey") ? Avalonia.Input.DragDropEffects.Move : Avalonia.Input.DragDropEffects.None);
+        card.AddHandler(Avalonia.Input.DragDrop.DropEvent, (_, e) =>
+        {
+            if (e.Data.Get("SectionKey") is not string fromKey) return;
+            var from = sp.Children.OfType<Border>().FirstOrDefault(b => (b.Tag as string) == fromKey);
+            if (from == null || ReferenceEquals(from, card)) return;
+            int fromIdx = sp.Children.IndexOf(from);
+            int toIdx = sp.Children.IndexOf(card);
+            if (fromIdx < 0 || toIdx < 0) return;
+            sp.Children.Move(fromIdx, toIdx);
+            PersistSectionOrder(sp);
+            e.Handled = true;
+        });
+    }
+
+    private static void ApplySectionOrder(StackPanel sp)
+    {
+        var saved = ParaTool.App.Services.UiSettingsService.Load().EditorSectionOrder;
+        if (saved == null || saved.Count == 0) return;
+        int target = 0;
+        foreach (var key in saved)
+        {
+            var card = sp.Children.OfType<Border>().FirstOrDefault(b => (b.Tag as string) == key);
+            if (card == null) continue;
+            int cur = sp.Children.IndexOf(card);
+            if (cur != target && target < sp.Children.Count) sp.Children.Move(cur, target);
+            target++;
+        }
+    }
+
+    private static void PersistSectionOrder(StackPanel sp)
+    {
+        var order = sp.Children.OfType<Border>()
+            .Where(b => b.Tag is string)
+            .Select(b => (string)b.Tag!)
+            .ToList();
+        var s = ParaTool.App.Services.UiSettingsService.Load();
+        s.EditorSectionOrder = order;
+        ParaTool.App.Services.UiSettingsService.Save(s);
     }
 
     private static T? FindDescendant<T>(Visual parent) where T : Visual

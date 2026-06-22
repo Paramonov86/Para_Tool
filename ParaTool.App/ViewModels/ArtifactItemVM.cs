@@ -5,6 +5,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ParaTool.App.Localization;
+using ParaTool.App.Services;
 using ParaTool.Core.Artifacts;
 using ParaTool.Core.Localization;
 
@@ -20,6 +21,7 @@ public partial class ArtifactItemVM : ObservableObject
 
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private bool _isDirty;
+    [ObservableProperty] private bool _isPinned;
     [ObservableProperty] private WriteableBitmap? _iconBitmap;
 
     public bool HasIcon => IconBitmap != null;
@@ -471,7 +473,7 @@ public partial class ArtifactItemVM : ObservableObject
         if (!string.IsNullOrEmpty(passive.Name))
             Artifact.RemovedPassives.RemoveAll(n => n.Equals(passive.Name, StringComparison.OrdinalIgnoreCase));
 
-        IsDirty = true;
+        RecordEdit();
         OnPropertyChanged(nameof(HasPassives));
     }
 
@@ -486,7 +488,7 @@ public partial class ArtifactItemVM : ObservableObject
         if (!string.IsNullOrEmpty(name) && !Artifact.RemovedPassives.Contains(name, StringComparer.OrdinalIgnoreCase))
             Artifact.RemovedPassives.Add(name);
 
-        IsDirty = true;
+        RecordEdit();
         OnPropertyChanged(nameof(HasPassives));
     }
 
@@ -513,7 +515,7 @@ public partial class ArtifactItemVM : ObservableObject
 
         Artifact.RemovedPassives.RemoveAll(n => n.Equals(passive.Name, StringComparison.OrdinalIgnoreCase));
 
-        IsDirty = true;
+        RecordEdit();
         OnPropertyChanged(nameof(HasPassives));
     }
 
@@ -557,7 +559,106 @@ public partial class ArtifactItemVM : ObservableObject
 
     // === Helpers ===
 
-    private void MarkDirty() => IsDirty = true;
+    private void MarkDirty() => RecordEdit();
+
+    // === Item-level undo/redo (Ctrl+Z / Ctrl+Shift+Z) ===
+    // Snapshots the whole ArtifactDefinition. Rapid edits are coalesced into a single
+    // undo step via a 500ms debounce so typing doesn't flood the stack.
+
+    private readonly ArtifactUndoStack _undo = new();
+    private string? _committedJson;     // snapshot of the last settled (committed) state
+    private bool _suppressUndo;         // true while restoring — don't record those changes
+    private DispatcherTimer? _undoDebounce;
+
+    /// <summary>Mark dirty and schedule an undo snapshot for the current edit burst.</summary>
+    internal void RecordEdit()
+    {
+        IsDirty = true;
+        if (_suppressUndo) return;
+
+        _committedJson ??= ArtifactUndoStack.Snapshot(Artifact);
+
+        _undoDebounce ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        _undoDebounce.Stop();
+        _undoDebounce.Tick -= OnUndoBurstSettled;
+        _undoDebounce.Tick += OnUndoBurstSettled;
+        _undoDebounce.Start();
+    }
+
+    private void OnUndoBurstSettled(object? sender, EventArgs e) => CommitUndoBurst();
+
+    /// <summary>Push the pre-burst baseline onto the undo stack and re-baseline.</summary>
+    private void CommitUndoBurst()
+    {
+        _undoDebounce?.Stop();
+        var current = ArtifactUndoStack.Snapshot(Artifact);
+        if (_committedJson == null) { _committedJson = current; return; }
+        if (_committedJson == current) return; // nothing actually changed
+        _undo.PushUndo(_committedJson);
+        _undo.ClearRedo();
+        _committedJson = current;
+    }
+
+    /// <summary>Re-sync the undo baseline to the current state (after a programmatic load).</summary>
+    internal void ResetUndoBaseline()
+    {
+        _undoDebounce?.Stop();
+        _committedJson = ArtifactUndoStack.Snapshot(Artifact);
+    }
+
+    /// <summary>Ctrl+Z. Returns true if a step was undone.</summary>
+    internal bool ApplyUndo()
+    {
+        CommitUndoBurst(); // settle any in-flight edits first
+        var prev = _undo.PopUndo();
+        if (prev == null) return false;
+        _undo.PushRedo(_committedJson ?? ArtifactUndoStack.Snapshot(Artifact));
+        RestoreFrom(prev);
+        return true;
+    }
+
+    /// <summary>Ctrl+Shift+Z. Returns true if a step was redone.</summary>
+    internal bool ApplyRedo()
+    {
+        CommitUndoBurst();
+        var next = _undo.PopRedo();
+        if (next == null) return false;
+        _undo.PushUndo(_committedJson ?? ArtifactUndoStack.Snapshot(Artifact));
+        RestoreFrom(next);
+        return true;
+    }
+
+    /// <summary>Revert to a saved version snapshot, recording it as an undoable step.</summary>
+    internal void RevertTo(ArtifactDefinition version)
+    {
+        CommitUndoBurst();
+        _undo.PushUndo(_committedJson ?? ArtifactUndoStack.Snapshot(Artifact));
+        _undo.ClearRedo();
+        _suppressUndo = true;
+        try
+        {
+            Artifact.CopyFrom(version); // version is a throwaway deserialized snapshot
+            _committedJson = ArtifactUndoStack.Snapshot(Artifact);
+            IsDirty = true;
+            RefreshAll();
+        }
+        finally { _suppressUndo = false; }
+    }
+
+    private void RestoreFrom(string json)
+    {
+        var snap = ArtifactUndoStack.Deserialize(json);
+        if (snap == null) return;
+        _suppressUndo = true;
+        try
+        {
+            Artifact.CopyFrom(snap);
+            _committedJson = ArtifactUndoStack.Snapshot(Artifact);
+            IsDirty = true;
+            RefreshAll(); // also reloads passives from the artifact
+        }
+        finally { _suppressUndo = false; }
+    }
 
     // Debounce preview updates to avoid UI lag on every keystroke
     private DispatcherTimer? _previewDebounce;
@@ -636,6 +737,27 @@ public partial class ArtifactItemVM : ObservableObject
         OnPropertyChanged(nameof(EditPassivesOnEquip));
         OnPropertyChanged(nameof(EditStatusOnEquip));
         OnPropertyChanged(nameof(EditSpellsOnEquip));
+        // Remaining editable fields — so item-level Undo/Redo refreshes every control.
+        OnPropertyChanged(nameof(EditStatId));
+        OnPropertyChanged(nameof(EditRarity));
+        OnPropertyChanged(nameof(EditPool));
+        OnPropertyChanged(nameof(EditUnique));
+        OnPropertyChanged(nameof(EditWeight));
+        OnPropertyChanged(nameof(EditValueOverride));
+        OnPropertyChanged(nameof(EditArmorClass));
+        OnPropertyChanged(nameof(EditArmorType));
+        OnPropertyChanged(nameof(EditProficiencyGroup));
+        OnPropertyChanged(nameof(EditDamage));
+        OnPropertyChanged(nameof(EditDamageType));
+        OnPropertyChanged(nameof(EditVersatileDamage));
+        OnPropertyChanged(nameof(EditDefaultBoosts));
+        OnPropertyChanged(nameof(EditWeaponProperties));
+        OnPropertyChanged(nameof(EditBoostsOnEquipMainHand));
+        OnPropertyChanged(nameof(EditBoostsOnEquipOffHand));
+        OnPropertyChanged(nameof(EditAtlasIconKey));
+        OnPropertyChanged(nameof(ShowArmorClass));
+        OnPropertyChanged(nameof(IsArmor));
+        OnPropertyChanged(nameof(IsWeapon));
         LoadPassivesFromArtifact();
     }
 
@@ -703,7 +825,7 @@ public partial class PassiveVM : ObservableObject
         set
         {
             SetLang(Passive.DisplayName, value);
-            _parent.IsDirty = true;
+            _parent.RecordEdit();
             // Auto-generate StatId from human name if creating new
             if (string.IsNullOrEmpty(Passive.Name) || Passive.Name.StartsWith("Passive_New"))
             {
@@ -723,13 +845,13 @@ public partial class PassiveVM : ObservableObject
     public string EditDescription
     {
         get => GetLang(Passive.Description);
-        set { SetLang(Passive.Description, value); _parent.IsDirty = true; OnPropertyChanged(nameof(HasVisibleLoca)); OnPropertyChanged(); }
+        set { SetLang(Passive.Description, value); _parent.RecordEdit(); OnPropertyChanged(nameof(HasVisibleLoca)); OnPropertyChanged(); }
     }
 
     public string EditDescriptionParams
     {
         get => Passive.DescriptionParams;
-        set { Passive.DescriptionParams = value ?? ""; _parent.IsDirty = true; OnPropertyChanged(); }
+        set { Passive.DescriptionParams = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     public string EditProperties
@@ -738,7 +860,7 @@ public partial class PassiveVM : ObservableObject
         set
         {
             Passive.Properties = value ?? "";
-            _parent.IsDirty = true;
+            _parent.RecordEdit();
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasVisibleLoca));
         }
@@ -747,43 +869,43 @@ public partial class PassiveVM : ObservableObject
     public string EditBoostContext
     {
         get => Passive.BoostContext;
-        set { Passive.BoostContext = value ?? ""; _parent.IsDirty = true; OnPropertyChanged(); }
+        set { Passive.BoostContext = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     public string EditBoosts
     {
         get => Passive.Boosts;
-        set { Passive.Boosts = value ?? ""; _parent.IsDirty = true; OnPropertyChanged(); }
+        set { Passive.Boosts = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     public string EditBoostConditions
     {
         get => Passive.BoostConditions;
-        set { Passive.BoostConditions = value ?? ""; _parent.IsDirty = true; OnPropertyChanged(); }
+        set { Passive.BoostConditions = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     public string EditStatsFunctorContext
     {
         get => Passive.StatsFunctorContext;
-        set { Passive.StatsFunctorContext = value ?? ""; _parent.IsDirty = true; OnPropertyChanged(); }
+        set { Passive.StatsFunctorContext = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     public string EditConditions
     {
         get => Passive.Conditions;
-        set { Passive.Conditions = value ?? ""; _parent.IsDirty = true; OnPropertyChanged(); }
+        set { Passive.Conditions = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     public string EditStatsFunctors
     {
         get => Passive.StatsFunctors;
-        set { Passive.StatsFunctors = value ?? ""; _parent.IsDirty = true; OnPropertyChanged(); }
+        set { Passive.StatsFunctors = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     public string? EditIcon
     {
         get => Passive.Icon;
-        set { Passive.Icon = value; _parent.IsDirty = true; OnPropertyChanged(); }
+        set { Passive.Icon = value; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     private string GetLang(Dictionary<string, string> dict)

@@ -89,7 +89,32 @@ public partial class Loc : ObservableObject
     /// Get a localized string by key. Returns the key itself if not found.
     /// Special key "_lang" returns the current language code (e.g. "en", "ru").
     /// </summary>
-    public string this[string key] => key == "_lang" ? _lang : _strings.TryGetValue(key, out var val) ? val : key;
+    private Dictionary<string, string>? _enStrings;
+
+    public string this[string key]
+    {
+        get
+        {
+            if (key == "_lang") return _lang;
+            if (_strings.TryGetValue(key, out var val)) return val;
+            // Fall back to English so keys present only in en.json still render in every
+            // language (avoids showing the raw key string for newly-added strings).
+            _enStrings ??= LoadRaw("en");
+            return _enStrings.TryGetValue(key, out var en) ? en : key;
+        }
+    }
+
+    private static Dictionary<string, string> LoadRaw(string code)
+    {
+        try
+        {
+            var assembly = typeof(Loc).Assembly;
+            using var stream = assembly.GetManifestResourceStream($"{ResourcePrefix}{code}.json");
+            if (stream == null) return new();
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(stream) ?? new();
+        }
+        catch { return new(); }
+    }
 
     // === XAML binding properties ===
 
@@ -196,6 +221,15 @@ public partial class Loc : ObservableObject
     public string ChipThemes => this["ChipThemes"];
     public string BtnSave => this["BtnSave"];
     public string BtnReset => this["BtnReset"];
+
+    // QoL: version history + tab controls
+    public string TipVersionHistory => this["TipVersionHistory"];
+    public string LblVersionHistory => this["LblVersionHistory"];
+    public string LblNoVersions => this["LblNoVersions"];
+    public string TipPinTab => this["TipPinTab"];
+    public string TipMoveTabLeft => this["TipMoveTabLeft"];
+    public string TipMoveTabRight => this["TipMoveTabRight"];
+    public string TipDragSection => this["TipDragSection"];
 
     public string LblBoosts => this["LblBoosts"];
     public string LblStatuses => this["LblStatuses"];

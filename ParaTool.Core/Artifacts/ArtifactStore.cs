@@ -68,6 +68,95 @@ public static class ArtifactStore
         var encrypted = Encrypt(Encoding.UTF8.GetBytes(json));
         File.WriteAllBytes(tmpPath, encrypted);
         File.Move(tmpPath, path, overwrite: true);
+
+        // Push a snapshot into the rolling version history (last MaxVersions saves).
+        SaveVersion(artifact, json);
+    }
+
+    // ── Version history (rolling ring of the last N saves) ─────
+
+    private const int MaxVersions = 5;
+
+    /// <summary>One saved snapshot of an artifact.</summary>
+    public sealed class ArtifactVersion
+    {
+        public DateTime SavedAt { get; set; }
+        public ArtifactDefinition? Artifact { get; set; }
+    }
+
+    public static string GetHistoryPath(string artifactId) =>
+        Path.Combine(GetArtifactsDir(), $"{artifactId}.hist");
+
+    /// <summary>
+    /// Append the current artifact state to its rolling history sidecar (.hist), keeping
+    /// only the last <see cref="MaxVersions"/> distinct snapshots. Skips no-op duplicates.
+    /// </summary>
+    public static void SaveVersion(ArtifactDefinition artifact, string? preSerializedJson = null)
+    {
+        try
+        {
+            var json = preSerializedJson ?? JsonSerializer.Serialize(artifact, JsonOptions);
+            var versions = LoadVersionsRaw(artifact.ArtifactId);
+
+            // Skip if identical to the newest snapshot (e.g. auto-save-on-switch right after a save).
+            if (versions.Count > 0 && versions[^1].Json == json)
+                return;
+
+            versions.Add(new RawVersion { SavedAt = artifact.ModifiedAt, Json = json });
+            while (versions.Count > MaxVersions)
+                versions.RemoveAt(0);
+
+            var path = GetHistoryPath(artifact.ArtifactId);
+            var tmpPath = path + ".tmp";
+            var payload = JsonSerializer.Serialize(versions, JsonOptions);
+            var encrypted = Encrypt(Encoding.UTF8.GetBytes(payload));
+            File.WriteAllBytes(tmpPath, encrypted);
+            File.Move(tmpPath, path, overwrite: true);
+        }
+        catch (Exception ex) { Services.AppLogger.Warn($"SaveVersion failed for {artifact.ArtifactId}: {ex.Message}"); }
+    }
+
+    /// <summary>Load the saved version history, newest last.</summary>
+    public static List<ArtifactVersion> LoadVersions(string artifactId)
+    {
+        var result = new List<ArtifactVersion>();
+        foreach (var raw in LoadVersionsRaw(artifactId))
+        {
+            ArtifactDefinition? art = null;
+            try { art = JsonSerializer.Deserialize<ArtifactDefinition>(raw.Json, JsonOptions); }
+            catch { /* skip corrupt snapshot */ }
+            if (art != null)
+                result.Add(new ArtifactVersion { SavedAt = raw.SavedAt, Artifact = art });
+        }
+        return result;
+    }
+
+    private sealed class RawVersion
+    {
+        public DateTime SavedAt { get; set; }
+        public string Json { get; set; } = "";
+    }
+
+    private static List<RawVersion> LoadVersionsRaw(string artifactId)
+    {
+        var path = GetHistoryPath(artifactId);
+        if (!File.Exists(path)) return new();
+        try
+        {
+            var data = File.ReadAllBytes(path);
+            if (data.Length == 0) return new();
+            string? payload;
+            if (data.Length > 4 + 16 && data[0] == Magic[0] && data[1] == Magic[1]
+                && data[2] == Magic[2] && data[3] == Magic[3])
+            {
+                var decrypted = Decrypt(data);
+                payload = decrypted != null ? Encoding.UTF8.GetString(decrypted) : null;
+            }
+            else payload = Encoding.UTF8.GetString(data);
+            if (payload == null) return new();
+            return JsonSerializer.Deserialize<List<RawVersion>>(payload, JsonOptions) ?? new();
+        }
+        catch (Exception ex) { Services.AppLogger.Warn($"LoadVersions failed for {artifactId}: {ex.Message}"); return new(); }
     }
 
     /// <summary>
@@ -115,6 +204,9 @@ public static class ArtifactStore
         var path = GetArtifactPath(artifactId);
         if (File.Exists(path))
             File.Delete(path);
+        var histPath = GetHistoryPath(artifactId);
+        if (File.Exists(histPath))
+            File.Delete(histPath);
     }
 
     public static string GetArtifactPath(string artifactId)

@@ -87,7 +87,7 @@ public partial class MainWindow : Window
         if (themeSelector != null)
         {
             var theme = ThemeManager.AllThemes.FirstOrDefault(t => t.Name == _uiSettings.Theme)
-                ?? ThemeManager.Paramonov;
+                ?? ThemeManager.Bg3;
             // Find matching ComboBoxItem
             for (int i = 0; i < themeSelector.Items.Count; i++)
             {
@@ -124,7 +124,7 @@ public partial class MainWindow : Window
         {
             var text = item.Content?.ToString() ?? "";
             var theme = ThemeManager.AllThemes.FirstOrDefault(t => text.Contains(t.Name))
-                ?? ThemeManager.Paramonov;
+                ?? ThemeManager.Bg3;
             ThemeManager.ApplyTheme(Application.Current!, theme);
 
             if (!_suppressSave)
