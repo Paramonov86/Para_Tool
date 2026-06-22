@@ -697,5 +697,6 @@
   "JrnOffHand": "Boni Nebenhand",
   "JrnAddPassive": "Passiv hinzugefügt",
   "JrnRemovePassive": "Passiv entfernt",
-  "JrnRevert": "Version zurückgesetzt"
+  "JrnRevert": "Version zurückgesetzt",
+  "JrnOpened": "Geöffnet"
 }

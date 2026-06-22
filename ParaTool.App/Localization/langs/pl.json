@@ -697,5 +697,6 @@
   "JrnOffHand": "Wzmocnienia drugiej ręki",
   "JrnAddPassive": "Dodano pasywkę",
   "JrnRemovePassive": "Usunięto pasywkę",
-  "JrnRevert": "Przywróć wersję"
+  "JrnRevert": "Przywróć wersję",
+  "JrnOpened": "Otwarto"
 }

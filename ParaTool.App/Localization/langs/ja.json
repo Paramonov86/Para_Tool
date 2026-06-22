@@ -697,5 +697,6 @@
   "JrnOffHand": "オフハンドのブースト",
   "JrnAddPassive": "パッシブを追加",
   "JrnRemovePassive": "パッシブを削除",
-  "JrnRevert": "バージョンを復元"
+  "JrnRevert": "バージョンを復元",
+  "JrnOpened": "開いた"
 }

@@ -697,5 +697,6 @@
   "JrnOffHand": "Bonus main secondaire",
   "JrnAddPassive": "Passif ajouté",
   "JrnRemovePassive": "Passif supprimé",
-  "JrnRevert": "Version restaurée"
+  "JrnRevert": "Version restaurée",
+  "JrnOpened": "Ouvert"
 }

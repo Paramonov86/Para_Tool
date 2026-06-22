@@ -159,7 +159,11 @@ public partial class ConstructorViewModel : ViewModelBase
     public bool ShowFieldEditor => IsArtifactSelected && !IsJournalView;
     public bool ShowJournalView => IsArtifactSelected && IsJournalView;
 
-    public void ShowJournal() => IsJournalView = true;
+    public void ShowJournal()
+    {
+        SelectedArtifact?.EnsureHistory();
+        IsJournalView = true;
+    }
 
     /// <summary>Jump the selected artifact's state to a journal entry (clicked in the Journal tab).</summary>
     public void JumpToJournalEntry(ArtifactItemVM.JournalEntry entry)
@@ -521,7 +525,8 @@ public partial class ConstructorViewModel : ViewModelBase
             if (_resolver != null && _locaService != null)
                 ReloadLocaForCurrentLang(newValue);
             newValue.RefreshAll();
-            newValue.ResetUndoBaseline(); // baseline after programmatic loca load
+            // NB: do NOT reset the undo baseline here — re-selecting an already-open tab
+            // would wipe its journal. History initialises lazily on the first edit.
             // Add to recent tabs (MRU — existing tabs keep their order so switching
             // doesn't shuffle them; new tabs jump to the front, but after the pinned block).
             if (!RecentTabs.Contains(newValue))

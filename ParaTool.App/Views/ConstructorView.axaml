@@ -293,9 +293,19 @@
                                 <Border Name="TabBorder" CornerRadius="6,6,0,0" Padding="8,3" Margin="1,0"
                                         Cursor="Hand"
                                         ToolTip.Tip="{Binding PreviewName}"
-                                        BorderThickness="0,0,0,2"
-                                        BorderBrush="{Binding IsSelected, Converter={x:Static ctrl:BoolToBrushConverter.Instance}}"
-                                        Background="{Binding IsSelected, Converter={x:Static ctrl:BoolToBgConverter.Instance}}">
+                                        BorderThickness="0,0,0,2">
+                                    <Border.BorderBrush>
+                                        <MultiBinding Converter="{x:Static ctrl:TabActiveBrushConverter.Instance}">
+                                            <Binding Path="IsSelected" />
+                                            <Binding Path="((vm:ConstructorViewModel)DataContext).IsJournalView" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                        </MultiBinding>
+                                    </Border.BorderBrush>
+                                    <Border.Background>
+                                        <MultiBinding Converter="{x:Static ctrl:TabActiveBgConverter.Instance}">
+                                            <Binding Path="IsSelected" />
+                                            <Binding Path="((vm:ConstructorViewModel)DataContext).IsJournalView" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                        </MultiBinding>
+                                    </Border.Background>
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <Button Name="TabPinBtn" Tag="{Binding}"
                                                 Content="{Binding IsPinned, Converter={x:Static ctrl:BoolToPinGlyphConverter.Instance}}"
@@ -306,9 +316,15 @@
                                                 ToolTip.Tip="{Binding TipPinTab, Source={x:Static loc:Loc.Instance}}" />
                                         <TextBlock Text="{Binding PreviewName}"
                                                    FontSize="{DynamicResource FontSize10}"
-                                                   Foreground="{Binding IsSelected, Converter={x:Static ctrl:BoolToFgConverter.Instance}}"
                                                    VerticalAlignment="Center" MaxWidth="120"
-                                                   TextTrimming="CharacterEllipsis" />
+                                                   TextTrimming="CharacterEllipsis">
+                                            <TextBlock.Foreground>
+                                                <MultiBinding Converter="{x:Static ctrl:TabActiveFgConverter.Instance}">
+                                                    <Binding Path="IsSelected" />
+                                                    <Binding Path="((vm:ConstructorViewModel)DataContext).IsJournalView" RelativeSource="{RelativeSource AncestorType=UserControl}" />
+                                                </MultiBinding>
+                                            </TextBlock.Foreground>
+                                        </TextBlock>
                                         <Button Name="TabMoveLeftBtn" Content="‹" Tag="{Binding}"
                                                 IsVisible="{Binding IsSelected}"
                                                 FontSize="11" Padding="2,0" MinWidth="0" MinHeight="0"
@@ -339,6 +355,7 @@
                                 CornerRadius="6,6,0,0" Padding="10,3" Margin="4,0,0,0"
                                 BorderThickness="0" Cursor="Hand" VerticalAlignment="Bottom"
                                 FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold"
+                                Opacity="{Binding IsJournalView, Converter={x:Static ctrl:BoolToActiveOpacityConverter.Instance}}"
                                 ToolTip.Tip="{Binding JrnTitle, Source={x:Static loc:Loc.Instance}}">
                             <TextBlock Text="{Binding TabJournal, Source={x:Static loc:Loc.Instance}}" />
                         </Button>
@@ -748,7 +765,10 @@
                     <StackPanel Spacing="2" DataContext="{Binding SelectedArtifact}">
                         <TextBlock Text="{Binding JrnTitle, Source={x:Static loc:Loc.Instance}}"
                                    FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
-                                   Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" Margin="2,2,0,8" />
+                                   Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" Margin="2,2,0,0" />
+                        <TextBlock Text="{Binding DisplayLabel}"
+                                   FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}"
+                                   Margin="2,0,0,8" TextTrimming="CharacterEllipsis" />
                         <TextBlock Text="{Binding JrnEmpty, Source={x:Static loc:Loc.Instance}}"
                                    IsVisible="{Binding !HasJournal}"
                                    FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" Margin="2,8" />
@@ -757,10 +777,13 @@
                                 <DataTemplate>
                                     <Button Name="JournalEntryBtn" Tag="{Binding}"
                                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                            Background="{StaticResource CardBgBrush}" BorderThickness="0"
-                                            CornerRadius="6" Padding="10,7" Margin="0,0,0,4" Cursor="Hand"
+                                            BorderThickness="3,0,0,0" CornerRadius="4" Padding="8,7" Margin="0,0,0,3" Cursor="Hand"
+                                            Background="{Binding IsCurrent, Converter={x:Static ctrl:BoolToBgConverter.Instance}}"
+                                            BorderBrush="{Binding IsCurrent, Converter={x:Static ctrl:BoolToBrushConverter.Instance}}"
                                             Opacity="{Binding IsFuture, Converter={x:Static ctrl:BoolToDimConverter.Instance}}">
-                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Marker}" Width="12" FontSize="{DynamicResource FontSize10}"
+                                                       Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding Time}" FontSize="{DynamicResource FontSize10}"
                                                        Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding Label}" FontSize="{DynamicResource FontSize12}"

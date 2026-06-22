@@ -697,5 +697,6 @@
   "JrnOffHand": "Off-hand boosts",
   "JrnAddPassive": "Add passive",
   "JrnRemovePassive": "Remove passive",
-  "JrnRevert": "Revert version"
+  "JrnRevert": "Revert version",
+  "JrnOpened": "Opened"
 }

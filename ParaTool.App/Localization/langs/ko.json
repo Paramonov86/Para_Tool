@@ -695,5 +695,6 @@
   "JrnOffHand": "보조손 부스트",
   "JrnAddPassive": "패시브 추가",
   "JrnRemovePassive": "패시브 제거",
-  "JrnRevert": "버전 되돌리기"
+  "JrnRevert": "버전 되돌리기",
+  "JrnOpened": "열기"
 }

@@ -697,5 +697,6 @@
   "JrnOffHand": "副手增益",
   "JrnAddPassive": "添加被动",
   "JrnRemovePassive": "移除被动",
-  "JrnRevert": "恢复版本"
+  "JrnRevert": "恢复版本",
+  "JrnOpened": "打开"
 }

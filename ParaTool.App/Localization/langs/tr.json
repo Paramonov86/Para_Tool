@@ -697,5 +697,6 @@
   "JrnOffHand": "Yardımcı el güçlendirmeleri",
   "JrnAddPassive": "Pasif eklendi",
   "JrnRemovePassive": "Pasif kaldırıldı",
-  "JrnRevert": "Sürümü geri al"
+  "JrnRevert": "Sürümü geri al",
+  "JrnOpened": "Açıldı"
 }

@@ -697,5 +697,6 @@
   "JrnOffHand": "Potenziamenti mano secondaria",
   "JrnAddPassive": "Passiva aggiunta",
   "JrnRemovePassive": "Passiva rimossa",
-  "JrnRevert": "Ripristino versione"
+  "JrnRevert": "Ripristino versione",
+  "JrnOpened": "Aperto"
 }

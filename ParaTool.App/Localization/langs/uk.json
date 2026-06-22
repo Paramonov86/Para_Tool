@@ -697,5 +697,6 @@
   "JrnOffHand": "Бусти другої руки",
   "JrnAddPassive": "Додано пасивку",
   "JrnRemovePassive": "Видалено пасивку",
-  "JrnRevert": "Відкат версії"
+  "JrnRevert": "Відкат версії",
+  "JrnOpened": "Відкрито"
 }

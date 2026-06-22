@@ -574,7 +574,9 @@ public partial class ArtifactItemVM : ObservableObject
         public string Label { get; init; } = "";
         public string Time { get; init; } = "";
         public bool IsFuture { get; init; }   // undone (redo-able) — shown dimmed
+        public bool IsCurrent { get; init; }  // the state currently shown — highlighted
         public int HistoryIndex { get; init; } // index into _hist this action produced
+        public string Marker => IsCurrent ? "▶" : "";
     }
 
     private sealed class HistNode
@@ -641,6 +643,9 @@ public partial class ArtifactItemVM : ObservableObject
 
         RebuildJournal();
     }
+
+    /// <summary>Seed the baseline so the Journal shows the "Opened" state even before edits.</summary>
+    internal void EnsureHistory() { if (_hist.Count == 0) ResetUndoBaseline(); }
 
     /// <summary>Initialise the history baseline at the current state (item open / programmatic load).</summary>
     internal void ResetUndoBaseline()
@@ -723,17 +728,22 @@ public partial class ArtifactItemVM : ObservableObject
     private void RebuildJournal()
     {
         Journal.Clear();
-        // Actions are _hist[1..]; _hist[0] is the opening baseline. Newest first.
-        for (int i = _hist.Count - 1; i >= 1; i--)
+        // Photoshop-style: newest action at top … oldest action … "Opened" baseline at bottom.
+        // The current state (cursor) is highlighted; undone (future) states are dimmed.
+        for (int i = _hist.Count - 1; i >= 0; i--)
             Journal.Add(new JournalEntry
             {
-                Label = _hist[i].Label,
+                Label = i == 0 ? Loc.Instance["JrnOpened"] : _hist[i].Label,
                 Time = _hist[i].Time,
                 IsFuture = i > _cursor,
+                IsCurrent = i == _cursor,
                 HistoryIndex = i,
             });
         OnPropertyChanged(nameof(HasJournal));
     }
+
+    /// <summary>True once any action has been logged (more than just the baseline).</summary>
+    public bool HasActions => _hist.Count > 1;
 
     private static string NowStr() => DateTime.Now.ToString("HH:mm:ss");
     private static string GenericLabel() => Loc.Instance["JrnEdit"];
