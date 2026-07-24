@@ -42,6 +42,7 @@ public sealed class LocaService
     public void SeedCache(string langCode, Dictionary<string, string> locaMap)
     {
         _cache[langCode] = locaMap;
+        _prefixCache.Clear(); // memoized prefix matches belong to the replaced map
     }
 
     /// <summary>
@@ -120,17 +121,26 @@ public sealed class LocaService
         var map = GetLocaMap(langCode);
         if (map == null) return null;
 
-        var handle = handleField.Split(';')[0].Trim();
+        var sep = handleField.IndexOf(';');
+        var handle = (sep < 0 ? handleField : handleField[..sep]).Trim();
         if (string.IsNullOrEmpty(handle)) return null;
 
         if (map.TryGetValue(handle, out var text))
             return text;
 
-        // Prefix match
-        foreach (var (key, value) in map)
-            if (key.StartsWith(handle, StringComparison.OrdinalIgnoreCase))
-                return value;
+        // Prefix match. This walks the whole loca map (tens of thousands of entries), and
+        // the patcher resolves a label per item on every filter pass — so memoize the
+        // result, misses included, or one unresolvable handle costs a full scan each time.
+        var resolved = _prefixCache.GetOrAdd((langCode, handle), key =>
+        {
+            foreach (var (k, value) in map)
+                if (k.StartsWith(key.Handle, StringComparison.OrdinalIgnoreCase))
+                    return value;
+            return null;
+        });
 
-        return null;
+        return resolved;
     }
+
+    private readonly ConcurrentDictionary<(string Lang, string Handle), string?> _prefixCache = new();
 }

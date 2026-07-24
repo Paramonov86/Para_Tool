@@ -246,6 +246,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch { /* ignore corrupted session file */ }
 
+        _patcherView?.Detach(); // release the previous scan's VM graph
         _patcherView = editor;
         _constructorView = null; // reset on rescan
 

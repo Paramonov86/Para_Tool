@@ -152,152 +152,154 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Mod list with scroll -->
+                    <!-- Mod list with scroll.
+                         Flat row list (mod headers + the items of expanded mods) bound to a
+                         VirtualizingStackPanel. A nested ItemsControl per mod cannot
+                         virtualize — it realizes a container for every item at once
+                         (~59 visuals per row) and never releases them, which is what made
+                         search/expand freeze the app and pin ~1 GB of RAM. -->
                     <ScrollViewer Grid.Row="3" Name="ModListScroll">
-                        <ItemsControl ItemsSource="{Binding Mods}">
-                            <ItemsControl.ItemTemplate>
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.DataTemplates>
+
+                                <!-- Mod header row -->
                                 <DataTemplate DataType="vm:ModVM">
                                     <Border Background="{Binding ModBackground}"
                                             CornerRadius="4"
                                             Padding="12,6"
-                                            Margin="0,2"
-                                            IsVisible="{Binding HasVisibleItems}">
-                                        <StackPanel>
-                                            <!-- Mod header row -->
-                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
-                                                <CheckBox Grid.Column="0"
-                                                          IsChecked="{Binding Enabled}"
-                                                          Margin="0,0,8,0" />
-                                                <!-- Expand arrow -->
-                                                <Button Grid.Column="1"
-                                                        Content="{Binding IsExpanded, Converter={StaticResource ExpandConv}}"
-                                                        Background="Transparent"
-                                                        Foreground="{StaticResource AccentLightBrush}"
-                                                        BorderThickness="0"
-                                                        Padding="6,2"
-                                                        FontSize="{DynamicResource FontSize16}"
-                                                        FontWeight="Bold"
-                                                        MinWidth="28"
-                                                        Name="ExpandBtn"
-                                                        Tag="{Binding}" />
-                                                <TextBlock Grid.Column="2"
-                                                           Text="{Binding Name}"
-                                                           Foreground="{StaticResource TextPrimaryBrush}"
-                                                           VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Margin="4,0" />
-                                                <!-- Mod-level theme button -->
-                                                <Button Grid.Column="3"
-                                                        Content="{Binding ThemesLabel, Source={x:Static loc:Loc.Instance}}"
-                                                        FontSize="{DynamicResource FontSize10}"
-                                                        Padding="6,2"
-                                                        Margin="4,0"
-                                                        Background="{StaticResource HoverBgBrush}"
-                                                        Foreground="{StaticResource TextMutedBrush}"
-                                                        BorderThickness="0"
-                                                        CornerRadius="4"
-                                                        Name="ModThemeBtn"
-                                                        Tag="{Binding}" />
-                                                <TextBlock Grid.Column="4"
-                                                           Text="{Binding CountDisplay}"
-                                                           Foreground="{StaticResource TextMutedBrush}"
-                                                           VerticalAlignment="Center"
-                                                           Margin="8,0,0,0" />
-                                            </Grid>
-
-                                            <!-- Expanded items -->
-                                            <ItemsControl ItemsSource="{Binding Items}"
-                                                          IsVisible="{Binding IsExpanded}"
-                                                          Margin="28,4,0,0">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate DataType="vm:ItemVM">
-                                                        <Border CornerRadius="4"
-                                                                Padding="8,4"
-                                                                Margin="0,1"
-                                                                Background="{StaticResource CardBgBrush}"
-                                                                BorderBrush="{Binding RarityColor}"
-                                                                BorderThickness="0,0,3,0"
-                                                                IsVisible="{Binding IsVisibleInFilter}">
-                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
-                                                                <CheckBox Grid.Column="0"
-                                                                          IsChecked="{Binding Enabled}"
-                                                                          Margin="0,0,6,0" />
-                                                                <TextBlock Grid.Column="1"
-                                                                           Text="{Binding ItemLabel}"
-                                                                           Foreground="{Binding ItemLabelForeground}"
-                                                                           FontWeight="{Binding HasDisplayName, Converter={x:Static conv:BoolToFontWeightConverter.Instance}}"
-                                                                           VerticalAlignment="Center"
-                                                                           TextTrimming="CharacterEllipsis"
-                                                                           FontSize="{DynamicResource FontSize12}"
-                                                                           ToolTip.Tip="{Binding ItemTooltip}" />
-                                                                <!-- Pool selector -->
-                                                                <ComboBox Grid.Column="2"
-                                                                          ItemsSource="{x:Static vm:ItemVM.PoolOptions}"
-                                                                          SelectedItem="{Binding SelectedPool}"
-                                                                          FontSize="{DynamicResource FontSize11}"
-                                                                          MinWidth="110"
-                                                                          Margin="4,0"
-                                                                          Padding="6,3">
-                                                                    <ComboBox.ItemTemplate>
-                                                                        <DataTemplate x:DataType="vm:LabeledOption">
-                                                                            <TextBlock Text="{Binding Display}" />
-                                                                        </DataTemplate>
-                                                                    </ComboBox.ItemTemplate>
-                                                                </ComboBox>
-                                                                <!-- Rarity selector -->
-                                                                <ComboBox Grid.Column="3"
-                                                                          ItemsSource="{x:Static vm:ItemVM.RarityOptions}"
-                                                                          SelectedItem="{Binding SelectedRarity}"
-                                                                          Foreground="{Binding RarityColor}"
-                                                                          FontSize="{DynamicResource FontSize11}"
-                                                                          FontWeight="SemiBold"
-                                                                          MinWidth="110"
-                                                                          Margin="4,0"
-                                                                          Padding="6,3"
-                                                                          BorderBrush="{Binding RarityColor}"
-                                                                          BorderThickness="1.5">
-                                                                    <ComboBox.ItemTemplate>
-                                                                        <DataTemplate x:DataType="vm:LabeledOption">
-                                                                            <TextBlock Text="{Binding Display}" />
-                                                                        </DataTemplate>
-                                                                    </ComboBox.ItemTemplate>
-                                                                </ComboBox>
-                                                                <!-- Go to Constructor button -->
-                                                                <Button Grid.Column="4"
-                                                                        Content="&#x2192;"
-                                                                        FontSize="{DynamicResource FontSize12}"
-                                                                        Padding="4,2"
-                                                                        Margin="2,0"
-                                                                        Background="Transparent"
-                                                                        Foreground="{StaticResource AccentLightBrush}"
-                                                                        BorderThickness="0"
-                                                                        CornerRadius="4"
-                                                                        Cursor="Hand"
-                                                                        ToolTip.Tip="{Binding TipOpenInConstructor, Source={x:Static loc:Loc.Instance}}"
-                                                                        Name="GoToConstructorBtn"
-                                                                        Tag="{Binding}" />
-                                                                <!-- Theme selector button -->
-                                                                <Button Grid.Column="5"
-                                                                        Content="{Binding ThemesDisplay}"
-                                                                        FontSize="{DynamicResource FontSize10}"
-                                                                        MinWidth="80"
-                                                                        Padding="6,3"
-                                                                        Margin="4,0"
-                                                                        Background="{StaticResource HoverBgBrush}"
-                                                                        Foreground="{StaticResource TextMutedBrush}"
-                                                                        BorderThickness="0"
-                                                                        CornerRadius="4"
-                                                                        Name="ThemeBtn"
-                                                                        Tag="{Binding}" />
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
+                                            Margin="0,2">
+                                        <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                                            <CheckBox Grid.Column="0"
+                                                      IsChecked="{Binding Enabled}"
+                                                      Margin="0,0,8,0" />
+                                            <!-- Expand arrow -->
+                                            <Button Grid.Column="1"
+                                                    Content="{Binding IsExpanded, Converter={StaticResource ExpandConv}}"
+                                                    Background="Transparent"
+                                                    Foreground="{StaticResource AccentLightBrush}"
+                                                    BorderThickness="0"
+                                                    Padding="6,2"
+                                                    FontSize="{DynamicResource FontSize16}"
+                                                    FontWeight="Bold"
+                                                    MinWidth="28"
+                                                    Name="ExpandBtn"
+                                                    Tag="{Binding}" />
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding Name}"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Margin="4,0" />
+                                            <!-- Mod-level theme button -->
+                                            <Button Grid.Column="3"
+                                                    Content="{Binding ThemesLabel, Source={x:Static loc:Loc.Instance}}"
+                                                    FontSize="{DynamicResource FontSize10}"
+                                                    Padding="6,2"
+                                                    Margin="4,0"
+                                                    Background="{StaticResource HoverBgBrush}"
+                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                    BorderThickness="0"
+                                                    CornerRadius="4"
+                                                    Name="ModThemeBtn"
+                                                    Tag="{Binding}" />
+                                            <TextBlock Grid.Column="4"
+                                                       Text="{Binding CountDisplay}"
+                                                       Foreground="{StaticResource TextMutedBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8,0,0,0" />
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
-                            </ItemsControl.ItemTemplate>
+
+                                <!-- Item row (indented under its mod header) -->
+                                <DataTemplate DataType="vm:ItemVM">
+                                    <Border CornerRadius="4"
+                                            Padding="8,4"
+                                            Margin="28,1,0,1"
+                                            Background="{StaticResource CardBgBrush}"
+                                            BorderBrush="{Binding RarityColor}"
+                                            BorderThickness="0,0,3,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                                            <CheckBox Grid.Column="0"
+                                                      IsChecked="{Binding Enabled}"
+                                                      Margin="0,0,6,0" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding ItemLabel}"
+                                                       Foreground="{Binding ItemLabelForeground}"
+                                                       FontWeight="{Binding HasDisplayName, Converter={x:Static conv:BoolToFontWeightConverter.Instance}}"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       FontSize="{DynamicResource FontSize12}"
+                                                       ToolTip.Tip="{Binding ItemTooltip}" />
+                                            <!-- Pool selector -->
+                                            <ComboBox Grid.Column="2"
+                                                      ItemsSource="{x:Static vm:ItemVM.PoolOptions}"
+                                                      SelectedItem="{Binding SelectedPool}"
+                                                      FontSize="{DynamicResource FontSize11}"
+                                                      MinWidth="110"
+                                                      Margin="4,0"
+                                                      Padding="6,3">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:LabeledOption">
+                                                        <TextBlock Text="{Binding Display}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <!-- Rarity selector -->
+                                            <ComboBox Grid.Column="3"
+                                                      ItemsSource="{x:Static vm:ItemVM.RarityOptions}"
+                                                      SelectedItem="{Binding SelectedRarity}"
+                                                      Foreground="{Binding RarityColor}"
+                                                      FontSize="{DynamicResource FontSize11}"
+                                                      FontWeight="SemiBold"
+                                                      MinWidth="110"
+                                                      Margin="4,0"
+                                                      Padding="6,3"
+                                                      BorderBrush="{Binding RarityColor}"
+                                                      BorderThickness="1.5">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:LabeledOption">
+                                                        <TextBlock Text="{Binding Display}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <!-- Go to Constructor button -->
+                                            <Button Grid.Column="4"
+                                                    Content="&#x2192;"
+                                                    FontSize="{DynamicResource FontSize12}"
+                                                    Padding="4,2"
+                                                    Margin="2,0"
+                                                    Background="Transparent"
+                                                    Foreground="{StaticResource AccentLightBrush}"
+                                                    BorderThickness="0"
+                                                    CornerRadius="4"
+                                                    Cursor="Hand"
+                                                    ToolTip.Tip="{Binding TipOpenInConstructor, Source={x:Static loc:Loc.Instance}}"
+                                                    Name="GoToConstructorBtn"
+                                                    Tag="{Binding}" />
+                                            <!-- Theme selector button -->
+                                            <Button Grid.Column="5"
+                                                    Content="{Binding ThemesDisplay}"
+                                                    FontSize="{DynamicResource FontSize10}"
+                                                    MinWidth="80"
+                                                    Padding="6,3"
+                                                    Margin="4,0"
+                                                    Background="{StaticResource HoverBgBrush}"
+                                                    Foreground="{StaticResource TextMutedBrush}"
+                                                    BorderThickness="0"
+                                                    CornerRadius="4"
+                                                    Name="ThemeBtn"
+                                                    Tag="{Binding}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+
+                            </ItemsControl.DataTemplates>
                         </ItemsControl>
                     </ScrollViewer>
                 </Grid>

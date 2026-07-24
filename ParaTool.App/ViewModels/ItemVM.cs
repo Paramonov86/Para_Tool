@@ -36,7 +36,6 @@ public partial class ItemVM : ObservableObject
     private readonly ItemEntry _entry;
 
     private readonly LocaService? _locaService;
-    private readonly PropertyChangedEventHandler _langHandler;
 
     public ItemVM(ItemEntry entry, LocaService? locaService = null)
     {
@@ -46,21 +45,25 @@ public partial class ItemVM : ObservableObject
         _selectedPool = PoolOptions.FirstOrDefault(o => o.Value == entry.EffectivePool) ?? PoolOptions[0];
         _selectedRarity = RarityOptions.FirstOrDefault(o => o.Value == entry.EffectiveRarity) ?? RarityOptions[0];
         _selectedThemes = new ObservableCollection<string>(entry.EffectiveThemes);
-
-        _langHandler = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(OnLanguageChanged);
-        Loc.Instance.PropertyChanged += _langHandler;
     }
 
-    public void Detach() => Loc.Instance.PropertyChanged -= _langHandler;
-
-    private void OnLanguageChanged()
+    /// <summary>
+    /// Re-read the localized label. Driven by the owning ItemEditorViewModel: subscribing
+    /// every ItemVM to the static Loc.Instance event kept every item of every past scan
+    /// alive forever, and made a language switch do the shared-option refresh N times.
+    /// </summary>
+    public void RefreshLanguage()
     {
-        foreach (var o in PoolOptions) o.Display = Loc.Instance.PoolName(o.Value);
-        foreach (var o in RarityOptions) o.Display = Loc.Instance.RarityName(o.Value);
-
         OnPropertyChanged(nameof(ItemLabel));
         OnPropertyChanged(nameof(ItemLabelForeground));
         OnPropertyChanged(nameof(ThemesDisplay));
+    }
+
+    /// <summary>Refresh the shared pool/rarity option labels. Call once per language change.</summary>
+    public static void RefreshSharedOptionLabels()
+    {
+        foreach (var o in PoolOptions) o.Display = Loc.Instance.PoolName(o.Value);
+        foreach (var o in RarityOptions) o.Display = Loc.Instance.RarityName(o.Value);
     }
 
     public string StatId => _entry.StatId;

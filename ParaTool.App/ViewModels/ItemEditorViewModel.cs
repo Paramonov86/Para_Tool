@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -48,6 +50,16 @@ public partial class ItemEditorViewModel : ViewModelBase
     [ObservableProperty] private bool _isRestoring;
     [ObservableProperty] private bool _restoreSuccess;
 
+    /// <summary>
+    /// Flat projection the mod list is bound to: a row per visible mod header, followed
+    /// by a row per visible item of every expanded mod. Flat + virtualized, because a
+    /// nested ItemsControl per mod realizes a container for every item at once (~59
+    /// visuals per row) and never releases them.
+    /// </summary>
+    public BulkObservableCollection<object> Rows { get; } = new();
+
+    private bool _suspendRows;
+
     public string? AmpPakPath { get; set; }
 
     /// <summary>Raised when user clicks "Go to Constructor" on an item.</summary>
@@ -62,14 +74,28 @@ public partial class ItemEditorViewModel : ViewModelBase
     public bool ShowPatchButton => !IsPatching && !PatchSuccess && PatchError == null;
     public bool ShowRestoreButton => HasBackup && !IsPatching && !IsRestoring;
 
+    private readonly PropertyChangedEventHandler _langHandler;
+
+    /// <summary>
+    /// Drop the language subscription so a re-scan does not keep the previous view model
+    /// — and its whole ModVM/ItemVM graph — alive through the static Loc.Instance event.
+    /// </summary>
+    public void Detach() => Loc.Instance.PropertyChanged -= _langHandler;
+
     public ItemEditorViewModel()
     {
-        Loc.Instance.PropertyChanged += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        _langHandler = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
+            ItemVM.RefreshSharedOptionLabels();
+            foreach (var mod in Mods)
+                foreach (var item in mod.Items)
+                    item.RefreshLanguage();
+
             OnPropertyChanged(nameof(ModsCountText));
             if (HasMissingItems)
                 OnPropertyChanged(nameof(MissingItemsText));
         });
+        Loc.Instance.PropertyChanged += _langHandler;
         RefreshProfileList();
 
         // Restore persisted sort preference (no re-save while loading).
@@ -79,6 +105,57 @@ public partial class ItemEditorViewModel : ViewModelBase
         if (Enum.TryParse<SortMode>(ui.PatcherSecondarySort, out var ss)) _secondarySort = ss;
         _sortDescending = ui.PatcherSortDesc;
         _loadingSettings = false;
+
+        Mods.CollectionChanged += OnModsCollectionChanged;
+    }
+
+    partial void OnModsChanged(ObservableCollection<ModVM>? oldValue, ObservableCollection<ModVM> newValue)
+    {
+        if (oldValue != null)
+        {
+            oldValue.CollectionChanged -= OnModsCollectionChanged;
+            foreach (var mod in oldValue) mod.PropertyChanged -= OnModPropertyChanged;
+        }
+        newValue.CollectionChanged += OnModsCollectionChanged;
+        foreach (var mod in newValue) mod.PropertyChanged += OnModPropertyChanged;
+        RebuildRows();
+    }
+
+    private void OnModsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+            foreach (ModVM mod in e.OldItems) mod.PropertyChanged -= OnModPropertyChanged;
+        if (e.NewItems != null)
+            foreach (ModVM mod in e.NewItems) mod.PropertyChanged += OnModPropertyChanged;
+        RebuildRows();
+    }
+
+    private void OnModPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Expanding/collapsing a mod changes which item rows exist.
+        if (e.PropertyName == nameof(ModVM.IsExpanded))
+            RebuildRows();
+    }
+
+    /// <summary>
+    /// Recompute <see cref="Rows"/> from the current filter, sort and expansion state.
+    /// Cheap enough to run on every keystroke: it only walks the VM lists, and the
+    /// bound panel only realizes the rows that fit on screen.
+    /// </summary>
+    public void RebuildRows()
+    {
+        if (_suspendRows) return;
+
+        var rows = new List<object>();
+        foreach (var mod in Mods)
+        {
+            if (!mod.HasVisibleItems) continue;
+            rows.Add(mod);
+            if (!mod.IsExpanded) continue;
+            foreach (var item in SortItems(mod.Items.Where(i => i.IsVisibleInFilter)))
+                rows.Add(item);
+        }
+        Rows.Reset(rows);
     }
 
     partial void OnIsPatchingChanged(bool value)
@@ -147,27 +224,21 @@ public partial class ItemEditorViewModel : ViewModelBase
         _ => (IComparable)(i.DisplayName ?? i.StatId)
     };
 
-    public void ApplySort()
+    private IEnumerable<ItemVM> SortItems(IEnumerable<ItemVM> items)
     {
-        foreach (var mod in Mods)
-        {
-            var sorted = mod.Items
-                .OrderBy(i => GetSortKey(i, CurrentSort))
-                .ThenBy(i => GetSortKey(i, SecondarySort));
+        var sorted = items
+            .OrderBy(i => GetSortKey(i, CurrentSort))
+            .ThenBy(i => GetSortKey(i, SecondarySort));
 
-            IEnumerable<ItemVM> result = SortDescending ? sorted.Reverse() : sorted;
-
-            var list = result.ToList();
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (mod.Items[i] != list[i])
-                {
-                    int oldIdx = mod.Items.IndexOf(list[i]);
-                    if (oldIdx > i) mod.Items.Move(oldIdx, i);
-                }
-            }
-        }
+        return SortDescending ? sorted.Reverse() : sorted;
     }
+
+    /// <summary>
+    /// Sorting is applied to the row projection, not by reordering ModVM.Items — moving
+    /// items inside a bound collection costs one container move per item on top of an
+    /// O(n^2) index lookup.
+    /// </summary>
+    public void ApplySort() => RebuildRows();
 
     public void ApplyFilters()
     {
@@ -175,43 +246,51 @@ public partial class ItemEditorViewModel : ViewModelBase
         var hasSearch = !string.IsNullOrEmpty(query);
         var hasThemeFilter = HiddenThemes.Count > 0;
 
-        foreach (var mod in Mods)
+        // Auto-expand below flips IsExpanded per mod; rebuild the rows once at the end
+        // instead of once per mod.
+        _suspendRows = true;
+        try
         {
-            foreach (var item in mod.Items)
+            foreach (var mod in Mods)
             {
-                bool visible = true;
-
-                if (HideDisabled && !item.Enabled)
-                    visible = false;
-
-                if (visible && hasThemeFilter)
+                foreach (var item in mod.Items)
                 {
-                    // Hide items whose ALL themes are in HiddenThemes (or have no themes and "None" is hidden)
-                    var themes = item.Entry.EffectiveThemes;
-                    if (themes.Count == 0)
-                        visible = !HiddenThemes.Contains("None");
-                    else
-                        visible = themes.Any(t => !HiddenThemes.Contains(t));
+                    bool visible = true;
+
+                    if (HideDisabled && !item.Enabled)
+                        visible = false;
+
+                    if (visible && hasThemeFilter)
+                    {
+                        // Hide items whose ALL themes are in HiddenThemes (or have no themes and "None" is hidden)
+                        var themes = item.Entry.EffectiveThemes;
+                        if (themes.Count == 0)
+                            visible = !HiddenThemes.Contains("None");
+                        else
+                            visible = themes.Any(t => !HiddenThemes.Contains(t));
+                    }
+
+                    if (visible && hasSearch)
+                    {
+                        visible = item.ItemLabel.Contains(query!, StringComparison.OrdinalIgnoreCase)
+                               || item.StatId.Contains(query!, StringComparison.OrdinalIgnoreCase)
+                               || (item.Entry.SearchableText != null
+                                   && item.Entry.SearchableText.Contains(query!, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    item.IsVisibleInFilter = visible;
                 }
 
-                if (visible && hasSearch)
-                {
-                    visible = item.ItemLabel.Contains(query!, StringComparison.OrdinalIgnoreCase)
-                           || item.StatId.Contains(query!, StringComparison.OrdinalIgnoreCase)
-                           || (item.Entry.SearchableText != null
-                               && item.Entry.SearchableText.Contains(query!, StringComparison.OrdinalIgnoreCase));
-                }
+                mod.RefreshFilterState();
 
-                item.IsVisibleInFilter = visible;
+                // Auto-expand mods with search results
+                if (hasSearch && mod.HasVisibleItems)
+                    mod.IsExpanded = true;
             }
-
-            mod.RefreshFilterState();
-
-            // Auto-expand mods with search results
-            if (hasSearch && mod.HasVisibleItems)
-                mod.IsExpanded = true;
         }
+        finally { _suspendRows = false; }
 
+        RebuildRows();
         RefreshCounts();
     }
 

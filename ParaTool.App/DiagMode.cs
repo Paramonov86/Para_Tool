@@ -80,6 +80,15 @@ internal static class DiagMode
         foreach (var mod in result.Mods)
             foreach (var it in mod.Items) itemEntryByStatId.TryAdd(it.StatId, it);
 
+        // --diag-perf: build the same ModVM/ItemVM graph the patcher builds, then time
+        // ApplyFilters/ApplySort the way typing in the search box drives them. Reports
+        // wall time + allocated bytes per pass so filter regressions are measurable.
+        if (args.Contains("--diag-perf", StringComparer.OrdinalIgnoreCase))
+        {
+            RunFilterPerf(result, locaService);
+            return 0;
+        }
+
         // --diag-templates: dump full LSF-aware template metadata for templates whose
         // Stats attribute matches a substring pattern (across every scanned pak).
         // Great for confirming whether the "all cloaks share one handle" is an LSF
@@ -413,6 +422,204 @@ internal static class DiagMode
 
         Console.WriteLine($"Done in {sw.Elapsed.TotalSeconds:F1}s. Summary: {summaryPath}");
         return 0;
+    }
+
+    /// <summary>
+    /// Benchmark the patcher's filter/sort hot path against the user's real mod set.
+    /// Mirrors MainWindowViewModel's VM construction so the numbers match the UI.
+    /// </summary>
+    private static void RunFilterPerf(ScanResult result, LocaService locaService)
+    {
+        var vm = new ViewModels.ItemEditorViewModel();
+        if (result.AmpMod != null)
+            vm.Mods.Add(new ViewModels.ModVM(result.AmpMod, locaService));
+        foreach (var mod in result.Mods)
+            vm.Mods.Add(new ViewModels.ModVM(mod, locaService));
+
+        var itemCount = vm.Mods.Sum(m => m.Items.Count);
+        Console.WriteLine($"\n=== filter perf: {vm.Mods.Count} mods / {itemCount} items ===");
+
+        void Measure(string label, Action action)
+        {
+            GC.Collect(2, GCCollectionMode.Forced, true, true);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var t = System.Diagnostics.Stopwatch.StartNew();
+            action();
+            t.Stop();
+            var alloc = (GC.GetAllocatedBytesForCurrentThread() - before) / 1024.0 / 1024.0;
+            Console.WriteLine($"  {label,-34} {t.Elapsed.TotalMilliseconds,8:F1} ms   alloc {alloc,8:F1} MB");
+        }
+
+        // One keystroke = one ApplyFilters pass. Typing "ring" is four of them.
+        foreach (var q in new[] { "r", "ri", "rin", "ring" })
+            Measure($"ApplyFilters(\"{q}\")", () => vm.SearchText = q);
+
+        Measure("ApplyFilters(\"\") [clear]", () => vm.SearchText = "");
+        Measure("read ItemLabel x1 (all items)", () =>
+        {
+            foreach (var m in vm.Mods) foreach (var i in m.Items) _ = i.ItemLabel;
+        });
+        Measure("SearchableText scan only", () =>
+        {
+            foreach (var m in vm.Mods)
+                foreach (var i in m.Items)
+                    _ = i.Entry.SearchableText?.Contains("ring", StringComparison.OrdinalIgnoreCase) ?? false;
+        });
+
+        Measure("ApplySort(Rarity)", () => vm.CurrentSort = ViewModels.SortMode.Rarity);
+        Measure("ApplySort(Name)", () => vm.CurrentSort = ViewModels.SortMode.Name);
+
+        var searchBytes = vm.Mods.Sum(m => m.Items.Sum(i => (long)(i.Entry.SearchableText?.Length ?? 0))) * 2;
+        Console.WriteLine($"  SearchableText total: {searchBytes / 1024.0 / 1024.0:F1} MB");
+        Console.WriteLine($"  Managed heap: {GC.GetTotalMemory(true) / 1024.0 / 1024.0:F1} MB   " +
+                          $"WorkingSet: {Environment.WorkingSet / 1024.0 / 1024.0:F1} MB");
+        foreach (var m in vm.Mods)
+            Console.WriteLine($"    mod {m.Name,-40} {m.Items.Count,6} items");
+
+        RunVisualTreePerf(vm);
+    }
+
+    /// <summary>
+    /// Spin up Avalonia without a window and lay out the real ItemEditorView over the
+    /// real VM, so container realization cost (the actual freeze) is measurable.
+    /// </summary>
+    private static void RunVisualTreePerf(ViewModels.ItemEditorViewModel vm)
+    {
+        Console.WriteLine("\n=== visual tree perf ===");
+        try
+        {
+            Program.BuildAvaloniaApp().SetupWithoutStarting();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  (skipped: Avalonia setup failed: {ex.Message})");
+            return;
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
+        {
+            // Item labels are relabelled by the owning view model now, not by a per-item
+            // subscription — check a language switch still reaches them.
+            var probe = vm.Mods.SelectMany(m => m.Items).First();
+            var langBefore = probe.ItemLabel;
+            var poolBefore = ViewModels.ItemVM.PoolOptions[0].Display;
+            Localization.Loc.Instance.SetLanguage("ru");
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Console.WriteLine($"  lang en->ru: item \"{langBefore}\" -> \"{probe.ItemLabel}\"; " +
+                              $"pool option \"{poolBefore}\" -> \"{ViewModels.ItemVM.PoolOptions[0].Display}\"");
+            Localization.Loc.Instance.SetLanguage("en");
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Console.WriteLine($"  back to en: item \"{probe.ItemLabel}\"; " +
+                              $"pool option \"{ViewModels.ItemVM.PoolOptions[0].Display}\"");
+
+            static int CountVisuals(Avalonia.Visual v)
+            {
+                int n = 1;
+                foreach (var c in Avalonia.VisualTree.VisualExtensions.GetVisualChildren(v))
+                    n += CountVisuals(c);
+                return n;
+            }
+
+            // Each scenario gets a fresh view so the number is "cost of displaying this
+            // state from scratch" — an already-laid-out tree caches its containers and
+            // would hide the realization cost we are hunting.
+            void Layout(string label, Action setup)
+            {
+                setup();
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                var heapBefore = GC.GetTotalMemory(true);
+
+                var view = new Views.ItemEditorView { DataContext = vm };
+                var root = new Avalonia.Controls.Window { Width = 1400, Height = 900, Content = view };
+                var t = System.Diagnostics.Stopwatch.StartNew();
+                // A virtualizing panel fills its viewport over several layout passes, so
+                // one Measure/Arrange under-reports. Settle first, then read the numbers.
+                int visuals = 0, passes = 0;
+                for (; passes < 20; passes++)
+                {
+                    root.InvalidateMeasure();
+                    root.Measure(new Avalonia.Size(1400, 900));
+                    root.Arrange(new Avalonia.Rect(0, 0, 1400, 900));
+                    // A virtualizing panel that could not size its viewport during measure
+                    // schedules the fill-in as a dispatcher job — pump it.
+                    Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    var n = CountVisuals(root);
+                    if (n == visuals) break;
+                    visuals = n;
+                }
+                t.Stop();
+                var heap = GC.GetTotalMemory(true);
+
+                // Count realized rows so "cheap" can be told apart from "rendered nothing".
+                int modRows = 0, itemRows = 0;
+                var scroll = Avalonia.VisualTree.VisualExtensions
+                    .GetVisualDescendants(view)
+                    .OfType<Avalonia.Controls.ScrollViewer>()
+                    .FirstOrDefault(s => s.Name == "ModListScroll");
+                void CountRows(Avalonia.Visual v)
+                {
+                    if (v is Avalonia.Controls.Control c)
+                    {
+                        if (c.DataContext is ViewModels.ItemVM && c is Avalonia.Controls.Border) itemRows++;
+                        if (c.DataContext is ViewModels.ModVM && c is Avalonia.Controls.Border) modRows++;
+                    }
+                    foreach (var ch in Avalonia.VisualTree.VisualExtensions.GetVisualChildren(v))
+                        CountRows(ch);
+                }
+                if (scroll != null) CountRows(scroll);
+
+                Console.WriteLine($"  {label,-38} {t.Elapsed.TotalMilliseconds,7:F0} ms   " +
+                                  $"visuals {visuals,8}   heap +{(heap - heapBefore) / 1024.0 / 1024.0,7:F1} MB   " +
+                                  $"rows {modRows}mod/{itemRows}item of {vm.Rows.Count}   " +
+                                  $"viewport {scroll?.Viewport.Height ?? -1:F0}px  passes {passes}");
+
+                // Render the laid-out tree to a PNG so the list can be eyeballed without
+                // touching the desktop.
+                var shot = Path.Combine(Path.GetTempPath(), "paratool-perf-" +
+                    string.Concat(label.Where(char.IsLetterOrDigit)) + ".png");
+                try
+                {
+                    using var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                        new Avalonia.PixelSize(1400, 900), new Avalonia.Vector(96, 96));
+                    rtb.Render(view);
+                    rtb.Save(shot);
+                    Console.WriteLine($"        -> {shot}");
+                }
+                catch (Exception ex) { Console.WriteLine($"        (no shot: {ex.Message})"); }
+
+                root.Content = null;
+            }
+
+            void Reset()
+            {
+                vm.SearchText = "";
+                foreach (var m in vm.Mods) m.IsExpanded = false;
+            }
+
+            var big = vm.Mods.OrderByDescending(m => m.Items.Count).First();
+
+            Layout("warmup", Reset);
+            Layout("all mods collapsed", Reset);
+            Layout($"one mod expanded ({big.Items.Count} items)", () =>
+            {
+                Reset();
+                big.IsExpanded = true;
+            });
+            // What typing in the search box actually does today: auto-expand every mod
+            // that has a match, which realizes a container for EVERY item in that mod,
+            // not just the matching ones.
+            Layout("search \"ring\" (auto-expands)", () =>
+            {
+                Reset();
+                vm.SearchText = "ring";
+            });
+            Layout("search \"zzzznomatch\"", () =>
+            {
+                Reset();
+                vm.SearchText = "zzzznomatch";
+            });
+            Reset();
+        });
     }
 
     /// <summary>Recursively print a template node's attributes and child tree.</summary>
