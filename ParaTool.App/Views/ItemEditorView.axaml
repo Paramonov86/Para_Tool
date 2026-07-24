@@ -189,12 +189,27 @@
                                                     MinWidth="28"
                                                     Name="ExpandBtn"
                                                     Tag="{Binding}" />
-                                            <TextBlock Grid.Column="2"
-                                                       Text="{Binding Name}"
-                                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                                       VerticalAlignment="Center"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Margin="4,0" />
+                                            <StackPanel Grid.Column="2"
+                                                        Orientation="Horizontal"
+                                                        VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Margin="4,0" />
+                                                <!-- AMP submod marker: loads after AMP, rebalances its items -->
+                                                <Border IsVisible="{Binding IsAmpSubmod}"
+                                                        Background="{StaticResource HoverBgBrush}"
+                                                        CornerRadius="4"
+                                                        Padding="6,1"
+                                                        VerticalAlignment="Center"
+                                                        ToolTip.Tip="{Binding AmpSubmodTooltip}">
+                                                    <TextBlock Text="{Binding AmpSubmodBadge, Source={x:Static loc:Loc.Instance}}"
+                                                               FontSize="{DynamicResource FontSize10}"
+                                                               Foreground="{StaticResource TextMutedBrush}"
+                                                               VerticalAlignment="Center" />
+                                                </Border>
+                                            </StackPanel>
                                             <!-- Mod-level theme button -->
                                             <Button Grid.Column="3"
                                                     Content="{Binding ThemesLabel, Source={x:Static loc:Loc.Instance}}"

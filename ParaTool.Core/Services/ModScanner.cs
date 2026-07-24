@@ -80,9 +80,10 @@ public sealed class ModScanner
         }
         var nonAmpPaks = pakFiles.Where(p => p != ampPakPath).ToArray();
 
-        // Extract AMP integration info — items already in AMP TT are marked as integrated in mods
+        // Extract AMP integration info — items already in AMP TT are marked as integrated in mods.
+        // Also carries AMP's UUID (to detect submods) and AMP's stat entries (to resolve them).
         progress?.Report(new ScanProgress { Stage = "ScanAMP", Percent = 0 });
-        var (ampWhitelist, ampRarities, ampThemes) = ExtractAmpIntegrationInfo(ampPakPath);
+        var ampContext = LoadAmpContext(ampPakPath);
 
         var mods = new List<ModInfo>();
         int scanned = 0;
@@ -99,7 +100,7 @@ public sealed class ModScanner
             CancellationToken = ct
         }, async (pakPath, innerCt) =>
         {
-            var mod = await Task.Run(() => ScanPak(pakPath, ampWhitelist, ampRarities, ampThemes), innerCt);
+            var mod = await Task.Run(() => ScanPak(pakPath, ampContext), innerCt);
             var count = Interlocked.Increment(ref scanned);
 
             if (mod != null)
@@ -126,7 +127,7 @@ public sealed class ModScanner
         // Scan AMP pak itself for editable items
         progress?.Report(new ScanProgress { Stage = "ScanAMP", Percent = 42,
             TotalPaks = finalScanned, ScannedPaks = finalScanned, ModsFound = finalFound });
-        var ampMod = ScanAmpPak(ampPakPath);
+        var ampMod = ScanAmpPak(ampPakPath, ampContext);
 
         // Resolve display names from PAK localization files
         progress?.Report(new ScanProgress { Stage = "ResolveNames", Percent = 55,
@@ -142,16 +143,21 @@ public sealed class ModScanner
             handleOwnershipMap = result.handleOwnership;
         }, ct);
 
-        // Apply vanilla overrides: mark AMP items as modified by other mods
+        // Apply overrides: mark AMP items as modified by other mods.
+        // Vanilla overrides come from any mod; AMP overrides come from submods that rebalance
+        // AMP items directly. Both load after AMP, so their values are what the game ends up using.
         if (ampMod != null)
         {
+            var ampItemsById = new Dictionary<string, ItemEntry>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in ampMod.Items)
+                ampItemsById.TryAdd(item.StatId, item);
+
             foreach (var mod in mods)
             {
-                if (mod.VanillaOverrides == null) continue;
-                foreach (var statId in mod.VanillaOverrides)
+                foreach (var statId in (mod.VanillaOverrides ?? []).Concat(mod.AmpOverrides ?? []))
                 {
-                    var ampItem = ampMod.Items.Find(i => i.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase));
-                    if (ampItem != null)
+                    if (ampItemsById.TryGetValue(statId, out var ampItem)
+                        && !ampItem.ModifiedBy.Contains(mod.Name))
                         ampItem.ModifiedBy.Add(mod.Name);
                 }
             }
@@ -186,28 +192,126 @@ public sealed class ModScanner
     };
 
     /// <summary>
-    /// Extracts AMP integration info from the AMP pak's TreasureTable:
-    /// whitelist (StatIds in REL_All tables), per-item rarity, per-item themes.
+    /// Everything read from the AMP pak once, up front, and reused for the rest of the scan:
+    /// loot-table integration info plus AMP's own stat entries (needed to resolve submod
+    /// rebalances, which only restate the changed fields and inherit the rest from AMP).
     /// </summary>
-    private static (HashSet<string> whitelist, Dictionary<string, string> rarities, Dictionary<string, List<string>> themes)
-        ExtractAmpIntegrationInfo(string ampPakPath)
+    private sealed class AmpContext
+    {
+        public string? Uuid { get; init; }
+        public HashSet<string> Whitelist { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, string> Rarities { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, List<string>> Themes { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, StatsEntry> StatEntries { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Extracts AMP integration info from the AMP pak: its UUID, the TreasureTable whitelist
+    /// (StatIds in REL_All tables), per-item rarity/themes, and AMP's merged stat entries.
+    /// </summary>
+    private static AmpContext LoadAmpContext(string ampPakPath)
     {
         try
         {
             using var fs = File.OpenRead(ampPakPath);
             var header = PakReader.ReadHeader(fs);
             var entries = PakReader.ReadFileList(fs, header);
+
+            string? uuid = null;
+            var metaEntry = entries.FirstOrDefault(e =>
+                e.Path.EndsWith("meta.lsx", StringComparison.OrdinalIgnoreCase));
+            if (metaEntry.Path != null)
+                uuid = MetaLsxParser.Parse(PakReader.ExtractFileData(fs, metaEntry), ampPakPath)?.UUID;
+
             var ttEntry = entries.FirstOrDefault(e =>
                 e.Path.EndsWith("TreasureTable.txt", StringComparison.OrdinalIgnoreCase));
-            if (ttEntry.Path == null) return (new(), new(), new());
-            var ttData = PakReader.ExtractFileData(fs, ttEntry);
-            var (whitelist, themes, rarities) = ParseTreasureTableInfo(ttData);
-            return (whitelist, rarities, themes);
+            HashSet<string> whitelist = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, List<string>> themes = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> rarities = new(StringComparer.OrdinalIgnoreCase);
+            if (ttEntry.Path != null)
+                (whitelist, themes, rarities) = ParseTreasureTableInfo(PakReader.ExtractFileData(fs, ttEntry));
+
+            return new AmpContext
+            {
+                Uuid = uuid,
+                Whitelist = whitelist,
+                Rarities = rarities,
+                Themes = themes,
+                StatEntries = MergeStatFiles(fs, CollectStatFiles(entries))
+            };
         }
-        catch (Exception ex) { AppLogger.Error("ScanTreasureTable failed", ex); return (new(), new(), new()); }
+        catch (Exception ex) { AppLogger.Error("LoadAmpContext failed", ex); return new AmpContext(); }
     }
 
-    private ModInfo? ScanAmpPak(string ampPakPath)
+    private static List<Models.FileEntry> CollectStatFiles(List<Models.FileEntry> entries) =>
+        entries.Where(e =>
+            e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
+            e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) &&
+            !e.Path.EndsWith("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase) &&
+            !e.Path.EndsWith("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase)).ToList();
+
+    /// <summary>
+    /// Merges all entries with the same name across a pak's stat files.
+    /// BG3 stats work as a cascade: later definitions supplement earlier ones.
+    /// After PakWriter repacks the pak, file order changes (alphabetical vs original),
+    /// so we must merge across files instead of relying on load order.
+    /// </summary>
+    private static Dictionary<string, StatsEntry> MergeStatFiles(Stream fs, IReadOnlyList<Models.FileEntry> statFiles)
+    {
+        var mergedEntries = new Dictionary<string, StatsEntry>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var statFile in statFiles)
+        {
+            var data = PakReader.ExtractFileData(fs, statFile);
+            var text = System.Text.Encoding.UTF8.GetString(data);
+            var parsed = StatsParser.Parse(text);
+
+            foreach (var entry in parsed)
+            {
+                if (mergedEntries.TryGetValue(entry.Name, out var prev))
+                {
+                    // Don't let StatusData overwrite Armor/Weapon entries
+                    if (entry.Type != "Armor" && entry.Type != "Weapon"
+                        && (prev.Type == "Armor" || prev.Type == "Weapon"))
+                        continue;
+
+                    // Merge data: previous base + new overrides
+                    var isSkel = entry.Data.Count > 0 && entry.Data.Values.All(string.IsNullOrEmpty);
+                    var mergedData = new Dictionary<string, string>(prev.Data, StringComparer.OrdinalIgnoreCase);
+                    foreach (var kvp in entry.Data)
+                    {
+                        if (isSkel && string.IsNullOrEmpty(kvp.Value)
+                            && mergedData.TryGetValue(kvp.Key, out var existing2)
+                            && !string.IsNullOrEmpty(existing2))
+                            continue;
+                        mergedData[kvp.Key] = kvp.Value;
+                    }
+
+                    // Self-referencing Using is a BG3 skeleton pattern — keep the
+                    // correct Using from the earlier definition instead
+                    var mergedUsing = entry.Using;
+                    if (mergedUsing != null && mergedUsing.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))
+                        mergedUsing = prev.Using;
+
+                    mergedEntries[entry.Name] = new StatsEntry
+                    {
+                        Name = entry.Name,
+                        Type = entry.Type,
+                        Using = mergedUsing ?? prev.Using,
+                        Data = mergedData
+                    };
+                }
+                else
+                {
+                    mergedEntries[entry.Name] = entry;
+                }
+            }
+        }
+
+        return mergedEntries;
+    }
+
+    private ModInfo? ScanAmpPak(string ampPakPath, AmpContext ampContext)
     {
         try
         {
@@ -267,65 +371,11 @@ public sealed class ModScanner
             foreach (var kvp in _vanillaDb.Resolver.AllEntries)
                 resolver.AddEntries(new[] { kvp.Value });
 
-            var statFiles = entries.Where(e =>
-                e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
-                e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) &&
-                !e.Path.EndsWith("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase) &&
-                !e.Path.EndsWith("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase)).ToList();
-
-            // Pass 1: Merge all entries with the same name across stat files.
-            // BG3 stats work as a cascade: later definitions supplement earlier ones.
-            // After PakWriter repacks the pak, file order changes (alphabetical vs original),
-            // so we must merge across files instead of relying on load order.
-            var mergedEntries = new Dictionary<string, StatsEntry>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var statFile in statFiles)
-            {
-                var data = PakReader.ExtractFileData(fs, statFile);
-                var text = System.Text.Encoding.UTF8.GetString(data);
-                var parsed = StatsParser.Parse(text);
-
-                foreach (var entry in parsed)
-                {
-                    if (mergedEntries.TryGetValue(entry.Name, out var prev))
-                    {
-                        // Don't let StatusData overwrite Armor/Weapon entries
-                        if (entry.Type != "Armor" && entry.Type != "Weapon"
-                            && (prev.Type == "Armor" || prev.Type == "Weapon"))
-                            continue;
-
-                        // Merge data: previous base + new overrides
-                        var isSkel = entry.Data.Count > 0 && entry.Data.Values.All(string.IsNullOrEmpty);
-                        var mergedData = new Dictionary<string, string>(prev.Data, StringComparer.OrdinalIgnoreCase);
-                        foreach (var kvp in entry.Data)
-                        {
-                            if (isSkel && string.IsNullOrEmpty(kvp.Value)
-                                && mergedData.TryGetValue(kvp.Key, out var existing2)
-                                && !string.IsNullOrEmpty(existing2))
-                                continue;
-                            mergedData[kvp.Key] = kvp.Value;
-                        }
-
-                        // Self-referencing Using is a BG3 skeleton pattern — keep the
-                        // correct Using from the earlier definition instead
-                        var mergedUsing = entry.Using;
-                        if (mergedUsing != null && mergedUsing.Equals(entry.Name, StringComparison.OrdinalIgnoreCase))
-                            mergedUsing = prev.Using;
-
-                        mergedEntries[entry.Name] = new StatsEntry
-                        {
-                            Name = entry.Name,
-                            Type = entry.Type,
-                            Using = mergedUsing ?? prev.Using,
-                            Data = mergedData
-                        };
-                    }
-                    else
-                    {
-                        mergedEntries[entry.Name] = entry;
-                    }
-                }
-            }
+            // Pass 1 (merge across stat files) already ran in LoadAmpContext — reuse it
+            // instead of parsing AMP's ~2400 entries a second time.
+            var mergedEntries = ampContext.StatEntries.Count > 0
+                ? ampContext.StatEntries
+                : MergeStatFiles(fs, CollectStatFiles(entries));
 
             // Pass 2: Add merged entries to resolver with vanilla merge
             foreach (var modEntry in mergedEntries.Values)
@@ -525,11 +575,12 @@ public sealed class ModScanner
         return second < 0 ? "" : line[(first + 1)..second];
     }
 
-    private ModInfo? ScanPak(string pakPath,
-        HashSet<string>? ampWhitelist = null,
-        Dictionary<string, string>? ampRarities = null,
-        Dictionary<string, List<string>>? ampThemes = null)
+    private ModInfo? ScanPak(string pakPath, AmpContext? ampContext = null)
     {
+        var ampWhitelist = ampContext?.Whitelist;
+        var ampRarities = ampContext?.Rarities;
+        var ampThemes = ampContext?.Themes;
+
         try
         {
             using var fs = File.OpenRead(pakPath);
@@ -545,6 +596,11 @@ public sealed class ModScanner
             var modInfo = MetaLsxParser.Parse(metaData, pakPath);
             if (modInfo == null) return null;
 
+            // A pak that depends on AMP is a submod: it loads AFTER AMP and restates only the
+            // fields it changes, inheriting the rest from AMP's entries.
+            modInfo.IsAmpSubmod = ampContext?.Uuid != null
+                && modInfo.DependencyUuids.Contains(ampContext.Uuid);
+
             // Find Stats .txt files
             var statFiles = entries.Where(e =>
                 e.Path.Contains("/Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase) &&
@@ -557,6 +613,16 @@ public sealed class ModScanner
             // Add vanilla entries for resolution
             foreach (var kvp in _vanillaDb.Resolver.AllEntries)
                 resolver.AddEntries(new[] { kvp.Value });
+
+            // Submods inherit from AMP, so AMP's entries must be in the resolver — otherwise
+            // a rebalance like `new entry "AMP_Boots_SpiderWalk" / using "<self>"` resolves to
+            // nothing, DetectPool returns null and the item is silently dropped.
+            // Names vanilla already owns are skipped: AMP redefines shared bases like
+            // `_Shield_Magic` with a self-referential `using`, which truncates the chain before
+            // it reaches the vanilla base where Shield/Slot actually live.
+            if (modInfo.IsAmpSubmod && ampContext != null)
+                resolver.AddEntries(ampContext.StatEntries.Values
+                    .Where(e => !_vanillaDb.Resolver.AllEntries.ContainsKey(e.Name)));
 
             // Pass 1: Parse mod stats and merge same-name entries across files
             var mergedModEntries = new Dictionary<string, StatsEntry>(StringComparer.OrdinalIgnoreCase);
@@ -605,12 +671,17 @@ public sealed class ModScanner
                 }
             }
 
-            // Pass 2: Merge with vanilla and add to resolver.
-            // Mod data overrides vanilla, but vanilla data fills gaps.
+            // Pass 2: Merge with the base entry and add to resolver.
+            // Mod data overrides the base, but base data fills gaps.
             // This preserves vanilla Slot/ArmorType in skeleton entries that mods redefine.
+            // For AMP submods the base is AMP's own entry when the item isn't vanilla —
+            // that's where a rebalance's Slot/ArmorType/Rarity actually live.
             foreach (var modEntry in mergedModEntries.Values)
             {
                 var vanilla = _vanillaDb.Resolver.Get(modEntry.Name);
+                if (vanilla == null && modInfo.IsAmpSubmod && ampContext != null)
+                    ampContext.StatEntries.TryGetValue(modEntry.Name, out vanilla);
+
                 if (vanilla != null)
                 {
                     // Fix self-referencing Using (broken skeleton pattern)
@@ -662,6 +733,7 @@ public sealed class ModScanner
             // Vanilla overrides from mods are tracked as "modified by" on AMP items instead.
             var items = new List<ItemEntry>();
             var vanillaOverrides = new List<string>(); // StatIds of vanilla items this mod overrides
+            var ampOverrides = new List<string>();     // StatIds of AMP items this submod rebalances
             foreach (var entry in mergedModEntries.Values)
             {
                 if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
@@ -669,6 +741,17 @@ public sealed class ModScanner
                 {
                     // Track vanilla override for later marking on AMP items
                     vanillaOverrides.Add(entry.Name);
+                    continue;
+                }
+
+                // A submod entry that AMP already defines is a rebalance of an AMP item, not a
+                // new item. Listing it as the submod's own would make the patcher re-add it to
+                // AMP's loot tables and write a self-referencing skeleton for an entry AMP
+                // already has. It is surfaced as "modified by <submod>" on the AMP item instead.
+                if (modInfo.IsAmpSubmod && ampContext != null
+                    && ampContext.StatEntries.ContainsKey(entry.Name))
+                {
+                    ampOverrides.Add(entry.Name);
                     continue;
                 }
 
@@ -691,8 +774,12 @@ public sealed class ModScanner
             // Mark AMP items as modified by this mod
             if (vanillaOverrides.Count > 0 && modInfo.Name != null)
                 modInfo.VanillaOverrides = vanillaOverrides;
+            if (ampOverrides.Count > 0)
+                modInfo.AmpOverrides = ampOverrides;
 
-            if (items.Count == 0) return null;
+            // A submod that only rebalances AMP is still worth reporting — the UI needs it to
+            // mark the affected AMP items, and the patcher needs it to stay out of AMP's deps.
+            if (items.Count == 0 && ampOverrides.Count == 0) return null;
 
             modInfo.Items = items;
             return modInfo;

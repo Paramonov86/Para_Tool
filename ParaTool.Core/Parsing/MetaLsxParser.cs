@@ -35,7 +35,34 @@ public static class MetaLsxParser
             UUID = uuid,
             Folder = folder,
             PakPath = pakPath,
-            Version64 = version64
+            Version64 = version64,
+            DependencyUuids = ParseDependencyUuids(doc)
         };
+    }
+
+    /// <summary>
+    /// UUIDs listed under node(Dependencies) — the mods this pak declares it loads after.
+    /// Used to detect AMP submods (paks that depend on AMP and patch it in place).
+    /// </summary>
+    private static HashSet<string> ParseDependencyUuids(XDocument doc)
+    {
+        var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        var depsNode = doc.Descendants("node")
+            .FirstOrDefault(n => n.Attribute("id")?.Value == "Dependencies");
+        if (depsNode == null) return result;
+
+        foreach (var shortDesc in depsNode.Elements("children")
+            .Elements("node")
+            .Where(n => n.Attribute("id")?.Value == "ModuleShortDesc"))
+        {
+            var depUuid = shortDesc.Elements("attribute")
+                .FirstOrDefault(a => a.Attribute("id")?.Value == "UUID")
+                ?.Attribute("value")?.Value;
+            if (!string.IsNullOrEmpty(depUuid))
+                result.Add(depUuid);
+        }
+
+        return result;
     }
 }

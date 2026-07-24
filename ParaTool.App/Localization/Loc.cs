@@ -150,6 +150,9 @@ public partial class Loc : ObservableObject
     public string PatchButton => this["PatchButton"];
     public string ThemesLabel => this["ThemesLabel"];
     public string ModThemes => this["ModThemes"];
+    public string AmpSubmodBadge => this["AmpSubmodBadge"];
+    public string AmpSubmodTooltip => this["AmpSubmodTooltip"];
+    public string AmpSubmodRebalances => this["AmpSubmodRebalances"];
 
     public string ModsFoundInfo(int count) => string.Format(this["ModsFoundInfo"], count);
 

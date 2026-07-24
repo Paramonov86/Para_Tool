@@ -28,6 +28,19 @@ public sealed class PatchResult
 
 public sealed class AmpPatcher
 {
+    /// <summary>
+    /// Mods that get written into AMP's meta.lsx dependencies so the game loads them before AMP.
+    /// AMP submods are excluded: they already declare AMP as their own dependency, so listing
+    /// them here forms a cycle (AMP → submod → AMP) and the game fails to load. They also load
+    /// after AMP by design, which is exactly what their rebalances need.
+    /// </summary>
+    public static List<ModInfo> SelectDependencyMods(IReadOnlyList<ModInfo> mods) => mods
+        .Where(m => m.Items.Any(i => i.Enabled))
+        .Where(m => !m.IsAmp)
+        .Where(m => !m.IsAmpSubmod)
+        .Where(m => !string.IsNullOrEmpty(m.PakPath)) // Exclude virtual mods (artifacts)
+        .ToList();
+
     public async Task<PatchResult> PatchAsync(
         string ampPakPath,
         IReadOnlyList<ModInfo> mods,
@@ -40,8 +53,18 @@ public sealed class AmpPatcher
         if (ampMod != null)
             allItems.AddRange(ampMod.Items);
 
+        // Stat overrides go into AMP's own pak, which only works for mods that load BEFORE AMP
+        // (they get written into AMP's dependencies). AMP submods load AFTER it, so a skeleton
+        // entry for one of their items would reference a base that doesn't exist yet and would
+        // be overwritten by the submod anyway. Their loot-table placement still applies.
+        var submodItemsSkipped = mods
+            .Where(m => m.IsAmpSubmod && !string.IsNullOrEmpty(m.PakPath))
+            .SelectMany(m => m.Items)
+            .Count(i => i.Enabled);
+
         var enabledModItems = mods
             .Where(m => !string.IsNullOrEmpty(m.PakPath)) // Exclude virtual mods (artifacts handled by ApplyArtifacts)
+            .Where(m => !m.IsAmpSubmod)
             .SelectMany(m => m.Items)
             .Where(i => i.Enabled)
             .ToList();
@@ -56,7 +79,8 @@ public sealed class AmpPatcher
             allItemsForTt.AddRange(ampMod.Items);
 
         var hasArtifacts = ArtifactStore.LoadAll().Any(a => a.PatchEnabled);
-        if (enabledModItems.Count == 0 && modifiedAmpItems.Count == 0 && !hasArtifacts)
+        if (enabledModItems.Count == 0 && modifiedAmpItems.Count == 0
+            && submodItemsSkipped == 0 && !hasArtifacts)
         {
             var disabledAmpItems = ampMod?.Items.Where(i => !i.Enabled && i.IsModified).ToList()
                 ?? new List<ItemEntry>();
@@ -64,11 +88,7 @@ public sealed class AmpPatcher
                 return new PatchResult { Success = false, Error = "No items selected." };
         }
 
-        var modsWithEnabledItems = mods
-            .Where(m => m.Items.Any(i => i.Enabled))
-            .Where(m => !m.IsAmp)
-            .Where(m => !string.IsNullOrEmpty(m.PakPath)) // Exclude virtual mods (artifacts)
-            .ToList();
+        var modsWithEnabledItems = SelectDependencyMods(mods);
 
         using var tempDir = new TempDirectoryManager();
         var extractDir = tempDir.CreateSubDirectory("amp_extract");
@@ -167,10 +187,17 @@ public sealed class AmpPatcher
 
             progress?.Report(new PatchProgress { Stage = "Done!", Percent = 100 });
 
+            if (submodItemsSkipped > 0)
+                artifactWarnings.Add(
+                    $"{submodItemsSkipped} item(s) come from AMP submods. They were added to the loot " +
+                    "tables, but rarity/price edits for them are not written into AMP: the submod " +
+                    "loads after AMP and its own values win.");
+
             return new PatchResult
             {
                 Success = true,
-                ItemsPatched = enabledModItems.Count + modifiedAmpItems.Count + artifactCount,
+                ItemsPatched = enabledModItems.Count + modifiedAmpItems.Count
+                    + submodItemsSkipped + artifactCount,
                 Warnings = artifactWarnings,
             };
         }
@@ -182,8 +209,8 @@ public sealed class AmpPatcher
 
     /// <summary>
     /// Applies stat overrides:
-    /// - AMP items: modify entries in-place within their source stat files
-    /// - Mod items: append skeleton entries to the last stat file
+    /// - Items AMP already defines: modify entries in-place within their source stat files
+    /// - Everything else: append skeleton entries to the last stat file
     /// Creates a marker file so we know the pak was patched.
     /// </summary>
     private static void ApplyStatOverrides(
@@ -191,13 +218,16 @@ public sealed class AmpPatcher
         IReadOnlyList<ItemEntry> ampItems,
         IReadOnlyList<ItemEntry> modItems)
     {
-        // Build override fields for AMP items
+        // Build override fields for every item we might touch. Mod items are included in the
+        // in-place pass because a mod StatId can collide with one AMP already defines (submod
+        // rebalances, mods that redefine AMP gear) — appending a skeleton for those would put a
+        // second definition of the same entry into AMP's own pak.
         var ampMods = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var item in ampItems)
+        foreach (var item in ampItems.Concat(modItems))
         {
             var fields = StatsOverrideGenerator.ComputeFields(item);
             if (fields != null)
-                ampMods[item.StatId] = fields;
+                ampMods.TryAdd(item.StatId, fields);
         }
 
         // Get all stat files (excluding old/new overrides)
@@ -211,7 +241,7 @@ public sealed class AmpPatcher
             .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        // Step A: Modify AMP items in-place across stat files
+        // Step A: Modify already-defined items in-place across stat files
         var unresolved = new HashSet<string>(ampMods.Keys, StringComparer.OrdinalIgnoreCase);
 
         foreach (var filePath in statFiles)
@@ -238,15 +268,14 @@ public sealed class AmpPatcher
             }
         }
 
-        // Step B: Generate skeleton entries for mod items
-        var skeletonText = StatsOverrideGenerator.GenerateSkeletonEntries(modItems);
-
-        // Also generate skeletons for any unresolved AMP items (not found in any file)
-        if (unresolved.Count > 0)
-        {
-            var unresolvedItems = ampItems.Where(i => unresolved.Contains(i.StatId)).ToList();
-            skeletonText += StatsOverrideGenerator.GenerateSkeletonEntries(unresolvedItems);
-        }
+        // Step B: Generate skeleton entries for everything AMP didn't already define
+        // (mod items proper, plus any AMP item whose entry wasn't found in any stat file).
+        var skeletonItems = ampItems.Concat(modItems)
+            .Where(i => unresolved.Contains(i.StatId))
+            .GroupBy(i => i.StatId, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
+        var skeletonText = StatsOverrideGenerator.GenerateSkeletonEntries(skeletonItems);
 
         // Append skeleton entries to the last stat file (loaded last by BG3)
         if (!string.IsNullOrWhiteSpace(skeletonText) && statFiles.Length > 0)

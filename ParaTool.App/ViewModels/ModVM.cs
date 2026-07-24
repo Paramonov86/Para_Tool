@@ -21,6 +21,25 @@ public partial class ModVM : ObservableObject
     public ModInfo ModInfo { get; }
     public string Name { get; }
     public bool IsAmp => ModInfo.IsAmp;
+
+    /// <summary>
+    /// Pak that declares AMP as a dependency: it loads after AMP and rebalances its items.
+    /// Shown as a badge so the user knows why its rebalanced items aren't listed here —
+    /// they appear as "modified by" on the AMP items themselves.
+    /// </summary>
+    public bool IsAmpSubmod => ModInfo.IsAmpSubmod;
+
+    public string AmpSubmodTooltip
+    {
+        get
+        {
+            var count = ModInfo.AmpOverrides?.Count ?? 0;
+            return count > 0
+                ? $"{Localization.Loc.Instance.AmpSubmodTooltip}\n{Localization.Loc.Instance.AmpSubmodRebalances}: {count}"
+                : Localization.Loc.Instance.AmpSubmodTooltip;
+        }
+    }
+
     public IBrush ModBackground => IsAmp
         ? new SolidColorBrush(Themes.ThemeBrushes.Get("GoldBrush").Color, 0.2)
         : Themes.ThemeBrushes.PanelBg;
