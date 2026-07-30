@@ -276,6 +276,13 @@ public class ConditionBlocksEditor : UserControl
         }
     }
 
+    /// <summary>True when a numeric slot holds a formula instead of a plain number,
+    /// e.g. SourceSpellDC() or ManeuverSaveDC()+2.</summary>
+    private static bool IsExpression(string value) =>
+        !string.IsNullOrEmpty(value)
+        && !double.TryParse(value, System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.InvariantCulture, out _);
+
     // ── Build a single condition chip ──────────────────────────
 
     private Control BuildConditionChip(CondToken token, List<CondToken> tokens, int tokenIdx)
@@ -358,14 +365,15 @@ public class ConditionBlocksEditor : UserControl
                     Labels = Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues),
                     VerticalAlignment = VerticalAlignment.Center,
                 };
+                var capturedFlagParam = param;
                 flagsPicker.PropertyChanged += (s, e) =>
                 {
                     if (e.Property.Name == "Text" && s is ChecklistPickerChip cp)
                     {
                         var val = cp.Text ?? "";
-                        if (!string.IsNullOrEmpty(capturedFlagPrefix))
-                            val = string.Join(";", val.Split(';').Select(f => capturedFlagPrefix + f));
-                        token.Args[paramIdx] = val;
+                        token.Args[paramIdx] = !string.IsNullOrEmpty(capturedFlagPrefix)
+                            ? string.Join(";", val.Split(';').Select(f => capturedFlagPrefix + f))
+                            : ConditionSchema.FormatArg(capturedFlagParam, val);
                         SyncFromTokens(tokens);
                     }
                 };
@@ -417,18 +425,22 @@ public class ConditionBlocksEditor : UserControl
                     DisplayItems = tumblerDisplayItems,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
+                var capturedParam = param;
                 enumTumbler.PropertyChanged += (s, e) =>
                 {
                     if (e.Property.Name == "Text" && s is TumblerChipEditor tc)
                     {
-                        var raw = isEntity ? ConditionSchema.EntityToRaw(tc.Text ?? "") : tc.Text ?? "";
-                        token.Args[paramIdx] = capturedPrefix + raw;
+                        token.Args[paramIdx] = isEntity
+                            ? ConditionSchema.EntityToRaw(tc.Text ?? "")
+                            : !string.IsNullOrEmpty(capturedPrefix)
+                                ? capturedPrefix + (tc.Text ?? "")
+                                : ConditionSchema.FormatArg(capturedParam, tc.Text ?? "");
                         SyncFromTokens(tokens);
                     }
                 };
                 stack.Children.Add(enumTumbler);
             }
-            else if (param?.Type is "int")
+            else if (param?.Type is "int" && !IsExpression(argVal))
             {
                 var tumbler = new TumblerChipEditor
                 {
@@ -461,6 +473,25 @@ public class ConditionBlocksEditor : UserControl
                     }
                 };
                 stack.Children.Add(boolTumbler);
+            }
+            else if (param?.Type is "int" or "float" && IsExpression(argVal))
+            {
+                // Formula DC such as ManeuverSaveDC()+2 — editable text, a number drum
+                // would silently overwrite it with 0 on the first scroll.
+                var exprBox = new TextBox
+                {
+                    Text = argVal, FontSize = FontScale.Of(10),
+                    Padding = new Thickness(4, 2), MinWidth = 90,
+                    Background = InputBg, Foreground = Themes.ThemeBrushes.TextPrimary,
+                    BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(4),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                };
+                exprBox.LostFocus += (s, _) =>
+                {
+                    if (s is TextBox t) { token.Args[paramIdx] = (t.Text ?? "").Trim(); SyncFromTokens(tokens); }
+                };
+                stack.Children.Add(exprBox);
             }
             else if (param?.Type == "float")
             {
@@ -585,17 +616,17 @@ public class ConditionBlocksEditor : UserControl
             };
             addArgBtn.Click += (_, _) =>
             {
-                // Add default value for the next optional param
-                var defaultVal = nextParam.Type switch
-                {
-                    "enum" => nextParam.EnumValues?.FirstOrDefault() ?? "context.Target",
-                    "flags" => nextParam.EnumValues?.FirstOrDefault() ?? "",
-                    "int" => "1",
-                    "bool" => "true",
-                    _ => "context.Target"
-                };
+                // Add default value for the next optional param. Entities must come out as
+                // context.Source / context.Target — a quoted 'Source' is not an entity to BG3.
                 var args = token.Args.ToList();
-                args.Add(nextParam.Type == "string" || nextParam.Type == "enum" ? $"'{defaultVal}'" : defaultVal);
+                args.Add(nextParam.Type switch
+                {
+                    "enum" or "flags" when ConditionSchema.IsEntityParam(nextParam) => "context.Source",
+                    "enum" or "flags" => ConditionSchema.FormatArg(nextParam, nextParam.EnumValues?.FirstOrDefault() ?? ""),
+                    "int" or "float" => "1",
+                    "bool" => "false",
+                    _ => "''"
+                });
                 token.Args = args.ToArray();
                 SyncFromTokens(tokens);
             };
@@ -883,16 +914,17 @@ public class ConditionBlocksEditor : UserControl
 
     private void AddCondition(ConditionDef def)
     {
-        // Build default args (skip optional params — user adds them explicitly)
+        // Build default args (skip optional params — user adds them explicitly).
+        // FormatArg decides quoting: enums BG3 reads as enums go in dotted and bare
+        // (Ability.Strength), plain string enums stay quoted ('SurfaceFire').
         var args = def.Params
             .Where(p => !p.IsOptional)
             .Select(p => p.Type switch
             {
-                "enum" => $"'{p.EnumValues?.FirstOrDefault() ?? "None"}'",
-                "flags" => $"'{p.EnumValues?.FirstOrDefault() ?? "None"}'",
+                "enum" or "flags" => ConditionSchema.FormatArg(p, p.EnumValues?.FirstOrDefault() ?? "None"),
                 "int" => "1",
                 "float" => "1",
-                "bool" => "true",
+                "bool" => "false",
                 _ => $"'{p.Name}'"
             }).ToArray();
 

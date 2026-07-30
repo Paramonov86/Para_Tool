@@ -391,9 +391,10 @@ public class BoostBlocksEditor : UserControl
                 && param.Type is not "optnum" and not "optbool") continue;
             var paramIdx = i;
 
-            if (param.Type == "hidden")
+            if (param.Type is "hidden" or "blank")
             {
-                // Invisible constant — don't render, keep value as-is
+                // Invisible slot — "hidden" carries an engine constant (ApplyStatus chance 100),
+                // "blank" is just positional padding so later args land in the right place.
                 continue;
             }
 
@@ -1128,6 +1129,7 @@ public class BoostBlocksEditor : UserControl
             return p.Type switch
             {
                 "hidden" => "100",
+                "blank" => "",
                 "int" => "1",
                 "number" => "1",
                 "float" => "1",

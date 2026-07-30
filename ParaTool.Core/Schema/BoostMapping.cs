@@ -265,11 +265,18 @@ public static class BoostMapping
         new("GainTemporaryHitPoints", "Gain Temp HP", "Получить врем. ОЗ", "#2ECC71", [new("Amount", "Amount", "formula")]),
 
         // ── Status Effects ──
+        // Chance is a DOS2 leftover: BG3 always wants 100 and ignores anything else, so it is
+        // filled automatically and never shown. StatsConditions is argument #7 in the engine
+        // (StatusSpecificParam1..3 sit in between) — writing it at #4 landed the condition in
+        // StatusSpecificParam1, where BG3 silently dropped it and applied the status anyway.
         new("ApplyStatus", "Apply Status", "Наложить статус", "#E67E22",
             [new("StatusId", "Status", "string"),
-             new("Chance", "%", "optnum"),
+             new("Chance", "%", "hidden"),
              new("Duration", "Turns", "int"),
-             new("Condition", "If", "string")]),
+             new("StatusSpecificParam1", "", "blank"),
+             new("StatusSpecificParam2", "", "blank"),
+             new("StatusSpecificParam3", "", "blank"),
+             new("StatsConditions", "If", "string")]),
         new("ApplyEquipmentStatus", "Apply Equip Status", "Статус экипировки", "#E67E22",
             [new("Slot", "Slot", "enum", StatItemSlot), new("StatusId", "Status", "string"), new("Chance", "%", "hidden"), new("Duration", "Turns", "int")]),
         new("RemoveStatus", "Remove Status", "Снять статус", "#F1C40F", [new("StatusId", "Status", "string")]),
@@ -1267,7 +1274,7 @@ public static class BoostMapping
             if (string.IsNullOrEmpty(val)) continue;
 
             var param = def.Params[i];
-            if (param.Type == "hidden") continue;
+            if (param.Type is "hidden" or "blank") continue;
 
             if (param.Type == "optnum")
             {

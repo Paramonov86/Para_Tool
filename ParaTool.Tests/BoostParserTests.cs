@@ -155,6 +155,24 @@ public class BoostParserTests
         Assert.NotNull(BoostMapping.FindFunctor("ApplyStatus"));
     }
 
+    /// <summary>
+    /// ApplyStatus argument order must match the engine: StatusId, Chance, Duration,
+    /// StatusSpecificParam1..3, StatsConditions. Shipped stats rely on the empty middle
+    /// slots — ApplyStatus(BLEEDING, 100, 2,,,,not SavingThrow(Ability.Constitution,11)).
+    /// With the condition at index 3 it landed in StatusSpecificParam1 and BG3 dropped it,
+    /// applying the status unconditionally.
+    /// </summary>
+    [Fact]
+    public void ApplyStatus_StatsConditions_IsSeventhArgument()
+    {
+        var def = BoostMapping.FindFunctor("ApplyStatus")!;
+        Assert.Equal("StatusId", def.Params[0].Name);
+        Assert.Equal("Chance", def.Params[1].Name);
+        Assert.Equal("hidden", def.Params[1].Type); // DOS2 leftover — auto-filled with 100
+        Assert.Equal("Duration", def.Params[2].Name);
+        Assert.Equal("StatsConditions", def.Params[6].Name);
+    }
+
     [Fact]
     public void EmptyArgs_ReturnsEmptyArray()
     {

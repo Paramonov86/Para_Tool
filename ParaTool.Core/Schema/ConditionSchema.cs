@@ -31,6 +31,13 @@ public sealed class ConditionParam
     /// <summary>Optional short display labels (same length as EnumValues).</summary>
     public string[]? DisplayValues { get; init; }
     public bool IsOptional { get; init; }
+
+    /// <summary>
+    /// Enum namespace BG3 requires for this argument ("Ability.", "DamageType.", …).
+    /// Non-null means the argument is written UNQUOTED and dotted — SavingThrow(Ability.Constitution,13).
+    /// Null means a plain string literal — InSurface('SurfaceFire').
+    /// </summary>
+    public string? Prefix { get; init; }
 }
 
 /// <summary>
@@ -82,9 +89,117 @@ public sealed partial class ConditionSchema
         return result;
     }
 
+    [GeneratedRegex(@"\b([A-Za-z_]\w*)\s*\(")]
+    private static partial Regex CallRegex();
+
+    /// <summary>
+    /// Repair condition calls that older builds wrote in the wrong dialect, e.g.
+    /// SavingThrow('Constitution','13',true,true) → SavingThrow(Ability.Constitution,13,true,true).
+    /// BG3 reads a quoted 'Constitution' as a string, not as the Ability enum, so the whole
+    /// condition silently evaluated to nothing and the IF never fired. Runs at compile time so
+    /// artifacts saved by earlier versions are fixed without the user re-touching every chip.
+    /// </summary>
+    public static string NormalizeConditionEnums(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return text ?? "";
+        var schema = Instance;
+        var sb = new System.Text.StringBuilder(text.Length);
+        int pos = 0;
+
+        foreach (Match m in CallRegex().Matches(text))
+        {
+            if (m.Index < pos) continue; // inside an already-rewritten call
+            var name = m.Groups[1].Value;
+            if (!schema.ByName.TryGetValue(name, out var def) || def.Params.Length == 0) continue;
+            // Names shared with a boost/functor are ambiguous here — leave them alone.
+            if (BoostMapping.FindBoost(name) != null || BoostMapping.FindFunctor(name) != null) continue;
+
+            var open = m.Index + m.Length - 1;
+            var close = MatchParen(text, open);
+            if (close < 0) continue;
+
+            var args = SplitTopLevel(text[(open + 1)..close]);
+            if (args.Length == 0 || args.Length > def.Params.Length) continue;
+
+            // Same leading-optional-entity shift the chip editor applies.
+            int offset = 0;
+            if (args.Length < def.Params.Length && def.Params[0].IsOptional && IsEntityParam(def.Params[0])
+                && !args[0].Trim().Trim('\'', '"').StartsWith("context.", StringComparison.OrdinalIgnoreCase))
+                offset = 1;
+
+            var fixedArgs = args.Select((a, i) =>
+                RepairArg((i + offset) < def.Params.Length ? def.Params[i + offset] : null, a));
+
+            sb.Append(text, pos, open + 1 - pos);
+            sb.Append(string.Join(",", fixedArgs));
+            pos = close;
+        }
+
+        sb.Append(text, pos, text.Length - pos);
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Conservative single-argument repair: only fixes what is unambiguously wrong —
+    /// a known enum member missing its namespace, or a number/bool wrapped in quotes.
+    /// Anything it doesn't recognise is returned byte-for-byte, so a hand-written
+    /// expression or a mis-detected parameter can never be mangled.
+    /// </summary>
+    private static string RepairArg(ConditionParam? param, string original)
+    {
+        if (param == null) return original;
+        var bare = original.Trim().Trim('\'', '"').Trim();
+        if (bare.Length == 0 || bare.StartsWith("context.", StringComparison.OrdinalIgnoreCase)) return original;
+
+        if (param.Type is "enum" or "flags" && param.Prefix != null && param.EnumValues != null)
+        {
+            var parts = bare.Split(';', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.All(v => v.Contains('.') || param.EnumValues.Contains(v, StringComparer.OrdinalIgnoreCase)))
+                return string.Join(";", parts.Select(v => v.Contains('.') ? v : param.Prefix + v));
+            return original;
+        }
+
+        if (param.Type is "int" or "float"
+            && double.TryParse(bare, System.Globalization.NumberStyles.Any,
+                               System.Globalization.CultureInfo.InvariantCulture, out _))
+            return bare;
+
+        if (param.Type == "bool" && bare is "true" or "false") return bare;
+
+        return original;
+    }
+
+    private static int MatchParen(string s, int openIdx)
+    {
+        int depth = 0;
+        for (int i = openIdx; i < s.Length; i++)
+        {
+            if (s[i] == '(') depth++;
+            else if (s[i] == ')' && --depth == 0) return i;
+        }
+        return -1;
+    }
+
+    private static string[] SplitTopLevel(string args)
+    {
+        if (string.IsNullOrWhiteSpace(args)) return [];
+        var parts = new List<string>();
+        int depth = 0, start = 0;
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] == '(') depth++;
+            else if (args[i] == ')') depth--;
+            else if (args[i] == ',' && depth == 0) { parts.Add(args[start..i]); start = i + 1; }
+        }
+        parts.Add(args[start..]);
+        return parts.ToArray();
+    }
+
     // ── Known enum types for typed parameters ──────────────────
 
     public static readonly string[] Abilities = ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"];
+
+    public static readonly string[] Skills = BoostMapping.SkillType;
 
     public static readonly string[] DamageTypes = BoostMapping.DamageTypes;
 
@@ -251,6 +366,7 @@ public sealed partial class ConditionSchema
                             Name = pName,
                             Type = MapLuaType(pType),
                             EnumValues = GetEnumValues(pType),
+                            Prefix = GetEnumPrefix(pType),
                             // Entity params are optional — BG3 auto-fills from context
                             IsOptional = pType is "Khn_Entity",
                         });
@@ -264,7 +380,7 @@ public sealed partial class ConditionSchema
                     if (func.Value.name is "HasAttackDamageDoneForType" or "HasDamageDoneForType"
                         or "HasDamageDoneForTypeIncludingZero" or "SpellDamageTypeIs" or "HasDamageEffectFlag"
                         && funcParams.Count > 0)
-                        funcParams[0] = new ConditionParam { Name = "damageType", Type = "enum", EnumValues = DamageTypes };
+                        funcParams[0] = new ConditionParam { Name = "damageType", Type = "enum", EnumValues = DamageTypes, Prefix = "DamageType." };
 
                     // Special case: HasStatusGroup → StatusGroups enum
                     if (func.Value.name == "HasStatusGroup" && funcParams.Count > 0)
@@ -272,15 +388,20 @@ public sealed partial class ConditionSchema
 
                     // Special case: HasSpellFlag → SpellFlags enum
                     if (func.Value.name == "HasSpellFlag" && funcParams.Count > 0)
-                        funcParams[0] = new ConditionParam { Name = "spellFlag", Type = "enum", EnumValues = SpellFlags };
+                        funcParams[0] = new ConditionParam { Name = "spellFlag", Type = "enum", EnumValues = SpellFlags, Prefix = "SpellFlags." };
 
                     // Special case: WieldingWeapon weaponFlags → WeaponProperties enum
                     if (func.Value.name == "WieldingWeapon" && funcParams.Count > 0)
-                        funcParams[0] = new ConditionParam { Name = "weaponFlags", Type = "enum", EnumValues = BoostMapping.WeaponFlags };
+                        funcParams[0] = new ConditionParam { Name = "weaponFlags", Type = "enum", EnumValues = BoostMapping.WeaponFlags, Prefix = "WeaponProperties." };
 
                     // Special case: HasActionResource resourceType → ActionResources enum
                     if (func.Value.name == "HasActionResource" && funcParams.Count > 0)
                         funcParams[0] = new ConditionParam { Name = "resourceType", Type = "enum", EnumValues = BoostMapping.ActionResources };
+
+                    // Trailing advantage/disadvantage-style booleans are optional in BG3 and
+                    // default to false. Emitting them unasked produced nonsense like
+                    // SavingThrow(...,true,true) — advantage AND disadvantage at once.
+                    MarkTrailingFlagsOptional(funcParams);
 
                     AddFunc(schema, new ConditionDef
                     {
@@ -299,6 +420,27 @@ public sealed partial class ConditionSchema
                 if (!string.IsNullOrWhiteSpace(line) && !line.StartsWith("--"))
                     paramAnnotations.Clear();
             }
+        }
+    }
+
+    /// <summary>
+    /// Walk back from the last parameter and mark every trailing boolean (and entity) as
+    /// optional, so a freshly added chip only asks for the arguments BG3 actually requires.
+    /// Shipped stats confirm the shape: SkillCheck(Skill.Stealth,15) and
+    /// SavingThrow(Ability.Constitution,13) — the flags only appear when someone needs them.
+    /// </summary>
+    private static void MarkTrailingFlagsOptional(List<ConditionParam> funcParams)
+    {
+        for (int i = funcParams.Count - 1; i >= 0; i--)
+        {
+            var p = funcParams[i];
+            if (p.IsOptional) continue;                       // entity — already optional
+            if (p.Type != "bool") break;                      // hit a required arg — stop
+            funcParams[i] = new ConditionParam
+            {
+                Name = p.Name, Type = p.Type, EnumValues = p.EnumValues,
+                DisplayValues = p.DisplayValues, Prefix = p.Prefix, IsOptional = true,
+            };
         }
     }
 
@@ -346,6 +488,7 @@ public sealed partial class ConditionSchema
                         Name = arg,
                         Type = InferTypeFromName(arg),
                         EnumValues = GetEnumValuesFromName(arg),
+                        Prefix = GetEnumPrefixFromName(arg),
                     });
                 }
             }
@@ -353,7 +496,7 @@ public sealed partial class ConditionSchema
             // Special case overrides for khn functions with wrong param types
             if (name is "HasDamageDoneForType" or "HasDamageDoneForTypeIncludingZero"
                 or "HasAttackDamageDoneForType" or "SpellDamageTypeIs" && funcParams.Count > 0)
-                funcParams[0] = new ConditionParam { Name = "damageType", Type = "enum", EnumValues = DamageTypes };
+                funcParams[0] = new ConditionParam { Name = "damageType", Type = "enum", EnumValues = DamageTypes, Prefix = "DamageType." };
             if (name == "HasStatusGroup" && funcParams.Count > 0)
                 funcParams[0] = new ConditionParam { Name = "statusGroup", Type = "enum", EnumValues = StatusGroups };
 
@@ -362,6 +505,8 @@ public sealed partial class ConditionSchema
                 for (int fi = 0; fi < funcParams.Count; fi++)
                     if (funcParams[fi].Name == "value")
                         funcParams[fi] = new ConditionParam { Name = "distance", Type = "float" };
+
+            MarkTrailingFlagsOptional(funcParams);
 
             AddFunc(schema, new ConditionDef
             {
@@ -425,7 +570,7 @@ public sealed partial class ConditionSchema
         AddFunc(schema, new ConditionDef
         {
             Name = "WieldingWeaponOfType", Category = "Item", Source = "builtin",
-            Params = [new ConditionParam { Name = "weaponType", Type = "enum", EnumValues = BoostMapping.WeaponFlags }],
+            Params = [new ConditionParam { Name = "weaponType", Type = "enum", EnumValues = BoostMapping.WeaponFlags, Prefix = "WeaponProperties." }],
         }, overwrite: true);
 
         // HasArmorType(armorType)
@@ -466,7 +611,11 @@ public sealed partial class ConditionSchema
         "boolean" => "bool",
         "KhnFloat" => "float",
         "KhnInteger" => "int",
+        // A DC — plain number or a formula like ManeuverSaveDC(). Numeric chip, never a quoted string.
+        "RollOptions" => "int",
         "KhnAbility" => "enum",
+        "KhnSkill" => "enum",
+        "KhnAttackType" => "enum",
         "KhnDamageType" => "enum",
         "KhnSchool" => "enum",
         "KhnWeaponProperties" => "enum",
@@ -487,6 +636,8 @@ public sealed partial class ConditionSchema
     private static string[]? GetEnumValues(string luaType) => luaType switch
     {
         "KhnAbility" => Abilities,
+        "KhnSkill" => Skills,
+        "KhnAttackType" => BoostMapping.AttackType,
         "KhnDamageType" => DamageTypes,
         "KhnSchool" => SpellSchools,
         "KhnWeaponProperties" => WeaponProperties,
@@ -501,6 +652,85 @@ public sealed partial class ConditionSchema
         "DamageFlags" => DamageFlags,
         _ => null
     };
+
+    /// <summary>
+    /// Enum namespace BG3 expects for a Khn condition argument. Verified against shipped
+    /// stats: SavingThrow(Ability.Constitution,13), HasDamageDoneForType(DamageType.Fire),
+    /// SkillCheck(Skill.Stealth,15), HasSpellFlag(SpellFlags.Spell). Types absent from this
+    /// map take plain quoted strings — InSurface('SurfaceFire'), HasActionResource('Ki',1,0).
+    /// </summary>
+    private static string? GetEnumPrefix(string luaType) => luaType switch
+    {
+        "KhnAbility" => "Ability.",
+        "KhnSkill" => "Skill.",
+        "KhnAttackType" => "AttackType.",
+        "KhnDamageType" => "DamageType.",
+        "KhnSchool" => "SpellSchool.",
+        "KhnWeaponProperties" => "WeaponProperties.",
+        "KhnStatusRemoveCause" => "StatusRemoveCause.",
+        "ItemSlot" => "EquipmentSlot.",
+        "SpellFlags" => "SpellFlags.",
+        "DamageFlags" => "DamageFlags.",
+        // SpellCategory/SpellType values already carry their namespace in the value itself —
+        // they only need to stay unquoted, so an empty (non-null) prefix marks them dotted.
+        "KhnSpellCategory" or "SpellType" => "",
+        _ => null
+    };
+
+    private static string? GetEnumPrefixFromName(string paramName)
+    {
+        var lower = paramName.ToLowerInvariant();
+        if (lower.StartsWith("ability")) return "Ability.";
+        return lower switch
+        {
+            "skill" => "Skill.",
+            "damagetype" or "dmgtype" => "DamageType.",
+            "school" or "spellschool" => "SpellSchool.",
+            "slot" => "EquipmentSlot.",
+            "size" => "Size.",
+            "attacktype" => "AttackType.",
+            "actiontype" => "ActionType.",
+            "conditionrolltype" => "ConditionRollType.",
+            "properties" or "weaponflags" or "flags" => "WeaponProperties.",
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// Render one argument the way BG3 wants to read it: dotted enums unquoted
+    /// (Ability.Constitution), entities as context.X, numbers/bools bare, everything
+    /// else as a quoted string literal.
+    /// </summary>
+    public static string FormatArg(ConditionParam? param, string value)
+    {
+        value = value.Trim().Trim('\'', '"').Trim();
+        if (value.Length == 0) return "";
+
+        // Already an entity or a call/expression — leave untouched.
+        if (value.StartsWith("context.", StringComparison.OrdinalIgnoreCase) || value.Contains('('))
+            return value;
+
+        if (param == null) return $"'{value}'";
+
+        switch (param.Type)
+        {
+            case "int" or "float" or "bool":
+                return value;
+            case "enum" or "flags":
+                if (IsEntityParam(param))
+                    return EntityTargetsEn.Contains(value) || EntityTargetsRu.Contains(value)
+                        ? EntityToRaw(value) : $"'{value}'";
+                if (param.Prefix == null) return $"'{value}'";
+                // Split on ';' so multi-flag values get one prefix each.
+                return string.Join(";", value.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(v => v.Contains('.') ? v : param.Prefix + v));
+            default:
+                return $"'{value}'";
+        }
+    }
+
+    public static bool IsEntityParam(ConditionParam param) =>
+        param.EnumValues == EntityTargetsEn || param.EnumValues == EntityTargetsRu;
 
     private static string InferTypeFromName(string paramName)
     {
