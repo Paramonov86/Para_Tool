@@ -26,6 +26,7 @@
   "PatchingInProgress": "Wird gepatcht...",
   "PatchSuccess": "Erfolgreich!",
   "PatchSuccessMessage": "Gegenstände gepatcht: {0}",
+  "PatchSubmodsMessage": "Gepatchte AMP-Submods: {0}",
   "PatchError": "Fehler:",
   "Slot.Clothes": "Kleidung",
   "Slot.Armor": "Rüstung",

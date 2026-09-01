@@ -26,6 +26,7 @@
   "PatchingInProgress": "Yama uygulanıyor...",
   "PatchSuccess": "Başarılı!",
   "PatchSuccessMessage": "Yamalanan eşya: {0}",
+  "PatchSubmodsMessage": "Yamalanan AMP alt modu: {0}",
   "PatchError": "Hata:",
   "Slot.Clothes": "Giysi",
   "Slot.Armor": "Zırh",

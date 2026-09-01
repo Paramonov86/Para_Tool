@@ -26,6 +26,7 @@
   "PatchingInProgress": "Patchowanie...",
   "PatchSuccess": "Sukces!",
   "PatchSuccessMessage": "Zmodyfikowano przedmiotów: {0}",
+  "PatchSubmodsMessage": "Zmodyfikowano submodów AMP: {0}",
   "PatchError": "Błąd:",
   "Slot.Clothes": "Odzież",
   "Slot.Armor": "Zbroja",

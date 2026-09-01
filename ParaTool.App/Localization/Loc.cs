@@ -194,6 +194,7 @@ public partial class Loc : ObservableObject
     public string PatchErrorLabel => this["PatchError"];
 
     public string PatchSuccessMessage(int count) => string.Format(this["PatchSuccessMessage"], count);
+    public string PatchSubmodsMessage(int count) => string.Format(this["PatchSubmodsMessage"], count);
 
     public string RestoreAmpTooltip => this["RestoreAmpTooltip"];
     public string RestoringAmp => this["RestoringAmp"];

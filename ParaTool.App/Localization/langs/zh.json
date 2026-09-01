@@ -26,6 +26,7 @@
   "PatchingInProgress": "正在应用补丁...",
   "PatchSuccess": "成功！",
   "PatchSuccessMessage": "已修补物品数：{0}",
+  "PatchSubmodsMessage": "已修补的 AMP 子模组: {0}",
   "PatchError": "错误：",
   "Slot.Clothes": "服装",
   "Slot.Armor": "护甲",

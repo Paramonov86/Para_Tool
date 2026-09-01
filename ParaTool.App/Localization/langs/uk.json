@@ -26,6 +26,7 @@
   "PatchingInProgress": "Патчимо...",
   "PatchSuccess": "Успішно!",
   "PatchSuccessMessage": "Пропатчено предметів: {0}",
+  "PatchSubmodsMessage": "Пропатчено сабмодів AMP: {0}",
   "PatchError": "Помилка:",
   "Slot.Clothes": "Одяг",
   "Slot.Armor": "Броня",

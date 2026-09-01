@@ -95,6 +95,9 @@ public class AmpSubmodTests
         ]
     };
 
+    private static ItemEntry Item(string statId, string rarity = "Rare") =>
+        new() { StatId = statId, StatType = "Armor", Enabled = true, UserRarity = rarity };
+
     [Fact]
     public void SelectDependencyMods_ExcludesAmpSubmods()
     {
@@ -136,5 +139,55 @@ public class AmpSubmodTests
 
         Assert.Contains(mods[0].UUID, patched);
         Assert.DoesNotContain(submodUuid, patched);
+    }
+
+    [Fact]
+    public void SubmodOverrides_IncludeSubmodOwnItems()
+    {
+        // Before the submod pass these items were dropped entirely: their skeleton could not go
+        // into AMP (the base does not exist there yet), so rarity/price edits reached nothing.
+        var text = AmpPatcher.BuildSubmodOverrideText([], [], [Item("AmpPlus_Boots")], "");
+
+        Assert.Contains("new entry \"AmpPlus_Boots\"", text);
+        Assert.Contains("using \"AmpPlus_Boots\"", text);
+        Assert.Contains("data \"Rarity\" \"Rare\"", text);
+    }
+
+    [Fact]
+    public void SubmodOverrides_DeduplicateStatIdsAcrossSources()
+    {
+        var text = AmpPatcher.BuildSubmodOverrideText(
+            [Item("AMP_Boots_PerfectCrime")], [], [Item("AMP_Boots_PerfectCrime")], "");
+
+        Assert.Equal(1, CountOccurrences(text, "new entry \"AMP_Boots_PerfectCrime\""));
+    }
+
+    [Fact]
+    public void SubmodOverrides_PutArtifactOverridesLast_SoTheyWin()
+    {
+        // BG3 takes the last declaration of an entry, so the Constructor's fuller override
+        // (Boosts, slot identity) has to sit behind the rarity/price skeleton for the same item.
+        var artifact = "new entry \"AMP_Boots_PerfectCrime\"\ntype \"Armor\"\n"
+            + "using \"AMP_Boots_PerfectCrime\"\ndata \"Boosts\" \"Ability(Dexterity,2,24)\"\n";
+
+        var text = AmpPatcher.BuildSubmodOverrideText([Item("AMP_Boots_PerfectCrime")], [], [], artifact);
+
+        Assert.True(text.IndexOf("data \"Boosts\"", StringComparison.Ordinal)
+            > text.IndexOf("data \"Rarity\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void SubmodOverrides_SkipCommonItems()
+    {
+        var text = AmpPatcher.BuildSubmodOverrideText([], [], [Item("AmpPlus_Junk", rarity: "Common")], "");
+
+        Assert.Equal("", text);
+    }
+
+    private static int CountOccurrences(string haystack, string needle)
+    {
+        int count = 0, i = 0;
+        while ((i = haystack.IndexOf(needle, i, StringComparison.Ordinal)) >= 0) { count++; i += needle.Length; }
+        return count;
     }
 }

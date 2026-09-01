@@ -26,6 +26,7 @@
   "PatchingInProgress": "패치 중...",
   "PatchSuccess": "성공!",
   "PatchSuccessMessage": "패치된 아이템 수: {0}",
+  "PatchSubmodsMessage": "패치된 AMP 서브모드 수: {0}",
   "PatchError": "오류:",
   "Slot.Clothes": "의복",
   "Slot.Armor": "갑옷",

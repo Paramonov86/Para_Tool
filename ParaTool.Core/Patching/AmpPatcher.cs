@@ -19,6 +19,12 @@ public sealed class PatchResult
     public int ItemsPatched { get; init; }
 
     /// <summary>
+    /// How many AMP submod paks got a copy of the stat overrides appended. Submods load after
+    /// AMP, so without that copy every entry they re-declare keeps the submod's own values.
+    /// </summary>
+    public int SubmodsPatched { get; init; }
+
+    /// <summary>
     /// Non-fatal warnings collected from ArtifactCompiler while building each artifact's
     /// stats text (placeholder tokens, missing status references, auto-generated passive
     /// names). Patching still succeeds; the UI should surface these to the user.
@@ -53,14 +59,20 @@ public sealed class AmpPatcher
         if (ampMod != null)
             allItems.AddRange(ampMod.Items);
 
-        // Stat overrides go into AMP's own pak, which only works for mods that load BEFORE AMP
-        // (they get written into AMP's dependencies). AMP submods load AFTER it, so a skeleton
-        // entry for one of their items would reference a base that doesn't exist yet and would
-        // be overwritten by the submod anyway. Their loot-table placement still applies.
-        var submodItemsSkipped = mods
+        // Stat overrides written into AMP's own pak only reach mods that load BEFORE AMP (they
+        // get written into AMP's dependencies). AMP submods load AFTER it and restate fields of
+        // their own, so every entry they re-declare wins over AMP's copy — an edited ability cap
+        // on an item AMP Plus also touches was silently lost. Their items stay out of AMP's stat
+        // files (a skeleton there would reference a base that doesn't exist yet); the overrides
+        // are mirrored into the submod paks themselves instead, after the AMP pak is written.
+        var submodMods = mods
             .Where(m => m.IsAmpSubmod && !string.IsNullOrEmpty(m.PakPath))
+            .ToList();
+
+        var submodItems = submodMods
             .SelectMany(m => m.Items)
-            .Count(i => i.Enabled);
+            .Where(i => i.Enabled)
+            .ToList();
 
         var enabledModItems = mods
             .Where(m => !string.IsNullOrEmpty(m.PakPath)) // Exclude virtual mods (artifacts handled by ApplyArtifacts)
@@ -80,7 +92,7 @@ public sealed class AmpPatcher
 
         var hasArtifacts = ArtifactStore.LoadAll().Any(a => a.PatchEnabled);
         if (enabledModItems.Count == 0 && modifiedAmpItems.Count == 0
-            && submodItemsSkipped == 0 && !hasArtifacts)
+            && submodItems.Count == 0 && !hasArtifacts)
         {
             var disabledAmpItems = ampMod?.Items.Where(i => !i.Enabled && i.IsModified).ToList()
                 ?? new List<ItemEntry>();
@@ -164,7 +176,8 @@ public sealed class AmpPatcher
             // Step 3.5: Apply artifact overrides from Constructor
             progress?.Report(new PatchProgress { Stage = "Applying artifacts...", Percent = 58 });
             var artifactWarnings = new List<string>();
-            var artifactCount = await Task.Run(() => ApplyArtifacts(extractDir, statsDir, ampPakPath, artifactWarnings), ct);
+            var artifacts = await Task.Run(() => ApplyArtifacts(extractDir, statsDir, ampPakPath, artifactWarnings), ct);
+            var artifactCount = artifacts.Count;
 
             // Step 4: Patch meta.lsx with mod dependencies
             progress?.Report(new PatchProgress { Stage = "Updating dependencies...", Percent = 65 });
@@ -185,19 +198,49 @@ public sealed class AmpPatcher
             File.Delete(ampPakPath);
             File.Move(tempPakPath, ampPakPath);
 
-            progress?.Report(new PatchProgress { Stage = "Done!", Percent = 100 });
+            // Step 6: Mirror the same overrides into every AMP submod. A submod loads after AMP
+            // and re-declares entries of its own (AMP Plus restates `Boosts` for its capped
+            // items), which beats whatever we just wrote into AMP for exactly those StatIds.
+            // Appending the overrides to the end of a submod's last stat file puts them after
+            // every declaration that submod makes. The payload is identical in each submod, so
+            // the load order between them does not matter — whichever wins carries our values.
+            var submodOverrides = BuildSubmodOverrideText(
+                modifiedAmpItems, enabledModItems, submodItems, artifacts.OverrideItemStats);
 
-            if (submodItemsSkipped > 0)
-                artifactWarnings.Add(
-                    $"{submodItemsSkipped} item(s) come from AMP submods. They were added to the loot " +
-                    "tables, but rarity/price edits for them are not written into AMP: the submod " +
-                    "loads after AMP and its own values win.");
+            int submodsPatched = 0;
+            for (int i = 0; i < submodMods.Count; i++)
+            {
+                var submod = submodMods[i];
+                progress?.Report(new PatchProgress
+                {
+                    Stage = $"Patching {submod.Name}...",
+                    Percent = 85 + 10 * i / submodMods.Count
+                });
+
+                // Nothing left to write: a submod an earlier run patched has to go back to its
+                // pristine copy, the same way AMP is rebuilt from its backup on every patch.
+                if (string.IsNullOrWhiteSpace(submodOverrides))
+                {
+                    await Task.Run(() => AmpBackupService.RestorePak(submod.PakPath!), ct);
+                    continue;
+                }
+
+                if (await Task.Run(() => PatchSubmodPak(submod.PakPath!, submodOverrides), ct))
+                    submodsPatched++;
+                else
+                    artifactWarnings.Add(
+                        $"{submod.Name} has no stat files to write overrides into. Items it " +
+                        "re-declares keep the submod's own values.");
+            }
+
+            progress?.Report(new PatchProgress { Stage = "Done!", Percent = 100 });
 
             return new PatchResult
             {
                 Success = true,
                 ItemsPatched = enabledModItems.Count + modifiedAmpItems.Count
-                    + submodItemsSkipped + artifactCount,
+                    + submodItems.Count + artifactCount,
+                SubmodsPatched = submodsPatched,
                 Warnings = artifactWarnings,
             };
         }
@@ -297,7 +340,7 @@ public sealed class AmpPatcher
     /// - New items: append Stats + add to TreasureTable
     /// - Both: write Loca XML entries
     /// </summary>
-    private static int ApplyArtifacts(string extractDir, string? statsDir, string ampPakPath, List<string>? warnings = null)
+    private static ArtifactApplyResult ApplyArtifacts(string extractDir, string? statsDir, string ampPakPath, List<string>? warnings = null)
     {
         var logPath = Path.Combine(Path.GetTempPath(), "paratool_patch_debug.txt");
         var log = new System.Text.StringBuilder();
@@ -313,7 +356,7 @@ public sealed class AmpPatcher
         if (artifacts.Count == 0 || statsDir == null)
         {
             File.WriteAllText(logPath, log.ToString());
-            return 0;
+            return new ArtifactApplyResult(0, "");
         }
 
         var overrideStats = new StringBuilder();
@@ -434,6 +477,26 @@ public sealed class AmpPatcher
             }
         }
 
+        var overrideParsed = overrideStats.Length > 0
+            ? StatsParser.Parse(overrideStats.ToString())
+            : [];
+
+        // The item overrides also have to reach every AMP submod — a submod loads after AMP and
+        // re-declares entries of its own, so the copy edited into AMP's files alone loses there.
+        // Only Armor/Weapon entries travel: passives, statuses and spells live in AMP and no
+        // submod restates them, so a second declaration would only risk drifting out of sync.
+        var submodOverrideStats = new StringBuilder();
+        foreach (var entry in overrideParsed)
+        {
+            if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
+            submodOverrideStats.AppendLine($"new entry \"{entry.Name}\"");
+            submodOverrideStats.AppendLine($"type \"{entry.Type}\"");
+            submodOverrideStats.AppendLine($"using \"{entry.Using ?? entry.Name}\"");
+            foreach (var (key, value) in entry.Data)
+                submodOverrideStats.AppendLine($"data \"{key}\" \"{value}\"");
+            submodOverrideStats.AppendLine();
+        }
+
         var statFiles = Directory.GetFiles(statsDir, "*.txt")
             .Where(f =>
             {
@@ -447,7 +510,6 @@ public sealed class AmpPatcher
         // Apply override stats via in-place editing
         if (overrideStats.Length > 0 && statFiles.Length > 0)
         {
-            var overrideParsed = StatsParser.Parse(overrideStats.ToString());
             var overrideMap = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var entry in overrideParsed)
@@ -575,8 +637,14 @@ public sealed class AmpPatcher
 
         log.AppendLine($"Done: {count} artifacts, {newArtifacts.Count} new, {overrideArtifacts.Count} overrides");
         File.WriteAllText(logPath, log.ToString());
-        return count;
+        return new ArtifactApplyResult(count, submodOverrideStats.ToString());
     }
+
+    /// <summary>
+    /// What ApplyArtifacts produced: how many artifacts were applied, plus the item overrides
+    /// re-serialized as thin self-referencing entries for the AMP submod pass.
+    /// </summary>
+    private sealed record ArtifactApplyResult(int Count, string OverrideItemStats);
 
     /// <summary>
     /// Writes localization entries into existing .loca.xml files or creates new ones.
@@ -1137,6 +1205,71 @@ public sealed class AmpPatcher
 
         objNode.AppendChild(dataNode);
         parentEntries.AppendChild(objNode);
+    }
+
+    /// <summary>
+    /// Builds the override block that gets appended to every AMP submod: rarity/price skeletons
+    /// for the selected items, followed by the Constructor's item overrides. Later entries win,
+    /// so an artifact override lands after (and beats) the skeleton for the same StatId.
+    /// </summary>
+    public static string BuildSubmodOverrideText(
+        IReadOnlyList<ItemEntry> ampItems,
+        IReadOnlyList<ItemEntry> modItems,
+        IReadOnlyList<ItemEntry> submodItems,
+        string artifactOverrides)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var items = new List<ItemEntry>();
+        foreach (var item in ampItems.Concat(modItems).Concat(submodItems))
+            if (seen.Add(item.StatId))
+                items.Add(item);
+
+        var sb = new StringBuilder();
+        sb.Append(StatsOverrideGenerator.GenerateSkeletonEntries(items));
+        sb.Append(artifactOverrides);
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Appends the stat overrides to a single AMP submod pak. Returns false when the pak carries
+    /// no stat files, in which case it re-declares nothing and needs no patch.
+    /// </summary>
+    private static bool PatchSubmodPak(string pakPath, string overrideText)
+    {
+        AmpBackupService.EnsureBackup(pakPath);
+
+        using var tempDir = new TempDirectoryManager();
+        var extractDir = tempDir.CreateSubDirectory("submod_extract");
+
+        // Extract from the pristine backup, same as AMP: patching the already-patched pak would
+        // stack a fresh copy of the overrides on top of the previous one on every run.
+        var extractSource = AmpBackupService.HasBackup(pakPath)
+            ? AmpBackupService.GetBackupPath(pakPath)
+            : pakPath;
+        PakReader.ExtractAll(extractSource, extractDir);
+
+        var statsDir = FindDirectory(extractDir, Path.Combine("Stats", "Generated", "Data"));
+        if (statsDir == null) return false;
+
+        var statFiles = Directory.GetFiles(statsDir, "*.txt")
+            .Where(f => !Path.GetFileName(f)
+                .Equals("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (statFiles.Length == 0) return false;
+
+        // Last file alphabetically is the last one BG3 loads for this mod, and appending puts our
+        // entries behind everything in it — including the submod's own re-declarations.
+        File.AppendAllText(statFiles[^1], "\n" + overrideText);
+
+        // Marker file: AmpBackupService reads it to tell a patched pak from a freshly updated one.
+        File.WriteAllText(Path.Combine(statsDir, "ZZZ_ParaTool_Overrides.txt"), "// Patched by ParaTool\n");
+
+        var tempPakPath = pakPath + ".tmp";
+        PakWriter.CreatePak(extractDir, tempPakPath);
+        File.Delete(pakPath);
+        File.Move(tempPakPath, pakPath);
+        return true;
     }
 
     private static string? FindFile(string dir, string fileName)

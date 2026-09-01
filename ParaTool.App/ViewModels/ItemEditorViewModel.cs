@@ -414,7 +414,9 @@ public partial class ItemEditorViewModel : ViewModelBase
         if (result.Success)
         {
             PatchSuccess = true;
-            PatchSuccessMessage = Loc.Instance.PatchSuccessMessage(result.ItemsPatched);
+            PatchSuccessMessage = result.SubmodsPatched > 0
+                ? $"{Loc.Instance.PatchSuccessMessage(result.ItemsPatched)}\n{Loc.Instance.PatchSubmodsMessage(result.SubmodsPatched)}"
+                : Loc.Instance.PatchSuccessMessage(result.ItemsPatched);
 
             PatchWarnings.Clear();
             foreach (var w in result.Warnings)
@@ -459,8 +461,18 @@ public partial class ItemEditorViewModel : ViewModelBase
 
     public void CheckBackup()
     {
-        HasBackup = AmpPakPath != null && AmpBackupService.HasBackup(AmpPakPath);
+        HasBackup = (AmpPakPath != null && AmpBackupService.HasBackup(AmpPakPath))
+            || SubmodPakPaths().Any(AmpBackupService.HasBackup);
     }
+
+    /// <summary>
+    /// Paks of AMP submods. Patching appends the stat overrides into these too — a submod loads
+    /// after AMP, so entries it re-declares would otherwise keep the submod's own values — which
+    /// means restoring has to put them back as well.
+    /// </summary>
+    private IEnumerable<string> SubmodPakPaths() => Mods
+        .Where(m => m.IsAmpSubmod && !string.IsNullOrEmpty(m.ModInfo.PakPath))
+        .Select(m => m.ModInfo.PakPath!);
 
     /// <summary>
     /// Raised when restore completes — MainWindowViewModel should re-scan.
@@ -475,7 +487,14 @@ public partial class ItemEditorViewModel : ViewModelBase
         IsRestoring = true;
         RestoreSuccess = false;
 
-        var success = await Task.Run(() => AmpBackupService.Restore(AmpPakPath));
+        var submodPaks = SubmodPakPaths().ToList();
+        var success = await Task.Run(() =>
+        {
+            var restored = AmpBackupService.Restore(AmpPakPath);
+            foreach (var pak in submodPaks)
+                restored |= AmpBackupService.RestorePak(pak);
+            return restored;
+        });
 
         IsRestoring = false;
 

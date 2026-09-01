@@ -87,11 +87,23 @@ public static class AmpBackupService
     /// </summary>
     public static bool Restore(string ampPakPath)
     {
-        var backupPath = GetBackupPath(ampPakPath);
+        if (!RestorePak(ampPakPath)) return false;
+
+        OriginalTtStore.Clear();
+        return true;
+    }
+
+    /// <summary>
+    /// Restores any pak from its backup without touching the stored original TreasureTable.
+    /// Used for AMP submod paks: they carry no TT of their own, and clearing the store while a
+    /// patch is running would drop the AMP table that same patch just recorded.
+    /// </summary>
+    public static bool RestorePak(string pakPath)
+    {
+        var backupPath = GetBackupPath(pakPath);
         if (!File.Exists(backupPath)) return false;
 
-        File.Copy(backupPath, ampPakPath, true);
-        OriginalTtStore.Clear();
+        File.Copy(backupPath, pakPath, true);
         return true;
     }
 

@@ -26,6 +26,7 @@
   "PatchingInProgress": "パッチ適用中...",
   "PatchSuccess": "成功！",
   "PatchSuccessMessage": "パッチ済みアイテム数：{0}",
+  "PatchSubmodsMessage": "パッチ適用した AMP サブMOD: {0}",
   "PatchError": "エラー：",
   "Slot.Clothes": "衣服",
   "Slot.Armor": "鎧",
