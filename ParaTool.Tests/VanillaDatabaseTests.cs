@@ -65,4 +65,46 @@ public class VanillaDatabaseTests
         Assert.NotNull(entry);
         Assert.Equal("Weapon", entry.Type);
     }
+
+    /// <summary>
+    /// Bases whose RootTemplate the embedded dump was missing: the Constructor left
+    /// ParentTemplateUuid empty, and the artifact compiled to a template with nothing to inherit
+    /// from — present in the pak, unspawnable in game, and reported as a clean patch.
+    /// </summary>
+    [Theory]
+    [InlineData("MAG_SHA_SeluneBlessing_Spear", "2eeabe97-8f29-4f4f-827e-6cfcd8fd1779")]
+    [InlineData("MAG_SHA_SharBlessing_Spear", null)]
+    [InlineData("UNI_Cazador_RitualDagger", null)]
+    [InlineData("MAG_Gortash_Gloves", null)]
+    [InlineData("WPN_Mace_Deva", null)]
+    [InlineData("WPN_Djinni_Scimitar_PlanarAlly", null)]
+    [InlineData("MAG_HAV_Sylvan_Scimitar", null)]
+    [InlineData("MAG_TWN_Brewery_Greatclub", null)]
+    [InlineData("MAG_TWN_Taxblade_Morningstar", null)]
+    public void Load_ResolvesRootTemplate_ForAmpThinOverriddenVanillaItems(string statId, string? expectedUuid)
+    {
+        var db = new VanillaDatabase();
+        db.Load();
+
+        var rootTemplate = db.Resolver.Resolve(statId, "RootTemplate");
+
+        Assert.False(string.IsNullOrEmpty(rootTemplate), $"{statId} must carry a RootTemplate");
+        if (expectedUuid != null)
+            Assert.Equal(expectedUuid, rootTemplate);
+    }
+
+    [Fact]
+    public void Load_ResolvesSlotAndWeaponFields_ForARestoredEntry()
+    {
+        // AMP restates this spear with a self-referencing `using`, so everything the Constructor
+        // needs has to come from the vanilla entry behind it.
+        var db = new VanillaDatabase();
+        db.Load();
+
+        var fields = db.Resolver.ResolveAll("MAG_SHA_SeluneBlessing_Spear");
+
+        Assert.Equal("Melee Main Weapon", fields["Slot"]);
+        Assert.Equal("Piercing", fields["Damage Type"]);
+        Assert.Equal("Spears;SimpleWeapons", fields["Proficiency Group"]);
+    }
 }

@@ -627,7 +627,7 @@ public sealed class AmpPatcher
 
         // Generate/update RootTemplates for artifacts
         if (newArtifacts.Count > 0 || overrideArtifacts.Count > 0)
-            PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts, ampPakPath);
+            PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts, warnings);
 
         // Write loca XML entries
         if (allLocaEntries.Count > 0)
@@ -710,7 +710,7 @@ public sealed class AmpPatcher
     private static void PatchRootTemplates(string extractDir,
         IReadOnlyList<ArtifactDefinition> newArtifacts,
         IReadOnlyList<ArtifactDefinition> overrideArtifacts,
-        string ampPakPath)
+        List<string>? warnings = null)
     {
         // Find RootTemplates directory
         var rtDir = Directory.GetDirectories(extractDir, "RootTemplates", SearchOption.AllDirectories)
@@ -757,13 +757,24 @@ public sealed class AmpPatcher
                 object? equipType = null;
                 if (string.Equals(art.StatType, "Weapon", StringComparison.OrdinalIgnoreCase))
                 {
-                    chainIndex ??= BuildTemplateChainIndex(rtDir, ampPakPath);
+                    chainIndex ??= BuildTemplateChainIndex(rtDir);
                     equipType = ResolveEquipmentTypeId(art.ParentTemplateUuid, chainIndex);
                     File.AppendAllText(rtLog, $"  {art.StatId}: EquipmentTypeID={(equipType?.ToString() ?? "(none)")}\n");
                 }
                 var lsfPath = Path.Combine(rtDir, $"{art.TemplateUuid}.lsf");
                 File.AppendAllText(rtLog, $"  Creating: {lsfPath} (ParentTemplate={art.ParentTemplateUuid})\n");
-                CreateTemplateLsf(lsfPath, art, ampPakPath, equipType);
+                if (!CreateTemplateLsf(lsfPath, art, equipType))
+                {
+                    // The template went out with nothing to inherit from: no visual, no icon, no
+                    // equipment data. BG3 cannot instantiate it, so the item exists in the pak but
+                    // never drops and cannot even be spawned by UUID. Say so instead of reporting
+                    // a clean patch and leaving the user to unpack the pak to find out.
+                    File.AppendAllText(rtLog, $"  DEAD TEMPLATE: {art.StatId} (no parent)\n");
+                    warnings?.Add(
+                        $"{art.StatId}: the base item has no RootTemplate that ParaTool can resolve, " +
+                        "so the artifact was written without a parent template. The game cannot " +
+                        "spawn it. Build it from a different base item.");
+                }
             }
         }
         catch (Exception ex)
@@ -842,7 +853,12 @@ public sealed class AmpPatcher
     /// Create an individual {uuid}.lsf by cloning the parent template and replacing key fields.
     /// This preserves Equipment/Slot/Visuals from the parent.
     /// </summary>
-    private static void CreateTemplateLsf(string lsfPath, ArtifactDefinition art, string ampPakPath,
+    /// <summary>
+    /// Writes the RootTemplate .lsf for a new artifact. Returns false when neither a parent
+    /// template could be cloned nor a ParentTemplateId is known — the file is still written, but
+    /// the game has nothing to build the item from and will not spawn it.
+    /// </summary>
+    private static bool CreateTemplateLsf(string lsfPath, ArtifactDefinition art,
         object? equipmentTypeId = null)
     {
         // Find parent template LSF to clone from
@@ -851,6 +867,7 @@ public sealed class AmpPatcher
 
         LSLib.Resource resource;
         LSLib.Node? goNode = null;
+        bool clonedParent = false;
 
         if (File.Exists(parentLsfPath))
         {
@@ -891,12 +908,6 @@ public sealed class AmpPatcher
                 }
             }
 
-            // Try vanilla Shared.pak as last resort
-            if (goNode == null)
-            {
-                goNode = FindTemplateInSharedPak(art.ParentTemplateUuid, ampPakPath);
-            }
-
             // Create minimal resource with cloned node
             resource = new LSLib.Resource();
             resource.Metadata = new LSLib.LSMetadata
@@ -914,6 +925,8 @@ public sealed class AmpPatcher
                 newRegion.AppendChild(goNode);
             }
         }
+
+        clonedParent = goNode != null;
 
         if (goNode == null)
         {
@@ -968,9 +981,15 @@ public sealed class AmpPatcher
             goNode.Attributes["EquipmentTypeID"] = new LSLib.NodeAttribute(LSLib.AttributeType.UUID)
                 { Value = equipmentTypeId };
 
-        using var outFs = File.Create(lsfPath);
-        var writer = new LSLib.LSFWriter(outFs);
-        writer.Write(resource);
+        using (var outFs = File.Create(lsfPath))
+        {
+            var writer = new LSLib.LSFWriter(outFs);
+            writer.Write(resource);
+        }
+
+        // Cloned a real parent, or at least point at one the game can resolve itself through
+        // ParentTemplateId. With neither, the minimal fallback node is an empty shell.
+        return clonedParent || !string.IsNullOrEmpty(art.ParentTemplateUuid);
     }
 
     private static LSLib.Node? FindTemplateInMerged(string mergedPath, string uuid)
@@ -993,51 +1012,19 @@ public sealed class AmpPatcher
         return null;
     }
 
-    private static LSLib.Node? FindTemplateInSharedPak(string uuid, string ampPakPath)
-    {
-        try
-        {
-            // Shared.pak is in the same Data directory as AMP pak
-            var dataDir = Path.GetDirectoryName(ampPakPath);
-            if (dataDir == null) return null;
-            var sharedPak = Path.Combine(dataDir, "Shared.pak");
-            if (!File.Exists(sharedPak)) return null;
-
-            // Find the RootTemplates/_merged.lsf entry in Shared.pak
-            using var pakStream = File.OpenRead(sharedPak);
-            var header = PakReader.ReadHeader(pakStream);
-            var entries = PakReader.ReadFileList(pakStream, header);
-            var rtEntry = entries.FirstOrDefault(e =>
-                e.Path.Contains("RootTemplates/_merged.lsf", StringComparison.OrdinalIgnoreCase));
-            if (rtEntry.Path == null) return null;
-
-            var lsfData = PakReader.ExtractFileData(pakStream, rtEntry);
-            using var ms = new System.IO.MemoryStream(lsfData);
-            var reader = new LSLib.LSFReader(ms);
-            var res = reader.Read();
-
-            if (res.Regions.TryGetValue("Templates", out var region) &&
-                region.Children.TryGetValue("GameObjects", out var nodes))
-            {
-                return nodes.FirstOrDefault(n =>
-                    n.Attributes.TryGetValue("MapKey", out var mk) &&
-                    uuid.Equals(mk.Value?.ToString(), StringComparison.OrdinalIgnoreCase));
-            }
-        }
-        catch (Exception ex)
-        {
-            Services.AppLogger.Warn($"FindTemplateInSharedPak failed: {ex.Message}");
-        }
-        return null;
-    }
-
     /// <summary>
     /// Build a UUID → (EquipmentTypeID value, ParentTemplateId) index from the mod's
-    /// RootTemplates/_merged.lsf plus vanilla Shared.pak, so the EquipmentTypeID a weapon
-    /// would inherit can be resolved by walking the parent chain and written explicitly.
+    /// RootTemplates/_merged.lsf, so the EquipmentTypeID a weapon would inherit can be resolved
+    /// by walking the parent chain and written explicitly.
+    ///
+    /// Vanilla templates are deliberately not indexed. The old code looked for Shared.pak next to
+    /// the AMP pak, which lives in the Mods folder — the file is in the game's Data folder, so
+    /// that branch never ran and every weapon artifact ever built relied on the game resolving
+    /// EquipmentTypeID through ParentTemplateId. That works; reading the game install at patch
+    /// time would buy nothing and would need the install path, which ParaTool does not know.
     /// </summary>
     private static Dictionary<string, (object? equip, string? parent)> BuildTemplateChainIndex(
-        string rtDir, string ampPakPath)
+        string rtDir)
     {
         var index = new Dictionary<string, (object? equip, string? parent)>(StringComparer.OrdinalIgnoreCase);
 
@@ -1067,28 +1054,6 @@ public sealed class AmpPatcher
             }
         }
         catch (Exception ex) { Services.AppLogger.Warn($"Chain index (mod merged) failed: {ex.Message}"); }
-
-        // Vanilla Shared.pak — the root of the chain, where EquipmentTypeID actually lives.
-        try
-        {
-            var dataDir = Path.GetDirectoryName(ampPakPath);
-            var sharedPak = dataDir != null ? Path.Combine(dataDir, "Shared.pak") : null;
-            if (sharedPak != null && File.Exists(sharedPak))
-            {
-                using var pakStream = File.OpenRead(sharedPak);
-                var header = PakReader.ReadHeader(pakStream);
-                var entries = PakReader.ReadFileList(pakStream, header);
-                var rtEntry = entries.FirstOrDefault(e =>
-                    e.Path.Contains("RootTemplates/_merged.lsf", StringComparison.OrdinalIgnoreCase));
-                if (rtEntry.Path != null)
-                {
-                    var data = PakReader.ExtractFileData(pakStream, rtEntry);
-                    using var ms = new System.IO.MemoryStream(data);
-                    Ingest(new LSLib.LSFReader(ms).Read());
-                }
-            }
-        }
-        catch (Exception ex) { Services.AppLogger.Warn($"Chain index (shared) failed: {ex.Message}"); }
 
         return index;
     }
