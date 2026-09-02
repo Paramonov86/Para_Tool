@@ -287,6 +287,128 @@ public class ArtifactCompilerTests
     }
 
     [Fact]
+    public void PassivesOnEquip_UsesRenamedName_WhenCustomPassiveIsNotFirstInList()
+    {
+        // A passive added next to the item's own one used to keep its editor name in
+        // PassivesOnEquip while its definition was renamed — a dangling reference the
+        // game silently drops, so the passive never applied in play.
+        var art = NewArmor();
+        art.PassivesOnEquip = "TEST_Armor_bonus";
+        art.Passives = [
+            new PassiveDefinition { Name = "TEST_Armor_bonus" },
+            new PassiveDefinition { Name = "Passive_Novaya_Passivk" },
+        ];
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("data \"PassivesOnEquip\" \"TEST_Armor_bonus;TEST_Armor_Passive_2\"", result.StatsText);
+        Assert.Contains("new entry \"TEST_Armor_Passive_2\"", result.StatsText);
+        Assert.DoesNotContain("Passive_Novaya_Passivk", result.StatsText);
+    }
+
+    [Fact]
+    public void PassivesOnEquip_UsesRenamedName_WhenCustomPassiveIsAlone()
+    {
+        var art = NewArmor();
+        art.Passives = [new PassiveDefinition { Name = "Passive_Solo" }];
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("data \"PassivesOnEquip\" \"TEST_Armor_Passive_1\"", result.StatsText);
+        Assert.DoesNotContain("Passive_Solo", result.StatsText);
+    }
+
+    [Fact]
+    public void PassivesOnEquip_TombstoneDropsPassive_EvenAfterRename()
+    {
+        var art = NewArmor();
+        art.Passives = [new PassiveDefinition { Name = "TEST_Armor_bonus" }];
+        art.PassivesOnEquip = "Passive_Removed";
+        art.RemovedPassives = ["Passive_Removed"];
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("data \"PassivesOnEquip\" \"TEST_Armor_bonus\"", result.StatsText);
+        Assert.DoesNotContain("Passive_Removed", result.StatsText);
+    }
+
+    [Fact]
+    public void CopiedPassive_GetsFreshLocaHandle_SoOriginalItemKeepsItsText()
+    {
+        // A passive picked off another item used to keep that item's loca handles, so the
+        // edited name/description was written back onto the passive it was copied from.
+        var resolver = new ParaTool.Core.Parsing.StatsResolver();
+        resolver.AddEntries([
+            new ParaTool.Core.Parsing.StatsEntry
+            {
+                Name = "MAG_Hammer_Passive",
+                Type = "PassiveData",
+                Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["DisplayName"] = "hSOURCEname;1",
+                    ["Description"] = "hSOURCEdesc;1",
+                },
+            }
+        ]);
+
+        var art = NewArmor();
+        art.Passives = [
+            new PassiveDefinition
+            {
+                Name = "MAG_Hammer_Passive",
+                UsingBase = "MAG_Hammer_Passive",
+                DisplayNameHandle = "hSOURCEname",
+                DescriptionHandle = "hSOURCEdesc",
+                DisplayName = { ["en"] = "My Renamed Passive" },
+            }
+        ];
+        var result = ArtifactCompiler.Compile(art, isOverride: true, resolver);
+
+        Assert.DoesNotContain("hSOURCEname", result.StatsText);
+        Assert.DoesNotContain("hSOURCEdesc", result.StatsText);
+        Assert.DoesNotContain(result.LocalizationEntries["en"], e => e.handle == "hSOURCEname");
+    }
+
+    // ── Dependent-enum repair (Advantage/RollBonus kind vs value) ───
+
+    [Fact]
+    public void Boosts_AdvantageOnAbility_RepairedFromSkillKind()
+    {
+        // The tumbler used to offer abilities and skills for the same slot, so
+        // Advantage(Skill,Intelligence) read fine in the editor and did nothing in game.
+        var art = NewArmor();
+        art.Boosts = "Ability(Intelligence,1,24);Advantage(Skill,Intelligence)";
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("Advantage(Ability,Intelligence)", result.StatsText);
+        Assert.DoesNotContain("Advantage(Skill,Intelligence)", result.StatsText);
+    }
+
+    [Fact]
+    public void Boosts_AdvantageOnSkill_LeftAlone()
+    {
+        var art = NewArmor();
+        art.Boosts = "Advantage(Skill,Deception);Advantage(SavingThrow,Intelligence)";
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("Advantage(Skill,Deception)", result.StatsText);
+        Assert.Contains("Advantage(SavingThrow,Intelligence)", result.StatsText);
+    }
+
+    [Fact]
+    public void PassiveBoosts_RollBonusKind_RepairedInsideIfBlock()
+    {
+        var art = NewArmor();
+        art.Passives = [
+            new PassiveDefinition
+            {
+                Name = "TEST_Armor_bonus",
+                Boosts = "IF(IsWeaponAttack()):RollBonus(SkillCheck,2,Wisdom)"
+            }
+        ];
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("IF(IsWeaponAttack()):RollBonus(RawAbility,2,Wisdom)", result.StatsText);
+    }
+
+    [Fact]
     public void PassivesOnEquip_AlwaysWritten_EvenIfEmpty()
     {
         var art = NewArmor();

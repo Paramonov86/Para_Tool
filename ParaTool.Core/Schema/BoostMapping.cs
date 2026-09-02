@@ -493,6 +493,8 @@ public static class BoostMapping
     /// that would otherwise make BG3 silently ignore the boost. Currently:
     ///   - Ability(X, Y, 0)             → Ability(X, Y)
     ///   - AbilityOverrideMinimum(X, 0) → AbilityOverrideMinimum(X)  (when 2nd arg is "0")
+    ///   - Advantage(Skill, Intelligence) → Advantage(Ability, Intelligence)
+    ///     (and the same mismatch on Disadvantage/RollBonus/ProficiencyBonus)
     ///   - strips empty trailing args for any func that lands with them
     /// Returns the fixed string (same string when no changes needed).
     /// </summary>
@@ -505,9 +507,21 @@ public static class BoostMapping
         for (int i = 0; i < parts.Length; i++)
         {
             var original = parts[i];
-            // Don't touch IF-blocks (their payload is arbitrary)
+            // IF-blocks carry a condition plus a payload boost; only the payload is ours to fix.
             if (original.StartsWith("IF", StringComparison.OrdinalIgnoreCase) && original.Contains(':'))
+            {
+                var colon = FindPayloadColon(original);
+                if (colon < 0) continue;
+                var head = original[..(colon + 1)];
+                var payload = original[(colon + 1)..];
+                var fixedPayload = SanitizeBoosts(payload);
+                if (!ReferenceEquals(fixedPayload, payload) && fixedPayload != payload)
+                {
+                    parts[i] = head + fixedPayload;
+                    changed = true;
+                }
                 continue;
+            }
             var parsed = ParseBoostCall(original);
             if (parsed == null) continue;
             var (fn, args) = parsed.Value;
@@ -529,10 +543,30 @@ public static class BoostMapping
                 args = args[..^1];
                 changed = true;
             }
+            // Repair kind/value mismatches the old unfiltered tumbler allowed users to build.
+            if (VisibilityRules.FixDependentEnum(fn, args))
+                changed = true;
             if (!ReferenceEquals(args, parsed.Value.args) || changed)
                 parts[i] = args.Length > 0 ? $"{fn}({string.Join(",", args)})" : $"{fn}()";
         }
         return changed ? string.Join(";", parts) : raw;
+    }
+
+    /// <summary>
+    /// Index of the ':' separating an IF-block's condition from its payload — the first colon
+    /// that sits outside the condition's parentheses and isn't part of a "::" scope token.
+    /// </summary>
+    private static int FindPayloadColon(string ifBlock)
+    {
+        var depth = 0;
+        for (int i = 0; i < ifBlock.Length; i++)
+        {
+            var c = ifBlock[i];
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+            else if (c == ':' && depth == 0) return i;
+        }
+        return -1;
     }
 
     public static (string funcName, string[] args)? ParseBoostCall(string raw)

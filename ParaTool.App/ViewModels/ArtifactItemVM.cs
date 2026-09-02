@@ -403,11 +403,18 @@ public partial class ArtifactItemVM : ObservableObject
         if (PassiveVMs.Any(p => p.Name.Equals(passiveName, StringComparison.OrdinalIgnoreCase)))
             return;
 
+        // Fresh loca handles from the start. The copy is compiled under its own per-artifact
+        // entry name, but reusing the source passive's handles would still point its text at
+        // the original — renaming or rewriting the copy rewrote the passive on the item it was
+        // taken from. The source's text is read below and kept, only the handles are new.
+        var (copyNameHandle, copyDescHandle) = Core.Localization.HandleGenerator.NewPair();
         var passive = new Core.Artifacts.PassiveDefinition
         {
             Name = passiveName,
             UsingBase = passiveName,
             Properties = "Highlighted",
+            DisplayNameHandle = copyNameHandle,
+            DescriptionHandle = copyDescHandle,
         };
 
         var lang = Localization.Loc.Instance.Lang;
@@ -430,7 +437,6 @@ public partial class ArtifactItemVM : ObservableObject
             if (fields.TryGetValue("DisplayName", out var dnHandleRaw))
             {
                 var dnHandle = Core.Localization.HandleGenerator.Parse(dnHandleRaw).handle;
-                passive.DisplayNameHandle = dnHandle;
                 if (locaService != null)
                 {
                     var resolved = locaService.ResolveHandle(dnHandle, lang);
@@ -449,7 +455,6 @@ public partial class ArtifactItemVM : ObservableObject
             if (fields.TryGetValue("Description", out var descHandleRaw))
             {
                 var descHandle = Core.Localization.HandleGenerator.Parse(descHandleRaw).handle;
-                passive.DescriptionHandle = descHandle;
                 if (locaService != null)
                 {
                     var resolved = locaService.ResolveHandle(descHandle, lang);

@@ -448,12 +448,16 @@ public class BoostBlocksEditor : UserControl
             {
                 // Optional params get "—" (none) option at the start
                 var lang = Localization.Loc.Instance.Lang;
+                // Some slots only accept the vocabulary the preceding arg selected — e.g.
+                // Advantage(Skill,…) wants a skill, Advantage(Ability,…) wants an ability.
+                // Offering both lets the user build a boost BG3 silently ignores.
+                var enumValues = VisibilityRules.NarrowEnum(def, i, args) ?? param.EnumValues;
                 var items = isOptional || string.IsNullOrEmpty(value)
-                    ? new[] { "—" }.Concat(param.EnumValues).ToArray()
-                    : param.EnumValues;
+                    ? new[] { "—" }.Concat(enumValues).ToArray()
+                    : enumValues;
                 var displayItems = isOptional || string.IsNullOrEmpty(value)
-                    ? new[] { "—" }.Concat(Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues)).ToArray()
-                    : Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues);
+                    ? new[] { "—" }.Concat(Localization.Loc.Instance.GetEnumDisplayLabels(enumValues)).ToArray()
+                    : Localization.Loc.Instance.GetEnumDisplayLabels(enumValues);
                 var chip = new TumblerChipEditor
                 {
                     Text = string.IsNullOrEmpty(value) ? "—" : value,
@@ -469,7 +473,7 @@ public class BoostBlocksEditor : UserControl
                     {
                         UpdateParam(rb, pi, tc.Text ?? "");
                         // Changing first param may affect visibility of later params → deferred rebuild
-                        if ((pi == 0 && capturedDef.FuncName is "RollBonus" or "Ability" or "AbilityOverrideMinimum" or "Advantage" or "Disadvantage")
+                        if ((pi == 0 && capturedDef.FuncName is "RollBonus" or "Ability" or "AbilityOverrideMinimum" or "Advantage" or "Disadvantage" or "ProficiencyBonus")
                             || (pi == 1 && capturedDef.FuncName == "DamageReduction"))
                             Avalonia.Threading.Dispatcher.UIThread.Post(Rebuild);
                     }
