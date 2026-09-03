@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 
 namespace ParaTool.Core.LSLib;
 
@@ -36,6 +36,11 @@ public class LSFWriter(Stream stream)
     public void Write(Resource resource)
     {
         Meta = resource.Metadata;
+
+        if (MetadataFormat == LSFMetadataFormat.None && HasNodeKeys(resource))
+        {
+            MetadataFormat = LSFMetadataFormat.KeysAndAdjacency;
+        }
 
         using (Writer = new BinaryWriter(Stream, Encoding.Default, true))
         using (NodeStream = new MemoryStream())
@@ -382,5 +387,30 @@ public class LSFWriter(Stream stream)
         byte[] utf = Encoding.UTF8.GetBytes(s);
         writer.Write(utf);
         writer.Write((byte)0);
+    }
+
+    private static bool HasNodeKeys(Resource resource)
+    {
+        foreach (var region in resource.Regions)
+        {
+            if (HasNodeKeys(region.Value)) return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasNodeKeys(Node node)
+    {
+        if (node.KeyAttribute != null) return true;
+
+        foreach (var children in node.Children)
+        {
+            foreach (var child in children.Value)
+            {
+                if (HasNodeKeys(child)) return true;
+            }
+        }
+
+        return false;
     }
 }
