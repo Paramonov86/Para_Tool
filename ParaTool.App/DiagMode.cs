@@ -91,6 +91,11 @@ internal static class DiagMode
             return 0;
         }
 
+        // --diag-spell-ui: lay out the real Constructor with spell cards, a creature card and a
+        // passive-granted spell expanded; reports realized containers and binding errors.
+        if (args.Contains("--diag-spell-ui", StringComparer.OrdinalIgnoreCase))
+            return RunSpellUiSmoke(result, locaService);
+
         // --diag-patch: uncheck one AMP item that the last submod's own TreasureTable restates,
         // run the real patcher and check the result lands in exactly one pak. Destructive for
         // the scanned folder — only use it with --diag-mods pointing at a copy.
@@ -595,6 +600,84 @@ internal static class DiagMode
         var itemsAfter = rescan.Mods.Sum(m => m.Items.Count) + (rescan.AmpMod?.Items.Count ?? 0);
         Console.WriteLine($"  items scanned before/after patch: {itemsBefore} / {itemsAfter}");
         return 0;
+    }
+
+    private sealed class BindingErrorSink : Avalonia.Logging.ILogSink
+    {
+        public readonly List<string> Errors = [];
+        public bool IsEnabled(Avalonia.Logging.LogEventLevel level, string area) =>
+            level >= Avalonia.Logging.LogEventLevel.Warning && area == Avalonia.Logging.LogArea.Binding;
+        public void Log(Avalonia.Logging.LogEventLevel level, string area, object? source, string messageTemplate) =>
+            Errors.Add(messageTemplate);
+        public void Log(Avalonia.Logging.LogEventLevel level, string area, object? source, string messageTemplate, params object?[] propertyValues) =>
+            Errors.Add(messageTemplate + " | " + string.Join(", ", propertyValues));
+    }
+
+    private static int RunSpellUiSmoke(ScanResult result, LocaService loca)
+    {
+        Console.WriteLine("\n=== spell card UI smoke ===");
+        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PARATOOL_STORAGE_DIR")))
+        {
+            Console.Error.WriteLine("  set PARATOOL_STORAGE_DIR to a scratch folder first");
+            return 6;
+        }
+        Program.BuildAvaloniaApp().SetupWithoutStarting();
+        var sink = new BindingErrorSink();
+        Avalonia.Logging.Logger.Sink = sink;
+
+        return Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
+        {
+            var resolver = result.Resolver;
+            var cvm = new ViewModels.ConstructorViewModel(resolver, loca);
+            var baseItem = result.AmpMod!.Items.First(i => i.StatType == "Armor");
+            var art = new ParaTool.Core.Artifacts.ArtifactDefinition
+            {
+                StatId = "PT_UiProbe", StatType = "Armor", UsingBase = baseItem.StatId, LootPool = "Rings",
+            };
+            var item = new ViewModels.ArtifactItemVM(art) { GetEditingLang = () => "en" };
+            cvm.SelectedArtifact = item;
+
+            item.AddExistingSpell("Target_VampiricTouch", resolver, loca);
+            item.AddExistingSpell("Projectile_MOO_BalthazarsSecrets_AnimateZombie", resolver, loca);
+            foreach (var s in item.SpellVMs) s.IsExpanded = true;
+            var creature = item.SpellVMs.SelectMany(s => s.Creatures).FirstOrDefault();
+            if (creature != null)
+            {
+                item.EditCreature(creature, resolver);
+                creature.EditVitality = "77";
+            }
+            item.SetSpellGrantedThroughPassive(item.SpellVMs[0], true);
+
+            var view = new Views.ConstructorView { DataContext = cvm };
+            var root = new Avalonia.Controls.Window { Width = 1600, Height = 4000, Content = view };
+            for (int pass = 0; pass < 10; pass++)
+            {
+                root.InvalidateMeasure();
+                root.Measure(new Avalonia.Size(1600, 4000));
+                root.Arrange(new Avalonia.Rect(0, 0, 1600, 4000));
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            }
+
+            var controls = new List<Avalonia.Controls.Control>();
+            void Walk(Avalonia.Visual v)
+            {
+                if (v is Avalonia.Controls.Control c) controls.Add(c);
+                foreach (var ch in Avalonia.VisualTree.VisualExtensions.GetVisualChildren(v)) Walk(ch);
+            }
+            Walk(root);
+
+            int Realized<T>() => controls.OfType<Avalonia.Controls.Presenters.ContentPresenter>().Count(c => c.DataContext is T);
+            Console.WriteLine($"  spells={item.SpellVMs.Count} creatures={item.SpellVMs.Sum(s => s.Creatures.Count)} " +
+                              $"creature edited={creature?.IsEdited} HP={creature?.EditVitality} name='{creature?.CreatureName}'");
+            Console.WriteLine($"  SpellsOnEquip='{art.SpellsOnEquip}' passives={string.Join(",", art.Passives.Select(p => $"{p.Name}:{p.Boosts}"))}");
+            Console.WriteLine($"  first card grant via passive={item.SpellVMs[0].GrantThroughPassive}");
+            Console.WriteLine($"  realized: spell cards={Realized<ViewModels.SpellVM>()} creature rows={Realized<ViewModels.SummonVM>()} " +
+                              $"passive cards={Realized<ViewModels.PassiveVM>()} (controls {controls.Count})");
+            Console.WriteLine($"  spell name boxes: {string.Join(" | ", controls.OfType<Avalonia.Controls.TextBox>().Where(t => t.DataContext is ViewModels.SpellVM && t.FontWeight == Avalonia.Media.FontWeight.SemiBold).Select(t => t.Text))}");
+            Console.WriteLine($"  binding errors: {sink.Errors.Count}");
+            foreach (var e in sink.Errors.Distinct().Take(15)) Console.WriteLine($"    {e}");
+            return 0;
+        });
     }
 
     /// <summary>Every stats entry in a pak's Stats/Generated/Data files, with its file name.</summary>
