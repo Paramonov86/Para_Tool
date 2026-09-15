@@ -790,5 +790,9 @@
   "LblSpellWorkshop": "Atelier de sorts",
   "TipSpellWorkshop": "Créez ici des sorts à partir de sorts existants : un nouveau sort de cet objet ou un rééquilibrage de l'original. Ils sont enregistrés dans le fichier .art de l'objet. Un nouveau sort ne fait rien tant que vous ne l'accordez pas : cochez « Accordé à l'équipement », accordez-le via un passif ou ajoutez-le aux sorts accordés ou à un boost UnlockSpell. Un original modifié n'a pas besoin d'être accordé : il rééquilibre le sort dans le jeu à lui seul.",
   "LblGrantOnEquip": "Accordé à l'équipement",
-  "TipGrantOnEquip": "Ajoute le sort aux sorts accordés de l'objet : quiconque l'équipe l'obtient."
+  "TipGrantOnEquip": "Ajoute le sort aux sorts accordés de l'objet : quiconque l'équipe l'obtient.",
+  "LblContainer": "Conteneur",
+  "LblVariant": "Variante",
+  "LblVariants": "Variantes",
+  "TipContainer": "Un conteneur : en lançant le sort, le joueur choisit l'une de ses variantes. Dégâts, jets et effets se trouvent dans les variantes ci-dessous ; un coût ou une recharge modifiés ici sont recopiés dans les variantes qui avaient la même valeur."
 }

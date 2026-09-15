@@ -790,5 +790,9 @@
   "LblSpellWorkshop": "Spell Workshop",
   "TipSpellWorkshop": "Create spells here from existing ones: a new spell of this item, or a rebalance of the original. They are saved in this item's .art file. A new spell does nothing until you grant it: tick \"Granted on equip\", grant it through a passive, or add it to Granted spells or an UnlockSpell boost. An edited original needs no granting: it rebalances the spell in the game on its own.",
   "LblGrantOnEquip": "Granted on equip",
-  "TipGrantOnEquip": "Adds the spell to this item's granted spells: whoever equips the item gets it."
+  "TipGrantOnEquip": "Adds the spell to this item's granted spells: whoever equips the item gets it.",
+  "LblContainer": "Container",
+  "LblVariant": "Variant",
+  "LblVariants": "Variants",
+  "TipContainer": "A container: the player picks one of its variants when casting. Damage, rolls and effects live on the variants below; a cost or cooldown changed here is copied to the variants that had the same value."
 }

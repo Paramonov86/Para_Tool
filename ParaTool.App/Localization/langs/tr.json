@@ -790,5 +790,9 @@
   "LblSpellWorkshop": "Büyü Atölyesi",
   "TipSpellWorkshop": "Burada mevcut büyülerden büyü oluşturursun: bu eşyanın yeni bir büyüsü ya da orijinalin yeniden dengelenmesi. Eşyanın .art dosyasına kaydedilir. Yeni bir büyü, onu verene kadar hiçbir şey yapmaz: «Kuşanınca verilir» seçeneğini işaretle, bir pasifle ver ya da verilen büyülere veya bir UnlockSpell güçlendirmesine ekle. Düzenlenmiş bir orijinalin verilmesi gerekmez: büyüyü oyunda kendisi yeniden dengeler.",
   "LblGrantOnEquip": "Kuşanınca verilir",
-  "TipGrantOnEquip": "Büyüyü eşyanın verilen büyülerine ekler: eşyayı kuşanan büyüyü alır."
+  "TipGrantOnEquip": "Büyüyü eşyanın verilen büyülerine ekler: eşyayı kuşanan büyüyü alır.",
+  "LblContainer": "Kapsayıcı",
+  "LblVariant": "Varyant",
+  "LblVariants": "Varyantlar",
+  "TipContainer": "Bir kapsayıcı: oyuncu büyüyü yaparken varyantlarından birini seçer. Hasar, zar atışları ve etkiler aşağıdaki varyantlarda; burada değiştirilen maliyet veya bekleme süresi aynı değere sahip varyantlara da kopyalanır."
 }

@@ -790,5 +790,9 @@
   "LblSpellWorkshop": "Oficina de magias",
   "TipSpellWorkshop": "Aqui você cria magias a partir de magias existentes: uma nova magia deste item ou um rebalanceamento da original. Elas são salvas no arquivo .art do item. Uma nova magia não faz nada até ser concedida: marque «Concedida ao equipar», conceda por um passivo ou adicione às magias concedidas ou a um boost UnlockSpell. Uma original editada não precisa ser concedida: ela rebalanceia a magia no jogo sozinha.",
   "LblGrantOnEquip": "Concedida ao equipar",
-  "TipGrantOnEquip": "Adiciona a magia às magias concedidas do item: quem equipar o item a recebe."
+  "TipGrantOnEquip": "Adiciona a magia às magias concedidas do item: quem equipar o item a recebe.",
+  "LblContainer": "Contêiner",
+  "LblVariant": "Variante",
+  "LblVariants": "Variantes",
+  "TipContainer": "Um contêiner: ao conjurar, o jogador escolhe uma das variantes. Dano, rolagens e efeitos ficam nas variantes abaixo; custo ou recarga alterados aqui são copiados para as variantes que tinham o mesmo valor."
 }

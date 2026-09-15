@@ -552,13 +552,18 @@ public partial class ArtifactItemVM : ObservableObject
 
         // Starts as a new spell of this item: the compiler renames it and `using`s the original,
         // with fresh loca handles so editing the text never rewrites the original's.
-        var spell = SpellCloner.CloneFrom(spellName, resolver);
+        // A container comes with its variants: that is where its effects live.
+        var spell = SpellCloner.CloneWithVariants(spellName, resolver);
 
         var lang = Loc.Instance.Lang;
-        foreach (var l in new[] { "en", "ru", lang }.Distinct())
+        foreach (var card in spell.WithVariants())
         {
-            spell.DisplayName[l] = ResolveSpellText(spell.SourceDisplayNameHandle, spellName, l, locaService, isDescription: false, resolver);
-            spell.Description[l] = ResolveSpellText(spell.SourceDescriptionHandle, spellName, l, locaService, isDescription: true, resolver);
+            var source = card.UsingBase ?? card.Name;
+            foreach (var l in new[] { "en", "ru", lang }.Distinct())
+            {
+                card.DisplayName[l] = ResolveSpellText(card.SourceDisplayNameHandle, source, l, locaService, isDescription: false, resolver);
+                card.Description[l] = ResolveSpellText(card.SourceDescriptionHandle, source, l, locaService, isDescription: true, resolver);
+            }
         }
 
         Artifact.Spells.Add(spell);
@@ -726,7 +731,7 @@ public partial class ArtifactItemVM : ObservableObject
     internal void DropUnusedSummons()
     {
         var used = new HashSet<string>(
-            SpellVMs.SelectMany(s => s.SummonedTemplates()), StringComparer.OrdinalIgnoreCase);
+            SpellVMs.SelectMany(s => s.WithVariants()).SelectMany(s => s.SummonedTemplates()), StringComparer.OrdinalIgnoreCase);
         Artifact.Summons.RemoveAll(s => !used.Contains(s.ParentTemplateUuid));
     }
 
@@ -1291,12 +1296,33 @@ public partial class SpellVM : ObservableObject
     public static string[] CooldownOptions { get; } = ValueList("CooldownType");
     public static string[] FlagOptions { get; } = ValueList("SpellFlagList");
 
-    public SpellVM(SpellDefinition spell, ArtifactItemVM parent)
+    public SpellVM(SpellDefinition spell, ArtifactItemVM parent, SpellVM? container = null)
     {
         Spell = spell;
         _parent = parent;
+        Container = container;
+        foreach (var variant in spell.Variants)
+            Variants.Add(new SpellVM(variant, parent, this));
         RefreshCreatures();
     }
+
+    /// <summary>The container card this variant belongs to; null for a card of its own.</summary>
+    public SpellVM? Container { get; }
+    public bool IsVariant => Container != null;
+
+    /// <summary>Cards for the variants of a container spell, where its effects live.</summary>
+    public ObservableCollection<SpellVM> Variants { get; } = [];
+    public bool HasVariants => Variants.Count > 0;
+
+    /// <summary>
+    /// The variant cards while this card is open. A container can have 32 variants, each a full
+    /// card, so they are not built until the container is expanded.
+    /// </summary>
+    public ObservableCollection<SpellVM>? ShownVariants => IsExpanded ? Variants : null;
+
+    partial void OnIsExpandedChanged(bool value) => OnPropertyChanged(nameof(ShownVariants));
+
+    internal IEnumerable<SpellVM> WithVariants() => Variants.Prepend(this);
 
     [ObservableProperty] private bool _isExpanded;
 
@@ -1406,16 +1432,42 @@ public partial class SpellVM : ObservableObject
         set { Spell.SpellSchool = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
+    // A container's cost and cooldown carry over to the variants that had the same value: the cast
+    // spends the variant's, and most variants write their own copy of the container's.
     public string EditUseCosts
     {
         get => Spell.UseCosts;
-        set { Spell.UseCosts = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+        set
+        {
+            value ??= "";
+            if (Spell.UseCosts == value) return;
+            foreach (var v in Variants.Where(v => v.Spell.UseCosts == Spell.UseCosts))
+            {
+                v.Spell.UseCosts = value;
+                v.OnPropertyChanged(nameof(EditUseCosts));
+            }
+            Spell.UseCosts = value;
+            _parent.RecordEdit();
+            OnPropertyChanged();
+        }
     }
 
     public string EditCooldown
     {
         get => Spell.Cooldown;
-        set { Spell.Cooldown = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+        set
+        {
+            value ??= "";
+            if (Spell.Cooldown == value) return;
+            foreach (var v in Variants.Where(v => v.Spell.Cooldown == Spell.Cooldown))
+            {
+                v.Spell.Cooldown = value;
+                v.OnPropertyChanged(nameof(EditCooldown));
+            }
+            Spell.Cooldown = value;
+            _parent.RecordEdit();
+            OnPropertyChanged();
+        }
     }
 
     public string EditTargetRadius

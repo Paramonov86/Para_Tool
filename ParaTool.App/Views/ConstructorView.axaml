@@ -6,6 +6,250 @@
              x:Class="ParaTool.App.Views.ConstructorView"
              x:DataType="vm:ConstructorViewModel">
 
+    <UserControl.DataTemplates>
+        <!-- A spell card. A container's variants reuse it, nested inside the container's card -->
+        <DataTemplate DataType="vm:SpellVM">
+            <Border Background="{StaticResource InputBgBrush}" CornerRadius="4"
+                    Padding="8,6" Margin="0,2" ClipToBounds="False">
+                <StackPanel Spacing="4" ClipToBounds="False">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Button Background="Transparent" BorderThickness="0"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                Padding="0" Cursor="Hand" Name="SpellToggleBtn" Tag="{Binding}">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Text="▸" FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource AccentLightBrush}"
+                                           VerticalAlignment="Center" Margin="0,0,6,0" Width="12" />
+                                <!-- Wraps: a long variant name ("Disguise Self: Femme Strong Half-Elf") and its tag don't fit one line in a narrow card -->
+                                <WrapPanel Grid.Column="1" Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}" FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               Foreground="#B98AE0" ToolTip.Tip="{Binding StatName}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding LblVariant, Source={x:Static loc:Loc.Instance}}" IsVisible="{Binding IsVariant}"
+                                               FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                    <TextBlock IsVisible="{Binding HasVariants}" FontSize="{DynamicResource FontSize10}" Foreground="#9B59B6" VerticalAlignment="Center">
+                                        <Run Text="{Binding LblContainer, Source={x:Static loc:Loc.Instance}}" /><Run Text=" · " /><Run Text="{Binding Variants.Count}" />
+                                    </TextBlock>
+                                </WrapPanel>
+                            </Grid>
+                        </Button>
+                        <Button Grid.Column="1" Name="RemoveSpellBtn" IsVisible="{Binding !IsVariant}" Tag="{Binding}"
+                                Background="Transparent" BorderThickness="0"
+                                Foreground="{StaticResource TextMutedBrush}"
+                                FontSize="{DynamicResource FontSize11}" Padding="4,0"
+                                Cursor="Hand" Content="×" Opacity="0.5"
+                                ToolTip.Tip="{Binding TipRemoveSpell, Source={x:Static loc:Loc.Instance}}" />
+                    </Grid>
+                    <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0" ClipToBounds="False">
+                        <TextBox Text="{Binding EditDisplayName}"
+                                 Watermark="{Binding WmSpellName, Source={x:Static loc:Loc.Instance}}"
+                                 FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
+                                 Foreground="#B98AE0" Background="{StaticResource CardBgBrush}"
+                                 BorderThickness="0" CornerRadius="4" Padding="8,4" />
+                        <TextBox Text="{Binding EditDescription}"
+                                 Watermark="{Binding WmSpellDesc, Source={x:Static loc:Loc.Instance}}"
+                                 FontSize="{DynamicResource FontSize11}"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" Background="{StaticResource CardBgBrush}"
+                                 BorderThickness="0" CornerRadius="4" Padding="8,4" TextWrapping="Wrap" AcceptsReturn="True" />
+
+                        <!-- A variant follows its container: no edit-original or grant controls of its own -->
+                        <StackPanel Spacing="6" IsVisible="{Binding !IsVariant}">
+                            <!-- Copy (default) or override of the original -->
+                            <CheckBox IsChecked="{Binding EditOriginal}" Foreground="{DynamicResource WarningBrush}"
+                                      Content="{Binding LblEditOriginal, Source={x:Static loc:Loc.Instance}}"
+                                      ToolTip.Tip="{Binding TipEditOriginal, Source={x:Static loc:Loc.Instance}}"
+                                      FontSize="{DynamicResource FontSize11}" />
+                            <TextBlock IsVisible="{Binding EditOriginal}" TextWrapping="Wrap"
+                                       Text="{Binding WarnEditOriginal, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="{DynamicResource FontSize10}" Foreground="{DynamicResource WarningBrush}" />
+                            <!-- Not granted anywhere by default: on equip, or by a passive with a condition -->
+                            <CheckBox IsChecked="{Binding GrantOnEquip}" Foreground="{StaticResource AccentLightBrush}"
+                                      Content="{Binding LblGrantOnEquip, Source={x:Static loc:Loc.Instance}}"
+                                      ToolTip.Tip="{Binding TipGrantOnEquip, Source={x:Static loc:Loc.Instance}}"
+                                      FontSize="{DynamicResource FontSize11}" />
+                            <CheckBox IsChecked="{Binding GrantThroughPassive}" Foreground="{StaticResource AccentLightBrush}"
+                                      Content="{Binding LblGrantViaPassive, Source={x:Static loc:Loc.Instance}}"
+                                      ToolTip.Tip="{Binding TipGrantViaPassive, Source={x:Static loc:Loc.Instance}}"
+                                      FontSize="{DynamicResource FontSize11}" />
+                        </StackPanel>
+                        <TextBlock IsVisible="{Binding HasVariants}" TextWrapping="Wrap"
+                                   Text="{Binding TipContainer, Source={x:Static loc:Loc.Instance}}"
+                                   FontSize="{DynamicResource FontSize10}" Foreground="#9B59B6" />
+
+                        <!-- Labels size their column: a fixed width cut "Description params" at a large font scale -->
+                        <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid.Styles>
+                                <Style Selector="Grid.spellLabels > TextBlock">
+                                    <Setter Property="Padding" Value="0,0,10,0" />
+                                </Style>
+                            </Grid.Styles>
+                            <TextBlock Text="{Binding LblSpellType, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding SpellType}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="1" Text="{Binding LblSpellLevel, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <ctrl:TumblerChipEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditLevel}"
+                                                   Step="1" MinValue="0" MaxValue="9" Margin="0,6,0,0" HorizontalAlignment="Left" />
+
+                            <TextBlock Grid.Row="2" Text="{Binding LblSpellSchool, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <ctrl:TumblerChipEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditSpellSchool}"
+                                                   Items="{x:Static vm:SpellVM.SchoolOptions}" Margin="0,6,0,0" HorizontalAlignment="Left" />
+
+                            <TextBlock Grid.Row="3" Text="{Binding LblSpellCosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <ctrl:UseCostsEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditUseCosts}" Margin="0,6,0,0" />
+
+                            <TextBlock Grid.Row="4" Text="{Binding LblSpellCooldown, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <ctrl:TumblerChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditCooldown}"
+                                                   Items="{x:Static vm:SpellVM.CooldownOptions}" LabelPrefix="cooldown."
+                                                   Margin="0,6,0,0" HorizontalAlignment="Left" />
+
+                            <TextBlock Grid.Row="5" Text="{Binding LblSpellRange, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding EditTargetRadius}" Watermark="18"
+                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0" Width="120" HorizontalAlignment="Left"
+                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
+
+                            <TextBlock Grid.Row="6" Text="{Binding LblSpellArea, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding EditAreaRadius}" Watermark="3"
+                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0" Width="120" HorizontalAlignment="Left"
+                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
+
+                            <TextBlock Grid.Row="7" Text="{Binding LblSpellIcon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding EditIcon}"
+                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0"
+                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
+
+                            <TextBlock Grid.Row="8" Text="{Binding LblSpellDescParams, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding EditDescriptionParams}"
+                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0"
+                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
+                        </Grid>
+
+                        <!-- Mechanics: who it can target, the roll, and what it does -->
+                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
+                                BorderBrush="#9B59B6" BorderThickness="2,0,0,0" ClipToBounds="False">
+                            <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ClipToBounds="False">
+                                <Grid.Styles>
+                                    <Style Selector="Grid.spellLabels > TextBlock">
+                                        <Setter Property="Padding" Value="0,0,10,0" />
+                                    </Style>
+                                </Grid.Styles>
+                                <TextBlock Text="{Binding LblSpellTargets, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                <ctrl:ConditionBlocksEditor Grid.Column="1" Text="{Binding EditTargetConditions}" />
+
+                                <TextBlock Grid.Row="1" Text="{Binding LblSpellRoll, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                <ctrl:ConditionBlocksEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditSpellRoll}" Margin="0,3,0,0" />
+
+                                <TextBlock Grid.Row="2" Text="{Binding LblSpellOnSuccess, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                <ctrl:BoostBlocksEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditSpellSuccess}" IsFunctorMode="True" Margin="0,3,0,0" />
+
+                                <TextBlock Grid.Row="3" Text="{Binding LblSpellOnFail, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                <ctrl:BoostBlocksEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditSpellFail}" IsFunctorMode="True" Margin="0,3,0,0" />
+
+                                <TextBlock Grid.Row="4" Text="{Binding LblSpellAlways, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                <ctrl:BoostBlocksEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditSpellProperties}" IsFunctorMode="True" Margin="0,3,0,0" />
+
+                                <TextBlock Grid.Row="5" Text="{Binding LblSpellFlags, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
+                                <ctrl:ChecklistPickerChip Grid.Row="5" Grid.Column="1" Text="{Binding EditSpellFlags}"
+                                                      Options="{x:Static vm:SpellVM.FlagOptions}" Margin="0,3,0,0" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Variants of a container: cards of their own, where the effects live -->
+                        <StackPanel IsVisible="{Binding HasVariants}" Spacing="4" ClipToBounds="False">
+                            <TextBlock Text="{Binding LblVariants, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="#9B59B6" />
+                            <Border BorderBrush="#9B59B6" BorderThickness="2,0,0,0" Padding="8,0,0,0" ClipToBounds="False">
+                                <ItemsControl ItemsSource="{Binding ShownVariants}" ClipToBounds="False" />
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Creatures the spell summons -->
+                        <StackPanel IsVisible="{Binding HasCreatures}" Spacing="4" ClipToBounds="False">
+                            <TextBlock Text="{Binding LblCreatures, Source={x:Static loc:Loc.Instance}}"
+                                       FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="#9B59B6" />
+                            <ItemsControl ItemsSource="{Binding Creatures}" ClipToBounds="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:SummonVM">
+                                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6" Margin="0,2" ClipToBounds="False">
+                                            <StackPanel Spacing="4" ClipToBounds="False">
+                                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                                    <TextBlock Text="{Binding CreatureName}" ToolTip.Tip="{Binding CreatureTip}"
+                                                               FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
+                                                               Foreground="#B98AE0" VerticalAlignment="Center" />
+                                                    <Button Grid.Column="1" Name="EditCreatureBtn" Tag="{Binding}" IsVisible="{Binding CanEdit}"
+                                                            Background="{StaticResource InputBgBrush}" Foreground="{StaticResource AccentLightBrush}"
+                                                            FontSize="{DynamicResource FontSize10}" Padding="8,2" CornerRadius="10" BorderThickness="0" Cursor="Hand"
+                                                            Content="{Binding BtnEditCreature, Source={x:Static loc:Loc.Instance}}" />
+                                                    <Button Grid.Column="2" Name="ResetCreatureBtn" Tag="{Binding}" IsVisible="{Binding IsEdited}"
+                                                            Background="Transparent" Foreground="{StaticResource TextMutedBrush}"
+                                                            FontSize="{DynamicResource FontSize10}" Padding="8,2" BorderThickness="0" Cursor="Hand"
+                                                            Content="{Binding BtnResetCreature, Source={x:Static loc:Loc.Instance}}" />
+                                                </Grid>
+                                                <ctrl:SearchPickerChip HorizontalAlignment="Left"
+                                                                       Items="{x:Static vm:SummonVM.CreatureOptions}"
+                                                                       Text="{Binding ReplaceWith, Mode=TwoWay}"
+                                                                       Watermark="{Binding WmReplaceCreature, Source={x:Static loc:Loc.Instance}}" />
+                                                <StackPanel IsVisible="{Binding IsEdited}" Spacing="4" ClipToBounds="False">
+                                                    <TextBlock Text="{Binding TipCreatureCopy, Source={x:Static loc:Loc.Instance}}" TextWrapping="Wrap"
+                                                               FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
+                                                    <TextBox Text="{Binding EditName}" Watermark="{Binding WmCreatureName, Source={x:Static loc:Loc.Instance}}"
+                                                             FontSize="{DynamicResource FontSize11}" Padding="8,4"
+                                                             Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                    <WrapPanel Orientation="Horizontal">
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding LblSpellLevel, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditLevel}" Width="46" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding LblCreatureHp, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditVitality}" Width="52" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding LblCreatureAc, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditArmor}" Width="46" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                    </WrapPanel>
+                                                    <WrapPanel Orientation="Horizontal">
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding AbStr, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditStrength}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding AbDex, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditDexterity}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding AbCon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditConstitution}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding AbInt, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditIntelligence}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding AbWis, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditWisdom}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                            <TextBlock Text="{Binding AbCha, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <TextBox Text="{Binding EditCharisma}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                        </StackPanel>
+                                                    </WrapPanel>
+                                                    <TextBlock Text="{Binding LblPassives, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
+                                                    <ctrl:ChipListEditor Text="{Binding EditPassives}" ChipColor="#27AE60"
+                                                                         SearchItems="{ReflectionBinding DataContext.AllPassives, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                                    <TextBlock Text="{Binding LblBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
+                                                    <ctrl:BoostBlocksEditor Text="{Binding EditDefaultBoosts}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
     <Panel>
     <Grid ColumnDefinitions="250*,Auto,500*,Auto,350*" Margin="16,8">
 
@@ -744,227 +988,7 @@
                                 <ctrl:SearchPickerChip Name="SpellPickerChip" Margin="0,0,0,4" HorizontalAlignment="Left"
                                     Items="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).AllSpells}"
                                     Watermark="{Binding WmSearchSpell, Source={x:Static loc:Loc.Instance}}" />
-                                <ItemsControl ItemsSource="{Binding SpellVMs}" ClipToBounds="False">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:SpellVM">
-                                            <Border Background="{StaticResource InputBgBrush}" CornerRadius="4"
-                                                    Padding="8,6" Margin="0,2" ClipToBounds="False">
-                                                <StackPanel Spacing="4" ClipToBounds="False">
-                                                    <Grid ColumnDefinitions="*,Auto">
-                                                        <Button Background="Transparent" BorderThickness="0"
-                                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                                                Padding="0" Cursor="Hand" Name="SpellToggleBtn" Tag="{Binding}">
-                                                            <Grid ColumnDefinitions="Auto,*">
-                                                                <TextBlock Text="▸" FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource AccentLightBrush}"
-                                                                           VerticalAlignment="Center" Margin="0,0,6,0" Width="12" />
-                                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
-                                                                           Foreground="#B98AE0" ToolTip.Tip="{Binding StatName}" />
-                                                            </Grid>
-                                                        </Button>
-                                                        <Button Grid.Column="1" Name="RemoveSpellBtn" Tag="{Binding}"
-                                                                Background="Transparent" BorderThickness="0"
-                                                                Foreground="{StaticResource TextMutedBrush}"
-                                                                FontSize="{DynamicResource FontSize11}" Padding="4,0"
-                                                                Cursor="Hand" Content="×" Opacity="0.5"
-                                                                ToolTip.Tip="{Binding TipRemoveSpell, Source={x:Static loc:Loc.Instance}}" />
-                                                    </Grid>
-                                                    <StackPanel IsVisible="{Binding IsExpanded}" Spacing="6" Margin="14,4,0,0" ClipToBounds="False">
-                                                        <TextBox Text="{Binding EditDisplayName}"
-                                                                 Watermark="{Binding WmSpellName, Source={x:Static loc:Loc.Instance}}"
-                                                                 FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
-                                                                 Foreground="#B98AE0" Background="{StaticResource CardBgBrush}"
-                                                                 BorderThickness="0" CornerRadius="4" Padding="8,4" />
-                                                        <TextBox Text="{Binding EditDescription}"
-                                                                 Watermark="{Binding WmSpellDesc, Source={x:Static loc:Loc.Instance}}"
-                                                                 FontSize="{DynamicResource FontSize11}"
-                                                                 Foreground="{DynamicResource TextSecondaryBrush}" Background="{StaticResource CardBgBrush}"
-                                                                 BorderThickness="0" CornerRadius="4" Padding="8,4" TextWrapping="Wrap" AcceptsReturn="True" />
-
-                                                        <!-- Copy (default) or override of the original -->
-                                                        <CheckBox IsChecked="{Binding EditOriginal}" Foreground="{DynamicResource WarningBrush}"
-                                                                  Content="{Binding LblEditOriginal, Source={x:Static loc:Loc.Instance}}"
-                                                                  ToolTip.Tip="{Binding TipEditOriginal, Source={x:Static loc:Loc.Instance}}"
-                                                                  FontSize="{DynamicResource FontSize11}" />
-                                                        <TextBlock IsVisible="{Binding EditOriginal}" TextWrapping="Wrap"
-                                                                   Text="{Binding WarnEditOriginal, Source={x:Static loc:Loc.Instance}}"
-                                                                   FontSize="{DynamicResource FontSize10}" Foreground="{DynamicResource WarningBrush}" />
-                                                        <!-- Not granted anywhere by default: on equip, or by a passive with a condition -->
-                                                        <CheckBox IsChecked="{Binding GrantOnEquip}" Foreground="{StaticResource AccentLightBrush}"
-                                                                  Content="{Binding LblGrantOnEquip, Source={x:Static loc:Loc.Instance}}"
-                                                                  ToolTip.Tip="{Binding TipGrantOnEquip, Source={x:Static loc:Loc.Instance}}"
-                                                                  FontSize="{DynamicResource FontSize11}" />
-                                                        <CheckBox IsChecked="{Binding GrantThroughPassive}" Foreground="{StaticResource AccentLightBrush}"
-                                                                  Content="{Binding LblGrantViaPassive, Source={x:Static loc:Loc.Instance}}"
-                                                                  ToolTip.Tip="{Binding TipGrantViaPassive, Source={x:Static loc:Loc.Instance}}"
-                                                                  FontSize="{DynamicResource FontSize11}" />
-
-                                                        <!-- Labels size their column: a fixed width cut "Description params" at a large font scale -->
-                                                        <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-                                                            <Grid.Styles>
-                                                                <Style Selector="Grid.spellLabels > TextBlock">
-                                                                    <Setter Property="Padding" Value="0,0,10,0" />
-                                                                </Style>
-                                                            </Grid.Styles>
-                                                            <TextBlock Text="{Binding LblSpellType, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBlock Grid.Column="1" Text="{Binding SpellType}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-
-                                                            <TextBlock Grid.Row="1" Text="{Binding LblSpellLevel, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <ctrl:TumblerChipEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditLevel}"
-                                                                                   Step="1" MinValue="0" MaxValue="9" Margin="0,6,0,0" HorizontalAlignment="Left" />
-
-                                                            <TextBlock Grid.Row="2" Text="{Binding LblSpellSchool, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <ctrl:TumblerChipEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditSpellSchool}"
-                                                                                   Items="{x:Static vm:SpellVM.SchoolOptions}" Margin="0,6,0,0" HorizontalAlignment="Left" />
-
-                                                            <TextBlock Grid.Row="3" Text="{Binding LblSpellCosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <ctrl:UseCostsEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditUseCosts}" Margin="0,6,0,0" />
-
-                                                            <TextBlock Grid.Row="4" Text="{Binding LblSpellCooldown, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <ctrl:TumblerChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditCooldown}"
-                                                                                   Items="{x:Static vm:SpellVM.CooldownOptions}" LabelPrefix="cooldown."
-                                                                                   Margin="0,6,0,0" HorizontalAlignment="Left" />
-
-                                                            <TextBlock Grid.Row="5" Text="{Binding LblSpellRange, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding EditTargetRadius}" Watermark="18"
-                                                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0" Width="120" HorizontalAlignment="Left"
-                                                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
-
-                                                            <TextBlock Grid.Row="6" Text="{Binding LblSpellArea, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding EditAreaRadius}" Watermark="3"
-                                                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0" Width="120" HorizontalAlignment="Left"
-                                                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
-
-                                                            <TextBlock Grid.Row="7" Text="{Binding LblSpellIcon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding EditIcon}"
-                                                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0"
-                                                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
-
-                                                            <TextBlock Grid.Row="8" Text="{Binding LblSpellDescParams, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding EditDescriptionParams}"
-                                                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0"
-                                                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
-                                                        </Grid>
-
-                                                        <!-- Mechanics: who it can target, the roll, and what it does -->
-                                                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
-                                                                BorderBrush="#9B59B6" BorderThickness="2,0,0,0" ClipToBounds="False">
-                                                            <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ClipToBounds="False">
-                                                                <Grid.Styles>
-                                                                    <Style Selector="Grid.spellLabels > TextBlock">
-                                                                        <Setter Property="Padding" Value="0,0,10,0" />
-                                                                    </Style>
-                                                                </Grid.Styles>
-                                                                <TextBlock Text="{Binding LblSpellTargets, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-                                                                <ctrl:ConditionBlocksEditor Grid.Column="1" Text="{Binding EditTargetConditions}" />
-
-                                                                <TextBlock Grid.Row="1" Text="{Binding LblSpellRoll, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
-                                                                <ctrl:ConditionBlocksEditor Grid.Row="1" Grid.Column="1" Text="{Binding EditSpellRoll}" Margin="0,3,0,0" />
-
-                                                                <TextBlock Grid.Row="2" Text="{Binding LblSpellOnSuccess, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
-                                                                <ctrl:BoostBlocksEditor Grid.Row="2" Grid.Column="1" Text="{Binding EditSpellSuccess}" IsFunctorMode="True" Margin="0,3,0,0" />
-
-                                                                <TextBlock Grid.Row="3" Text="{Binding LblSpellOnFail, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
-                                                                <ctrl:BoostBlocksEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditSpellFail}" IsFunctorMode="True" Margin="0,3,0,0" />
-
-                                                                <TextBlock Grid.Row="4" Text="{Binding LblSpellAlways, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
-                                                                <ctrl:BoostBlocksEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditSpellProperties}" IsFunctorMode="True" Margin="0,3,0,0" />
-
-                                                                <TextBlock Grid.Row="5" Text="{Binding LblSpellFlags, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,3,0,0" />
-                                                                <ctrl:ChecklistPickerChip Grid.Row="5" Grid.Column="1" Text="{Binding EditSpellFlags}"
-                                                                                      Options="{x:Static vm:SpellVM.FlagOptions}" Margin="0,3,0,0" />
-                                                            </Grid>
-                                                        </Border>
-
-                                                        <!-- Creatures the spell summons -->
-                                                        <StackPanel IsVisible="{Binding HasCreatures}" Spacing="4" ClipToBounds="False">
-                                                            <TextBlock Text="{Binding LblCreatures, Source={x:Static loc:Loc.Instance}}"
-                                                                       FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="#9B59B6" />
-                                                            <ItemsControl ItemsSource="{Binding Creatures}" ClipToBounds="False">
-                                                                <ItemsControl.ItemTemplate>
-                                                                    <DataTemplate DataType="vm:SummonVM">
-                                                                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6" Margin="0,2" ClipToBounds="False">
-                                                                            <StackPanel Spacing="4" ClipToBounds="False">
-                                                                                <Grid ColumnDefinitions="*,Auto,Auto">
-                                                                                    <TextBlock Text="{Binding CreatureName}" ToolTip.Tip="{Binding CreatureTip}"
-                                                                                               FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                                                                               Foreground="#B98AE0" VerticalAlignment="Center" />
-                                                                                    <Button Grid.Column="1" Name="EditCreatureBtn" Tag="{Binding}" IsVisible="{Binding CanEdit}"
-                                                                                            Background="{StaticResource InputBgBrush}" Foreground="{StaticResource AccentLightBrush}"
-                                                                                            FontSize="{DynamicResource FontSize10}" Padding="8,2" CornerRadius="10" BorderThickness="0" Cursor="Hand"
-                                                                                            Content="{Binding BtnEditCreature, Source={x:Static loc:Loc.Instance}}" />
-                                                                                    <Button Grid.Column="2" Name="ResetCreatureBtn" Tag="{Binding}" IsVisible="{Binding IsEdited}"
-                                                                                            Background="Transparent" Foreground="{StaticResource TextMutedBrush}"
-                                                                                            FontSize="{DynamicResource FontSize10}" Padding="8,2" BorderThickness="0" Cursor="Hand"
-                                                                                            Content="{Binding BtnResetCreature, Source={x:Static loc:Loc.Instance}}" />
-                                                                                </Grid>
-                                                                                <ctrl:SearchPickerChip HorizontalAlignment="Left"
-                                                                                                       Items="{x:Static vm:SummonVM.CreatureOptions}"
-                                                                                                       Text="{Binding ReplaceWith, Mode=TwoWay}"
-                                                                                                       Watermark="{Binding WmReplaceCreature, Source={x:Static loc:Loc.Instance}}" />
-                                                                                <StackPanel IsVisible="{Binding IsEdited}" Spacing="4" ClipToBounds="False">
-                                                                                    <TextBlock Text="{Binding TipCreatureCopy, Source={x:Static loc:Loc.Instance}}" TextWrapping="Wrap"
-                                                                                               FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
-                                                                                    <TextBox Text="{Binding EditName}" Watermark="{Binding WmCreatureName, Source={x:Static loc:Loc.Instance}}"
-                                                                                             FontSize="{DynamicResource FontSize11}" Padding="8,4"
-                                                                                             Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                    <WrapPanel Orientation="Horizontal">
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding LblSpellLevel, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditLevel}" Width="46" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding LblCreatureHp, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditVitality}" Width="52" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding LblCreatureAc, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditArmor}" Width="46" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                    </WrapPanel>
-                                                                                    <WrapPanel Orientation="Horizontal">
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding AbStr, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditStrength}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding AbDex, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditDexterity}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding AbCon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditConstitution}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding AbInt, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditIntelligence}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding AbWis, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditWisdom}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
-                                                                                            <TextBlock Text="{Binding AbCha, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                                                            <TextBox Text="{Binding EditCharisma}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
-                                                                                        </StackPanel>
-                                                                                    </WrapPanel>
-                                                                                    <TextBlock Text="{Binding LblPassives, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
-                                                                                    <ctrl:ChipListEditor Text="{Binding EditPassives}" ChipColor="#27AE60"
-                                                                                                         SearchItems="{ReflectionBinding DataContext.AllPassives, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                                                                    <TextBlock Text="{Binding LblBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
-                                                                                    <ctrl:BoostBlocksEditor Text="{Binding EditDefaultBoosts}" />
-                                                                                </StackPanel>
-                                                                            </StackPanel>
-                                                                        </Border>
-                                                                    </DataTemplate>
-                                                                </ItemsControl.ItemTemplate>
-                                                            </ItemsControl>
-                                                        </StackPanel>
-                                                    </StackPanel>
-                                                </StackPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <ItemsControl ItemsSource="{Binding SpellVMs}" ClipToBounds="False" />
                             </StackPanel>
                         </Border>
                         <!-- Create new artifact -->

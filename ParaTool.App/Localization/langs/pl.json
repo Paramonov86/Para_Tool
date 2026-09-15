@@ -790,5 +790,9 @@
   "LblSpellWorkshop": "Warsztat zaklęć",
   "TipSpellWorkshop": "Tu tworzysz zaklęcia na bazie istniejących: nowe zaklęcie tego przedmiotu albo rebalans oryginału. Zapisują się w pliku .art przedmiotu. Nowe zaklęcie nic nie robi, dopóki go nie przyznasz: zaznacz „Przyznawane po założeniu”, przyznaj je przez pasywkę albo dodaj do przyznawanych zaklęć lub do boosta UnlockSpell. Edytowanego oryginału nie trzeba przyznawać: sam zmienia zaklęcie w grze.",
   "LblGrantOnEquip": "Przyznawane po założeniu",
-  "TipGrantOnEquip": "Dodaje zaklęcie do przyznawanych zaklęć przedmiotu: dostaje je każdy, kto założy przedmiot."
+  "TipGrantOnEquip": "Dodaje zaklęcie do przyznawanych zaklęć przedmiotu: dostaje je każdy, kto założy przedmiot.",
+  "LblContainer": "Kontener",
+  "LblVariant": "Wariant",
+  "LblVariants": "Warianty",
+  "TipContainer": "Kontener: przy rzucaniu gracz wybiera jeden z wariantów. Obrażenia, rzuty i efekty są w wariantach poniżej; koszt lub odnowienie zmienione tutaj trafiają do wariantów, które miały tę samą wartość."
 }

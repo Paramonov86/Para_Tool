@@ -370,6 +370,10 @@ public partial class Loc : ObservableObject
     public string LblSpellWorkshop => this["LblSpellWorkshop"];
     public string TipSpellWorkshop => this["TipSpellWorkshop"];
     public string LblGrantOnEquip => this["LblGrantOnEquip"];
+    public string LblContainer => this["LblContainer"];
+    public string LblVariant => this["LblVariant"];
+    public string LblVariants => this["LblVariants"];
+    public string TipContainer => this["TipContainer"];
     public string TipGrantOnEquip => this["TipGrantOnEquip"];
     public string LblCreatures => this["LblCreatures"];
     public string BtnEditCreature => this["BtnEditCreature"];

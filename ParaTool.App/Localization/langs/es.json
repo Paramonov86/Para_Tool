@@ -790,5 +790,9 @@
   "LblSpellWorkshop": "Taller de conjuros",
   "TipSpellWorkshop": "Aquí se crean conjuros a partir de otros existentes: un conjuro nuevo de este objeto o un reequilibrio del original. Se guardan en el archivo .art del objeto. Un conjuro nuevo no hace nada hasta que lo concedes: marca «Concedido al equipar», concédelo mediante un pasivo o añádelo a los conjuros concedidos o a un boost UnlockSpell. Un original editado no hace falta concederlo: reequilibra el conjuro en el juego por sí solo.",
   "LblGrantOnEquip": "Concedido al equipar",
-  "TipGrantOnEquip": "Añade el conjuro a los conjuros concedidos del objeto: quien lo equipe lo obtiene."
+  "TipGrantOnEquip": "Añade el conjuro a los conjuros concedidos del objeto: quien lo equipe lo obtiene.",
+  "LblContainer": "Contenedor",
+  "LblVariant": "Variante",
+  "LblVariants": "Variantes",
+  "TipContainer": "Un contenedor: al lanzarlo, el jugador elige una de sus variantes. El daño, las tiradas y los efectos están en las variantes de abajo; el coste o el enfriamiento que cambies aquí se copian a las variantes que tenían el mismo valor."
 }

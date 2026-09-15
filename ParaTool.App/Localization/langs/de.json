@@ -790,5 +790,9 @@
   "LblSpellWorkshop": "Zauberwerkstatt",
   "TipSpellWorkshop": "Hier entstehen Zauber aus bestehenden: ein neuer Zauber dieses Gegenstands oder ein Rebalance des Originals. Sie werden in der .art-Datei des Gegenstands gespeichert. Ein neuer Zauber bewirkt nichts, bis du ihn vergibst: „Beim Ausrüsten gewährt“ anhaken, über ein Passiv gewähren oder zu den gewährten Zaubern bzw. einem UnlockSpell-Boost hinzufügen. Ein bearbeitetes Original muss nicht vergeben werden: Es ändert den Zauber im Spiel von selbst.",
   "LblGrantOnEquip": "Beim Ausrüsten gewährt",
-  "TipGrantOnEquip": "Fügt den Zauber den gewährten Zaubern des Gegenstands hinzu: Wer ihn ausrüstet, erhält den Zauber."
+  "TipGrantOnEquip": "Fügt den Zauber den gewährten Zaubern des Gegenstands hinzu: Wer ihn ausrüstet, erhält den Zauber.",
+  "LblContainer": "Container",
+  "LblVariant": "Variante",
+  "LblVariants": "Varianten",
+  "TipContainer": "Ein Container: Beim Wirken wählt der Spieler eine seiner Varianten. Schaden, Würfe und Effekte liegen in den Varianten unten; hier geänderte Kosten oder Abklingzeit werden in Varianten mit demselben Wert übernommen."
 }

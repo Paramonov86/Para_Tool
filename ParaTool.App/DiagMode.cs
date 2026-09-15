@@ -603,7 +603,7 @@ internal static class DiagMode
                 Console.WriteLine($"  {name}: {decls.Count} declaration(s)");
                 foreach (var (file, e) in decls)
                     Console.WriteLine($"    {file}: using={e.Using ?? "-"} " +
-                                      string.Join(" ", new[] { "SpellType", "Cooldown", "SpellSuccess", "SpellProperties", "Vitality", "DisplayName", "Boosts" }
+                                      string.Join(" ", new[] { "SpellType", "Cooldown", "SpellSuccess", "SpellProperties", "ContainerSpells", "SpellContainerID", "RootSpellID", "Vitality", "DisplayName", "Boosts" }
                                           .Where(e.Data.ContainsKey).Select(k => $"{k}='{e.Data[k]}'")));
             }
             if (_probeCreatureTemplate != null)
@@ -667,7 +667,7 @@ internal static class DiagMode
 
             item.AddExistingSpell("Target_VampiricTouch", resolver, loca);
             item.AddExistingSpell("Projectile_MOO_BalthazarsSecrets_AnimateZombie", resolver, loca);
-            foreach (var s in item.SpellVMs) s.IsExpanded = true;
+            foreach (var s in item.SpellVMs.SelectMany(c => c.WithVariants())) s.IsExpanded = true;
             var creature = item.SpellVMs.SelectMany(s => s.Creatures).FirstOrDefault();
             if (creature != null)
             {
@@ -691,6 +691,10 @@ internal static class DiagMode
             // Its target conditions put a short chip (Is Enemy) beside a tall ( ) group.
             if (resolver.AllEntries.ContainsKey("AMP_Kyzr_Destructive_Wave_5"))
                 item.AddExistingSpell("AMP_Kyzr_Destructive_Wave_5", resolver, loca);
+            if (item.SpellVMs.LastOrDefault(s => s.HasVariants) is { } waveCard)
+                Console.WriteLine($"  container variants: {string.Join(" | ", waveCard.Variants.Select(v => $"{v.Name}: {v.EditSpellSuccess}"))}");
+            // The largest vanilla container (32 variants): how long a family that size takes to lay out.
+            item.AddExistingSpell("Shout_DisguiseSelf", resolver, loca);
 
             var view = new Views.ConstructorView { DataContext = cvm };
             var root = new Avalonia.Controls.Window { Width = 1600, Height = 4000, Content = view };
@@ -716,7 +720,7 @@ internal static class DiagMode
             Console.WriteLine($"  SpellsOnEquip='{art.SpellsOnEquip}' passives={string.Join(",", art.Passives.Select(p => $"{p.Name}:{p.Boosts}"))}");
             // Adding a card grants nothing; each grant is the player's choice.
             item.SpellVMs[1].GrantOnEquip = true;
-            Console.WriteLine($"  grants: {string.Join(", ", item.SpellVMs.Select(s => $"{s.Name}[equip={s.GrantOnEquip} passive={s.GrantThroughPassive}]"))} " +
+            Console.WriteLine($"  grants: {string.Join(", ", item.SpellVMs.Select(s => $"{s.Name}[equip={s.GrantOnEquip} passive={s.GrantThroughPassive} variants={s.Variants.Count}]"))} " +
                               $"SpellsOnEquip='{art.SpellsOnEquip}'");
             Console.WriteLine($"  realized: spell cards={Realized<ViewModels.SpellVM>()} creature rows={Realized<ViewModels.SummonVM>()} " +
                               $"passive cards={Realized<ViewModels.PassiveVM>()} (controls {controls.Count})");
@@ -775,9 +779,10 @@ internal static class DiagMode
                         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
                     }
                 }
+                var layoutClock = System.Diagnostics.Stopwatch.StartNew();
                 Settle();
                 // Loading the view rebuilds the card VMs, so expand the ones it ended up with.
-                foreach (var s in item.SpellVMs) s.IsExpanded = true;
+                foreach (var s in item.SpellVMs.SelectMany(c => c.WithVariants())) s.IsExpanded = true;
                 foreach (var p in item.PassiveVMs) p.IsExpanded = true;
                 Settle();
 
@@ -815,13 +820,20 @@ internal static class DiagMode
                         var needed = new Avalonia.Media.TextFormatting.TextLayout(tb.Text,
                             new Avalonia.Media.Typeface(tb.FontFamily, tb.FontStyle, tb.FontWeight), tb.FontSize, null).Width;
                         if (needed > tb.Bounds.Width + 1)
-                            problems.Add($"label cut: '{tb.Text}' needs {needed:0} has {tb.Bounds.Width:0}");
+                        {
+                            var where = new List<string>();
+                            for (var a = Avalonia.VisualTree.VisualExtensions.GetVisualParent(tb); a != null && where.Count < 3; a = Avalonia.VisualTree.VisualExtensions.GetVisualParent(a))
+                                if (a is Avalonia.Controls.Control ac)
+                                    where.Add(ac.GetType().Name + (string.IsNullOrEmpty(ac.Name) ? "" : "#" + ac.Name));
+                            problems.Add($"label cut: '{tb.Text}' needs {needed:0} has {tb.Bounds.Width:0} in {string.Join(" < ", where)}");
+                        }
                     }
                 }
                 costBadges = Descendants(probeRoot).OfType<Controls.UseCostsEditor>()
                     .Sum(e => Descendants(e).OfType<Controls.TumblerChipEditor>().Count());
                 var distinct = problems.Distinct().ToList();
-                Console.WriteLine($"  layout {lang} font x{scale} width {width}: cards={cards.Count} problems={distinct.Count}");
+                Console.WriteLine($"  layout {lang} font x{scale} width {width}: cards={cards.Count} problems={distinct.Count} " +
+                                  $"({layoutClock.ElapsedMilliseconds} ms for 20 layout passes)");
                 foreach (var p in distinct.Take(20)) Console.WriteLine($"    {p}");
                 probeRoot.Content = null;
             }
@@ -913,6 +925,26 @@ internal static class DiagMode
             names.AddRange(["PT_SpellProbe_Ring_Spell_4", "PT_SpellProbe_Ring_Summon_1"]);
             _probeCreatureTemplate = creature.TemplateUuid;
             Console.WriteLine($"  spell probe: {summonSpell.Name} summons {summonSpell.uuid} -> copy {creature.TemplateUuid} ({creature.UsingBase})");
+        }
+
+        // Containers: Chromatic Orb copied with its variants (the first hits harder), granted on
+        // equip; Destructive Wave's family edited in place.
+        if (resolver.Get("Projectile_ChromaticOrb") != null)
+        {
+            var orb = ParaTool.Core.Artifacts.SpellCloner.CloneWithVariants("Projectile_ChromaticOrb", resolver);
+            orb.Variants[0].SpellSuccess = "DealDamage(9d8,Acid,Magical)";
+            art.Spells.Add(orb);
+            art.SpellsOnEquip += ";Projectile_ChromaticOrb";
+            var orbName = $"PT_SpellProbe_Ring_Spell_{art.Spells.Count}";
+            names.AddRange([orbName, orbName + "_1", orbName + "_2"]);
+        }
+        if (resolver.Get("Shout_DestructiveWave") != null)
+        {
+            var wave = ParaTool.Core.Artifacts.SpellCloner.CloneWithVariants("Shout_DestructiveWave", resolver);
+            wave.EditOriginal = true;
+            wave.Variants[0].SpellSuccess = "DealDamage(9d6,Necrotic,Magical);ApplyStatus(PRONE,100,1)";
+            art.Spells.Add(wave);
+            names.AddRange(wave.WithVariants().Select(s => s.Name));
         }
 
         ParaTool.Core.Artifacts.ArtifactStore.Save(art);
