@@ -735,5 +735,7 @@
   "WarnEditOriginal": "Changes apply everywhere this spell is used, not only on this item.",
   "TipRemoveSpell": "Remove spell",
   "JrnAddSpell": "Add spell",
-  "JrnRemoveSpell": "Remove spell"
+  "JrnRemoveSpell": "Remove spell",
+  "LblGrantViaPassive": "Grant through a passive (with a condition)",
+  "TipGrantViaPassive": "Instead of unlocking on equip, a hidden passive on this item unlocks the spell. Set its condition in the Passives section."
 }

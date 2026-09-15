@@ -735,5 +735,7 @@
   "WarnEditOriginal": "Zmiany obowiązują wszędzie, gdzie używane jest to zaklęcie, nie tylko na tym przedmiocie.",
   "TipRemoveSpell": "Usuń zaklęcie",
   "JrnAddSpell": "Dodano zaklęcie",
-  "JrnRemoveSpell": "Usunięto zaklęcie"
+  "JrnRemoveSpell": "Usunięto zaklęcie",
+  "LblGrantViaPassive": "Przyznaj przez pasywkę (z warunkiem)",
+  "TipGrantViaPassive": "Zamiast odblokować się po założeniu, zaklęcie odblokuje ukryta pasywka tego przedmiotu. Warunek ustawisz w sekcji Pasywki."
 }

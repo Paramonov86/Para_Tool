@@ -735,5 +735,7 @@
   "WarnEditOriginal": "Le modifiche si applicano ovunque sia usato questo incantesimo, non solo su questo oggetto.",
   "TipRemoveSpell": "Rimuovi incantesimo",
   "JrnAddSpell": "Incantesimo aggiunto",
-  "JrnRemoveSpell": "Incantesimo rimosso"
+  "JrnRemoveSpell": "Incantesimo rimosso",
+  "LblGrantViaPassive": "Concedi tramite un passivo (con condizione)",
+  "TipGrantViaPassive": "Invece di sbloccarsi all'equipaggiamento, l'incantesimo viene sbloccato da un passivo nascosto di questo oggetto. La condizione si imposta nella sezione Passivi."
 }

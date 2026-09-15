@@ -581,10 +581,75 @@ public partial class ArtifactItemVM : ObservableObject
             : Core.Services.VanillaLocaService.GetDisplayName(spellName, lang)) ?? "";
     }
 
+    private static readonly System.Text.RegularExpressions.Regex UnlockSpellRegex =
+        new(@"\bUnlockSpell\(\s*([A-Za-z0-9_]+)", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>Passives on this item whose Boosts unlock the spell card.</summary>
+    internal List<PassiveDefinition> GrantPassivesFor(SpellDefinition spell) =>
+        (Artifact.Passives ?? [])
+            .Where(p => !string.IsNullOrEmpty(p.Boosts) && UnlockSpellRegex.Matches(p.Boosts).Any(m =>
+                m.Groups[1].Value.Equals(spell.Name, StringComparison.OrdinalIgnoreCase)
+                || m.Groups[1].Value.Equals(spell.UsingBase, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+    /// <summary>
+    /// Switches a spell card between "unlocked on equip" and "unlocked by a passive". The passive
+    /// is hidden and comes up expanded so its condition can be set right away.
+    /// </summary>
+    public void SetSpellGrantedThroughPassive(SpellVM svm, bool viaPassive)
+    {
+        var spell = svm.Spell;
+        var names = new[] { spell.Name, spell.UsingBase ?? "" };
+        if (viaPassive)
+        {
+            if (GrantPassivesFor(spell).Count > 0) return;
+            EditSpellsOnEquip = string.Join(";", (Artifact.SpellsOnEquip ?? "")
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(n => !names.Contains(n, StringComparer.OrdinalIgnoreCase)));
+
+            var (nameHandle, descHandle) = Core.Localization.HandleGenerator.NewPair();
+            int n = 1;
+            string passiveName;
+            do passiveName = $"{Artifact.StatId}_Grant_{n++}";
+            while (Artifact.Passives.Any(p => p.Name.Equals(passiveName, StringComparison.OrdinalIgnoreCase)));
+            var passive = new PassiveDefinition
+            {
+                Name = passiveName,
+                Properties = "IsHidden",
+                Boosts = $"UnlockSpell({spell.Name})",
+                DisplayNameHandle = nameHandle,
+                DescriptionHandle = descHandle,
+            };
+            foreach (var (lang, text) in spell.DisplayName)
+                passive.DisplayName[lang] = text;
+            Artifact.Passives.Add(passive);
+            Artifact.RemovedPassives.RemoveAll(p => p.Equals(passiveName, StringComparison.OrdinalIgnoreCase));
+            PassiveVMs.Add(new PassiveVM(passive, this) { IsExpanded = true });
+            OnPropertyChanged(nameof(HasPassives));
+        }
+        else
+        {
+            foreach (var p in GrantPassivesFor(spell))
+            {
+                if (PassiveVMs.FirstOrDefault(v => v.Passive == p) is { } pvm) RemovePassive(pvm);
+                else Artifact.Passives.Remove(p);
+            }
+            if (!SplitSemicolon(Artifact.SpellsOnEquip).Contains(spell.Name))
+                EditSpellsOnEquip = string.IsNullOrEmpty(Artifact.SpellsOnEquip) ? spell.Name : Artifact.SpellsOnEquip + ";" + spell.Name;
+        }
+        RecordEdit();
+        svm.NotifyGrantChanged();
+    }
+
     public void RemoveSpell(SpellVM svm)
     {
         Artifact.Spells.Remove(svm.Spell);
         SpellVMs.Remove(svm);
+        foreach (var p in GrantPassivesFor(svm.Spell))
+        {
+            if (PassiveVMs.FirstOrDefault(v => v.Passive == p) is { } pvm) RemovePassive(pvm);
+            else Artifact.Passives.Remove(p);
+        }
 
         // Stop granting it; the SpellsOnEquip setter leaves a tombstone so the base item's
         // own list doesn't bring it back.
@@ -863,6 +928,7 @@ public partial class ArtifactItemVM : ObservableObject
         ["RemovePassive"] = "JrnRemovePassive",
         ["AddExistingSpell"] = "JrnAddSpell",
         ["RemoveSpell"] = "JrnRemoveSpell",
+        ["SetSpellGrantedThroughPassive"] = "LblGrantViaPassive",
         ["EditProperties"] = "LblProperties",
         ["EditBoostContext"] = "LblBoosts",
         ["EditBoostConditions"] = "LblCondition",
@@ -1176,6 +1242,19 @@ public partial class SpellVM : ObservableObject
     /// <summary>The spell the card was cloned from (tooltip).</summary>
     public string StatName => Spell.UsingBase ?? Spell.Name;
     public string SpellType => Spell.SpellType;
+
+    /// <summary>Unlocked by a passive on this item (with its condition) instead of on equip.</summary>
+    public bool GrantThroughPassive
+    {
+        get => _parent.GrantPassivesFor(Spell).Count > 0;
+        set
+        {
+            if (GrantThroughPassive == value) return;
+            _parent.SetSpellGrantedThroughPassive(this, value);
+        }
+    }
+
+    internal void NotifyGrantChanged() => OnPropertyChanged(nameof(GrantThroughPassive));
 
     public bool EditOriginal
     {

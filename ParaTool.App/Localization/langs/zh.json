@@ -735,5 +735,7 @@
   "WarnEditOriginal": "更改将应用于使用此法术的所有地方，而不仅是此物品。",
   "TipRemoveSpell": "移除法术",
   "JrnAddSpell": "已添加法术",
-  "JrnRemoveSpell": "已移除法术"
+  "JrnRemoveSpell": "已移除法术",
+  "LblGrantViaPassive": "通过被动授予（带条件）",
+  "TipGrantViaPassive": "不在装备时解锁，而是由此物品的隐藏被动解锁该法术。条件在被动区域中设置。"
 }

@@ -735,5 +735,7 @@
   "WarnEditOriginal": "Değişiklikler yalnızca bu eşyada değil, bu büyünün kullanıldığı her yerde geçerli olur.",
   "TipRemoveSpell": "Büyüyü kaldır",
   "JrnAddSpell": "Büyü eklendi",
-  "JrnRemoveSpell": "Büyü kaldırıldı"
+  "JrnRemoveSpell": "Büyü kaldırıldı",
+  "LblGrantViaPassive": "Pasif ile ver (koşullu)",
+  "TipGrantViaPassive": "Kuşanınca açılmak yerine büyüyü bu eşyanın gizli bir pasifi açar. Koşulu Pasifler bölümünde ayarla."
 }

@@ -138,6 +138,27 @@ public class SpellCardCompileTests
     }
 
     [Fact]
+    public void CopyGrantedThroughPassive_PassiveUnlocksTheCopy()
+    {
+        var art = NewRing();
+        art.Spells.Add(SpellCloner.CloneFrom("Target_VampiricTouch", Vanilla.Value));
+        art.Passives.Add(new PassiveDefinition
+        {
+            Name = "TEST_Ring_Grant_1",
+            Properties = "IsHidden",
+            Boosts = "UnlockSpell(Target_VampiricTouch)",
+            BoostConditions = "InCombat()",
+        });
+
+        var text = ArtifactCompiler.Compile(art, resolver: Vanilla.Value).StatsText;
+
+        var passive = EntryOf(text, "TEST_Ring_Grant_1");
+        Assert.Equal("UnlockSpell(TEST_Ring_Spell_1)", passive.Data["Boosts"]);
+        Assert.DoesNotContain("UnlockSpell(Target_VampiricTouch)", text);
+        Assert.Contains("TEST_Ring_Grant_1", EntryOf(text, "TEST_Ring").Data["PassivesOnEquip"]);
+    }
+
+    [Fact]
     public void LegacySpell_NullCardFields_AreNotWritten()
     {
         var art = NewRing();

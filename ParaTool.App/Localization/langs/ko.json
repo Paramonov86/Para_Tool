@@ -733,5 +733,7 @@
   "WarnEditOriginal": "변경 사항은 이 아이템뿐 아니라 이 주문이 사용되는 모든 곳에 적용됩니다.",
   "TipRemoveSpell": "주문 제거",
   "JrnAddSpell": "주문 추가됨",
-  "JrnRemoveSpell": "주문 제거됨"
+  "JrnRemoveSpell": "주문 제거됨",
+  "LblGrantViaPassive": "패시브로 부여 (조건부)",
+  "TipGrantViaPassive": "장착 시 해금하는 대신 이 아이템의 숨겨진 패시브가 주문을 해금합니다. 조건은 패시브 섹션에서 설정합니다."
 }

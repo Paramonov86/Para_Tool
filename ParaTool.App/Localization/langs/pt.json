@@ -735,5 +735,7 @@
   "WarnEditOriginal": "As alterações valem em todos os lugares onde esta magia é usada, não só neste item.",
   "TipRemoveSpell": "Remover magia",
   "JrnAddSpell": "Magia adicionada",
-  "JrnRemoveSpell": "Magia removida"
+  "JrnRemoveSpell": "Magia removida",
+  "LblGrantViaPassive": "Conceder por um passivo (com condição)",
+  "TipGrantViaPassive": "Em vez de desbloquear ao equipar, um passivo oculto deste item desbloqueia a magia. A condição é definida na seção Passivos."
 }

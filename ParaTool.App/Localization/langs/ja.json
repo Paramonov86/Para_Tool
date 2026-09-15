@@ -735,5 +735,7 @@
   "WarnEditOriginal": "変更はこのアイテムだけでなく、この呪文が使われるすべての場所に適用されます。",
   "TipRemoveSpell": "呪文を削除",
   "JrnAddSpell": "呪文を追加",
-  "JrnRemoveSpell": "呪文を削除"
+  "JrnRemoveSpell": "呪文を削除",
+  "LblGrantViaPassive": "パッシブで付与（条件付き）",
+  "TipGrantViaPassive": "装備時に解放する代わりに、このアイテムの非表示パッシブが呪文を解放します。条件はパッシブ欄で設定します。"
 }

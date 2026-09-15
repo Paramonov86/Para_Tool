@@ -735,5 +735,7 @@
   "WarnEditOriginal": "Änderungen gelten überall, wo dieser Zauber verwendet wird, nicht nur bei diesem Gegenstand.",
   "TipRemoveSpell": "Zauber entfernen",
   "JrnAddSpell": "Zauber hinzugefügt",
-  "JrnRemoveSpell": "Zauber entfernt"
+  "JrnRemoveSpell": "Zauber entfernt",
+  "LblGrantViaPassive": "Über ein Passiv gewähren (mit Bedingung)",
+  "TipGrantViaPassive": "Statt beim Ausrüsten schaltet ein verborgenes Passiv dieses Gegenstands den Zauber frei. Die Bedingung legst du im Abschnitt Passive fest."
 }

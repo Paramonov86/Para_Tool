@@ -735,5 +735,7 @@
   "WarnEditOriginal": "Los cambios se aplican en todos los lugares donde se usa este conjuro, no solo en este objeto.",
   "TipRemoveSpell": "Quitar conjuro",
   "JrnAddSpell": "Conjuro añadido",
-  "JrnRemoveSpell": "Conjuro quitado"
+  "JrnRemoveSpell": "Conjuro quitado",
+  "LblGrantViaPassive": "Otorgar mediante un pasivo (con condición)",
+  "TipGrantViaPassive": "En lugar de desbloquearse al equipar, un pasivo oculto de este objeto desbloquea el conjuro. Su condición se define en la sección Pasivos."
 }

@@ -221,6 +221,14 @@ public static class ArtifactCompiler
         // rewritten to the new name. A card set to edit the original keeps the name and
         // compiles as a self-`using` override instead.
         var spellRenames = RenameSpellCopies(art, resolver);
+        // A spell granted through a passive (or typed into the item's Boosts) names the original
+        // too; with a card for it, the item's version is the card.
+        if (spellRenames.Count > 0)
+        {
+            art.Boosts = RewriteUnlockSpell(art.Boosts ?? "", spellRenames);
+            foreach (var p in art.Passives)
+                p.Boosts = RewriteUnlockSpell(p.Boosts ?? "", spellRenames);
+        }
 
         // Mechanics — merge Boosts + SpellsOnEquip into single "Boosts" line
         var allBoosts = new List<string>();
@@ -646,6 +654,14 @@ public static class ArtifactCompiler
             Warnings = warnings,
         };
     }
+
+    private static readonly System.Text.RegularExpressions.Regex UnlockSpellRegex =
+        new(@"\bUnlockSpell\(\s*([A-Za-z0-9_]+)", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    private static string RewriteUnlockSpell(string boosts, IReadOnlyDictionary<string, string> renames) =>
+        string.IsNullOrEmpty(boosts) ? boosts
+            : UnlockSpellRegex.Replace(boosts, m => renames.TryGetValue(m.Groups[1].Value, out var renamed)
+                ? $"UnlockSpell({renamed}" : m.Value);
 
     private static bool SameHandle(string? a, string? b) =>
         !string.IsNullOrEmpty(a) && !string.IsNullOrEmpty(b)

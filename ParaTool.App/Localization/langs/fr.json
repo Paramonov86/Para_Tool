@@ -735,5 +735,7 @@
   "WarnEditOriginal": "Les modifications s'appliquent partout où ce sort est utilisé, pas seulement sur cet objet.",
   "TipRemoveSpell": "Retirer le sort",
   "JrnAddSpell": "Sort ajouté",
-  "JrnRemoveSpell": "Sort retiré"
+  "JrnRemoveSpell": "Sort retiré",
+  "LblGrantViaPassive": "Accorder via un passif (avec condition)",
+  "TipGrantViaPassive": "Au lieu d'être débloqué à l'équipement, le sort est débloqué par un passif caché de cet objet. Sa condition se règle dans la section Passifs."
 }

@@ -784,6 +784,11 @@
                                                         <TextBlock IsVisible="{Binding EditOriginal}" TextWrapping="Wrap"
                                                                    Text="{Binding WarnEditOriginal, Source={x:Static loc:Loc.Instance}}"
                                                                    FontSize="{DynamicResource FontSize10}" Foreground="{DynamicResource WarningBrush}" />
+                                                        <!-- Unlocked on equip (default) or by a passive with a condition -->
+                                                        <CheckBox IsChecked="{Binding GrantThroughPassive}" Foreground="{StaticResource AccentLightBrush}"
+                                                                  Content="{Binding LblGrantViaPassive, Source={x:Static loc:Loc.Instance}}"
+                                                                  ToolTip.Tip="{Binding TipGrantViaPassive, Source={x:Static loc:Loc.Instance}}"
+                                                                  FontSize="{DynamicResource FontSize11}" />
 
                                                         <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                                             <TextBlock Text="{Binding LblSpellType, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
