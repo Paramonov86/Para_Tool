@@ -810,9 +810,7 @@
                                                                                    Items="{x:Static vm:SpellVM.SchoolOptions}" Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                                             <TextBlock Grid.Row="3" Text="{Binding LblSpellCosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                                                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding EditUseCosts}" Watermark="ActionPoint:1"
-                                                                     FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0"
-                                                                     Background="{StaticResource CardBgBrush}" CornerRadius="4" />
+                                                            <ctrl:UseCostsEditor Grid.Row="3" Grid.Column="1" Text="{Binding EditUseCosts}" Margin="0,6,0,0" />
 
                                                             <TextBlock Grid.Row="4" Text="{Binding LblSpellCooldown, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                                             <ctrl:TumblerChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditCooldown}"

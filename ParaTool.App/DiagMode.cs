@@ -682,6 +682,10 @@ internal static class DiagMode
             // past its card — report both.
             item.SpellVMs[0].EditSpellProperties =
                 "IF(HasStatus('BURNING')):RestoreResource(SELF,ChannelDivinity,1,0);" + item.SpellVMs[0].EditSpellProperties;
+            // Cost badges must not write back on load: odd vanilla spellings stay byte for byte.
+            art.Spells[^1].UseCosts = "Movement:Distance*0.5; ActionPoint:1\t;SpellSlotsGroup:2:2:4;Weird:1:2";
+            var costsBefore = art.Spells.Select(s => s.UseCosts).ToList();
+            int costBadges = 0;
             static void ApplyFontScale(double scale)
             {
                 Services.FontScale.Factor = scale;
@@ -763,6 +767,8 @@ internal static class DiagMode
                             problems.Add($"label cut: '{tb.Text}' needs {needed:0} has {tb.Bounds.Width:0}");
                     }
                 }
+                costBadges = Descendants(probeRoot).OfType<Controls.UseCostsEditor>()
+                    .Sum(e => Descendants(e).OfType<Controls.TumblerChipEditor>().Count());
                 var distinct = problems.Distinct().ToList();
                 Console.WriteLine($"  layout {lang} font x{scale} width {width}: cards={cards.Count} problems={distinct.Count}");
                 foreach (var p in distinct.Take(20)) Console.WriteLine($"    {p}");
@@ -770,6 +776,9 @@ internal static class DiagMode
             }
             Localization.Loc.Instance.SetLanguage("en");
             ApplyFontScale(1.0);
+            var costsAfter = art.Spells.Select(s => s.UseCosts).ToList();
+            Console.WriteLine($"  UseCosts untouched by layout: {costsBefore.SequenceEqual(costsAfter)} " +
+                              $"[{string.Join(" | ", costsAfter.Select(c => c.Replace("\t", "\\t")))}] cost tumblers={costBadges}");
 
             Console.WriteLine($"  binding errors: {sink.Errors.Count}");
             foreach (var e in sink.Errors.Distinct().Take(15)) Console.WriteLine($"    {e}");
