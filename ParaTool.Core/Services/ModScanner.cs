@@ -368,8 +368,7 @@ public sealed class ModScanner
 
             // Build merged resolver: vanilla + AMP stats
             var resolver = new StatsResolver();
-            foreach (var kvp in _vanillaDb.Resolver.AllEntries)
-                resolver.AddEntries(new[] { kvp.Value });
+            resolver.AddEntries(_vanillaDb.Resolver.Definitions);
 
             // Pass 1 (merge across stat files) already ran in LoadAmpContext — reuse it
             // instead of parsing AMP's ~2400 entries a second time.
@@ -611,8 +610,7 @@ public sealed class ModScanner
             var resolver = new StatsResolver();
 
             // Add vanilla entries for resolution
-            foreach (var kvp in _vanillaDb.Resolver.AllEntries)
-                resolver.AddEntries(new[] { kvp.Value });
+            resolver.AddEntries(_vanillaDb.Resolver.Definitions);
 
             // Submods inherit from AMP, so AMP's entries must be in the resolver — otherwise
             // a rebalance like `new entry "AMP_Boots_SpiderWalk" / using "<self>"` resolves to
@@ -948,8 +946,7 @@ public sealed class ModScanner
         if (ampMod != null) allItems.AddRange(ampMod.Items);
         foreach (var mod in mods) allItems.AddRange(mod.Items);
         var resolver = new Parsing.StatsResolver();
-        foreach (var kvp in baseResolver.AllEntries)
-            resolver.AddEntries(new[] { kvp.Value });
+        resolver.AddEntries(baseResolver.Definitions);
 
         var masterLocaMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var handleOwnership = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

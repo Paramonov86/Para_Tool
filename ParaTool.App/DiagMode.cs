@@ -74,6 +74,32 @@ internal static class DiagMode
             try { locaService.GetLocaMap(lang); } catch { }
         Console.WriteLine($"  extra langs loaded in {step.ElapsedMilliseconds}ms");
 
+        // --diag-scan-dump <dir>: every scanned item and every resolved spell's card fields as sorted
+        // text, to diff a scan before and after a resolver change.
+        var dumpIdx = Array.FindIndex(args, a => a.Equals("--diag-scan-dump", StringComparison.OrdinalIgnoreCase));
+        if (dumpIdx >= 0 && dumpIdx + 1 < args.Length)
+        {
+            var dumpDir = args[dumpIdx + 1];
+            Directory.CreateDirectory(dumpDir);
+            var itemRows = (result.AmpMod?.Items ?? []).Select(it => ("amp", it))
+                .Concat(result.Mods.SelectMany((m, i) => m.Items.Select(it => ($"mod{i}", it))))
+                .Select(p => string.Join('\t', p.Item1, p.it.StatId, p.it.StatType, p.it.ResolvedSlot, p.it.ResolvedArmorType,
+                    p.it.ResolvedRarity, p.it.ResolvedShield, p.it.ResolvedWeaponProperties, p.it.ResolvedUnique,
+                    p.it.DetectedPool, p.it.DetectedRarity, string.Join(",", p.it.DetectedThemes), p.it.DisplayName, p.it.IconName))
+                .OrderBy(r => r, StringComparer.Ordinal);
+            File.WriteAllLines(Path.Combine(dumpDir, "items.tsv"), itemRows);
+            var spellRows = result.Resolver!.AllEntries.Values.Where(e => e.Type == "SpellData").Select(e =>
+            {
+                var f = result.Resolver.ResolveAll(e.Name);
+                return e.Name + "\t" + string.Join('\t', ParaTool.Core.Artifacts.SpellCloner.CardFields
+                    .Concat(["SpellType", "DisplayName", "ContainerSpells", "SpellContainerID"])
+                    .Select(k => f.TryGetValue(k, out var v) ? $"{k}={v}" : ""));
+            }).OrderBy(r => r, StringComparer.Ordinal);
+            File.WriteAllLines(Path.Combine(dumpDir, "spells.tsv"), spellRows);
+            Console.WriteLine($"  scan dump written to {dumpDir}");
+            return 0;
+        }
+
         // Build StatId -> ItemEntry map. AMP wins on collisions — mirror scanner's
         // authoritative-for-AMP priority. Use TryAdd so first (AMP) stays.
         var itemEntryByStatId = new Dictionary<string, ParaTool.Core.Models.ItemEntry>(StringComparer.OrdinalIgnoreCase);
@@ -282,7 +308,7 @@ internal static class DiagMode
                     try { compileResolver.AddEntries(ParaTool.Core.Parsing.StatsParser.Parse(System.Text.Encoding.UTF8.GetString(data))); } catch { }
                 }
             }
-            compileResolver.AddEntries(vanillaDb.Resolver.AllEntries.Values);
+            compileResolver.AddEntries(vanillaDb.Resolver.Definitions);
 
             bool isOverride = art.StatId.Equals(art.UsingBase, StringComparison.OrdinalIgnoreCase);
             var baseFields = compileResolver.ResolveAll(art.UsingBase);

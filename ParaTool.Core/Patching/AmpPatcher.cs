@@ -497,7 +497,7 @@ public sealed class AmpPatcher
         {
             var vdb = new Services.VanillaDatabase();
             vdb.Load();
-            resolver.AddEntries(vdb.Resolver.AllEntries.Values);
+            resolver.AddEntries(vdb.Resolver.Definitions);
         }
         catch (Exception ex) { log.AppendLine($"  resolver: vanilla load failed: {ex.Message}"); }
 
