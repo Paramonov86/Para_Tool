@@ -46,6 +46,35 @@ public static class SpellCloner
         return spell;
     }
 
+    /// <summary>
+    /// A card for the spell, plus a card for each variant when the spell is a container, so the
+    /// effects that live on the variants can be edited and copied with it.
+    /// </summary>
+    public static SpellDefinition CloneWithVariants(string spellName, StatsResolver? resolver)
+    {
+        var spell = CloneFrom(spellName, resolver);
+        if (resolver != null)
+            foreach (var variant in ListedVariants(spellName, resolver))
+                spell.Variants.Add(CloneFrom(variant, resolver));
+        return spell;
+    }
+
+    /// <summary>
+    /// The variants a container spell lists, in order; empty when the spell is not a container. A
+    /// container resolves a <c>ContainerSpells</c> list and no <c>SpellContainerID</c> of its own —
+    /// variants that <c>using</c> their container inherit its list too, so the list alone is not enough.
+    /// </summary>
+    public static IReadOnlyList<string> ListedVariants(string spellName, StatsResolver resolver)
+    {
+        var fields = resolver.ResolveAll(spellName);
+        if (!string.IsNullOrEmpty(fields.GetValueOrDefault("SpellContainerID"))) return [];
+        return (fields.GetValueOrDefault("ContainerSpells") ?? "")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(v => !v.Equals(spellName, StringComparison.OrdinalIgnoreCase) && resolver.Get(v) != null)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     /// <summary>Card fields and the stats keys they compile to, for tests and diagnostics.</summary>
     public static readonly string[] CardFields =
     [

@@ -403,6 +403,16 @@ public sealed class SpellDefinition
 
     /// <summary>Raw extra data fields (key → value) for uncommon properties.</summary>
     public Dictionary<string, string> ExtraData { get; set; } = [];
+
+    /// <summary>
+    /// The variants of a container spell (its <c>ContainerSpells</c>), in list order, each compiled as
+    /// its own entry. They follow the container: copies are renamed after it and linked to it, and
+    /// "edit original" on the container overrides them too. Empty for an ordinary spell.
+    /// </summary>
+    public List<SpellDefinition> Variants { get; set; } = [];
+
+    /// <summary>This card followed by its variants.</summary>
+    public IEnumerable<SpellDefinition> WithVariants() => Variants.Prepend(this);
 }
 
 /// <summary>

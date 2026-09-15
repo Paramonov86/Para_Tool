@@ -56,7 +56,7 @@ public static class ArtifactStore
             if (string.IsNullOrEmpty(s.DisplayNameHandle)) s.DisplayNameHandle = Localization.HandleGenerator.New();
             if (string.IsNullOrEmpty(s.DescriptionHandle)) s.DescriptionHandle = Localization.HandleGenerator.New();
         }
-        foreach (var sp in artifact.Spells)
+        foreach (var sp in artifact.Spells.SelectMany(s => s.WithVariants()))
         {
             if (string.IsNullOrEmpty(sp.DisplayNameHandle)) sp.DisplayNameHandle = Localization.HandleGenerator.New();
             if (string.IsNullOrEmpty(sp.DescriptionHandle)) sp.DescriptionHandle = Localization.HandleGenerator.New();

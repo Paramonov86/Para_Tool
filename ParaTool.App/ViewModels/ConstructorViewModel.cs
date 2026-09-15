@@ -847,7 +847,7 @@ public partial class ConstructorViewModel : ViewModelBase
             s.DisplayNameHandle = "";
             s.DescriptionHandle = "";
         }
-        foreach (var sp in clone.Spells)
+        foreach (var sp in clone.Spells.SelectMany(s => s.WithVariants()))
         {
             sp.DisplayNameHandle = "";
             sp.DescriptionHandle = "";

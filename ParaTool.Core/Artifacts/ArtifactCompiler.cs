@@ -504,7 +504,10 @@ public static class ArtifactCompiler
 
         // ─── Spell Definitions ──────────────────────────
         var editedOriginals = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var spell in art.Spells)
+        // Each card, then its variants (the container is null for a card itself).
+        var spellEntries = art.Spells.SelectMany(card =>
+            card.Variants.Select(v => (spell: v, container: (SpellDefinition?)card)).Prepend((card, null)));
+        foreach (var (spell, container) in spellEntries)
         {
             // Repair chip dialect only in fields the card changed. A field still equal to the base
             // is game syntax and goes out verbatim — the sanitizers reformat it (spacing, trailing
@@ -540,7 +543,8 @@ public static class ArtifactCompiler
             if (string.IsNullOrEmpty(spell.SpellType) && resolver != null && spell.UsingBase != null)
                 spell.SpellType = resolver.Resolve(spell.UsingBase, "SpellType") ?? spell.SpellType;
 
-            var selfOverride = spell.EditOriginal
+            // A variant follows its container's choice.
+            var selfOverride = (container?.EditOriginal ?? spell.EditOriginal)
                 && spell.UsingBase != null
                 && spell.Name.Equals(spell.UsingBase, StringComparison.OrdinalIgnoreCase);
             if (selfOverride) editedOriginals.Add(spell.Name);
@@ -593,6 +597,32 @@ public static class ArtifactCompiler
             Emit("SpellProperties", spell.SpellProperties, spellHasUsing);
             Emit("TargetConditions", spell.TargetConditions, spellHasUsing);
             Emit("SpellFlags", spell.SpellFlags, spellHasUsing);
+
+            // Container links of a copy. Inherited through `using`, a copied container would list
+            // the original variants and a copied variant would rejoin the original container, so
+            // both directions are restated with the copies' names (the way AMP builds item
+            // containers). An edited original keeps the links it has.
+            if (!selfOverride && spellHasUsing)
+            {
+                string? Inherited(string key) => spellBase?.GetValueOrDefault(key) is { Length: > 0 } v ? v : null;
+                if (spell.Variants.Count > 0)
+                    Emit("ContainerSpells", string.Join(";", spell.Variants.Select(v => v.Name)), true);
+                if (container != null)
+                {
+                    Emit("SpellContainerID", container.Name, true);
+                    if (Inherited("ContainerSpells") != null) Emit("ContainerSpells", "", true);
+                }
+                else if (spell.Variants.Count == 0 && Inherited("SpellContainerID") != null)
+                {
+                    // A variant copied as a spell of its own leaves the original container.
+                    Emit("SpellContainerID", "", true);
+                    if (Inherited("ContainerSpells") != null) Emit("ContainerSpells", "", true);
+                }
+                // An upcast copy would otherwise group under the original spell it was cast up from.
+                if ((container != null || spell.Variants.Count > 0 || Inherited("SpellContainerID") != null)
+                    && Inherited("RootSpellID") != null)
+                    Emit("RootSpellID", "", true);
+            }
 
             foreach (var (key, value) in spell.ExtraData)
                 stats.AppendLine($"data \"{key}\" \"{value}\"");
@@ -793,6 +823,43 @@ public static class ArtifactCompiler
                     sp.DisplayNameHandle = HandleGenerator.New();
                 if (SharesHandle(sourceFields, "Description", sp.DescriptionHandle))
                     sp.DescriptionHandle = HandleGenerator.New();
+            }
+        }
+
+        // Variants follow their container. A copy's variants are named after the container's current
+        // name on every compile — the patcher compiles an artifact twice on the same objects, and
+        // the second pass has nothing left to rename. An edited original's variants override theirs.
+        foreach (var container in art.Spells)
+        {
+            for (int k = 0; k < container.Variants.Count; k++)
+            {
+                var v = container.Variants[k];
+                var currentName = v.Name;
+                if (container.EditOriginal)
+                {
+                    if (!string.IsNullOrEmpty(v.UsingBase) && !currentName.Equals(v.UsingBase, StringComparison.OrdinalIgnoreCase))
+                    {
+                        v.Name = v.UsingBase;
+                        renames[currentName] = v.Name;
+                    }
+                    continue;
+                }
+
+                var target = $"{container.Name}_{k + 1}";
+                if (currentName.Equals(target, StringComparison.OrdinalIgnoreCase)) continue;
+                var original = v.UsingBase ?? currentName;
+                var hasRealBase = resolver != null ? resolver.AllEntries.ContainsKey(original) : v.UsingBase != null;
+                renames[currentName] = target;
+                v.UsingBase = hasRealBase ? original : null;
+                v.Name = target;
+                if (hasRealBase && resolver != null)
+                {
+                    var sourceFields = resolver.ResolveAll(original);
+                    if (SharesHandle(sourceFields, "DisplayName", v.DisplayNameHandle))
+                        v.DisplayNameHandle = HandleGenerator.New();
+                    if (SharesHandle(sourceFields, "Description", v.DescriptionHandle))
+                        v.DescriptionHandle = HandleGenerator.New();
+                }
             }
         }
 

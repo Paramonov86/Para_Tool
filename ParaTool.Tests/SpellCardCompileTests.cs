@@ -186,7 +186,7 @@ public class SpellCardCompileTests
             var art = NewRing();
             art.Spells.Add(SpellCloner.CloneFrom(name, resolver));
             var text = ArtifactCompiler.Compile(art, resolver: resolver).StatsText;
-            var compiled = StatsParser.Parse(text).LastOrDefault(e => e.Type == "SpellData");
+            var compiled = StatsParser.Parse(text).LastOrDefault(e => e.Name == art.Spells[0].Name);
             if (compiled == null) { mismatches.Add($"{name}: not emitted"); continue; }
 
             var original = resolver.ResolveAll(name);
