@@ -393,6 +393,22 @@
                         </Grid>
                     </Border>
 
+                    <!-- Which pak gets patched, when it is a submod rather than AMP. Lives in the
+                         side column: above the Patch button it made the bottom row grow and pushed
+                         the item list and the Discord icon around. -->
+                    <Border IsVisible="{Binding PatchTargetNotice, Converter={x:Static ObjectConverters.IsNotNull}}"
+                            Background="#1AF1C40F"
+                            BorderBrush="#F1C40F"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,8">
+                        <TextBlock Text="{Binding PatchTargetNotice}"
+                                   Foreground="#F1C40F"
+                                   FontSize="{DynamicResource FontSize12}"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                    </Border>
+
                     <!-- Info badge -->
                     <Border Background="{StaticResource AccentBrush}"
                             CornerRadius="6"
@@ -465,21 +481,6 @@
             <Panel Grid.Column="0" HorizontalAlignment="Right">
                 <StackPanel Orientation="Vertical" Spacing="8" HorizontalAlignment="Right"
                             IsVisible="{Binding ShowPatchButton}">
-                <!-- Which pak gets patched, when it is a submod rather than AMP -->
-                <Border IsVisible="{Binding PatchTargetNotice, Converter={x:Static ObjectConverters.IsNotNull}}"
-                        Background="#1AF1C40F"
-                        BorderBrush="#F1C40F"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="14,8"
-                        MaxWidth="460"
-                        HorizontalAlignment="Right">
-                    <TextBlock Text="{Binding PatchTargetNotice}"
-                               Foreground="#F1C40F"
-                               FontSize="{DynamicResource FontSize13}"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap" />
-                </Border>
                 <!-- Patch + Restore row -->
                 <StackPanel Orientation="Horizontal" Spacing="10"
                             HorizontalAlignment="Right">
