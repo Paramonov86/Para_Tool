@@ -95,8 +95,8 @@ public static class AmpBackupService
 
     /// <summary>
     /// Restores any pak from its backup without touching the stored original TreasureTable.
-    /// Used for AMP submod paks: they carry no TT of their own, and clearing the store while a
-    /// patch is running would drop the AMP table that same patch just recorded.
+    /// Used for AMP submod paks: the store only ever holds AMP's table, and clearing it while a
+    /// patch is running would drop the table that same patch just recorded.
     /// </summary>
     public static bool RestorePak(string pakPath)
     {

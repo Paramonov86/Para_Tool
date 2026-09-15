@@ -378,4 +378,31 @@ public class TreasureTablePatcherTests
         // New item added
         Assert.Contains("I_MAG_NewBoots", result);
     }
+
+    [Fact]
+    public void Patch_DisabledNonAmpItem_ListedInTable_IsRemoved()
+    {
+        // A submod lists its own items in its own TreasureTable; they are not IsAmpItem, and
+        // unchecking one used to leave it dropping from every chest that table feeds.
+        var original = string.Join("\n",
+            MakePoolTable("REL_Rare_Rings", "I_AmpPlus_Ring"),
+            MakeParagonTable("AMP_Para_9", "I_AmpPlus_Ring"));
+
+        var items = new List<ItemEntry>
+        {
+            new()
+            {
+                StatId = "AmpPlus_Ring",
+                StatType = "Armor",
+                DetectedPool = "Rings",
+                DetectedRarity = "Rare",
+                Enabled = false
+            }
+        };
+
+        var result = TreasureTablePatcher.Patch(original, items);
+
+        Assert.DoesNotContain("I_AmpPlus_Ring", result);
+        Assert.Contains("new treasuretable \"AMP_Para_9\"", result);
+    }
 }

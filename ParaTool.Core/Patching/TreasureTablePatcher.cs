@@ -76,12 +76,14 @@ public static class TreasureTablePatcher
         // Step 2: Parse file into lines
         var lines = originalText.Split('\n').ToList();
 
-        // Step 2.5: Remove modified/disabled AMP items from original TT
-        var modifiedAmpItems = items
-            .Where(i => i.IsAmpItem && i.IsModified)
+        // Step 2.5: Remove every modified/disabled item from the original TT; enabled ones are
+        // re-added below. Not only AMP's own items sit in a pristine table — a submod lists its
+        // items in its own TreasureTable, and AMP integrates some items from other mods.
+        var modifiedItems = items
+            .Where(i => i.IsModified)
             .ToList();
-        if (modifiedAmpItems.Count > 0)
-            RemoveAmpItems(lines, modifiedAmpItems);
+        if (modifiedItems.Count > 0)
+            RemoveItems(lines, modifiedItems);
 
         // Step 3: Build table position index
         var tableRanges = BuildTableIndex(lines);
@@ -138,12 +140,12 @@ public static class TreasureTablePatcher
     }
 
     /// <summary>
-    /// Removes modified/disabled AMP items from the TT lines.
+    /// Removes modified/disabled items from the TT lines.
     /// For paragon tables, also removes the preceding "new subtable" line.
     /// </summary>
-    private static void RemoveAmpItems(List<string> lines, IReadOnlyList<ItemEntry> modifiedAmpItems)
+    private static void RemoveItems(List<string> lines, IReadOnlyList<ItemEntry> modifiedItems)
     {
-        var statIds = new HashSet<string>(modifiedAmpItems.Select(i => $"\"I_{i.StatId}\""));
+        var statIds = new HashSet<string>(modifiedItems.Select(i => $"\"I_{i.StatId}\""));
 
         for (int i = lines.Count - 1; i >= 0; i--)
         {

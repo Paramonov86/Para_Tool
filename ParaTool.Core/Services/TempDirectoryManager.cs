@@ -13,14 +13,18 @@ public sealed class TempDirectoryManager : IDisposable
     }
 
     /// <summary>
-    /// Deletes any leftover ParaTool_* temp folders from previous interrupted runs.
+    /// Deletes leftover temp folders from previous interrupted runs. Only names this class
+    /// creates (ParaTool_ + 8 hex digits) — a plain ParaTool_* glob also wiped other folders
+    /// under %TEMP% that merely share the prefix, including ones still in use.
     /// </summary>
     private static void CleanupStale()
     {
         try
         {
-            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), "ParaTool_*"))
+            foreach (var dir in Directory.GetDirectories(Path.GetTempPath(), "ParaTool_????????"))
             {
+                var suffix = Path.GetFileName(dir)["ParaTool_".Length..];
+                if (suffix.Length != 8 || !suffix.All(Uri.IsHexDigit)) continue;
                 try { Directory.Delete(dir, recursive: true); }
                 catch { /* in use or no access — skip */ }
             }

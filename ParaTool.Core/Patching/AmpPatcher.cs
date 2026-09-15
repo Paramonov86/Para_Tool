@@ -217,17 +217,17 @@ public sealed class AmpPatcher
                     Percent = 85 + 10 * i / submodMods.Count
                 });
 
-                // Nothing left to write: a submod an earlier run patched has to go back to its
-                // pristine copy, the same way AMP is rebuilt from its backup on every patch.
-                if (string.IsNullOrWhiteSpace(submodOverrides))
-                {
-                    await Task.Run(() => AmpBackupService.RestorePak(submod.PakPath!), ct);
-                    continue;
-                }
+                var (patched, overridesDropped) = await Task.Run(
+                    () => PatchSubmodPak(submod.PakPath!, submodOverrides, allItemsForTt), ct);
 
-                if (await Task.Run(() => PatchSubmodPak(submod.PakPath!, submodOverrides), ct))
+                // Nothing to write: a submod an earlier run patched has to go back to its pristine
+                // copy, the same way AMP is rebuilt from its backup on every patch.
+                if (patched)
                     submodsPatched++;
                 else
+                    await Task.Run(() => AmpBackupService.RestorePak(submod.PakPath!), ct);
+
+                if (overridesDropped)
                     artifactWarnings.Add(
                         $"{submod.Name} has no stat files to write overrides into. Items it " +
                         "re-declares keep the submod's own values.");
@@ -626,8 +626,27 @@ public sealed class AmpPatcher
         // TreasureTable for new items is handled by the main TT patching step
 
         // Generate/update RootTemplates for artifacts
-        if (newArtifacts.Count > 0 || overrideArtifacts.Count > 0)
-            PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts, warnings);
+        var ownTemplates = newArtifacts.Count > 0 || overrideArtifacts.Count > 0
+            ? PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts, warnings)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // An override that just got a template of its own only uses it once its stat entry points
+        // there. Every declaration is edited — AMP restates some entries in more than one file —
+        // and the submods get it too, since their re-declarations would otherwise win.
+        var submodOverrideText = submodOverrideStats.ToString();
+        if (ownTemplates.Count > 0)
+        {
+            var rootTemplateEdits = ownTemplates.ToDictionary(
+                kv => kv.Key,
+                kv => new Dictionary<string, string> { ["RootTemplate"] = kv.Value },
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var sf in statFiles)
+            {
+                var (modified, found) = StatsFileEditor.ModifyEntries(File.ReadAllText(sf), rootTemplateEdits);
+                if (found.Count > 0) File.WriteAllText(sf, modified);
+            }
+            submodOverrideText = StatsFileEditor.ModifyEntries(submodOverrideText, rootTemplateEdits).text;
+        }
 
         // Write loca XML entries
         if (allLocaEntries.Count > 0)
@@ -637,7 +656,7 @@ public sealed class AmpPatcher
 
         log.AppendLine($"Done: {count} artifacts, {newArtifacts.Count} new, {overrideArtifacts.Count} overrides");
         File.WriteAllText(logPath, log.ToString());
-        return new ArtifactApplyResult(count, submodOverrideStats.ToString());
+        return new ArtifactApplyResult(count, submodOverrideText);
     }
 
     /// <summary>
@@ -707,11 +726,17 @@ public sealed class AmpPatcher
     ///   updates DisplayName, Description, Icon
     /// - New artifacts: creates individual {uuid}.lsf files (safer than modifying _merged.lsf)
     /// </summary>
-    private static void PatchRootTemplates(string extractDir,
+    /// <returns>
+    /// StatId → template UUID for override artifacts that got a template of their own; their stat
+    /// entries still have to point at it through RootTemplate.
+    /// </returns>
+    internal static Dictionary<string, string> PatchRootTemplates(string extractDir,
         IReadOnlyList<ArtifactDefinition> newArtifacts,
         IReadOnlyList<ArtifactDefinition> overrideArtifacts,
         List<string>? warnings = null)
     {
+        var ownTemplates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         // Find RootTemplates directory
         var rtDir = Directory.GetDirectories(extractDir, "RootTemplates", SearchOption.AllDirectories)
             .FirstOrDefault();
@@ -719,10 +744,23 @@ public sealed class AmpPatcher
         var rtLog = Path.Combine(Path.GetTempPath(), "paratool_rt_debug.txt");
         File.WriteAllText(rtLog, $"rtDir={rtDir}\nnewArtifacts={newArtifacts.Count}\noverrideArtifacts={overrideArtifacts.Count}\n");
 
-        if (rtDir == null) { File.AppendAllText(rtLog, "ABORT: rtDir is null\n"); return; }
+        if (rtDir == null) { File.AppendAllText(rtLog, "ABORT: rtDir is null\n"); return ownTemplates; }
 
         try
         {
+            Dictionary<string, (object? equip, string? parent)>? chainIndex = null;
+            object? ResolveEquipType(ArtifactDefinition art)
+            {
+                // For weapons, resolve the EquipmentTypeID the template would inherit and write
+                // it explicitly (animation set). Inheritance via ParentTemplateId is fragile
+                // across paks; an unresolved EquipmentTypeID means the wrong/default animation.
+                if (!string.Equals(art.StatType, "Weapon", StringComparison.OrdinalIgnoreCase)) return null;
+                chainIndex ??= BuildTemplateChainIndex(rtDir);
+                var equipType = ResolveEquipmentTypeId(art.ParentTemplateUuid, chainIndex);
+                File.AppendAllText(rtLog, $"  {art.StatId}: EquipmentTypeID={(equipType?.ToString() ?? "(none)")}\n");
+                return equipType;
+            }
+
             // ── Override artifacts: find and update existing templates ──
             if (overrideArtifacts.Count > 0)
             {
@@ -744,23 +782,26 @@ public sealed class AmpPatcher
                     if (File.Exists(mergedPath))
                         TryUpdateTemplateInLsf(mergedPath, remaining);
                 }
+
+                // 3. No template carries this StatId: the item inherits its RootTemplate through
+                //    `using` (AMP tiers like AMP_EnhanceShaman_Amulet_1 share the base's template),
+                //    so there was nothing to update and a new name or lore silently never showed.
+                //    Give it a template of its own, cloned from the one it inherits.
+                foreach (var art in remaining.Values)
+                {
+                    if (string.IsNullOrEmpty(art.ParentTemplateUuid)) continue;
+                    var lsfPath = Path.Combine(rtDir, $"{art.TemplateUuid}.lsf");
+                    File.AppendAllText(rtLog, $"  Own template for override: {art.StatId} -> {lsfPath} (inherits {art.ParentTemplateUuid})\n");
+                    if (CreateTemplateLsf(lsfPath, art, ResolveEquipType(art)))
+                        ownTemplates[art.StatId] = art.TemplateUuid;
+                }
             }
 
             // ── New artifacts: create individual {uuid}.lsf files ──
             File.AppendAllText(rtLog, $"Creating {newArtifacts.Count} new RootTemplates in {rtDir}\n");
-            Dictionary<string, (object? equip, string? parent)>? chainIndex = null;
             foreach (var art in newArtifacts)
             {
-                // For weapons, resolve the EquipmentTypeID the template would inherit and write
-                // it explicitly (animation set). Inheritance via ParentTemplateId is fragile
-                // across paks; an unresolved EquipmentTypeID means the wrong/default animation.
-                object? equipType = null;
-                if (string.Equals(art.StatType, "Weapon", StringComparison.OrdinalIgnoreCase))
-                {
-                    chainIndex ??= BuildTemplateChainIndex(rtDir);
-                    equipType = ResolveEquipmentTypeId(art.ParentTemplateUuid, chainIndex);
-                    File.AppendAllText(rtLog, $"  {art.StatId}: EquipmentTypeID={(equipType?.ToString() ?? "(none)")}\n");
-                }
+                var equipType = ResolveEquipType(art);
                 var lsfPath = Path.Combine(rtDir, $"{art.TemplateUuid}.lsf");
                 File.AppendAllText(rtLog, $"  Creating: {lsfPath} (ParentTemplate={art.ParentTemplateUuid})\n");
                 if (!CreateTemplateLsf(lsfPath, art, equipType))
@@ -781,6 +822,8 @@ public sealed class AmpPatcher
         {
             Services.AppLogger.Warn($"RootTemplate patching failed: {ex}");
         }
+
+        return ownTemplates;
     }
 
     /// <summary>
@@ -1196,10 +1239,13 @@ public sealed class AmpPatcher
     }
 
     /// <summary>
-    /// Appends the stat overrides to a single AMP submod pak. Returns false when the pak carries
-    /// no stat files, in which case it re-declares nothing and needs no patch.
+    /// Applies the loot edits and the stat overrides to a single AMP submod pak.
+    /// <c>Patched</c> is false when nothing in the pak needed changing — the caller restores the
+    /// pristine copy. <c>OverridesDropped</c> is true when there were stat overrides but the pak
+    /// has no stat file to carry them.
     /// </summary>
-    private static bool PatchSubmodPak(string pakPath, string overrideText)
+    public static (bool Patched, bool OverridesDropped) PatchSubmodPak(
+        string pakPath, string overrideText, IReadOnlyList<ItemEntry> ttItems)
     {
         AmpBackupService.EnsureBackup(pakPath);
 
@@ -1213,28 +1259,58 @@ public sealed class AmpPatcher
             : pakPath;
         PakReader.ExtractAll(extractSource, extractDir);
 
+        bool changed = false;
         var statsDir = FindDirectory(extractDir, Path.Combine("Stats", "Generated", "Data"));
-        if (statsDir == null) return false;
 
-        var statFiles = Directory.GetFiles(statsDir, "*.txt")
-            .Where(f => !Path.GetFileName(f)
-                .Equals("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase))
-            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        if (statFiles.Length == 0) return false;
+        // A submod table replaces AMP's table of the same name outright — AMP Plus restates the
+        // weapon, aquatic, psionic and primal paragon chests — so edits made only in AMP's copy
+        // never reach those chests.
+        var ttPath = FindFile(extractDir, "TreasureTable.txt");
+        if (ttPath != null)
+        {
+            var ttText = File.ReadAllText(ttPath);
+            var patchedTt = TreasureTablePatcher.Patch(ttText, ttItems);
+            if (patchedTt != ttText)
+            {
+                File.WriteAllText(ttPath, patchedTt);
+                statsDir ??= Path.Combine(Path.GetDirectoryName(ttPath)!, "Data");
+                changed = true;
+            }
+        }
 
-        // Last file alphabetically is the last one BG3 loads for this mod, and appending puts our
-        // entries behind everything in it — including the submod's own re-declarations.
-        File.AppendAllText(statFiles[^1], "\n" + overrideText);
+        bool overridesDropped = false;
+        if (!string.IsNullOrWhiteSpace(overrideText))
+        {
+            var statFiles = statsDir == null || !Directory.Exists(statsDir)
+                ? []
+                : Directory.GetFiles(statsDir, "*.txt")
+                    .Where(f => !Path.GetFileName(f)
+                        .Equals("ZZZ_ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+            if (statFiles.Length == 0)
+                overridesDropped = true;
+            else
+            {
+                // Last file alphabetically is the last one BG3 loads for this mod, and appending
+                // puts our entries behind everything in it — including its own re-declarations.
+                File.AppendAllText(statFiles[^1], "\n" + overrideText);
+                changed = true;
+            }
+        }
+
+        if (!changed) return (false, overridesDropped);
 
         // Marker file: AmpBackupService reads it to tell a patched pak from a freshly updated one.
-        File.WriteAllText(Path.Combine(statsDir, "ZZZ_ParaTool_Overrides.txt"), "// Patched by ParaTool\n");
+        Directory.CreateDirectory(statsDir!);
+        File.WriteAllText(Path.Combine(statsDir!, "ZZZ_ParaTool_Overrides.txt"), "// Patched by ParaTool\n");
 
         var tempPakPath = pakPath + ".tmp";
         PakWriter.CreatePak(extractDir, tempPakPath);
         File.Delete(pakPath);
         File.Move(tempPakPath, pakPath);
-        return true;
+        return (true, overridesDropped);
     }
 
     private static string? FindFile(string dir, string fileName)
