@@ -495,6 +495,13 @@ public static class ArtifactCompiler
             AddLocaEntries(loca, status.Description, status.DescriptionHandle);
         }
 
+        // ─── Summoned creature copies (named before spells are written) ───
+        AssignSummonNames(art);
+        var summonTemplates = art.Summons
+            .Where(s => !string.IsNullOrEmpty(s.ParentTemplateUuid) && !string.IsNullOrEmpty(s.TemplateUuid))
+            .GroupBy(s => s.ParentTemplateUuid, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Last().TemplateUuid, StringComparer.OrdinalIgnoreCase);
+
         // ─── Spell Definitions ──────────────────────────
         var editedOriginals = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var spell in art.Spells)
@@ -514,6 +521,14 @@ public static class ArtifactCompiler
             spell.TargetConditions = Repair("TargetConditions", spell.TargetConditions ?? "",
                 v => ConditionSchema.NormalizeConditionEnums(ConditionSchema.NormalizeTagConditions(v)))!;
             spell.SpellRoll = Repair("SpellRoll", spell.SpellRoll, ConditionSchema.NormalizeConditionEnums);
+            // Spawn the edited creature copies. After the repair step, so the rest of the
+            // functor still goes out exactly as the game wrote it.
+            if (summonTemplates.Count > 0)
+            {
+                spell.SpellProperties = RewriteSummons(spell.SpellProperties, summonTemplates)!;
+                spell.SpellSuccess = RewriteSummons(spell.SpellSuccess, summonTemplates);
+                spell.SpellFail = RewriteSummons(spell.SpellFail, summonTemplates);
+            }
             foreach (var (label, value) in new[] {
                 ("spell SpellProperties", spell.SpellProperties), ("spell SpellSuccess", spell.SpellSuccess ?? ""),
                 ("spell SpellFail", spell.SpellFail ?? "") })
@@ -586,6 +601,30 @@ public static class ArtifactCompiler
 
             if (!keepName) AddLocaEntries(loca, spell.DisplayName, spell.DisplayNameHandle);
             if (!keepDesc) AddLocaEntries(loca, spell.Description, spell.DescriptionHandle);
+        }
+
+        // ─── Summoned creature stats ────────────────────
+        foreach (var summon in art.Summons)
+        {
+            if (string.IsNullOrEmpty(summon.UsingBase) || string.IsNullOrEmpty(summon.StatsName)) continue;
+            var creatureBase = resolver?.ResolveAll(summon.UsingBase);
+            if (resolver != null && !resolver.AllEntries.ContainsKey(summon.UsingBase))
+                warnings.Add($"[{art.StatId}] summon '{summon.StatsName}' uses unknown creature stats '{summon.UsingBase}'.");
+
+            stats.AppendLine($"new entry \"{summon.StatsName}\"");
+            stats.AppendLine("type \"Character\"");
+            stats.AppendLine($"using \"{summon.UsingBase}\"");
+            foreach (var (key, value) in summon.Stats)
+            {
+                var outValue = value ?? "";
+                if (key == "DefaultBoosts" && !(creatureBase?.TryGetValue(key, out var inherited) == true && inherited == outValue))
+                    outValue = ConditionSchema.NormalizeConditionEnums(BoostMapping.SanitizeBoosts(outValue));
+                stats.AppendLine($"data \"{key}\" \"{outValue}\"");
+            }
+            stats.AppendLine();
+
+            if (summon.DisplayNameEdited)
+                AddLocaEntries(loca, summon.DisplayName, summon.DisplayNameHandle);
         }
 
         // ─── Spell/Status Rename Overrides ─────────────────
@@ -662,6 +701,38 @@ public static class ArtifactCompiler
         string.IsNullOrEmpty(boosts) ? boosts
             : UnlockSpellRegex.Replace(boosts, m => renames.TryGetValue(m.Groups[1].Value, out var renamed)
                 ? $"UnlockSpell({renamed}" : m.Value);
+
+    private static readonly System.Text.RegularExpressions.Regex SummonRegex =
+        new(@"(\bSummon\(\s*)([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})",
+            System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>Creature template UUIDs spawned by <c>Summon(…)</c> calls in functor text.</summary>
+    public static IEnumerable<string> SummonedTemplates(string? functors) =>
+        string.IsNullOrEmpty(functors) ? []
+            : SummonRegex.Matches(functors).Select(m => m.Groups[2].Value);
+
+    private static string? RewriteSummons(string? functors, IReadOnlyDictionary<string, string> templates) =>
+        string.IsNullOrEmpty(functors) ? functors
+            : SummonRegex.Replace(functors, m => templates.TryGetValue(m.Groups[2].Value, out var copy)
+                ? m.Groups[1].Value + copy : m.Value);
+
+    /// <summary>Names every summon's Character entry <c>{StatId}_Summon_{n}</c> (idempotent).</summary>
+    public static void AssignSummonNames(ArtifactDefinition art)
+    {
+        var prefix = art.StatId + "_Summon_";
+        var taken = new HashSet<string>(
+            art.Summons.Select(s => s.StatsName).Where(n => n.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)),
+            StringComparer.OrdinalIgnoreCase);
+        int n = 1;
+        foreach (var s in art.Summons)
+        {
+            if (s.StatsName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+            string name;
+            do name = $"{prefix}{n++}"; while (taken.Contains(name));
+            taken.Add(name);
+            s.StatsName = name;
+        }
+    }
 
     private static bool SameHandle(string? a, string? b) =>
         !string.IsNullOrEmpty(a) && !string.IsNullOrEmpty(b)

@@ -737,5 +737,19 @@
   "JrnAddSpell": "呪文を追加",
   "JrnRemoveSpell": "呪文を削除",
   "LblGrantViaPassive": "パッシブで付与（条件付き）",
-  "TipGrantViaPassive": "装備時に解放する代わりに、このアイテムの非表示パッシブが呪文を解放します。条件はパッシブ欄で設定します。"
+  "TipGrantViaPassive": "装備時に解放する代わりに、このアイテムの非表示パッシブが呪文を解放します。条件はパッシブ欄で設定します。",
+  "LblCreatures": "召喚されるクリーチャー",
+  "BtnEditCreature": "クリーチャーを編集",
+  "BtnResetCreature": "元に戻す",
+  "WmReplaceCreature": "クリーチャーを置き換え...",
+  "WmCreatureName": "クリーチャー名",
+  "TipCreatureCopy": "コピーはクリーチャーのモデルと挙動を保ち、下の能力値だけが変わります。",
+  "LblCreatureHp": "HP",
+  "LblCreatureAc": "AC",
+  "AbStr": "筋力",
+  "AbDex": "敏捷",
+  "AbCon": "耐久",
+  "AbInt": "知力",
+  "AbWis": "判断",
+  "AbCha": "魅力"
 }

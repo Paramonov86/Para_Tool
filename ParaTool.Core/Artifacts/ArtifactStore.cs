@@ -61,6 +61,8 @@ public static class ArtifactStore
             if (string.IsNullOrEmpty(sp.DisplayNameHandle)) sp.DisplayNameHandle = Localization.HandleGenerator.New();
             if (string.IsNullOrEmpty(sp.DescriptionHandle)) sp.DescriptionHandle = Localization.HandleGenerator.New();
         }
+        foreach (var su in artifact.Summons)
+            if (string.IsNullOrEmpty(su.DisplayNameHandle)) su.DisplayNameHandle = Localization.HandleGenerator.New();
 
         var path = GetArtifactPath(artifact.ArtifactId);
         var tmpPath = path + ".tmp";

@@ -737,5 +737,19 @@
   "JrnAddSpell": "Büyü eklendi",
   "JrnRemoveSpell": "Büyü kaldırıldı",
   "LblGrantViaPassive": "Pasif ile ver (koşullu)",
-  "TipGrantViaPassive": "Kuşanınca açılmak yerine büyüyü bu eşyanın gizli bir pasifi açar. Koşulu Pasifler bölümünde ayarla."
+  "TipGrantViaPassive": "Kuşanınca açılmak yerine büyüyü bu eşyanın gizli bir pasifi açar. Koşulu Pasifler bölümünde ayarla.",
+  "LblCreatures": "Çağrılan yaratıklar",
+  "BtnEditCreature": "Yaratığı düzenle",
+  "BtnResetCreature": "Orijinali geri yükle",
+  "WmReplaceCreature": "Yaratığı değiştir...",
+  "WmCreatureName": "Yaratık adı",
+  "TipCreatureCopy": "Kopya yaratığın modelini ve davranışını korur; yalnızca aşağıdaki değerler değişir.",
+  "LblCreatureHp": "CP",
+  "LblCreatureAc": "ZS",
+  "AbStr": "GÜÇ",
+  "AbDex": "ÇEV",
+  "AbCon": "DAY",
+  "AbInt": "ZEK",
+  "AbWis": "BİL",
+  "AbCha": "KAR"
 }

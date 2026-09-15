@@ -489,6 +489,15 @@ public partial class ConstructorView : UserControl
             svm.IsExpanded = !svm.IsExpanded;
             return;
         }
+        if (btn.Tag is SummonVM creature && DataContext is ConstructorViewModel creatureVm
+            && creatureVm.SelectedArtifact != null)
+        {
+            switch (btn.Name)
+            {
+                case "EditCreatureBtn": creatureVm.SelectedArtifact.EditCreature(creature, creatureVm.StatsResolver); return;
+                case "ResetCreatureBtn": creatureVm.SelectedArtifact.ResetCreature(creature); return;
+            }
+        }
         if (btn.Name == "RemoveSpellBtn" && btn.Tag is SpellVM removeSvm
             && DataContext is ConstructorViewModel rmSpellVm && rmSpellVm.SelectedArtifact != null)
         {

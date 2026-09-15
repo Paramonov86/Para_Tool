@@ -737,5 +737,19 @@
   "JrnAddSpell": "Dodano zaklęcie",
   "JrnRemoveSpell": "Usunięto zaklęcie",
   "LblGrantViaPassive": "Przyznaj przez pasywkę (z warunkiem)",
-  "TipGrantViaPassive": "Zamiast odblokować się po założeniu, zaklęcie odblokuje ukryta pasywka tego przedmiotu. Warunek ustawisz w sekcji Pasywki."
+  "TipGrantViaPassive": "Zamiast odblokować się po założeniu, zaklęcie odblokuje ukryta pasywka tego przedmiotu. Warunek ustawisz w sekcji Pasywki.",
+  "LblCreatures": "Przywoływane istoty",
+  "BtnEditCreature": "Edytuj istotę",
+  "BtnResetCreature": "Przywróć oryginał",
+  "WmReplaceCreature": "Zamień istotę...",
+  "WmCreatureName": "Nazwa istoty",
+  "TipCreatureCopy": "Kopia zachowuje model i zachowanie istoty; zmieniają się tylko statystyki poniżej.",
+  "LblCreatureHp": "PŻ",
+  "LblCreatureAc": "KP",
+  "AbStr": "SIŁ",
+  "AbDex": "ZRĘ",
+  "AbCon": "KON",
+  "AbInt": "INT",
+  "AbWis": "MDR",
+  "AbCha": "CHA"
 }

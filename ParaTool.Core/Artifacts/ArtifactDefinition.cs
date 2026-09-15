@@ -126,6 +126,9 @@ public sealed class ArtifactDefinition
     /// <summary>Custom spells/abilities created for this artifact.</summary>
     public List<SpellDefinition> Spells { get; set; } = [];
 
+    /// <summary>Edited copies of creatures this artifact's spell cards summon.</summary>
+    public List<SummonDefinition> Summons { get; set; } = [];
+
     // ─── Localization ───────────────────────────────────────
 
     /// <summary>Item display name (per language, BB-code format).</summary>
@@ -248,6 +251,7 @@ public sealed class ArtifactDefinition
         Passives = other.Passives;
         Statuses = other.Statuses;
         Spells = other.Spells;
+        Summons = other.Summons;
 
         DisplayName = other.DisplayName;
         Description = other.Description;
@@ -399,4 +403,34 @@ public sealed class SpellDefinition
 
     /// <summary>Raw extra data fields (key → value) for uncommon properties.</summary>
     public Dictionary<string, string> ExtraData { get; set; } = [];
+}
+
+/// <summary>
+/// An edited copy of a summoned creature. Compiles to a Character entry <c>using</c> the
+/// creature's stats and a character RootTemplate whose ParentTemplateId is the original creature,
+/// so model, visuals and scripts stay the original's. Every <c>Summon(&lt;original&gt;, …)</c> in
+/// this artifact's spell cards spawns the copy instead.
+/// </summary>
+public sealed class SummonDefinition
+{
+    /// <summary>New character RootTemplate UUID (generated once).</summary>
+    public string TemplateUuid { get; set; } = Guid.NewGuid().ToString();
+
+    /// <summary>The creature template the spell summoned before.</summary>
+    public string ParentTemplateUuid { get; set; } = "";
+
+    /// <summary>The original creature's Character stats entry.</summary>
+    public string UsingBase { get; set; } = "";
+
+    /// <summary>Stats entry name written; assigned by the compiler (<c>{StatId}_Summon_{n}</c>).</summary>
+    public string StatsName { get; set; } = "";
+
+    /// <summary>Card fields (Vitality, Armor, abilities, Level, Passives, DefaultBoosts) → value.</summary>
+    public Dictionary<string, string> Stats { get; set; } = [];
+
+    public Dictionary<string, string> DisplayName { get; set; } = new() { ["en"] = "", ["ru"] = "" };
+    public string DisplayNameHandle { get; set; } = "";
+
+    /// <summary>The creature was renamed; until then the template inherits the original name.</summary>
+    public bool DisplayNameEdited { get; set; }
 }

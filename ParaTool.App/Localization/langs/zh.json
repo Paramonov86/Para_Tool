@@ -737,5 +737,19 @@
   "JrnAddSpell": "已添加法术",
   "JrnRemoveSpell": "已移除法术",
   "LblGrantViaPassive": "通过被动授予（带条件）",
-  "TipGrantViaPassive": "不在装备时解锁，而是由此物品的隐藏被动解锁该法术。条件在被动区域中设置。"
+  "TipGrantViaPassive": "不在装备时解锁，而是由此物品的隐藏被动解锁该法术。条件在被动区域中设置。",
+  "LblCreatures": "召唤的生物",
+  "BtnEditCreature": "编辑生物",
+  "BtnResetCreature": "恢复原版",
+  "WmReplaceCreature": "替换生物...",
+  "WmCreatureName": "生物名称",
+  "TipCreatureCopy": "副本保留生物的模型和行为；只改变下面的属性。",
+  "LblCreatureHp": "生命",
+  "LblCreatureAc": "AC",
+  "AbStr": "力量",
+  "AbDex": "敏捷",
+  "AbCon": "体质",
+  "AbInt": "智力",
+  "AbWis": "感知",
+  "AbCha": "魅力"
 }

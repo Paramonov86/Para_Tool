@@ -737,5 +737,19 @@
   "JrnAddSpell": "Incantesimo aggiunto",
   "JrnRemoveSpell": "Incantesimo rimosso",
   "LblGrantViaPassive": "Concedi tramite un passivo (con condizione)",
-  "TipGrantViaPassive": "Invece di sbloccarsi all'equipaggiamento, l'incantesimo viene sbloccato da un passivo nascosto di questo oggetto. La condizione si imposta nella sezione Passivi."
+  "TipGrantViaPassive": "Invece di sbloccarsi all'equipaggiamento, l'incantesimo viene sbloccato da un passivo nascosto di questo oggetto. La condizione si imposta nella sezione Passivi.",
+  "LblCreatures": "Creature evocate",
+  "BtnEditCreature": "Modifica creatura",
+  "BtnResetCreature": "Ripristina originale",
+  "WmReplaceCreature": "Sostituisci creatura...",
+  "WmCreatureName": "Nome della creatura",
+  "TipCreatureCopy": "La copia mantiene modello e comportamento della creatura; cambiano solo le statistiche qui sotto.",
+  "LblCreatureHp": "PF",
+  "LblCreatureAc": "CA",
+  "AbStr": "FOR",
+  "AbDex": "DES",
+  "AbCon": "COS",
+  "AbInt": "INT",
+  "AbWis": "SAG",
+  "AbCha": "CAR"
 }

@@ -856,6 +856,91 @@
                                                                                       Options="{x:Static vm:SpellVM.FlagOptions}" Margin="0,3,0,0" />
                                                             </Grid>
                                                         </Border>
+
+                                                        <!-- Creatures the spell summons -->
+                                                        <StackPanel IsVisible="{Binding HasCreatures}" Spacing="4" ClipToBounds="False">
+                                                            <TextBlock Text="{Binding LblCreatures, Source={x:Static loc:Loc.Instance}}"
+                                                                       FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="#9B59B6" />
+                                                            <ItemsControl ItemsSource="{Binding Creatures}" ClipToBounds="False">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate DataType="vm:SummonVM">
+                                                                        <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6" Margin="0,2" ClipToBounds="False">
+                                                                            <StackPanel Spacing="4" ClipToBounds="False">
+                                                                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                                                                    <TextBlock Text="{Binding CreatureName}" ToolTip.Tip="{Binding CreatureTip}"
+                                                                                               FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
+                                                                                               Foreground="#B98AE0" VerticalAlignment="Center" />
+                                                                                    <Button Grid.Column="1" Name="EditCreatureBtn" Tag="{Binding}" IsVisible="{Binding CanEdit}"
+                                                                                            Background="{StaticResource InputBgBrush}" Foreground="{StaticResource AccentLightBrush}"
+                                                                                            FontSize="{DynamicResource FontSize10}" Padding="8,2" CornerRadius="10" BorderThickness="0" Cursor="Hand"
+                                                                                            Content="{Binding BtnEditCreature, Source={x:Static loc:Loc.Instance}}" />
+                                                                                    <Button Grid.Column="2" Name="ResetCreatureBtn" Tag="{Binding}" IsVisible="{Binding IsEdited}"
+                                                                                            Background="Transparent" Foreground="{StaticResource TextMutedBrush}"
+                                                                                            FontSize="{DynamicResource FontSize10}" Padding="8,2" BorderThickness="0" Cursor="Hand"
+                                                                                            Content="{Binding BtnResetCreature, Source={x:Static loc:Loc.Instance}}" />
+                                                                                </Grid>
+                                                                                <ctrl:SearchPickerChip HorizontalAlignment="Left"
+                                                                                                       Items="{x:Static vm:SummonVM.CreatureOptions}"
+                                                                                                       Text="{Binding ReplaceWith, Mode=TwoWay}"
+                                                                                                       Watermark="{Binding WmReplaceCreature, Source={x:Static loc:Loc.Instance}}" />
+                                                                                <StackPanel IsVisible="{Binding IsEdited}" Spacing="4" ClipToBounds="False">
+                                                                                    <TextBlock Text="{Binding TipCreatureCopy, Source={x:Static loc:Loc.Instance}}" TextWrapping="Wrap"
+                                                                                               FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
+                                                                                    <TextBox Text="{Binding EditName}" Watermark="{Binding WmCreatureName, Source={x:Static loc:Loc.Instance}}"
+                                                                                             FontSize="{DynamicResource FontSize11}" Padding="8,4"
+                                                                                             Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                    <WrapPanel Orientation="Horizontal">
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding LblSpellLevel, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditLevel}" Width="46" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding LblCreatureHp, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditVitality}" Width="52" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding LblCreatureAc, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditArmor}" Width="46" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                    </WrapPanel>
+                                                                                    <WrapPanel Orientation="Horizontal">
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding AbStr, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditStrength}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding AbDex, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditDexterity}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding AbCon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditConstitution}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding AbInt, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditIntelligence}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding AbWis, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditWisdom}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
+                                                                                            <TextBlock Text="{Binding AbCha, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                                                            <TextBox Text="{Binding EditCharisma}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                                                        </StackPanel>
+                                                                                    </WrapPanel>
+                                                                                    <TextBlock Text="{Binding LblPassives, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
+                                                                                    <ctrl:ChipListEditor Text="{Binding EditPassives}" ChipColor="#27AE60"
+                                                                                                         SearchItems="{ReflectionBinding DataContext.AllPassives, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                                                                    <TextBlock Text="{Binding LblBoosts, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />
+                                                                                    <ctrl:BoostBlocksEditor Text="{Binding EditDefaultBoosts}" />
+                                                                                </StackPanel>
+                                                                            </StackPanel>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </StackPanel>
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Border>

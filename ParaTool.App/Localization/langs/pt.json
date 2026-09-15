@@ -737,5 +737,19 @@
   "JrnAddSpell": "Magia adicionada",
   "JrnRemoveSpell": "Magia removida",
   "LblGrantViaPassive": "Conceder por um passivo (com condição)",
-  "TipGrantViaPassive": "Em vez de desbloquear ao equipar, um passivo oculto deste item desbloqueia a magia. A condição é definida na seção Passivos."
+  "TipGrantViaPassive": "Em vez de desbloquear ao equipar, um passivo oculto deste item desbloqueia a magia. A condição é definida na seção Passivos.",
+  "LblCreatures": "Criaturas invocadas",
+  "BtnEditCreature": "Editar criatura",
+  "BtnResetCreature": "Restaurar original",
+  "WmReplaceCreature": "Substituir criatura...",
+  "WmCreatureName": "Nome da criatura",
+  "TipCreatureCopy": "A cópia mantém o modelo e o comportamento da criatura; só os atributos abaixo mudam.",
+  "LblCreatureHp": "PV",
+  "LblCreatureAc": "CA",
+  "AbStr": "FOR",
+  "AbDex": "DES",
+  "AbCon": "CON",
+  "AbInt": "INT",
+  "AbWis": "SAB",
+  "AbCha": "CAR"
 }

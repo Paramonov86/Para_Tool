@@ -572,8 +572,22 @@ internal static class DiagMode
                 Console.WriteLine($"  {name}: {decls.Count} declaration(s)");
                 foreach (var (file, e) in decls)
                     Console.WriteLine($"    {file}: using={e.Using ?? "-"} " +
-                                      string.Join(" ", new[] { "SpellType", "Cooldown", "SpellSuccess", "DisplayName", "Boosts" }
+                                      string.Join(" ", new[] { "SpellType", "Cooldown", "SpellSuccess", "SpellProperties", "Vitality", "DisplayName", "Boosts" }
                                           .Where(e.Data.ContainsKey).Select(k => $"{k}='{e.Data[k]}'")));
+            }
+            if (_probeCreatureTemplate != null)
+            {
+                using var pfs = File.OpenRead(written);
+                var files = ParaTool.Core.PakReader.ReadFileList(pfs, ParaTool.Core.PakReader.ReadHeader(pfs));
+                var lsf = files.FirstOrDefault(f => f.Path.EndsWith($"/{_probeCreatureTemplate}.lsf", StringComparison.OrdinalIgnoreCase));
+                if (lsf.Path == null) Console.WriteLine($"  creature template {_probeCreatureTemplate}.lsf: MISSING");
+                else
+                {
+                    using var ms = new MemoryStream(ParaTool.Core.PakReader.ExtractFileData(pfs, lsf));
+                    var node = new ParaTool.Core.LSLib.LSFReader(ms).Read().Regions["Templates"].Children["GameObjects"][0];
+                    Console.WriteLine($"  creature template {lsf.Path}: " + string.Join(" ",
+                        new[] { "Type", "Stats", "ParentTemplateId" }.Select(k => $"{k}={node.Attributes.GetValueOrDefault(k)?.Value}")));
+                }
             }
         }
 
@@ -640,10 +654,33 @@ internal static class DiagMode
 
         art.Spells.AddRange([copy, ampEdit, vanillaEdit]);
         art.SpellsOnEquip = $"Target_VampiricTouch;Projectile_Ring32;{vanillaName}";
+        var names = new List<string> { "PT_SpellProbe_Ring", "PT_SpellProbe_Ring_Spell_1", "Projectile_Ring32", vanillaName };
+
+        // A vanilla spell that summons a creature ParaTool knows, with a tougher copy of it.
+        var summonSpell = resolver.AllEntries.Values
+            .Where(e => e.Type == "SpellData")
+            .Select(e => (e.Name, uuid: ParaTool.Core.Artifacts.ArtifactCompiler
+                .SummonedTemplates(resolver.Resolve(e.Name, "SpellProperties")).FirstOrDefault()))
+            .FirstOrDefault(x => x.uuid != null && ParaTool.Core.Services.SummonTemplateIndex.Find(x.uuid) != null);
+        if (summonSpell.uuid != null
+            && ParaTool.Core.Artifacts.SummonCloner.CloneFrom(summonSpell.uuid, resolver) is { } creature)
+        {
+            var summonCard = ParaTool.Core.Artifacts.SpellCloner.CloneFrom(summonSpell.Name, resolver);
+            creature.Stats["Vitality"] = "123";
+            art.Spells.Add(summonCard);
+            art.Summons.Add(creature);
+            art.SpellsOnEquip += ";" + summonSpell.Name;
+            names.AddRange(["PT_SpellProbe_Ring_Spell_4", "PT_SpellProbe_Ring_Summon_1"]);
+            _probeCreatureTemplate = creature.TemplateUuid;
+            Console.WriteLine($"  spell probe: {summonSpell.Name} summons {summonSpell.uuid} -> copy {creature.TemplateUuid} ({creature.UsingBase})");
+        }
+
         ParaTool.Core.Artifacts.ArtifactStore.Save(art);
         Console.WriteLine($"  spell probe: saved {art.StatId} (base {ring.StatId}) to {ParaTool.Core.Artifacts.ArtifactStore.GetArtifactsDir()}");
-        return ["PT_SpellProbe_Ring", "PT_SpellProbe_Ring_Spell_1", "Projectile_Ring32", vanillaName];
+        return names;
     }
+
+    private static string? _probeCreatureTemplate;
 
     /// <summary>
     /// Spin up Avalonia without a window and lay out the real ItemEditorView over the

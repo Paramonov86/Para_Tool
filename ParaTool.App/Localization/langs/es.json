@@ -737,5 +737,19 @@
   "JrnAddSpell": "Conjuro añadido",
   "JrnRemoveSpell": "Conjuro quitado",
   "LblGrantViaPassive": "Otorgar mediante un pasivo (con condición)",
-  "TipGrantViaPassive": "En lugar de desbloquearse al equipar, un pasivo oculto de este objeto desbloquea el conjuro. Su condición se define en la sección Pasivos."
+  "TipGrantViaPassive": "En lugar de desbloquearse al equipar, un pasivo oculto de este objeto desbloquea el conjuro. Su condición se define en la sección Pasivos.",
+  "LblCreatures": "Criaturas invocadas",
+  "BtnEditCreature": "Editar criatura",
+  "BtnResetCreature": "Restaurar original",
+  "WmReplaceCreature": "Reemplazar criatura...",
+  "WmCreatureName": "Nombre de la criatura",
+  "TipCreatureCopy": "La copia conserva el modelo y el comportamiento de la criatura; solo cambian las estadísticas de abajo.",
+  "LblCreatureHp": "PG",
+  "LblCreatureAc": "CA",
+  "AbStr": "FUE",
+  "AbDex": "DES",
+  "AbCon": "CON",
+  "AbInt": "INT",
+  "AbWis": "SAB",
+  "AbCha": "CAR"
 }

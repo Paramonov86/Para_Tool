@@ -737,5 +737,19 @@
   "JrnAddSpell": "Add spell",
   "JrnRemoveSpell": "Remove spell",
   "LblGrantViaPassive": "Grant through a passive (with a condition)",
-  "TipGrantViaPassive": "Instead of unlocking on equip, a hidden passive on this item unlocks the spell. Set its condition in the Passives section."
+  "TipGrantViaPassive": "Instead of unlocking on equip, a hidden passive on this item unlocks the spell. Set its condition in the Passives section.",
+  "LblCreatures": "Summoned creatures",
+  "BtnEditCreature": "Edit creature",
+  "BtnResetCreature": "Restore original",
+  "WmReplaceCreature": "Replace creature...",
+  "WmCreatureName": "Creature name",
+  "TipCreatureCopy": "The copy keeps the creature's model and behaviour; only the stats below change.",
+  "LblCreatureHp": "HP",
+  "LblCreatureAc": "AC",
+  "AbStr": "STR",
+  "AbDex": "DEX",
+  "AbCon": "CON",
+  "AbInt": "INT",
+  "AbWis": "WIS",
+  "AbCha": "CHA"
 }

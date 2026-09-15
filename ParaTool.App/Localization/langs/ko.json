@@ -735,5 +735,19 @@
   "JrnAddSpell": "주문 추가됨",
   "JrnRemoveSpell": "주문 제거됨",
   "LblGrantViaPassive": "패시브로 부여 (조건부)",
-  "TipGrantViaPassive": "장착 시 해금하는 대신 이 아이템의 숨겨진 패시브가 주문을 해금합니다. 조건은 패시브 섹션에서 설정합니다."
+  "TipGrantViaPassive": "장착 시 해금하는 대신 이 아이템의 숨겨진 패시브가 주문을 해금합니다. 조건은 패시브 섹션에서 설정합니다.",
+  "LblCreatures": "소환되는 생물",
+  "BtnEditCreature": "생물 편집",
+  "BtnResetCreature": "원본 복원",
+  "WmReplaceCreature": "생물 교체...",
+  "WmCreatureName": "생물 이름",
+  "TipCreatureCopy": "사본은 생물의 모델과 행동을 유지하며 아래 능력치만 바뀝니다.",
+  "LblCreatureHp": "HP",
+  "LblCreatureAc": "AC",
+  "AbStr": "근력",
+  "AbDex": "민첩",
+  "AbCon": "건강",
+  "AbInt": "지능",
+  "AbWis": "지혜",
+  "AbCha": "매력"
 }

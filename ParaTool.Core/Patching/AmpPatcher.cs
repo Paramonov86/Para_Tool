@@ -1008,6 +1008,19 @@ public sealed class AmpPatcher
                 }
             }
 
+            // ── Summoned creature copies (new and override artifacts alike) ──
+            foreach (var art in newArtifacts.Concat(overrideArtifacts))
+            {
+                ArtifactCompiler.AssignSummonNames(art);
+                foreach (var summon in art.Summons)
+                {
+                    if (string.IsNullOrEmpty(summon.ParentTemplateUuid) || string.IsNullOrEmpty(summon.StatsName)) continue;
+                    var lsfPath = Path.Combine(rtDir, $"{summon.TemplateUuid}.lsf");
+                    CreateCharacterTemplateLsf(lsfPath, summon);
+                    File.AppendAllText(rtLog, $"  Creature: {summon.StatsName} -> {lsfPath} (inherits {summon.ParentTemplateUuid})\n");
+                }
+            }
+
             // ── New artifacts: create individual {uuid}.lsf files ──
             File.AppendAllText(rtLog, $"Creating {newArtifacts.Count} new RootTemplates in {rtDir}\n");
             foreach (var art in newArtifacts)
@@ -1248,6 +1261,41 @@ public sealed class AmpPatcher
         // Cloned a real parent, or at least point at one the game can resolve itself through
         // ParentTemplateId. With neither, the minimal fallback node is an empty shell.
         return clonedParent || !string.IsNullOrEmpty(art.ParentTemplateUuid);
+    }
+
+    /// <summary>
+    /// Writes the character RootTemplate of a summoned creature copy. The node carries only its
+    /// identity and the new Stats; model, visuals, scripts and inventory come from the original
+    /// creature through ParentTemplateId. Copying the parent's child nodes (as items do) would
+    /// duplicate its scripts and inventory, and a vanilla parent is not in the pak to copy anyway.
+    /// </summary>
+    internal static void CreateCharacterTemplateLsf(string lsfPath, SummonDefinition summon)
+    {
+        var resource = new LSLib.Resource
+        {
+            Metadata = new LSLib.LSMetadata { MajorVersion = 4, MinorVersion = 8, Revision = 0, BuildNumber = 500 },
+            MetadataFormat = LSLib.LSFMetadataFormat.KeysAndAdjacency,
+        };
+        var region = new LSLib.Region { Name = "Templates", RegionName = "Templates" };
+        resource.Regions["Templates"] = region;
+
+        var node = new LSLib.Node { Name = "GameObjects", Parent = region };
+        LSLib.NodeAttribute Fixed(string v) => new(LSLib.AttributeType.FixedString) { Value = v };
+        node.Attributes["MapKey"] = Fixed(summon.TemplateUuid);
+        node.Attributes["Name"] = new LSLib.NodeAttribute(LSLib.AttributeType.LSString) { Value = summon.StatsName };
+        node.Attributes["Type"] = Fixed("character");
+        node.Attributes["LevelName"] = Fixed("");
+        node.Attributes["ParentTemplateId"] = Fixed(summon.ParentTemplateUuid);
+        node.Attributes["Stats"] = Fixed(summon.StatsName);
+        if (summon.DisplayNameEdited && !string.IsNullOrEmpty(summon.DisplayNameHandle))
+            node.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+            {
+                Value = new LSLib.TranslatedString { Handle = summon.DisplayNameHandle, Version = 1 }
+            };
+        region.AppendChild(node);
+
+        using var outFs = File.Create(lsfPath);
+        new LSLib.LSFWriter(outFs).Write(resource);
     }
 
     private static LSLib.Node? FindTemplateInMerged(string mergedPath, string uuid)

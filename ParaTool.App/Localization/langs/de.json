@@ -737,5 +737,19 @@
   "JrnAddSpell": "Zauber hinzugefügt",
   "JrnRemoveSpell": "Zauber entfernt",
   "LblGrantViaPassive": "Über ein Passiv gewähren (mit Bedingung)",
-  "TipGrantViaPassive": "Statt beim Ausrüsten schaltet ein verborgenes Passiv dieses Gegenstands den Zauber frei. Die Bedingung legst du im Abschnitt Passive fest."
+  "TipGrantViaPassive": "Statt beim Ausrüsten schaltet ein verborgenes Passiv dieses Gegenstands den Zauber frei. Die Bedingung legst du im Abschnitt Passive fest.",
+  "LblCreatures": "Beschworene Kreaturen",
+  "BtnEditCreature": "Kreatur bearbeiten",
+  "BtnResetCreature": "Original wiederherstellen",
+  "WmReplaceCreature": "Kreatur ersetzen...",
+  "WmCreatureName": "Name der Kreatur",
+  "TipCreatureCopy": "Die Kopie behält Modell und Verhalten der Kreatur; nur die Werte unten ändern sich.",
+  "LblCreatureHp": "TP",
+  "LblCreatureAc": "RK",
+  "AbStr": "STÄ",
+  "AbDex": "GES",
+  "AbCon": "KON",
+  "AbInt": "INT",
+  "AbWis": "WEI",
+  "AbCha": "CHA"
 }

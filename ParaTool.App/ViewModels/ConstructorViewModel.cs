@@ -852,6 +852,14 @@ public partial class ConstructorViewModel : ViewModelBase
             sp.DisplayNameHandle = "";
             sp.DescriptionHandle = "";
         }
+        // Creature copies get their own templates and stats names, or the two artifacts would
+        // overwrite each other's creature.
+        foreach (var su in clone.Summons)
+        {
+            su.TemplateUuid = Guid.NewGuid().ToString();
+            su.StatsName = "";
+            su.DisplayNameHandle = "";
+        }
         ArtifactStore.Save(clone);
         var vm = new ArtifactItemVM(clone) { IsPersisted = true, SourceStatId = clone.UsingBase, GetEditingLang = () => EditingLang };
         vm.LoadPassivesFromArtifact();

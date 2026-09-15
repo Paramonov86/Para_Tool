@@ -737,5 +737,19 @@
   "JrnAddSpell": "Sort ajouté",
   "JrnRemoveSpell": "Sort retiré",
   "LblGrantViaPassive": "Accorder via un passif (avec condition)",
-  "TipGrantViaPassive": "Au lieu d'être débloqué à l'équipement, le sort est débloqué par un passif caché de cet objet. Sa condition se règle dans la section Passifs."
+  "TipGrantViaPassive": "Au lieu d'être débloqué à l'équipement, le sort est débloqué par un passif caché de cet objet. Sa condition se règle dans la section Passifs.",
+  "LblCreatures": "Créatures invoquées",
+  "BtnEditCreature": "Modifier la créature",
+  "BtnResetCreature": "Rétablir l'original",
+  "WmReplaceCreature": "Remplacer la créature...",
+  "WmCreatureName": "Nom de la créature",
+  "TipCreatureCopy": "La copie garde le modèle et le comportement de la créature ; seules les statistiques ci-dessous changent.",
+  "LblCreatureHp": "PV",
+  "LblCreatureAc": "CA",
+  "AbStr": "FOR",
+  "AbDex": "DEX",
+  "AbCon": "CON",
+  "AbInt": "INT",
+  "AbWis": "SAG",
+  "AbCha": "CHA"
 }

@@ -650,6 +650,7 @@ public partial class ArtifactItemVM : ObservableObject
             if (PassiveVMs.FirstOrDefault(v => v.Passive == p) is { } pvm) RemovePassive(pvm);
             else Artifact.Passives.Remove(p);
         }
+        DropUnusedSummons();
 
         // Stop granting it; the SpellsOnEquip setter leaves a tombstone so the base item's
         // own list doesn't bring it back.
@@ -660,6 +661,33 @@ public partial class ArtifactItemVM : ObservableObject
         EditSpellsOnEquip = string.Join(";", kept);
 
         RecordEdit();
+    }
+
+    /// <summary>Starts a creature card: a copy of the creature the row's Summon() spawns.</summary>
+    public void EditCreature(SummonVM row, Core.Parsing.StatsResolver? resolver)
+    {
+        if (row.IsEdited) return;
+        var summon = SummonCloner.CloneFrom(row.TemplateUuid, resolver);
+        if (summon == null) return;
+        Artifact.Summons.Add(summon);
+        RecordEdit();
+        row.Refresh();
+    }
+
+    /// <summary>Drops the creature card; the spell summons the original creature again.</summary>
+    public void ResetCreature(SummonVM row)
+    {
+        Artifact.Summons.RemoveAll(s => s.ParentTemplateUuid.Equals(row.TemplateUuid, StringComparison.OrdinalIgnoreCase));
+        RecordEdit();
+        row.Refresh();
+    }
+
+    /// <summary>Creature cards no spell card summons any more.</summary>
+    internal void DropUnusedSummons()
+    {
+        var used = new HashSet<string>(
+            SpellVMs.SelectMany(s => s.SummonedTemplates()), StringComparer.OrdinalIgnoreCase);
+        Artifact.Summons.RemoveAll(s => !used.Contains(s.ParentTemplateUuid));
     }
 
     public void LoadSpellsFromArtifact()
@@ -929,6 +957,8 @@ public partial class ArtifactItemVM : ObservableObject
         ["AddExistingSpell"] = "JrnAddSpell",
         ["RemoveSpell"] = "JrnRemoveSpell",
         ["SetSpellGrantedThroughPassive"] = "LblGrantViaPassive",
+        ["EditCreature"] = "BtnEditCreature",
+        ["ResetCreature"] = "BtnResetCreature",
         ["EditProperties"] = "LblProperties",
         ["EditBoostContext"] = "LblBoosts",
         ["EditBoostConditions"] = "LblCondition",
@@ -1224,6 +1254,7 @@ public partial class SpellVM : ObservableObject
     {
         Spell = spell;
         _parent = parent;
+        RefreshCreatures();
     }
 
     [ObservableProperty] private bool _isExpanded;
@@ -1352,19 +1383,57 @@ public partial class SpellVM : ObservableObject
     public string EditSpellSuccess
     {
         get => Spell.SpellSuccess ?? "";
-        set { Spell.SpellSuccess = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+        set { Spell.SpellSuccess = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); RefreshCreatures(); }
     }
 
     public string EditSpellFail
     {
         get => Spell.SpellFail ?? "";
-        set { Spell.SpellFail = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+        set { Spell.SpellFail = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); RefreshCreatures(); }
     }
 
     public string EditSpellProperties
     {
         get => Spell.SpellProperties;
-        set { Spell.SpellProperties = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+        set { Spell.SpellProperties = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); RefreshCreatures(); }
+    }
+
+    // === Summoned creatures ===
+
+    /// <summary>One row per creature a Summon() in this card spawns.</summary>
+    public ObservableCollection<SummonVM> Creatures { get; } = [];
+    public bool HasCreatures => Creatures.Count > 0;
+
+    internal IEnumerable<string> SummonedTemplates() =>
+        new[] { Spell.SpellProperties, Spell.SpellSuccess, Spell.SpellFail }
+            .SelectMany(ArtifactCompiler.SummonedTemplates)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+    internal void RefreshCreatures()
+    {
+        var uuids = SummonedTemplates().ToList();
+        if (uuids.SequenceEqual(Creatures.Select(c => c.TemplateUuid), StringComparer.OrdinalIgnoreCase))
+            return;
+        Creatures.Clear();
+        foreach (var uuid in uuids)
+            Creatures.Add(new SummonVM(uuid, this, _parent));
+        OnPropertyChanged(nameof(HasCreatures));
+    }
+
+    /// <summary>Points the card's Summon() calls at another creature.</summary>
+    internal void ReplaceCreature(string oldUuid, string newUuid)
+    {
+        if (oldUuid.Equals(newUuid, StringComparison.OrdinalIgnoreCase)) return;
+        string? Swap(string? v) => v?.Replace(oldUuid, newUuid, StringComparison.OrdinalIgnoreCase);
+        Spell.SpellProperties = Swap(Spell.SpellProperties) ?? "";
+        Spell.SpellSuccess = Swap(Spell.SpellSuccess);
+        Spell.SpellFail = Swap(Spell.SpellFail);
+        _parent.DropUnusedSummons();
+        _parent.RecordEdit();
+        OnPropertyChanged(nameof(EditSpellProperties));
+        OnPropertyChanged(nameof(EditSpellSuccess));
+        OnPropertyChanged(nameof(EditSpellFail));
+        RefreshCreatures();
     }
 
     public string EditTargetConditions
@@ -1391,4 +1460,107 @@ public partial class SpellVM : ObservableObject
     {
         dict[EditLang] = value ?? "";
     }
+}
+
+/// <summary>
+/// A creature a spell card summons. Editing it makes a copy (its own template and Character
+/// entry) that the item's spells spawn instead; model and behaviour stay the original's.
+/// </summary>
+public partial class SummonVM : ObservableObject
+{
+    private readonly SpellVM _spell;
+    private readonly ArtifactItemVM _item;
+
+    /// <summary>The creature template the spell's Summon() names.</summary>
+    public string TemplateUuid { get; }
+
+    public SummonVM(string templateUuid, SpellVM spell, ArtifactItemVM item)
+    {
+        TemplateUuid = templateUuid;
+        _spell = spell;
+        _item = item;
+    }
+
+    private string EditLang => _item.GetEditingLang?.Invoke() ?? Loc.Instance.Lang;
+    private Core.Services.SummonTemplateIndex.Entry? Known => Core.Services.SummonTemplateIndex.Find(TemplateUuid);
+
+    public SummonDefinition? Summon => _item.Artifact.Summons
+        .LastOrDefault(s => s.ParentTemplateUuid.Equals(TemplateUuid, StringComparison.OrdinalIgnoreCase));
+
+    public bool IsEdited => Summon != null;
+    public bool CanEdit => !IsEdited && Known != null;
+
+    public string CreatureName
+    {
+        get
+        {
+            if (Summon is { DisplayNameEdited: true } s)
+            {
+                if (s.DisplayName.TryGetValue(EditLang, out var n) && !string.IsNullOrEmpty(n)) return n;
+                if (s.DisplayName.TryGetValue("en", out var en) && !string.IsNullOrEmpty(en)) return en;
+            }
+            return Known is { } k ? Core.Services.SummonTemplateIndex.DisplayName(k, EditLang) : TemplateUuid;
+        }
+    }
+
+    public string CreatureTip => Known is { } k ? $"{k.Stats} · {TemplateUuid}" : TemplateUuid;
+
+    private static string[]? _creatureOptions;
+
+    /// <summary>"Name (Stats) uuid" for every known creature — the uuid is read back from the end.</summary>
+    public static string[] CreatureOptions => _creatureOptions ??= Core.Services.SummonTemplateIndex.All
+        .Select(e => $"{Core.Services.SummonTemplateIndex.DisplayName(e, Loc.Instance.Lang)} ({e.Stats}) {e.TemplateUuid}")
+        .ToArray();
+
+    public string ReplaceWith
+    {
+        get => "";
+        set
+        {
+            var uuid = value?.Trim().Split(' ').LastOrDefault();
+            if (string.IsNullOrEmpty(uuid) || Core.Services.SummonTemplateIndex.Find(uuid) == null) return;
+            _spell.ReplaceCreature(TemplateUuid, uuid);
+        }
+    }
+
+    public string EditName
+    {
+        get => Summon is { } s ? (s.DisplayName.TryGetValue(EditLang, out var n) && !string.IsNullOrEmpty(n) ? n : s.DisplayName.GetValueOrDefault("en") ?? "") : "";
+        set
+        {
+            if (Summon is not { } s || EditName == (value ?? "")) return;
+            s.DisplayName[EditLang] = value ?? "";
+            s.DisplayNameEdited = true;
+            _item.RecordEdit();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CreatureName));
+        }
+    }
+
+    private string GetStat(string key) => Summon?.Stats.GetValueOrDefault(key) ?? "";
+
+    /// <summary>Numbers left empty go back to inheriting; lists may be cleared on purpose.</summary>
+    private void SetStat(string key, string? value, bool keepEmpty = false, [System.Runtime.CompilerServices.CallerMemberName] string? prop = null)
+    {
+        if (Summon is not { } s) return;
+        var v = value?.Trim() ?? "";
+        if (v.Length == 0 && !keepEmpty) s.Stats.Remove(key);
+        else s.Stats[key] = v;
+        _item.RecordEdit();
+        OnPropertyChanged(prop);
+    }
+
+    public string EditLevel { get => GetStat("Level"); set => SetStat("Level", value); }
+    public string EditVitality { get => GetStat("Vitality"); set => SetStat("Vitality", value); }
+    public string EditArmor { get => GetStat("Armor"); set => SetStat("Armor", value); }
+    public string EditStrength { get => GetStat("Strength"); set => SetStat("Strength", value); }
+    public string EditDexterity { get => GetStat("Dexterity"); set => SetStat("Dexterity", value); }
+    public string EditConstitution { get => GetStat("Constitution"); set => SetStat("Constitution", value); }
+    public string EditIntelligence { get => GetStat("Intelligence"); set => SetStat("Intelligence", value); }
+    public string EditWisdom { get => GetStat("Wisdom"); set => SetStat("Wisdom", value); }
+    public string EditCharisma { get => GetStat("Charisma"); set => SetStat("Charisma", value); }
+    public string EditPassives { get => GetStat("Passives"); set => SetStat("Passives", value, keepEmpty: true); }
+    public string EditDefaultBoosts { get => GetStat("DefaultBoosts"); set => SetStat("DefaultBoosts", value, keepEmpty: true); }
+
+    internal void Refresh() => OnPropertyChanged(string.Empty);
 }
