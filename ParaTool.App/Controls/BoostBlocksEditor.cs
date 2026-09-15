@@ -132,6 +132,8 @@ public class BoostBlocksEditor : UserControl
     /// <summary>Global status/spell/passive lists, set once by ConstructorViewModel.</summary>
     public static string[]? GlobalStatusList { get; set; }
     public static string[]? GlobalSpellList { get; set; }
+    /// <summary>Spell cards of the artifact being edited — listed first in spell pickers.</summary>
+    public static Func<IEnumerable<string>>? ActiveArtifactSpells { get; set; }
     public static string[]? GlobalPassiveList { get; set; }
     /// <summary>Active spell/status renames from current artifact.</summary>
     public static Dictionary<string, Dictionary<string, string>>? ActiveSpellRenames { get; set; }
@@ -594,6 +596,13 @@ public class BoostBlocksEditor : UserControl
                     : isSpell ? (SpellList ?? GlobalSpellList)
                     : isPassive ? GlobalPassiveList
                     : null;
+                // UnlockSpell on this item most often means one of its own spell cards.
+                if (isSpell && param.Name.Contains("Spell", StringComparison.OrdinalIgnoreCase)
+                    && ActiveArtifactSpells?.Invoke().ToArray() is { Length: > 0 } own)
+                {
+                    var ownSet = new HashSet<string>(own, StringComparer.OrdinalIgnoreCase);
+                    pickerItems = [..own, ..(pickerItems ?? []).Where(s => !ownSet.Contains(s))];
+                }
 
                 if (isStatus || isSpell || isPassive || pickerItems is { Length: > 0 })
                 {

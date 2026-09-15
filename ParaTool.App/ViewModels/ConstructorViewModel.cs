@@ -520,6 +520,7 @@ public partial class ConstructorViewModel : ViewModelBase
             // Set active renames and editing lang for chip display
             Controls.BoostBlocksEditor.ActiveSpellRenames = newValue.Artifact.SpellRenames;
             Controls.BoostBlocksEditor.ActiveStatusRenames = newValue.Artifact.StatusRenames;
+            Controls.BoostBlocksEditor.ActiveArtifactSpells = () => newValue.Artifact.Spells.Select(s => s.Name);
             Controls.BoostBlocksEditor.ActiveEditingLang = EditingLang;
             // Load loca for current editing language (may differ from scan language)
             if (_resolver != null && _locaService != null)
