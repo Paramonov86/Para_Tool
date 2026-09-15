@@ -574,6 +574,32 @@ public class ArtifactCompilerTests
     }
 
     [Fact]
+    public void Spell_TargetConditions_AreEmitted()
+    {
+        // The model carried TargetConditions but the compiler never wrote them, so a spell
+        // edited to target only allies still hit anyone.
+        var art = NewArmor();
+        art.Spells.Add(new SpellDefinition
+        {
+            Name = "TEST_Spell",
+            SpellType = "Target",
+            TargetConditions = "Ally() and not Dead()",
+        });
+        art.Spells.Add(new SpellDefinition
+        {
+            Name = "TEST_Spell_Clone",
+            UsingBase = "Target_CureWounds",
+            SpellType = "Target",
+            TargetConditions = "Character()",
+        });
+
+        var result = ArtifactCompiler.Compile(art);
+
+        Assert.Contains("data \"TargetConditions\" \"Ally() and not Dead()\"", result.StatsText);
+        Assert.Contains("data \"TargetConditions\" \"Character()\"", result.StatsText);
+    }
+
+    [Fact]
     public void Tombstone_RemovedStatus_NotInStatusOnEquip()
     {
         var art = NewArmor();

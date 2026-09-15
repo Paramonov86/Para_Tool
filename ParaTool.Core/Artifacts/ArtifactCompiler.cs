@@ -498,6 +498,7 @@ public static class ArtifactCompiler
                 stats.AppendLine($"data \"SpellProperties\" \"{spell.SpellProperties}\"");
                 stats.AppendLine($"data \"UseCosts\" \"{spell.UseCosts}\"");
                 stats.AppendLine($"data \"Cooldown\" \"{spell.Cooldown}\"");
+                stats.AppendLine($"data \"TargetConditions\" \"{spell.TargetConditions}\"");
                 stats.AppendLine($"data \"SpellFlags\" \"{spell.SpellFlags}\"");
             }
             else
@@ -512,6 +513,8 @@ public static class ArtifactCompiler
                     stats.AppendLine($"data \"UseCosts\" \"{spell.UseCosts}\"");
                 if (!string.IsNullOrEmpty(spell.Cooldown))
                     stats.AppendLine($"data \"Cooldown\" \"{spell.Cooldown}\"");
+                if (!string.IsNullOrEmpty(spell.TargetConditions))
+                    stats.AppendLine($"data \"TargetConditions\" \"{spell.TargetConditions}\"");
                 if (!string.IsNullOrEmpty(spell.SpellFlags))
                     stats.AppendLine($"data \"SpellFlags\" \"{spell.SpellFlags}\"");
             }
