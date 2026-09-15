@@ -1062,6 +1062,26 @@ public sealed class ModScanner
 
         AppLogger.Info($"Template metadata: {uuidToTemplateMeta.Count} templates, {statsToOwnUuid.Count}/{allItems.Count} items with own templates");
 
+        // Creatures a Summon() in AMP or a mod can spawn: character templates whose Stats
+        // (own or inherited from the parent template) name a Character entry.
+        int summonTemplates = 0;
+        foreach (var (uuid, meta) in uuidToTemplateMeta)
+        {
+            string? stats = meta.stats, nameHandle = meta.nameHandle;
+            var parent = meta.parent;
+            for (int depth = 0; (stats == null || nameHandle == null) && !string.IsNullOrEmpty(parent) && depth < 10; depth++)
+            {
+                if (!uuidToTemplateMeta.TryGetValue(parent, out var pm)) break;
+                stats ??= pm.stats;
+                nameHandle ??= pm.nameHandle;
+                parent = pm.parent;
+            }
+            if (string.IsNullOrEmpty(stats) || resolver.Get(stats)?.Type != "Character") continue;
+            SummonTemplateIndex.Register(uuid, stats, nameHandle);
+            summonTemplates++;
+        }
+        AppLogger.Info($"Summon templates from paks: {summonTemplates}");
+
         // For each item, find its RootTemplate UUID:
         //  1. Prefer own template (Stats=<StatId> reverse lookup) — authoritative per-item
         //  2. Fallback: walk stats using-chain to find first ancestor with RootTemplate

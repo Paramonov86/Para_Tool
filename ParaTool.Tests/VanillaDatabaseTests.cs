@@ -107,4 +107,32 @@ public class VanillaDatabaseTests
         Assert.Equal("Piercing", fields["Damage Type"]);
         Assert.Equal("Spears;SimpleWeapons", fields["Proficiency Group"]);
     }
+
+    [Fact]
+    public void Load_ResolvesSummonedCreatureStats()
+    {
+        // A summon card edits a copy of the creature's Character entry; its fields come
+        // from the vanilla dump through the using-chain down to _Base.
+        var db = new VanillaDatabase();
+        db.Load();
+
+        var entry = db.Resolver.Get("Mephit_Mud_Summon");
+        Assert.NotNull(entry);
+        Assert.Equal("Character", entry.Type);
+
+        var fields = db.Resolver.ResolveAll("Mephit_Mud_Summon");
+        Assert.True(fields.ContainsKey("Vitality"));
+        Assert.True(fields.ContainsKey("Strength"));
+    }
+
+    [Fact]
+    public void SummonTemplateIndex_MapsVanillaSummonToStats()
+    {
+        var entry = SummonTemplateIndex.Find("02b5e1ea-389d-4008-a247-66538709388b");
+
+        Assert.NotNull(entry);
+        Assert.Equal("Mephit_Mud_Summon", entry.Stats);
+        Assert.Equal("Young Mud Mephit", SummonTemplateIndex.DisplayName(entry, "en"));
+        Assert.True(SummonTemplateIndex.All.Count > 100);
+    }
 }

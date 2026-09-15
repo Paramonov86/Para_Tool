@@ -33,6 +33,8 @@ public sealed class VanillaDatabase
             "ParaTool.Core.Resources.Vanilla.Vanilla_Passives.txt",
             "ParaTool.Core.Resources.Vanilla.Vanilla_Statuses.txt",
             "ParaTool.Core.Resources.Vanilla.Vanilla_Spells.txt",
+            // Summoned creatures' stats — the base a summon card's copy inherits from
+            "ParaTool.Core.Resources.Vanilla.Vanilla_Characters.txt",
         };
 
         // AMP overrides loaded from pak at scan time, not from embedded resources

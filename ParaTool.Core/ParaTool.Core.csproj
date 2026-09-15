@@ -26,6 +26,8 @@
     <EmbeddedResource Include="Resources\Vanilla\Vanilla_Passives.txt" />
     <EmbeddedResource Include="Resources\Vanilla\Vanilla_Statuses.txt" />
     <EmbeddedResource Include="Resources\Vanilla\Vanilla_Spells.txt" />
+    <EmbeddedResource Include="Resources\Vanilla\Vanilla_Characters.txt" />
+    <EmbeddedResource Include="Resources\Vanilla\Vanilla_SummonTemplates.tsv" />
     <EmbeddedResource Include="Resources\Vanilla\AMP_Overrides.txt" />
   </ItemGroup>
 
