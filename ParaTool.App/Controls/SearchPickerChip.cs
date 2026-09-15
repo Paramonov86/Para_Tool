@@ -48,6 +48,9 @@ public class SearchPickerChip : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
+            // A long name in a narrow row (a variant card nested in its container) ends in "…"
+            // instead of being cut at the chip's edge; the tooltip has it in full.
+            TextTrimming = TextTrimming.CharacterEllipsis,
         };
 
         _chip = new Border
@@ -94,7 +97,7 @@ public class SearchPickerChip : UserControl
         _valueText.Text = displayName ?? val;
         _valueText.Foreground = ThemeBrushes.TextPrimary;
         if (displayName != null)
-            ToolTip.SetTip(_chip, val);
+            ToolTip.SetTip(_chip, $"{displayName}\n{val}");
         else
             ToolTip.SetTip(_chip, null);
     }
