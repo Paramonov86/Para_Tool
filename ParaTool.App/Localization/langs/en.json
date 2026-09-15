@@ -26,7 +26,8 @@
   "PatchingInProgress": "Patching...",
   "PatchSuccess": "Success!",
   "PatchSuccessMessage": "Items patched: {0}",
-  "PatchSubmodsMessage": "AMP submods patched: {0}",
+  "PatchTargetMessage": "Patched: {0}",
+  "PatchTargetNotice": "{0} will be patched instead of AMP. Make sure {0} is enabled in the game.",
   "PatchError": "Error:",
   "Slot.Clothes": "Clothes",
   "Slot.Armor": "Armor",
@@ -702,5 +703,14 @@
   "JrnAddPassive": "Add passive",
   "JrnRemovePassive": "Remove passive",
   "JrnRevert": "Revert version",
-  "JrnOpened": "Opened"
+  "JrnOpened": "Opened",
+  "condparam.entity": "entity",
+  "condparam.source": "source",
+  "condparam.target": "target",
+  "condparam.rangedSlot": "ranged slot",
+  "condparam.offHand": "off hand",
+  "condparam.mainHand": "main hand",
+  "condparam.checkRanged": "ranged",
+  "condparam.checkBothWeaponSets": "both weapon sets",
+  "condparam.weaponFlags": "weapon flags"
 }

@@ -74,6 +74,15 @@ public partial class ItemEditorViewModel : ViewModelBase
     public bool ShowPatchButton => !IsPatching && !PatchSuccess && PatchError == null;
     public bool ShowRestoreButton => HasBackup && !IsPatching && !IsRestoring;
 
+    /// <summary>
+    /// Shown above PATCH when the patch goes into an AMP submod instead of AMP — that submod has
+    /// to be enabled in game for any of the edits to exist.
+    /// </summary>
+    public string? PatchTargetNotice =>
+        AmpPatcher.SelectPatchTarget(Mods.Select(m => m.ModInfo).ToList()) is { } target
+            ? Loc.Instance.PatchTargetNotice(target.Name)
+            : null;
+
     private readonly PropertyChangedEventHandler _langHandler;
 
     /// <summary>
@@ -92,6 +101,7 @@ public partial class ItemEditorViewModel : ViewModelBase
                     item.RefreshLanguage();
 
             OnPropertyChanged(nameof(ModsCountText));
+            OnPropertyChanged(nameof(PatchTargetNotice));
             if (HasMissingItems)
                 OnPropertyChanged(nameof(MissingItemsText));
         });
@@ -119,6 +129,7 @@ public partial class ItemEditorViewModel : ViewModelBase
         newValue.CollectionChanged += OnModsCollectionChanged;
         foreach (var mod in newValue) mod.PropertyChanged += OnModPropertyChanged;
         RebuildRows();
+        OnPropertyChanged(nameof(PatchTargetNotice));
     }
 
     private void OnModsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -128,6 +139,7 @@ public partial class ItemEditorViewModel : ViewModelBase
         if (e.NewItems != null)
             foreach (ModVM mod in e.NewItems) mod.PropertyChanged += OnModPropertyChanged;
         RebuildRows();
+        OnPropertyChanged(nameof(PatchTargetNotice));
     }
 
     private void OnModPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -414,8 +426,8 @@ public partial class ItemEditorViewModel : ViewModelBase
         if (result.Success)
         {
             PatchSuccess = true;
-            PatchSuccessMessage = result.SubmodsPatched > 0
-                ? $"{Loc.Instance.PatchSuccessMessage(result.ItemsPatched)}\n{Loc.Instance.PatchSubmodsMessage(result.SubmodsPatched)}"
+            PatchSuccessMessage = result.TargetName != null
+                ? $"{Loc.Instance.PatchSuccessMessage(result.ItemsPatched)}\n{Loc.Instance.PatchTargetMessage(result.TargetName)}"
                 : Loc.Instance.PatchSuccessMessage(result.ItemsPatched);
 
             PatchWarnings.Clear();

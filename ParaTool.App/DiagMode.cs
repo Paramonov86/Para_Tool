@@ -38,7 +38,9 @@ internal static class DiagMode
             }
         }
 
-        var modsPath = ModsFolderDetector.Detect();
+        // --diag-mods <dir>: scan (and, with --diag-patch, patch) a copy instead of the real Mods folder.
+        var modsPath = args.SkipWhile(a => !a.Equals("--diag-mods", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()
+            ?? ModsFolderDetector.Detect();
         if (modsPath == null)
         {
             Console.Error.WriteLine("ERROR: Mods folder not found.");
@@ -88,6 +90,12 @@ internal static class DiagMode
             RunFilterPerf(result, locaService);
             return 0;
         }
+
+        // --diag-patch: uncheck one AMP item that the last submod's own TreasureTable restates,
+        // run the real patcher and check the result lands in exactly one pak. Destructive for
+        // the scanned folder — only use it with --diag-mods pointing at a copy.
+        if (args.Contains("--diag-patch", StringComparer.OrdinalIgnoreCase))
+            return await RunPatchProbeAsync(result, vanillaDb, modsPath);
 
         // --diag-templates: dump full LSF-aware template metadata for templates whose
         // Stats attribute matches a substring pattern (across every scanned pak).
@@ -477,6 +485,74 @@ internal static class DiagMode
             Console.WriteLine($"    mod {m.Name,-40} {m.Items.Count,6} items");
 
         RunVisualTreePerf(vm);
+    }
+
+    private static async Task<int> RunPatchProbeAsync(ScanResult result, VanillaDatabase vanillaDb, string modsPath)
+    {
+        Console.WriteLine("\n=== patch probe ===");
+        if (result.AmpPakPath == null || result.AmpMod == null)
+        {
+            Console.Error.WriteLine("  AMP not found");
+            return 4;
+        }
+
+        static string? PakText(string pak, string fileName)
+        {
+            using var fs = File.OpenRead(pak);
+            var header = ParaTool.Core.PakReader.ReadHeader(fs);
+            var entry = ParaTool.Core.PakReader.ReadFileList(fs, header)
+                .FirstOrDefault(e => e.Path.EndsWith("/" + fileName, StringComparison.OrdinalIgnoreCase));
+            return entry.Path == null ? null
+                : System.Text.Encoding.UTF8.GetString(ParaTool.Core.PakReader.ExtractFileData(fs, entry));
+        }
+        static string TableBlock(string tt, string name)
+        {
+            var start = tt.IndexOf($"new treasuretable \"{name}\"", StringComparison.Ordinal);
+            if (start < 0) return "";
+            var next = tt.IndexOf("new treasuretable \"", start + 1, StringComparison.Ordinal);
+            return next < 0 ? tt[start..] : tt[start..next];
+        }
+        static int Count(string text, string needle) => text.Split(needle).Length - 1;
+        static string Hash(string path) =>
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)))[..16];
+
+        var target = ParaTool.Core.Patching.AmpPatcher.SelectPatchTarget(result.Mods);
+        Console.WriteLine($"  target: {target?.Name ?? "AMP"}");
+        if (target == null) return 0;
+
+        var targetTtBefore = PakText(ParaTool.Core.Services.PakSource.Resolve(target.PakPath), "TreasureTable.txt") ?? "";
+        var restated = TableBlock(targetTtBefore, "AMP_Para_14");
+        var victim = result.AmpMod.Items.FirstOrDefault(i => restated.Contains($"\"I_{i.StatId}\""));
+        if (victim == null)
+        {
+            Console.Error.WriteLine("  no AMP item found in the submod's AMP_Para_14");
+            return 5;
+        }
+        victim.Enabled = false;
+        Console.WriteLine($"  unchecked: {victim.StatId} (in submod AMP_Para_14: {restated.Length > 0})");
+
+        var ampHash = Hash(result.AmpPakPath);
+        var itemsBefore = result.Mods.Sum(m => m.Items.Count) + result.AmpMod.Items.Count;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var patch = await new ParaTool.Core.Patching.AmpPatcher().PatchAsync(result.AmpPakPath, result.Mods, result.AmpMod);
+        Console.WriteLine($"  patch: success={patch.Success} target={patch.TargetName} items={patch.ItemsPatched} " +
+                          $"warnings={patch.Warnings.Count} error={patch.Error} ({sw.ElapsedMilliseconds}ms)");
+        foreach (var w in patch.Warnings.Take(5)) Console.WriteLine($"    warn: {w}");
+
+        Console.WriteLine($"  AMP pak unchanged: {Hash(result.AmpPakPath) == ampHash}");
+        var liveTt = PakText(target.PakPath, "TreasureTable.txt") ?? "";
+        Console.WriteLine($"  AMP_Para_14 tables in submod: {Count(liveTt, "new treasuretable \"AMP_Para_14\"")}");
+        Console.WriteLine($"  victim still in submod AMP_Para_14: {TableBlock(liveTt, "AMP_Para_14").Contains($"\"I_{victim.StatId}\"")}");
+        Console.WriteLine($"  tables in submod TT: {Count(targetTtBefore, "new treasuretable ")} -> {Count(liveTt, "new treasuretable ")}");
+        Console.WriteLine($"  marker in submod: {ParaTool.Core.Services.AmpBackupService.IsPatchedPak(target.PakPath)}; " +
+                          $"marker in AMP: {ParaTool.Core.Services.AmpBackupService.IsPatchedPak(result.AmpPakPath)}");
+        Console.WriteLine($"  scanner reads submod from backup: " +
+                          $"{ParaTool.Core.Services.PakSource.Resolve(target.PakPath) == ParaTool.Core.Services.AmpBackupService.GetBackupPath(target.PakPath)}");
+
+        var rescan = await new ModScanner(vanillaDb).ScanAsync(modsPath, "en");
+        var itemsAfter = rescan.Mods.Sum(m => m.Items.Count) + (rescan.AmpMod?.Items.Count ?? 0);
+        Console.WriteLine($"  items scanned before/after patch: {itemsBefore} / {itemsAfter}");
+        return 0;
     }
 
     /// <summary>

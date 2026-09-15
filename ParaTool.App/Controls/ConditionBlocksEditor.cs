@@ -463,7 +463,7 @@ public class ConditionBlocksEditor : UserControl
                 if (param != null)
                     stack.Children.Add(new TextBlock
                     {
-                        Text = ConditionLabels.GetParamLabel(param.Name, Localization.Loc.Instance.Lang == "ru") + ":",
+                        Text = Localization.Loc.Instance.ConditionParamLabel(param.Name) + ":",
                         FontSize = FontScale.Of(9), Foreground = FgMuted,
                         VerticalAlignment = VerticalAlignment.Center,
                     });
@@ -611,7 +611,7 @@ public class ConditionBlocksEditor : UserControl
             var nextParam = isEntityNext
                 ? new ConditionParam { Name = "source", Type = "enum", EnumValues = ConditionSchema.EntityTargetsEn }
                 : offeredParam;
-            var argLabel = ConditionLabels.GetParamLabel(nextParam.Name, Localization.Loc.Instance.Lang == "ru");
+            var argLabel = Localization.Loc.Instance.ConditionParamLabel(nextParam.Name);
             var addArgBtn = new Button
             {
                 Content = $"+{argLabel}", FontSize = FontScale.Of(9),
@@ -847,7 +847,7 @@ public class ConditionBlocksEditor : UserControl
         {
             var displayName = ConditionLabels.GetLabel(def.Name, isRu);
             var paramHint = def.Params.Length > 0
-                ? $" ({string.Join(", ", def.Params.Select(p => ConditionLabels.GetParamLabel(p.Name, isRu)))})"
+                ? $" ({string.Join(", ", def.Params.Select(p => Localization.Loc.Instance.ConditionParamLabel(p.Name)))})"
                 : "";
             var isFav = Core.Services.FavoritesStore.Load().Contains(def.Name);
 

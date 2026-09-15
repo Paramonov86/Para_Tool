@@ -26,7 +26,8 @@
   "PatchingInProgress": "正在应用补丁...",
   "PatchSuccess": "成功！",
   "PatchSuccessMessage": "已修补物品数：{0}",
-  "PatchSubmodsMessage": "已修补的 AMP 子模组: {0}",
+  "PatchTargetMessage": "已修补：{0}",
+  "PatchTargetNotice": "将修补 {0} 而不是 AMP。请确认 {0} 已在游戏中启用。",
   "PatchError": "错误：",
   "Slot.Clothes": "服装",
   "Slot.Armor": "护甲",
@@ -702,5 +703,14 @@
   "JrnAddPassive": "添加被动",
   "JrnRemovePassive": "移除被动",
   "JrnRevert": "恢复版本",
-  "JrnOpened": "打开"
+  "JrnOpened": "打开",
+  "condparam.entity": "实体",
+  "condparam.source": "来源",
+  "condparam.target": "目标",
+  "condparam.rangedSlot": "远程槽位",
+  "condparam.offHand": "副手",
+  "condparam.mainHand": "主手",
+  "condparam.checkRanged": "远程",
+  "condparam.checkBothWeaponSets": "两套武器",
+  "condparam.weaponFlags": "武器属性"
 }

@@ -405,4 +405,57 @@ public class TreasureTablePatcherTests
         Assert.DoesNotContain("I_AmpPlus_Ring", result);
         Assert.Contains("new treasuretable \"AMP_Para_9\"", result);
     }
+
+    private static ItemEntry Unchecked(string statId, bool isAmp = true) => new()
+    {
+        StatId = statId, StatType = "Armor", DetectedPool = "Rings", DetectedRarity = "Rare",
+        IsAmpItem = isAmp, Enabled = false
+    };
+
+    private static int CountTables(string text, string name) =>
+        text.Split($"new treasuretable \"{name}\"").Length - 1;
+
+    [Fact]
+    public void PatchIntoTarget_TableOnlyAmpDefines_IsWrittenIntoTargetWithTheEdit()
+    {
+        var amp = string.Join("\n",
+            MakePoolTable("REL_Rare_Rings", "I_AMP_Ring"),
+            MakePoolTable("REL_Rare_Boots", "I_AMP_Boots"));
+        var target = MakePoolTable("REL_Rare_Aquatic", "I_Plus_Thing");
+
+        var result = TreasureTablePatcher.PatchIntoTarget([amp], target, [Unchecked("AMP_Ring")]);
+
+        Assert.Equal(1, CountTables(result, "REL_Rare_Rings"));
+        Assert.DoesNotContain("I_AMP_Ring", result);
+        // Unchanged tables stay AMP's alone — restating them would only freeze AMP's current list.
+        Assert.Equal(0, CountTables(result, "REL_Rare_Boots"));
+        Assert.Contains("I_Plus_Thing", result);
+    }
+
+    [Fact]
+    public void PatchIntoTarget_TableTheTargetRestates_IsPatchedInPlaceOnce()
+    {
+        var amp = MakePoolTable("REL_Rare_Aquatic", "I_AMP_OldVersion");
+        var target = MakePoolTable("REL_Rare_Aquatic", "I_AMP_Unchecked");
+
+        var result = TreasureTablePatcher.PatchIntoTarget([amp], target, [Unchecked("AMP_Unchecked")]);
+
+        Assert.Equal(1, CountTables(result, "REL_Rare_Aquatic"));
+        Assert.DoesNotContain("I_AMP_Unchecked", result);
+        Assert.DoesNotContain("I_AMP_OldVersion", result);
+    }
+
+    [Fact]
+    public void PatchIntoTarget_UsesTheLastEarlierDefiner()
+    {
+        var amp = MakePoolTable("REL_Rare_Rings", "I_AMP_Version");
+        var earlierSubmod = MakePoolTable("REL_Rare_Rings", "I_Sub_Unchecked");
+
+        var result = TreasureTablePatcher.PatchIntoTarget(
+            [amp, earlierSubmod], "", [Unchecked("Sub_Unchecked", isAmp: false)]);
+
+        Assert.Equal(1, CountTables(result, "REL_Rare_Rings"));
+        Assert.DoesNotContain("I_Sub_Unchecked", result);
+        Assert.DoesNotContain("I_AMP_Version", result);
+    }
 }

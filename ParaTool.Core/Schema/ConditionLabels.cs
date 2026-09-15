@@ -742,31 +742,6 @@ public static class ConditionLabels
         ["General"] = ("General", "Общее"),
     };
 
-    // ═══════════════════════════════════════════════════════════
-    // PARAMETER LABELS — (English, Russian)
-    // Shown on "+arg" buttons, flag switches and in the picker's parameter hint
-    // ═══════════════════════════════════════════════════════════
-
-    public static readonly Dictionary<string, (string En, string Ru)> Params = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["entity"] = ("entity", "существо"),
-        ["source"] = ("source", "источник"),
-        ["target"] = ("target", "цель"),
-        ["rangedSlot"] = ("ranged slot", "дальний слот"),
-        ["offHand"] = ("off hand", "вторая рука"),
-        ["mainHand"] = ("main hand", "основная рука"),
-        ["checkRanged"] = ("ranged", "дальний бой"),
-        ["checkBothWeaponSets"] = ("both weapon sets", "оба набора оружия"),
-        ["weaponFlags"] = ("weapon flags", "свойства оружия"),
-    };
-
-    public static string GetParamLabel(string paramName, bool russian = false)
-    {
-        if (Params.TryGetValue(paramName, out var label))
-            return russian ? label.Ru : label.En;
-        return paramName;
-    }
-
     /// <summary>
     /// Get localized label for a condition function.
     /// Falls back to raw function name if not mapped.

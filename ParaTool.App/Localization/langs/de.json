@@ -26,7 +26,8 @@
   "PatchingInProgress": "Wird gepatcht...",
   "PatchSuccess": "Erfolgreich!",
   "PatchSuccessMessage": "Gegenstände gepatcht: {0}",
-  "PatchSubmodsMessage": "Gepatchte AMP-Submods: {0}",
+  "PatchTargetMessage": "Gepatcht: {0}",
+  "PatchTargetNotice": "{0} wird statt AMP gepatcht. Stelle sicher, dass {0} im Spiel aktiviert ist.",
   "PatchError": "Fehler:",
   "Slot.Clothes": "Kleidung",
   "Slot.Armor": "Rüstung",
@@ -702,5 +703,14 @@
   "JrnAddPassive": "Passiv hinzugefügt",
   "JrnRemovePassive": "Passiv entfernt",
   "JrnRevert": "Version zurückgesetzt",
-  "JrnOpened": "Geöffnet"
+  "JrnOpened": "Geöffnet",
+  "condparam.entity": "Kreatur",
+  "condparam.source": "Quelle",
+  "condparam.target": "Ziel",
+  "condparam.rangedSlot": "Fernkampf-Slot",
+  "condparam.offHand": "Nebenhand",
+  "condparam.mainHand": "Haupthand",
+  "condparam.checkRanged": "Fernkampf",
+  "condparam.checkBothWeaponSets": "beide Waffensets",
+  "condparam.weaponFlags": "Waffeneigenschaften"
 }

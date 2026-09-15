@@ -184,101 +184,47 @@ public class AmpSubmodTests
         Assert.Equal("", text);
     }
 
-    private const string RestatedParagonTable = "new treasuretable \"AMP_Para_14\"\n"
-        + "new subtable \"1,1\"\nobject category \"I_AMP_Kept\",1,0,0,0,0,0,0,0\n"
-        + "new subtable \"1,1\"\nobject category \"I_AMP_Unchecked\",1,0,0,0,0,0,0,0\n";
-
-    private static ItemEntry AmpItem(string statId, bool enabled) => new()
+    private static ModInfo Submod(string name, params string[] dependsOn) => new()
     {
-        StatId = statId, StatType = "Armor", DetectedPool = "Rings", DetectedRarity = "Rare",
-        IsAmpItem = true, Enabled = enabled
+        Name = name,
+        UUID = $"{name}-uuid",
+        Folder = name,
+        PakPath = $"/{name}.pak",
+        IsAmpSubmod = true,
+        DependencyUuids = new HashSet<string>(
+            dependsOn.Select(d => $"{d}-uuid").Append(AmpUuid), StringComparer.OrdinalIgnoreCase),
     };
 
-    /// <summary>Packs a submod into root/Mods/Sub.pak, so its backup lands in root.</summary>
-    private static string BuildSubmodPak(string root, string treasureTable)
+    [Fact]
+    public void PatchTarget_OnlyAmp_IsAmpItself()
     {
-        var src = Path.Combine(root, "src");
-        var metaDir = Path.Combine(src, "Mods", "Sub");
-        var generated = Path.Combine(src, "Public", "Sub", "Stats", "Generated");
-        Directory.CreateDirectory(metaDir);
-        Directory.CreateDirectory(generated);
-        File.WriteAllBytes(Path.Combine(metaDir, "meta.lsx"), SubmodMeta(Guid.NewGuid().ToString(), AmpUuid));
-        File.WriteAllText(Path.Combine(generated, "TreasureTable.txt"), treasureTable);
-
-        var modsDir = Path.Combine(root, "Mods");
-        Directory.CreateDirectory(modsDir);
-        var pak = Path.Combine(modsDir, "Sub.pak");
-        ParaTool.Core.PakWriter.CreatePak(src, pak);
-        return pak;
-    }
-
-    private static Dictionary<string, string> ReadPakFiles(string pak)
-    {
-        using var fs = File.OpenRead(pak);
-        var header = ParaTool.Core.PakReader.ReadHeader(fs);
-        return ParaTool.Core.PakReader.ReadFileList(fs, header).ToDictionary(
-            e => e.Path,
-            e => System.Text.Encoding.UTF8.GetString(ParaTool.Core.PakReader.ExtractFileData(fs, e)));
-    }
-
-    private static void WithTempRoot(Action<string> body)
-    {
-        var root = Path.Combine(Path.GetTempPath(), "paratool-submod-" + Guid.NewGuid().ToString("N"));
-        try { body(root); }
-        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+        Assert.Null(AmpPatcher.SelectPatchTarget([Mod("RegularMod", isSubmod: false)]));
     }
 
     [Fact]
-    public void SubmodPak_RestatedLootTable_GetsTheSameEdits()
+    public void PatchTarget_WithSubmod_IsTheSubmod()
     {
-        // AMP Plus restates AMP_Para_14 (Aquatic) and loads after AMP, so removing an item only
-        // from AMP's copy left it in the chest the game actually rolls.
-        WithTempRoot(root =>
-        {
-            var pak = BuildSubmodPak(root, RestatedParagonTable);
+        var target = AmpPatcher.SelectPatchTarget([Mod("RegularMod", isSubmod: false), Submod("AMP_Plus")]);
 
-            var (patched, dropped) = AmpPatcher.PatchSubmodPak(pak, "",
-                [AmpItem("AMP_Kept", enabled: true), AmpItem("AMP_Unchecked", enabled: false)]);
-
-            Assert.True(patched);
-            Assert.False(dropped);
-            var files = ReadPakFiles(pak);
-            var tt = files.Single(f => f.Key.EndsWith("TreasureTable.txt")).Value;
-            Assert.Contains("I_AMP_Kept", tt);
-            Assert.DoesNotContain("I_AMP_Unchecked", tt);
-            Assert.Contains(files.Keys, k => k.EndsWith("ZZZ_ParaTool_Overrides.txt"));
-        });
+        Assert.Equal("AMP_Plus", target?.Name);
     }
 
     [Fact]
-    public void SubmodPak_NothingToChange_IsNotPatched()
+    public void PatchTarget_SubmodThatDependsOnAnother_LoadsLastAndWins()
     {
-        WithTempRoot(root =>
-        {
-            var pak = BuildSubmodPak(root, RestatedParagonTable);
+        // Name order alone would pick AMP_Plus; the dependency says AAA_Patch loads after it.
+        var target = AmpPatcher.SelectPatchTarget([Submod("AMP_Plus"), Submod("AAA_Patch", "AMP_Plus")]);
 
-            var (patched, dropped) = AmpPatcher.PatchSubmodPak(pak, "",
-                [AmpItem("AMP_Kept", enabled: true), AmpItem("AMP_Unchecked", enabled: true)]);
-
-            Assert.False(patched);
-            Assert.False(dropped);
-        });
+        Assert.Equal("AAA_Patch", target?.Name);
     }
 
     [Fact]
-    public void SubmodPak_OverridesWithoutStatFiles_AreReportedDropped()
+    public void PatchTarget_UnrelatedSubmods_PickDoesNotDependOnScanOrder()
     {
-        WithTempRoot(root =>
-        {
-            var pak = BuildSubmodPak(root, RestatedParagonTable);
+        var a = Submod("AMP_Plus");
+        var b = Submod("zAMP_DND24_Patch");
 
-            var (patched, dropped) = AmpPatcher.PatchSubmodPak(pak,
-                "new entry \"AMP_Kept\"\ntype \"Armor\"\nusing \"AMP_Kept\"\n",
-                [AmpItem("AMP_Kept", enabled: true)]);
-
-            Assert.False(patched);
-            Assert.True(dropped);
-        });
+        Assert.Equal(AmpPatcher.SelectPatchTarget([a, b])?.Name, AmpPatcher.SelectPatchTarget([b, a])?.Name);
     }
 
     private static int CountOccurrences(string haystack, string needle)

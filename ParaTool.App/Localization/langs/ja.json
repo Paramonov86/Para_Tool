@@ -26,7 +26,8 @@
   "PatchingInProgress": "パッチ適用中...",
   "PatchSuccess": "成功！",
   "PatchSuccessMessage": "パッチ済みアイテム数：{0}",
-  "PatchSubmodsMessage": "パッチ適用した AMP サブMOD: {0}",
+  "PatchTargetMessage": "パッチ適用先: {0}",
+  "PatchTargetNotice": "AMPではなく{0}にパッチを適用します。ゲーム内で{0}が有効になっていることを確認してください。",
   "PatchError": "エラー：",
   "Slot.Clothes": "衣服",
   "Slot.Armor": "鎧",
@@ -702,5 +703,14 @@
   "JrnAddPassive": "パッシブを追加",
   "JrnRemovePassive": "パッシブを削除",
   "JrnRevert": "バージョンを復元",
-  "JrnOpened": "開いた"
+  "JrnOpened": "開いた",
+  "condparam.entity": "対象存在",
+  "condparam.source": "発動者",
+  "condparam.target": "対象",
+  "condparam.rangedSlot": "遠隔スロット",
+  "condparam.offHand": "オフハンド",
+  "condparam.mainHand": "メインハンド",
+  "condparam.checkRanged": "遠隔",
+  "condparam.checkBothWeaponSets": "両方の武器セット",
+  "condparam.weaponFlags": "武器特性"
 }

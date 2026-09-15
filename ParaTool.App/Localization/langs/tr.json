@@ -26,7 +26,8 @@
   "PatchingInProgress": "Yama uygulanıyor...",
   "PatchSuccess": "Başarılı!",
   "PatchSuccessMessage": "Yamalanan eşya: {0}",
-  "PatchSubmodsMessage": "Yamalanan AMP alt modu: {0}",
+  "PatchTargetMessage": "Yamalandı: {0}",
+  "PatchTargetNotice": "AMP yerine {0} yamalanacak. {0} modunun oyunda etkin olduğundan emin olun.",
   "PatchError": "Hata:",
   "Slot.Clothes": "Giysi",
   "Slot.Armor": "Zırh",
@@ -702,5 +703,14 @@
   "JrnAddPassive": "Pasif eklendi",
   "JrnRemovePassive": "Pasif kaldırıldı",
   "JrnRevert": "Sürümü geri al",
-  "JrnOpened": "Açıldı"
+  "JrnOpened": "Açıldı",
+  "condparam.entity": "varlık",
+  "condparam.source": "kaynak",
+  "condparam.target": "hedef",
+  "condparam.rangedSlot": "menzilli yuva",
+  "condparam.offHand": "yan el",
+  "condparam.mainHand": "ana el",
+  "condparam.checkRanged": "menzilli",
+  "condparam.checkBothWeaponSets": "iki silah seti",
+  "condparam.weaponFlags": "silah özellikleri"
 }

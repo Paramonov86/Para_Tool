@@ -194,7 +194,16 @@ public partial class Loc : ObservableObject
     public string PatchErrorLabel => this["PatchError"];
 
     public string PatchSuccessMessage(int count) => string.Format(this["PatchSuccessMessage"], count);
-    public string PatchSubmodsMessage(int count) => string.Format(this["PatchSubmodsMessage"], count);
+    public string PatchTargetMessage(string name) => string.Format(this["PatchTargetMessage"], name);
+    public string PatchTargetNotice(string name) => string.Format(this["PatchTargetNotice"], name);
+
+    /// <summary>Localized name of a condition parameter; the raw name when no language has one.</summary>
+    public string ConditionParamLabel(string paramName)
+    {
+        var key = $"condparam.{paramName}";
+        var label = this[key];
+        return label == key ? paramName : label;
+    }
 
     public string RestoreAmpTooltip => this["RestoreAmpTooltip"];
     public string RestoringAmp => this["RestoringAmp"];

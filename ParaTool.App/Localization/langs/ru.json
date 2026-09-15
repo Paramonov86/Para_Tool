@@ -26,7 +26,8 @@
   "PatchingInProgress": "Идёт патч...",
   "PatchSuccess": "Успешно!",
   "PatchSuccessMessage": "Пропатчено предметов: {0}",
-  "PatchSubmodsMessage": "Пропатчено сабмодов AMP: {0}",
+  "PatchTargetMessage": "Пропатчен: {0}",
+  "PatchTargetNotice": "Будет пропатчен {0}, а не AMP. Убедитесь, что {0} включён в игре.",
   "PatchError": "Ошибка:",
   "Slot.Clothes": "Одежда",
   "Slot.Armor": "Броня",
@@ -702,5 +703,14 @@
   "JrnAddPassive": "Добавлена пассивка",
   "JrnRemovePassive": "Удалена пассивка",
   "JrnRevert": "Откат версии",
-  "JrnOpened": "Открыто"
+  "JrnOpened": "Открыто",
+  "condparam.entity": "существо",
+  "condparam.source": "источник",
+  "condparam.target": "цель",
+  "condparam.rangedSlot": "дальний слот",
+  "condparam.offHand": "вторая рука",
+  "condparam.mainHand": "основная рука",
+  "condparam.checkRanged": "дальний бой",
+  "condparam.checkBothWeaponSets": "оба набора оружия",
+  "condparam.weaponFlags": "свойства оружия"
 }

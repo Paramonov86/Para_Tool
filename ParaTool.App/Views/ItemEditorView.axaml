@@ -463,10 +463,26 @@
         <!-- Bottom: Patch button / Progress + Discord -->
         <Grid Grid.Row="2" Margin="0,12,0,0" ColumnDefinitions="*,Auto">
             <Panel Grid.Column="0" HorizontalAlignment="Right">
+                <StackPanel Orientation="Vertical" Spacing="8" HorizontalAlignment="Right"
+                            IsVisible="{Binding ShowPatchButton}">
+                <!-- Which pak gets patched, when it is a submod rather than AMP -->
+                <Border IsVisible="{Binding PatchTargetNotice, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Background="#1AF1C40F"
+                        BorderBrush="#F1C40F"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14,8"
+                        MaxWidth="460"
+                        HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding PatchTargetNotice}"
+                               Foreground="#F1C40F"
+                               FontSize="{DynamicResource FontSize13}"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+                </Border>
                 <!-- Patch + Restore row -->
                 <StackPanel Orientation="Horizontal" Spacing="10"
-                            HorizontalAlignment="Right"
-                            IsVisible="{Binding ShowPatchButton}">
+                            HorizontalAlignment="Right">
                     <!-- Restore AMP button (undo icon) -->
                     <Button IsVisible="{Binding ShowRestoreButton}"
                             Command="{Binding RestoreAmpCommand}"
@@ -492,6 +508,7 @@
                             FontSize="{DynamicResource FontSize18}" FontWeight="Bold"
                             Padding="40,12"
                             CornerRadius="8" />
+                </StackPanel>
                 </StackPanel>
 
                 <!-- Progress bar -->

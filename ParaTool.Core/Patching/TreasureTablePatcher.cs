@@ -140,6 +140,68 @@ public static class TreasureTablePatcher
     }
 
     /// <summary>
+    /// Patches the TreasureTable of the pak being written, which loads after every pak in
+    /// <paramref name="earlierTexts"/> (AMP first, then other submods in load order). A same-name
+    /// table from a later pak replaces the earlier one outright, so each table the target does
+    /// not define is taken from its last earlier definer, patched, and appended to the target
+    /// only when the patch changed it.
+    /// </summary>
+    public static string PatchIntoTarget(
+        IReadOnlyList<string> earlierTexts, string targetText, IReadOnlyList<ItemEntry> items)
+    {
+        var patchedTarget = Patch(targetText, items);
+        var targetNames = SplitTables(targetText).Select(t => t.name).ToHashSet(StringComparer.Ordinal);
+
+        var inherited = new Dictionary<string, string>(StringComparer.Ordinal);
+        var order = new List<string>();
+        foreach (var text in earlierTexts)
+        {
+            foreach (var (name, block) in SplitTables(text))
+            {
+                if (targetNames.Contains(name)) continue;
+                if (!inherited.ContainsKey(name)) order.Add(name);
+                inherited[name] = block;
+            }
+        }
+        if (order.Count == 0) return patchedTarget;
+
+        // One Patch pass over all inherited tables: the patcher never adds or drops a table, so
+        // the patched blocks line up with the originals one to one.
+        var originals = order.Select(n => inherited[n]).ToList();
+        var patchedBlocks = SplitTables(Patch(string.Join('\n', originals), items));
+
+        var sb = new System.Text.StringBuilder(patchedTarget);
+        for (int i = 0; i < patchedBlocks.Count; i++)
+        {
+            if (patchedBlocks[i].block == originals[i]) continue;
+            if (sb.Length > 0 && sb[^1] != '\n') sb.Append('\n');
+            sb.Append(patchedBlocks[i].block.TrimEnd('\n', '\r')).Append('\n');
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Splits a TreasureTable file into (name, text) per table; text before the first table is dropped.</summary>
+    internal static List<(string name, string block)> SplitTables(string text)
+    {
+        var lines = text.Split('\n');
+        var result = new List<(string name, string block)>();
+        int start = -1;
+        string name = "";
+        for (int i = 0; i <= lines.Length; i++)
+        {
+            var isStart = i < lines.Length && lines[i].TrimStart().StartsWith("new treasuretable \"");
+            if (i < lines.Length && !isStart) continue;
+            if (start >= 0) result.Add((name, string.Join('\n', lines, start, i - start)));
+            if (isStart)
+            {
+                start = i;
+                name = ExtractQuoted(lines[i].TrimStart());
+            }
+        }
+        return result;
+    }
+
+    /// <summary>
     /// Removes modified/disabled items from the TT lines.
     /// For paragon tables, also removes the preceding "new subtable" line.
     /// </summary>

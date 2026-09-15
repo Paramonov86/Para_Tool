@@ -26,7 +26,8 @@
   "PatchingInProgress": "패치 중...",
   "PatchSuccess": "성공!",
   "PatchSuccessMessage": "패치된 아이템 수: {0}",
-  "PatchSubmodsMessage": "패치된 AMP 서브모드 수: {0}",
+  "PatchTargetMessage": "패치 대상: {0}",
+  "PatchTargetNotice": "AMP 대신 {0}에 패치가 적용됩니다. 게임에서 {0}이(가) 활성화되어 있는지 확인하세요.",
   "PatchError": "오류:",
   "Slot.Clothes": "의복",
   "Slot.Armor": "갑옷",
@@ -700,5 +701,14 @@
   "JrnAddPassive": "패시브 추가",
   "JrnRemovePassive": "패시브 제거",
   "JrnRevert": "버전 되돌리기",
-  "JrnOpened": "열기"
+  "JrnOpened": "열기",
+  "condparam.entity": "개체",
+  "condparam.source": "시전자",
+  "condparam.target": "대상",
+  "condparam.rangedSlot": "원거리 슬롯",
+  "condparam.offHand": "보조 손",
+  "condparam.mainHand": "주 손",
+  "condparam.checkRanged": "원거리",
+  "condparam.checkBothWeaponSets": "두 무기 세트 모두",
+  "condparam.weaponFlags": "무기 속성"
 }
