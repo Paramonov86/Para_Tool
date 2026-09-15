@@ -658,6 +658,8 @@ internal static class DiagMode
                 var inherited = art.Spells[^1];
                 Console.WriteLine($"  inherited text: en='{inherited.DisplayName.GetValueOrDefault("en")}' ru='{inherited.DisplayName.GetValueOrDefault("ru")}' " +
                                   $"desc en={inherited.Description.GetValueOrDefault("en")?.Length ?? 0} chars, source handle={inherited.SourceDisplayNameHandle}");
+                var desc = inherited.Description.GetValueOrDefault("en") ?? "";
+                Console.WriteLine($"  inherited desc: raw markup left={desc.Contains("LSTag") || desc.Contains("&lt;")} '{desc}'");
             }
 
             var view = new Views.ConstructorView { DataContext = cvm };

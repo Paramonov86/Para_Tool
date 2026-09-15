@@ -447,7 +447,7 @@ public partial class ArtifactItemVM : ObservableObject
                 if (string.IsNullOrEmpty(passive.DisplayName.GetValueOrDefault(lang)))
                 {
                     var vn = Core.Services.VanillaLocaService.GetDisplayName(passiveName, lang);
-                    if (vn != null) passive.DisplayName[lang] = vn;
+                    if (vn != null) passive.DisplayName[lang] = BbCode.FromBg3Xml(vn);
                 }
             }
 
@@ -465,7 +465,7 @@ public partial class ArtifactItemVM : ObservableObject
                 if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(lang)))
                 {
                     var vd = Core.Services.VanillaLocaService.GetDescription(passiveName, lang);
-                    if (vd != null) passive.Description[lang] = vd;
+                    if (vd != null) passive.Description[lang] = BbCode.FromBg3Xml(vd);
                 }
             }
         }
@@ -584,7 +584,8 @@ public partial class ArtifactItemVM : ObservableObject
             var found = isDescription
                 ? Core.Services.VanillaLocaService.GetDescription(name, lang)
                 : Core.Services.VanillaLocaService.GetDisplayName(name, lang);
-            if (!string.IsNullOrEmpty(found)) return found;
+            // The embedded vanilla loca keeps the game's escaped markup (&lt;LSTag …&gt;), same as a handle's text.
+            if (!string.IsNullOrEmpty(found)) return BbCode.FromBg3Xml(found);
         }
         return "";
     }
