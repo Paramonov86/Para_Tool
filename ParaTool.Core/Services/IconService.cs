@@ -150,7 +150,7 @@ public sealed class IconService
     {
         if (_pakEntries.TryGetValue(pakPath, out var cached)) return cached;
 
-        using var fs = File.OpenRead(pakPath);
+        using var fs = File.OpenRead(PakSource.Resolve(pakPath));
         var header = PakReader.ReadHeader(fs);
         var entries = PakReader.ReadFileList(fs, header);
         _pakEntries[pakPath] = entries;
@@ -185,7 +185,7 @@ public sealed class IconService
 
                 if (entry.Path != null)
                 {
-                    using var fs = File.OpenRead(pakPath);
+                    using var fs = File.OpenRead(PakSource.Resolve(pakPath));
                     var data = PakReader.ExtractFileData(fs, entry);
                     if (data.Length > 0) return data;
                 }

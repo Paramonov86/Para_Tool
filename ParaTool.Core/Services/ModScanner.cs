@@ -213,7 +213,7 @@ public sealed class ModScanner
     {
         try
         {
-            using var fs = File.OpenRead(ampPakPath);
+            using var fs = File.OpenRead(PakSource.Resolve(ampPakPath));
             var header = PakReader.ReadHeader(fs);
             var entries = PakReader.ReadFileList(fs, header);
 
@@ -315,7 +315,7 @@ public sealed class ModScanner
     {
         try
         {
-            using var fs = File.OpenRead(ampPakPath);
+            using var fs = File.OpenRead(PakSource.Resolve(ampPakPath));
             var header = PakReader.ReadHeader(fs);
             var entries = PakReader.ReadFileList(fs, header);
 
@@ -583,7 +583,7 @@ public sealed class ModScanner
 
         try
         {
-            using var fs = File.OpenRead(pakPath);
+            using var fs = File.OpenRead(PakSource.Resolve(pakPath));
             var header = PakReader.ReadHeader(fs);
             var entries = PakReader.ReadFileList(fs, header);
 
@@ -960,7 +960,7 @@ public sealed class ModScanner
         // Add AMP stats entries (they have RootTemplate UUIDs and using chains)
         try
         {
-            using var ampFs = File.OpenRead(ampPakPath);
+            using var ampFs = File.OpenRead(PakSource.Resolve(ampPakPath));
             var ampHeader = PakReader.ReadHeader(ampFs);
             var ampEntries = PakReader.ReadFileList(ampFs, ampHeader);
             foreach (var sf in ampEntries.Where(e =>
@@ -981,7 +981,7 @@ public sealed class ModScanner
         {
             try
             {
-                using var fs = File.OpenRead(mod.PakPath);
+                using var fs = File.OpenRead(PakSource.Resolve(mod.PakPath));
                 var header = PakReader.ReadHeader(fs);
                 var entries = PakReader.ReadFileList(fs, header);
                 foreach (var sf in entries.Where(e =>
@@ -1022,7 +1022,7 @@ public sealed class ModScanner
         {
             try
             {
-                using var fs = File.OpenRead(pakPath);
+                using var fs = File.OpenRead(PakSource.Resolve(pakPath));
                 var header = PakReader.ReadHeader(fs);
                 var entries = PakReader.ReadFileList(fs, header);
                 var rtFiles = entries.Where(e =>
@@ -1154,7 +1154,7 @@ public sealed class ModScanner
                 // Collect mod icons
                 try
                 {
-                    using var mfs = File.OpenRead(mod.PakPath);
+                    using var mfs = File.OpenRead(PakSource.Resolve(mod.PakPath));
                     var mHeader = PakReader.ReadHeader(mfs);
                     var mEntries = PakReader.ReadFileList(mfs, mHeader);
                     var mUuids = new HashSet<string>(modUuidMap.Keys, StringComparer.OrdinalIgnoreCase);
@@ -1198,7 +1198,7 @@ public sealed class ModScanner
 
         try
         {
-            using var hfs = File.OpenRead(ampPakPath);
+            using var hfs = File.OpenRead(PakSource.Resolve(ampPakPath));
             var hHeader = PakReader.ReadHeader(hfs);
             var hEntries = PakReader.ReadFileList(hfs, hHeader);
             var uuidsSet = new HashSet<string>(uuidToStatIds.Keys, StringComparer.OrdinalIgnoreCase);
@@ -1530,7 +1530,7 @@ public sealed class ModScanner
                 if (string.IsNullOrEmpty(mod.PakPath) || unnamed.Count == 0) continue;
                 try
                 {
-                    using var mfs = File.OpenRead(mod.PakPath);
+                    using var mfs = File.OpenRead(PakSource.Resolve(mod.PakPath));
                     var mHeader = PakReader.ReadHeader(mfs);
                     var mEntries = PakReader.ReadFileList(mfs, mHeader);
                     var rtFiles = mEntries.Where(e =>

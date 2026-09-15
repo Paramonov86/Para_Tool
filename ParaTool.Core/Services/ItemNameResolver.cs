@@ -45,7 +45,7 @@ public sealed class ItemNameResolver
 
         try
         {
-            using var fs = File.OpenRead(pakPath);
+            using var fs = File.OpenRead(PakSource.Resolve(pakPath));
             var header = PakReader.ReadHeader(fs);
             var entries = PakReader.ReadFileList(fs, header);
 
@@ -79,7 +79,7 @@ public sealed class ItemNameResolver
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            using var fs = File.OpenRead(pakPath);
+            using var fs = File.OpenRead(PakSource.Resolve(pakPath));
             var header = PakReader.ReadHeader(fs);
             var entries = PakReader.ReadFileList(fs, header);
 
@@ -155,7 +155,7 @@ public sealed class ItemNameResolver
 
         try
         {
-            using var fs = File.OpenRead(pakPath);
+            using var fs = File.OpenRead(PakSource.Resolve(pakPath));
             var header = PakReader.ReadHeader(fs);
             var entries = PakReader.ReadFileList(fs, header);
 
@@ -195,7 +195,7 @@ public sealed class ItemNameResolver
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            using var fs = File.OpenRead(pakPath);
+            using var fs = File.OpenRead(PakSource.Resolve(pakPath));
             var header = PakReader.ReadHeader(fs);
             var entries = PakReader.ReadFileList(fs, header);
 
