@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "Une fois par long repos (par objet)",
   "cooldown.OncePerShortRestPerItem": "Une fois par repos court (par objet)",
   "enum.OncePerRest": "1/Repos long",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "Désactivé (par défaut) : la carte est un nouveau sort de cet objet, compilé en <ID de l'objet>_Spell_N qui hérite de l'original ; le sort original reste intact partout ailleurs.\nActivé : la carte remplace le sort original lui-même (même nom), donc la modification s'applique à tous les objets, classes et personnages qui ont ce sort. Le texte de l'original reste traduit dans toutes les langues tant que vous ne modifiez pas le nom ou la description."
 }

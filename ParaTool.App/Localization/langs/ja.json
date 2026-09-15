@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "大休憩ごとに1回（アイテムごと）",
   "cooldown.OncePerShortRestPerItem": "小休憩ごとに1回（アイテムごと）",
   "enum.OncePerRest": "1/大休憩",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "オフ（既定）：カードはこのアイテムの新しい呪文になり、元の呪文を継承する <アイテムID>_Spell_N としてコンパイルされます。元の呪文は他の場所では変更されません。\nオン：カードは元の呪文そのもの（同じ名前）を上書きするため、変更はこの呪文を持つすべてのアイテム、クラス、キャラクターに適用されます。名前か説明を編集するまで、元のテキストは全言語で翻訳されたままです。"
 }

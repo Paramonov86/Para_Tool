@@ -780,6 +780,7 @@
                                                         <!-- Copy (default) or override of the original -->
                                                         <CheckBox IsChecked="{Binding EditOriginal}" Foreground="{DynamicResource WarningBrush}"
                                                                   Content="{Binding LblEditOriginal, Source={x:Static loc:Loc.Instance}}"
+                                                                  ToolTip.Tip="{Binding TipEditOriginal, Source={x:Static loc:Loc.Instance}}"
                                                                   FontSize="{DynamicResource FontSize11}" />
                                                         <TextBlock IsVisible="{Binding EditOriginal}" TextWrapping="Wrap"
                                                                    Text="{Binding WarnEditOriginal, Source={x:Static loc:Loc.Instance}}"

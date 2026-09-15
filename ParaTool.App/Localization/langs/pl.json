@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "Raz na długi odpoczynek (na przedmiot)",
   "cooldown.OncePerShortRestPerItem": "Raz na krótki odpoczynek (na przedmiot)",
   "enum.OncePerRest": "1/Dł. odpocz.",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "Wył. (domyślnie): karta to nowe zaklęcie tego przedmiotu, kompilowane jako <ID przedmiotu>_Spell_N dziedziczące po oryginale; oryginalne zaklęcie pozostaje wszędzie nietknięte.\nWł.: karta nadpisuje samo oryginalne zaklęcie (ta sama nazwa), więc zmiana dotyczy wszystkich przedmiotów, klas i postaci, które mają to zaklęcie. Tekst oryginału pozostaje przetłumaczony we wszystkich językach, dopóki nie zmienisz nazwy lub opisu."
 }

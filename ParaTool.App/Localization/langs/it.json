@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "Una volta per riposo lungo (per oggetto)",
   "cooldown.OncePerShortRestPerItem": "Una volta per riposo breve (per oggetto)",
   "enum.OncePerRest": "1/Riposo lungo",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "Disattivato (predefinito): la scheda è un nuovo incantesimo di questo oggetto, compilato come <ID oggetto>_Spell_N che eredita dall'originale; l'incantesimo originale resta intatto ovunque.\nAttivato: la scheda sovrascrive l'incantesimo originale stesso (stesso nome), quindi la modifica vale per tutti gli oggetti, le classi e i personaggi che hanno quell'incantesimo. Il testo dell'originale resta tradotto in tutte le lingue finché non modifichi nome o descrizione."
 }

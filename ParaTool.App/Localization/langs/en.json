@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "Once per Long Rest (per item)",
   "cooldown.OncePerShortRestPerItem": "Once per Short Rest (per item)",
   "enum.OncePerRest": "1/Long Rest",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "Off (default): the card is a new spell of this item, compiled as <ItemId>_Spell_N that inherits the original; the original spell stays untouched everywhere else.\nOn: the card overrides the original spell itself (same name), so the change applies to every item, class and character that has this spell. The original's text stays translated in all languages until you edit the name or description."
 }

@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "Einmal pro langer Rast (pro Gegenstand)",
   "cooldown.OncePerShortRestPerItem": "Einmal pro kurzer Rast (pro Gegenstand)",
   "enum.OncePerRest": "1/Lange Rast",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "Aus (Standard): Die Karte ist ein neuer Zauber dieses Gegenstands, kompiliert als <Gegenstands-ID>_Spell_N, der den Originalzauber erbt; das Original bleibt überall sonst unverändert.\nAn: Die Karte überschreibt den Originalzauber selbst (gleicher Name), die Änderung gilt also für alle Gegenstände, Klassen und Charaktere mit diesem Zauber. Der Text des Originals bleibt in allen Sprachen übersetzt, bis du Name oder Beschreibung änderst."
 }

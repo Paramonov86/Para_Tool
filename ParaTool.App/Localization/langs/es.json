@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "Una vez por descanso largo (por objeto)",
   "cooldown.OncePerShortRestPerItem": "Una vez por descanso corto (por objeto)",
   "enum.OncePerRest": "1/Desc. largo",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "Desactivado (por defecto): la carta es un hechizo nuevo de este objeto, compilado como <ID del objeto>_Spell_N que hereda del original; el hechizo original queda intacto en todo lo demás.\nActivado: la carta sobrescribe el propio hechizo original (mismo nombre), así que el cambio se aplica a todos los objetos, clases y personajes que tienen ese hechizo. El texto del original sigue traducido en todos los idiomas hasta que edites el nombre o la descripción."
 }

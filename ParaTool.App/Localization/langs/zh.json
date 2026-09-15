@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "每次长休一次（每件物品）",
   "cooldown.OncePerShortRestPerItem": "每次短休一次（每件物品）",
   "enum.OncePerRest": "1/长休",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "关闭（默认）：卡片是该物品的新法术，编译为继承原法术的 <物品ID>_Spell_N；原法术在其他地方保持不变。\n开启：卡片直接覆盖原法术本身（同名），因此修改会作用于所有拥有该法术的物品、职业和角色。在你编辑名称或描述之前，原法术的文本在所有语言中保持已翻译状态。"
 }

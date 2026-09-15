@@ -761,5 +761,6 @@
   "cooldown.OncePerRestPerItem": "Uzun mola başına bir kez (eşya başına)",
   "cooldown.OncePerShortRestPerItem": "Kısa mola başına bir kez (eşya başına)",
   "enum.OncePerRest": "1/Uzun Din.",
-  "enum.OncePerRestPerItem": "Per Rest per Item"
+  "enum.OncePerRestPerItem": "Per Rest per Item",
+  "TipEditOriginal": "Kapalı (varsayılan): kart bu eşyanın yeni bir büyüsüdür, orijinalden türeyen <Eşya ID>_Spell_N olarak derlenir; orijinal büyü başka her yerde olduğu gibi kalır.\nAçık: kart orijinal büyünün kendisini değiştirir (aynı ad), bu yüzden değişiklik bu büyüye sahip tüm eşyalara, sınıflara ve karakterlere uygulanır. Adı veya açıklamayı düzenleyene kadar orijinalin metni tüm dillerde çevrilmiş kalır."
 }
