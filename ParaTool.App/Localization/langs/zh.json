@@ -786,5 +786,9 @@
   "resource.WrithingTidePoint": "扭动潮汐",
   "resource.ArcaneRecoveryPoint": "奥术回想",
   "TipAddCost": "添加法术消耗的资源",
-  "TipSpellSlotsGroup": "消耗该环阶的一个法术位（普通法术位或邪术师契约法术位），与游戏内所有法术使用的法术位组相同。"
+  "TipSpellSlotsGroup": "消耗该环阶的一个法术位（普通法术位或邪术师契约法术位），与游戏内所有法术使用的法术位组相同。",
+  "LblSpellWorkshop": "法术工坊",
+  "TipSpellWorkshop": "在这里基于现有法术创建法术：本物品的新法术，或对原法术的重新平衡。它们保存在物品的 .art 文件中。新法术在授予之前不起作用：勾选“装备时授予”、通过被动授予，或加入授予法术列表或 UnlockSpell 加值。编辑过的原法术无需授予：它本身就会在游戏中重新平衡该法术。",
+  "LblGrantOnEquip": "装备时授予",
+  "TipGrantOnEquip": "将法术加入该物品的授予法术：装备该物品者即获得此法术。"
 }

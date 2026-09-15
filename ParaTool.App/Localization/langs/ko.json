@@ -784,5 +784,9 @@
   "resource.WrithingTidePoint": "몸부림치는 파도",
   "resource.ArcaneRecoveryPoint": "비전 회복",
   "TipAddCost": "주문이 소모하는 자원 추가",
-  "TipSpellSlotsGroup": "이 레벨의 주문 슬롯(일반 또는 워락 계약 슬롯)을 소모합니다. 게임 내 모든 주문이 사용하는 것과 같은 슬롯 그룹입니다."
+  "TipSpellSlotsGroup": "이 레벨의 주문 슬롯(일반 또는 워락 계약 슬롯)을 소모합니다. 게임 내 모든 주문이 사용하는 것과 같은 슬롯 그룹입니다.",
+  "LblSpellWorkshop": "주문 공방",
+  "TipSpellWorkshop": "기존 주문을 바탕으로 주문을 만듭니다: 이 아이템의 새 주문이나 원본 주문의 리밸런스입니다. 아이템의 .art 파일에 저장됩니다. 새 주문은 부여하기 전까지 아무 효과가 없습니다. \"장착 시 부여\"를 체크하거나, 패시브로 부여하거나, 부여 주문 또는 UnlockSpell 부스트에 추가하세요. 원본을 수정한 주문은 부여할 필요가 없습니다. 그 자체로 게임 속 주문을 리밸런스합니다.",
+  "LblGrantOnEquip": "장착 시 부여",
+  "TipGrantOnEquip": "주문을 이 아이템의 부여 주문에 추가합니다. 아이템을 장착한 대상이 주문을 얻습니다."
 }

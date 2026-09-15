@@ -786,5 +786,9 @@
   "resource.WrithingTidePoint": "Marée grouillante",
   "resource.ArcaneRecoveryPoint": "Restauration arcanique",
   "TipAddCost": "Ajouter une ressource dépensée par le sort",
-  "TipSpellSlotsGroup": "Dépense un emplacement de sort de ce niveau, normal ou de pacte d'occultiste : le même groupe d'emplacements que tous les sorts du jeu."
+  "TipSpellSlotsGroup": "Dépense un emplacement de sort de ce niveau, normal ou de pacte d'occultiste : le même groupe d'emplacements que tous les sorts du jeu.",
+  "LblSpellWorkshop": "Atelier de sorts",
+  "TipSpellWorkshop": "Créez ici des sorts à partir de sorts existants : un nouveau sort de cet objet ou un rééquilibrage de l'original. Ils sont enregistrés dans le fichier .art de l'objet. Un nouveau sort ne fait rien tant que vous ne l'accordez pas : cochez « Accordé à l'équipement », accordez-le via un passif ou ajoutez-le aux sorts accordés ou à un boost UnlockSpell. Un original modifié n'a pas besoin d'être accordé : il rééquilibre le sort dans le jeu à lui seul.",
+  "LblGrantOnEquip": "Accordé à l'équipement",
+  "TipGrantOnEquip": "Ajoute le sort aux sorts accordés de l'objet : quiconque l'équipe l'obtient."
 }

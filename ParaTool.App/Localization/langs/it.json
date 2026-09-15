@@ -786,5 +786,9 @@
   "resource.WrithingTidePoint": "Marea contorta",
   "resource.ArcaneRecoveryPoint": "Recupero arcano",
   "TipAddCost": "Aggiungi una risorsa spesa dall'incantesimo",
-  "TipSpellSlotsGroup": "Consuma uno slot incantesimo di questo livello, normale o del patto del warlock: lo stesso gruppo di slot usato da tutti gli incantesimi del gioco."
+  "TipSpellSlotsGroup": "Consuma uno slot incantesimo di questo livello, normale o del patto del warlock: lo stesso gruppo di slot usato da tutti gli incantesimi del gioco.",
+  "LblSpellWorkshop": "Laboratorio degli incantesimi",
+  "TipSpellWorkshop": "Qui si creano incantesimi da quelli esistenti: un nuovo incantesimo di questo oggetto o un ribilanciamento dell'originale. Vengono salvati nel file .art dell'oggetto. Un nuovo incantesimo non fa nulla finché non lo concedi: spunta «Concesso all'equipaggiamento», concedilo tramite un passivo o aggiungilo agli incantesimi concessi o a un boost UnlockSpell. Un originale modificato non va concesso: ribilancia l'incantesimo nel gioco da solo.",
+  "LblGrantOnEquip": "Concesso all'equipaggiamento",
+  "TipGrantOnEquip": "Aggiunge l'incantesimo agli incantesimi concessi dell'oggetto: chi lo equipaggia lo ottiene."
 }

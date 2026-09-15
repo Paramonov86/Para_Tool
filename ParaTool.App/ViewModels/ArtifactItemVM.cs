@@ -371,6 +371,8 @@ public partial class ArtifactItemVM : ObservableObject
             Artifact.SpellsOnEquip = value ?? "";
             MarkDirty();
             OnPropertyChanged();
+            // Cards show "Granted on equip" from this list, whichever section changed it.
+            foreach (var card in SpellVMs) card.NotifyGrantChanged();
         }
     }
 
@@ -562,12 +564,8 @@ public partial class ArtifactItemVM : ObservableObject
         Artifact.Spells.Add(spell);
         SpellVMs.Add(new SpellVM(spell, this));
 
-        // A card is granted on equip by default. Going through the setter also clears a
-        // tombstone left by an earlier removal of the same spell.
-        var granted = SplitSemicolon(Artifact.SpellsOnEquip);
-        if (!granted.Contains(spellName))
-            EditSpellsOnEquip = string.IsNullOrEmpty(Artifact.SpellsOnEquip) ? spellName : Artifact.SpellsOnEquip + ";" + spellName;
-
+        // The workshop only creates the spell. The player grants it (on equip, through a passive, an
+        // UnlockSpell boost) — or leaves it alone as a rebalance of the original.
         RecordEdit();
     }
 
@@ -638,16 +636,49 @@ public partial class ArtifactItemVM : ObservableObject
         }
         else
         {
-            foreach (var p in GrantPassivesFor(spell))
-            {
-                if (PassiveVMs.FirstOrDefault(v => v.Passive == p) is { } pvm) RemovePassive(pvm);
-                else Artifact.Passives.Remove(p);
-            }
-            if (!SplitSemicolon(Artifact.SpellsOnEquip).Contains(spell.Name))
-                EditSpellsOnEquip = string.IsNullOrEmpty(Artifact.SpellsOnEquip) ? spell.Name : Artifact.SpellsOnEquip + ";" + spell.Name;
+            RemoveGrantPassives(spell);
         }
         RecordEdit();
         svm.NotifyGrantChanged();
+    }
+
+    /// <summary>Listed in this item's granted spells (by the card's name or the spell it was cloned from).</summary>
+    internal bool IsSpellGrantedOnEquip(SpellDefinition spell) =>
+        SplitSemicolon(Artifact.SpellsOnEquip).Any(n =>
+            n.Equals(spell.Name, StringComparison.OrdinalIgnoreCase)
+            || n.Equals(spell.UsingBase ?? "", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Grants a spell card on equip or takes it off the granted spells. Granting on equip replaces
+    /// a grant through a passive, the same way the passive grant replaces this one.
+    /// </summary>
+    public void SetSpellGrantedOnEquip(SpellVM svm, bool onEquip)
+    {
+        var spell = svm.Spell;
+        var names = new[] { spell.Name, spell.UsingBase ?? "" };
+        if (onEquip)
+        {
+            if (IsSpellGrantedOnEquip(spell)) return;
+            RemoveGrantPassives(spell);
+            EditSpellsOnEquip = string.IsNullOrEmpty(Artifact.SpellsOnEquip) ? spell.Name : Artifact.SpellsOnEquip + ";" + spell.Name;
+        }
+        else
+        {
+            EditSpellsOnEquip = string.Join(";", (Artifact.SpellsOnEquip ?? "")
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(n => !names.Contains(n, StringComparer.OrdinalIgnoreCase)));
+        }
+        RecordEdit();
+        svm.NotifyGrantChanged();
+    }
+
+    private void RemoveGrantPassives(SpellDefinition spell)
+    {
+        foreach (var p in GrantPassivesFor(spell))
+        {
+            if (PassiveVMs.FirstOrDefault(v => v.Passive == p) is { } pvm) RemovePassive(pvm);
+            else Artifact.Passives.Remove(p);
+        }
     }
 
     public void RemoveSpell(SpellVM svm)
@@ -966,6 +997,7 @@ public partial class ArtifactItemVM : ObservableObject
         ["AddExistingSpell"] = "JrnAddSpell",
         ["RemoveSpell"] = "JrnRemoveSpell",
         ["SetSpellGrantedThroughPassive"] = "LblGrantViaPassive",
+        ["SetSpellGrantedOnEquip"] = "LblGrantOnEquip",
         ["EditCreature"] = "BtnEditCreature",
         ["ResetCreature"] = "BtnResetCreature",
         ["EditProperties"] = "LblProperties",
@@ -1294,7 +1326,22 @@ public partial class SpellVM : ObservableObject
         }
     }
 
-    internal void NotifyGrantChanged() => OnPropertyChanged(nameof(GrantThroughPassive));
+    /// <summary>Listed in the item's granted spells, so whoever equips the item gets it.</summary>
+    public bool GrantOnEquip
+    {
+        get => _parent.IsSpellGrantedOnEquip(Spell);
+        set
+        {
+            if (GrantOnEquip == value) return;
+            _parent.SetSpellGrantedOnEquip(this, value);
+        }
+    }
+
+    internal void NotifyGrantChanged()
+    {
+        OnPropertyChanged(nameof(GrantThroughPassive));
+        OnPropertyChanged(nameof(GrantOnEquip));
+    }
 
     public bool EditOriginal
     {

@@ -735,8 +735,11 @@
                                 <TextBlock Text="&#x2630;" Tag="SectionHandle" Cursor="SizeAll" VerticalAlignment="Center"
                                            Foreground="{StaticResource TextMutedBrush}" FontSize="{DynamicResource FontSize11}"
                                            ToolTip.Tip="{Binding TipDragSection, Source={x:Static loc:Loc.Instance}}" />
-                                <TextBlock Text="{Binding LblSpellCards, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LblSpellWorkshop, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentLightBrush}" LetterSpacing="1" VerticalAlignment="Center"
+                                           ToolTip.Tip="{Binding TipSpellWorkshop, Source={x:Static loc:Loc.Instance}}" />
+                                <TextBlock Text="ⓘ" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"
+                                           ToolTip.Tip="{Binding TipSpellWorkshop, Source={x:Static loc:Loc.Instance}}" />
                                 </StackPanel>
                                 <ctrl:SearchPickerChip Name="SpellPickerChip" Margin="0,0,0,4" HorizontalAlignment="Left"
                                     Items="{Binding $parent[UserControl].((vm:ConstructorViewModel)DataContext).AllSpells}"
@@ -785,7 +788,11 @@
                                                         <TextBlock IsVisible="{Binding EditOriginal}" TextWrapping="Wrap"
                                                                    Text="{Binding WarnEditOriginal, Source={x:Static loc:Loc.Instance}}"
                                                                    FontSize="{DynamicResource FontSize10}" Foreground="{DynamicResource WarningBrush}" />
-                                                        <!-- Unlocked on equip (default) or by a passive with a condition -->
+                                                        <!-- Not granted anywhere by default: on equip, or by a passive with a condition -->
+                                                        <CheckBox IsChecked="{Binding GrantOnEquip}" Foreground="{StaticResource AccentLightBrush}"
+                                                                  Content="{Binding LblGrantOnEquip, Source={x:Static loc:Loc.Instance}}"
+                                                                  ToolTip.Tip="{Binding TipGrantOnEquip, Source={x:Static loc:Loc.Instance}}"
+                                                                  FontSize="{DynamicResource FontSize11}" />
                                                         <CheckBox IsChecked="{Binding GrantThroughPassive}" Foreground="{StaticResource AccentLightBrush}"
                                                                   Content="{Binding LblGrantViaPassive, Source={x:Static loc:Loc.Instance}}"
                                                                   ToolTip.Tip="{Binding TipGrantViaPassive, Source={x:Static loc:Loc.Instance}}"

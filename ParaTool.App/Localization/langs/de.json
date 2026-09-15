@@ -786,5 +786,9 @@
   "resource.WrithingTidePoint": "Wogende Flut",
   "resource.ArcaneRecoveryPoint": "Arkane Erholung",
   "TipAddCost": "Eine Ressource hinzufügen, die der Zauber verbraucht",
-  "TipSpellSlotsGroup": "Verbraucht einen Zauberplatz dieses Grades, einen normalen oder einen Paktplatz des Hexenmeisters: dieselbe Platzgruppe wie bei allen Vanilla-Zaubern."
+  "TipSpellSlotsGroup": "Verbraucht einen Zauberplatz dieses Grades, einen normalen oder einen Paktplatz des Hexenmeisters: dieselbe Platzgruppe wie bei allen Vanilla-Zaubern.",
+  "LblSpellWorkshop": "Zauberwerkstatt",
+  "TipSpellWorkshop": "Hier entstehen Zauber aus bestehenden: ein neuer Zauber dieses Gegenstands oder ein Rebalance des Originals. Sie werden in der .art-Datei des Gegenstands gespeichert. Ein neuer Zauber bewirkt nichts, bis du ihn vergibst: „Beim Ausrüsten gewährt“ anhaken, über ein Passiv gewähren oder zu den gewährten Zaubern bzw. einem UnlockSpell-Boost hinzufügen. Ein bearbeitetes Original muss nicht vergeben werden: Es ändert den Zauber im Spiel von selbst.",
+  "LblGrantOnEquip": "Beim Ausrüsten gewährt",
+  "TipGrantOnEquip": "Fügt den Zauber den gewährten Zaubern des Gegenstands hinzu: Wer ihn ausrüstet, erhält den Zauber."
 }

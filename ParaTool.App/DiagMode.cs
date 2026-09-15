@@ -688,7 +688,10 @@ internal static class DiagMode
             Console.WriteLine($"  spells={item.SpellVMs.Count} creatures={item.SpellVMs.Sum(s => s.Creatures.Count)} " +
                               $"creature edited={creature?.IsEdited} HP={creature?.EditVitality} name='{creature?.CreatureName}'");
             Console.WriteLine($"  SpellsOnEquip='{art.SpellsOnEquip}' passives={string.Join(",", art.Passives.Select(p => $"{p.Name}:{p.Boosts}"))}");
-            Console.WriteLine($"  first card grant via passive={item.SpellVMs[0].GrantThroughPassive}");
+            // Adding a card grants nothing; each grant is the player's choice.
+            item.SpellVMs[1].GrantOnEquip = true;
+            Console.WriteLine($"  grants: {string.Join(", ", item.SpellVMs.Select(s => $"{s.Name}[equip={s.GrantOnEquip} passive={s.GrantThroughPassive}]"))} " +
+                              $"SpellsOnEquip='{art.SpellsOnEquip}'");
             Console.WriteLine($"  realized: spell cards={Realized<ViewModels.SpellVM>()} creature rows={Realized<ViewModels.SummonVM>()} " +
                               $"passive cards={Realized<ViewModels.PassiveVM>()} (controls {controls.Count})");
             Console.WriteLine($"  spell name boxes: {string.Join(" | ", controls.OfType<Avalonia.Controls.TextBox>().Where(t => t.DataContext is ViewModels.SpellVM && t.FontWeight == Avalonia.Media.FontWeight.SemiBold).Select(t => t.Text))}");
@@ -761,14 +764,14 @@ internal static class DiagMode
                 foreach (var card in cards)
                 foreach (var v in Descendants(card))
                 {
-                    if (v is not Avalonia.Controls.Control c || !c.IsEffectivelyVisible || c.Bounds.Width <= 0) continue;
-                    if (c is not (Avalonia.Controls.TextBlock or Avalonia.Controls.TextBox or Controls.TumblerChipEditor
-                        or Avalonia.Controls.Button or Controls.SearchPickerChip)) continue;
                     // A chip stretched to its row's height leaves its wrapped params stuck to the top.
                     if (v is Avalonia.Controls.Border { Child: Avalonia.Controls.WrapPanel chipRow } chipBox && chipBox.IsEffectivelyVisible
                         && chipBox.Bounds.Height > chipRow.DesiredSize.Height + chipBox.Padding.Top + chipBox.Padding.Bottom + 4)
                         problems.Add($"stretched chip: '{chipRow.Children.OfType<Avalonia.Controls.TextBlock>().FirstOrDefault()?.Text}' " +
                                      $"box={chipBox.Bounds.Height:0} content={chipRow.DesiredSize.Height:0}");
+                    if (v is not Avalonia.Controls.Control c || !c.IsEffectivelyVisible || c.Bounds.Width <= 0) continue;
+                    if (c is not (Avalonia.Controls.TextBlock or Avalonia.Controls.TextBox or Controls.TumblerChipEditor
+                        or Avalonia.Controls.Button or Controls.SearchPickerChip)) continue;
                     if (Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Avalonia.Controls.TextBox>(c) != null) continue;
                     var what = $"{c.GetType().Name} '{(c as Avalonia.Controls.TextBlock)?.Text ?? (c as Controls.TumblerChipEditor)?.Text ?? (c as Avalonia.Controls.TextBox)?.Text}'";
                     var right = Avalonia.VisualExtensions.TranslatePoint(c, new Avalonia.Point(c.Bounds.Width, 0), card)?.X ?? 0;

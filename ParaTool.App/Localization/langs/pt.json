@@ -786,5 +786,9 @@
   "resource.WrithingTidePoint": "Maré contorcida",
   "resource.ArcaneRecoveryPoint": "Recuperação arcana",
   "TipAddCost": "Adicionar um recurso que a magia gasta",
-  "TipSpellSlotsGroup": "Gasta um espaço de magia deste nível, normal ou de pacto do bruxo: o mesmo grupo de espaços que todas as magias do jogo usam."
+  "TipSpellSlotsGroup": "Gasta um espaço de magia deste nível, normal ou de pacto do bruxo: o mesmo grupo de espaços que todas as magias do jogo usam.",
+  "LblSpellWorkshop": "Oficina de magias",
+  "TipSpellWorkshop": "Aqui você cria magias a partir de magias existentes: uma nova magia deste item ou um rebalanceamento da original. Elas são salvas no arquivo .art do item. Uma nova magia não faz nada até ser concedida: marque «Concedida ao equipar», conceda por um passivo ou adicione às magias concedidas ou a um boost UnlockSpell. Uma original editada não precisa ser concedida: ela rebalanceia a magia no jogo sozinha.",
+  "LblGrantOnEquip": "Concedida ao equipar",
+  "TipGrantOnEquip": "Adiciona a magia às magias concedidas do item: quem equipar o item a recebe."
 }
