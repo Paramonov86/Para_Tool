@@ -215,6 +215,13 @@ public static class ArtifactCompiler
         if (art.WeaponProperties != null)
             stats.AppendLine($"data \"Weapon Properties\" \"{art.WeaponProperties}\"");
 
+        // ─── Spell renaming (must run BEFORE Boosts is written) ───
+        // A spell card cloned from an existing spell would overwrite that spell everywhere, so it
+        // gets a per-artifact name that `using`s the original; the item's UnlockSpell list is
+        // rewritten to the new name. A card set to edit the original keeps the name and
+        // compiles as a self-`using` override instead.
+        var spellRenames = RenameSpellCopies(art, resolver);
+
         // Mechanics — merge Boosts + SpellsOnEquip into single "Boosts" line
         var allBoosts = new List<string>();
         if (!string.IsNullOrEmpty(art.Boosts))
@@ -230,10 +237,13 @@ public static class ArtifactCompiler
         if (!string.IsNullOrEmpty(art.SpellsOnEquip))
         {
             var removedSpells = new HashSet<string>(art.RemovedSpells ?? [], StringComparer.OrdinalIgnoreCase);
+            var unlocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var spell in art.SpellsOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 if (removedSpells.Contains(spell)) continue;
-                allBoosts.Add($"UnlockSpell({spell})");
+                if (spellRenames.TryGetValue(spell, out var renamedSpell) && removedSpells.Contains(renamedSpell)) continue;
+                if (unlocked.Add(spell))
+                    allBoosts.Add($"UnlockSpell({spell})");
             }
         }
         // Always write Boosts to override inherited value from base
@@ -478,60 +488,109 @@ public static class ArtifactCompiler
         }
 
         // ─── Spell Definitions ──────────────────────────
+        var editedOriginals = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var spell in art.Spells)
         {
+            // Repair chip dialect only in fields the card changed. A field still equal to the base
+            // is game syntax and goes out verbatim — the sanitizers reformat it (spacing, trailing
+            // empty arguments) and a copy has to restate its original exactly.
+            var spellBase = resolver != null && !string.IsNullOrEmpty(spell.UsingBase)
+                ? resolver.ResolveAll(spell.UsingBase) : null;
+            string? Repair(string key, string? value, Func<string, string> fix) =>
+                value == null || (spellBase != null && spellBase.TryGetValue(key, out var inherited) && inherited == value)
+                    ? value : fix(value);
+            static string FixFunctors(string v) => ConditionSchema.NormalizeConditionEnums(BoostMapping.SanitizeBoosts(v));
+            spell.SpellProperties = Repair("SpellProperties", spell.SpellProperties ?? "", FixFunctors)!;
+            spell.SpellSuccess = Repair("SpellSuccess", spell.SpellSuccess, FixFunctors);
+            spell.SpellFail = Repair("SpellFail", spell.SpellFail, FixFunctors);
+            spell.TargetConditions = Repair("TargetConditions", spell.TargetConditions ?? "",
+                v => ConditionSchema.NormalizeConditionEnums(ConditionSchema.NormalizeTagConditions(v)))!;
+            spell.SpellRoll = Repair("SpellRoll", spell.SpellRoll, ConditionSchema.NormalizeConditionEnums);
+            foreach (var (label, value) in new[] {
+                ("spell SpellProperties", spell.SpellProperties), ("spell SpellSuccess", spell.SpellSuccess ?? ""),
+                ("spell SpellFail", spell.SpellFail ?? "") })
+            {
+                ValidatePlaceholders(spell.Name, label, value, warnings);
+                ValidateStatusReferences(spell.Name, label, value, resolver, warnings);
+            }
+
+            if (string.IsNullOrEmpty(spell.SpellType) && resolver != null && spell.UsingBase != null)
+                spell.SpellType = resolver.Resolve(spell.UsingBase, "SpellType") ?? spell.SpellType;
+
+            var selfOverride = spell.EditOriginal
+                && spell.UsingBase != null
+                && spell.Name.Equals(spell.UsingBase, StringComparison.OrdinalIgnoreCase);
+            if (selfOverride) editedOriginals.Add(spell.Name);
+
             stats.AppendLine($"new entry \"{spell.Name}\"");
             stats.AppendLine($"type \"SpellData\"");
             stats.AppendLine($"data \"SpellType\" \"{spell.SpellType}\"");
+            // An edited original re-declares itself (`using "<self>"`), the form AMP uses to
+            // rebalance vanilla spells; a copy points at the original under its own name.
             var spellHasUsing = spell.UsingBase != null
-                && !spell.Name.Equals(spell.UsingBase, StringComparison.OrdinalIgnoreCase);
+                && (selfOverride || !spell.Name.Equals(spell.UsingBase, StringComparison.OrdinalIgnoreCase));
             if (spellHasUsing)
                 stats.AppendLine($"using \"{spell.UsingBase}\"");
 
-            stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(spell.DisplayNameHandle)}\"");
-            stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(spell.DescriptionHandle)}\"");
+            // An edited original whose text was left alone keeps the original handles, which the
+            // game translates into every language; writing our copy of two languages under a new
+            // handle would blank the rest.
+            var keepName = selfOverride && !spell.DisplayNameEdited && !string.IsNullOrEmpty(spell.SourceDisplayNameHandle);
+            var keepDesc = selfOverride && !spell.DescriptionEdited && !string.IsNullOrEmpty(spell.SourceDescriptionHandle);
+            // Anything else writes its own text, so it must never do that under the source's handle.
+            if (!keepName && (string.IsNullOrEmpty(spell.DisplayNameHandle) || SameHandle(spell.DisplayNameHandle, spell.SourceDisplayNameHandle)))
+                spell.DisplayNameHandle = HandleGenerator.New();
+            if (!keepDesc && (string.IsNullOrEmpty(spell.DescriptionHandle) || SameHandle(spell.DescriptionHandle, spell.SourceDescriptionHandle)))
+                spell.DescriptionHandle = HandleGenerator.New();
+            var nameHandle = keepName ? spell.SourceDisplayNameHandle! : spell.DisplayNameHandle;
+            var descHandle = keepDesc ? spell.SourceDescriptionHandle! : spell.DescriptionHandle;
 
-            if (spellHasUsing)
+            stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(nameHandle)}\"");
+            stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(descHandle)}\"");
+
+            void Emit(string key, string? value, bool always)
             {
-                stats.AppendLine($"data \"DescriptionParams\" \"{spell.DescriptionParams}\"");
-                stats.AppendLine($"data \"Icon\" \"{spell.Icon}\"");
-                stats.AppendLine($"data \"SpellProperties\" \"{spell.SpellProperties}\"");
-                stats.AppendLine($"data \"UseCosts\" \"{spell.UseCosts}\"");
-                stats.AppendLine($"data \"Cooldown\" \"{spell.Cooldown}\"");
-                stats.AppendLine($"data \"TargetConditions\" \"{spell.TargetConditions}\"");
-                stats.AppendLine($"data \"SpellFlags\" \"{spell.SpellFlags}\"");
+                if (value == null) return;
+                if (always || value.Length > 0)
+                    stats.AppendLine($"data \"{key}\" \"{value}\"");
             }
-            else
-            {
-                if (!string.IsNullOrEmpty(spell.DescriptionParams))
-                    stats.AppendLine($"data \"DescriptionParams\" \"{spell.DescriptionParams}\"");
-                if (!string.IsNullOrEmpty(spell.Icon))
-                    stats.AppendLine($"data \"Icon\" \"{spell.Icon}\"");
-                if (!string.IsNullOrEmpty(spell.SpellProperties))
-                    stats.AppendLine($"data \"SpellProperties\" \"{spell.SpellProperties}\"");
-                if (!string.IsNullOrEmpty(spell.UseCosts))
-                    stats.AppendLine($"data \"UseCosts\" \"{spell.UseCosts}\"");
-                if (!string.IsNullOrEmpty(spell.Cooldown))
-                    stats.AppendLine($"data \"Cooldown\" \"{spell.Cooldown}\"");
-                if (!string.IsNullOrEmpty(spell.TargetConditions))
-                    stats.AppendLine($"data \"TargetConditions\" \"{spell.TargetConditions}\"");
-                if (!string.IsNullOrEmpty(spell.SpellFlags))
-                    stats.AppendLine($"data \"SpellFlags\" \"{spell.SpellFlags}\"");
-            }
+            // With a base, card fields are written even when empty so clearing a field on the card
+            // clears it in game instead of inheriting it back. Null fields are not on the card.
+            Emit("DescriptionParams", spell.DescriptionParams, spellHasUsing);
+            Emit("Icon", string.IsNullOrEmpty(spell.Icon) ? null : spell.Icon, false);
+            Emit("Level", spell.Level, spellHasUsing);
+            Emit("SpellSchool", spell.SpellSchool, spellHasUsing);
+            Emit("UseCosts", spell.UseCosts, spellHasUsing);
+            Emit("Cooldown", spell.Cooldown, spellHasUsing);
+            Emit("TargetRadius", spell.TargetRadius, spellHasUsing);
+            Emit("AreaRadius", spell.AreaRadius, spellHasUsing);
+            Emit("SpellRoll", spell.SpellRoll, spellHasUsing);
+            Emit("SpellSuccess", spell.SpellSuccess, spellHasUsing);
+            Emit("SpellFail", spell.SpellFail, spellHasUsing);
+            Emit("SpellProperties", spell.SpellProperties, spellHasUsing);
+            Emit("TargetConditions", spell.TargetConditions, spellHasUsing);
+            Emit("SpellFlags", spell.SpellFlags, spellHasUsing);
 
             foreach (var (key, value) in spell.ExtraData)
                 stats.AppendLine($"data \"{key}\" \"{value}\"");
 
             stats.AppendLine();
 
-            AddLocaEntries(loca, spell.DisplayName, spell.DisplayNameHandle);
-            AddLocaEntries(loca, spell.Description, spell.DescriptionHandle);
+            if (!keepName) AddLocaEntries(loca, spell.DisplayName, spell.DisplayNameHandle);
+            if (!keepDesc) AddLocaEntries(loca, spell.Description, spell.DescriptionHandle);
         }
 
         // ─── Spell/Status Rename Overrides ─────────────────
         foreach (var (origId, names) in art.SpellRenames)
         {
             if (names.Count == 0) continue;
+            // A spell card editing the original already declares this entry; a second
+            // declaration would silently replace the card's changes.
+            if (editedOriginals.Contains(origId))
+            {
+                warnings.Add($"[{art.StatId}] rename of spell '{origId}' ignored — the spell card editing it sets its name.");
+                continue;
+            }
             var handle = HandleGenerator.New();
             // Resolve SpellType from resolver (required for SpellData)
             var spellType = resolver?.Resolve(origId, "SpellType") ?? "Target";
@@ -586,6 +645,77 @@ public static class ArtifactCompiler
             IconFiles = iconFiles,
             Warnings = warnings,
         };
+    }
+
+    private static bool SameHandle(string? a, string? b) =>
+        !string.IsNullOrEmpty(a) && !string.IsNullOrEmpty(b)
+        && HandleGenerator.Parse(a).handle.Equals(HandleGenerator.Parse(b).handle, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Gives every spell card copied from an existing spell a per-artifact name
+    /// (<c>{StatId}_Spell_{n}</c>) that <c>using</c>s the original, and points the item's
+    /// SpellsOnEquip at the new names. A card set to edit the original gets its original name
+    /// back. Returns original name → name written.
+    /// </summary>
+    private static Dictionary<string, string> RenameSpellCopies(ArtifactDefinition art, Parsing.StatsResolver? resolver)
+    {
+        var renames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var taken = new HashSet<string>(art.Spells.Select(s => s.Name), StringComparer.OrdinalIgnoreCase);
+        var copyPrefix = art.StatId + "_Spell_";
+
+        for (int i = 0; i < art.Spells.Count; i++)
+        {
+            var sp = art.Spells[i];
+            var currentName = sp.Name;
+
+            if (sp.EditOriginal)
+            {
+                // Switched from copy to original after a compile had already renamed it.
+                if (!string.IsNullOrEmpty(sp.UsingBase)
+                    && !currentName.Equals(sp.UsingBase, StringComparison.OrdinalIgnoreCase)
+                    && currentName.StartsWith(copyPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    sp.Name = sp.UsingBase;
+                    renames[currentName] = sp.Name;
+                }
+                continue;
+            }
+
+            var needsRename = !currentName.StartsWith(art.StatId, StringComparison.OrdinalIgnoreCase)
+                && (sp.UsingBase == null || sp.UsingBase.Equals(currentName, StringComparison.OrdinalIgnoreCase));
+            if (!needsRename) continue;
+
+            // Chain `using` only to a spell that exists — `using "Unknown"` is silently dropped.
+            var hasRealBase = resolver != null
+                ? resolver.AllEntries.ContainsKey(currentName)
+                : sp.UsingBase != null;
+
+            string newName;
+            int n = i + 1;
+            do newName = $"{copyPrefix}{n++}"; while (taken.Contains(newName));
+            taken.Add(newName);
+
+            renames[currentName] = newName;
+            sp.UsingBase = hasRealBase ? currentName : null;
+            sp.Name = newName;
+
+            if (hasRealBase && resolver != null)
+            {
+                var sourceFields = resolver.ResolveAll(currentName);
+                if (SharesHandle(sourceFields, "DisplayName", sp.DisplayNameHandle))
+                    sp.DisplayNameHandle = HandleGenerator.New();
+                if (SharesHandle(sourceFields, "Description", sp.DescriptionHandle))
+                    sp.DescriptionHandle = HandleGenerator.New();
+            }
+        }
+
+        if (renames.Count > 0 && !string.IsNullOrEmpty(art.SpellsOnEquip))
+        {
+            art.SpellsOnEquip = string.Join(";",
+                art.SpellsOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(s => renames.TryGetValue(s, out var renamed) ? renamed : s));
+        }
+        return renames;
     }
 
     /// <summary>

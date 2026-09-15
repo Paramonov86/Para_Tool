@@ -343,11 +343,20 @@ public sealed class StatusDefinition
 
 /// <summary>
 /// Custom spell/ability definition within an artifact.
+/// A card cloned from an existing spell compiles either as a new spell (renamed per artifact,
+/// <c>using</c> the original) or, with <see cref="EditOriginal"/>, as an override of the original.
+/// Fields not on the card stay inherited through <c>using</c>.
 /// </summary>
 public sealed class SpellDefinition
 {
     public string Name { get; set; } = "";
     public string? UsingBase { get; set; }
+
+    /// <summary>
+    /// Keep the original name and override the original entry — the change applies everywhere
+    /// the spell is used, not only on this item.
+    /// </summary>
+    public bool EditOriginal { get; set; }
 
     /// <summary>Shout, Target, Projectile, Zone, etc.</summary>
     public string SpellType { get; set; } = "Shout";
@@ -359,6 +368,17 @@ public sealed class SpellDefinition
     public string DescriptionHandle { get; set; } = "";
     public string DescriptionParams { get; set; } = "";
 
+    /// <summary>Loca handles of the spell the card was cloned from.</summary>
+    public string? SourceDisplayNameHandle { get; set; }
+    public string? SourceDescriptionHandle { get; set; }
+
+    /// <summary>
+    /// The user changed the text. Until then an edited original keeps its own handles, so every
+    /// language the game ships stays translated; a copy only carries the languages it was given.
+    /// </summary>
+    public bool DisplayNameEdited { get; set; }
+    public bool DescriptionEdited { get; set; }
+
     public string? Icon { get; set; }
 
     public string SpellProperties { get; set; } = "";
@@ -366,6 +386,16 @@ public sealed class SpellDefinition
     public string Cooldown { get; set; } = "";
     public string TargetConditions { get; set; } = "";
     public string SpellFlags { get; set; } = "";
+
+    // Core fields added with the spell cards. Null = not on the card, inherited from the base
+    // (and what older .art files load as).
+    public string? Level { get; set; }
+    public string? SpellSchool { get; set; }
+    public string? TargetRadius { get; set; }
+    public string? AreaRadius { get; set; }
+    public string? SpellRoll { get; set; }
+    public string? SpellSuccess { get; set; }
+    public string? SpellFail { get; set; }
 
     /// <summary>Raw extra data fields (key → value) for uncommon properties.</summary>
     public Dictionary<string, string> ExtraData { get; set; } = [];
