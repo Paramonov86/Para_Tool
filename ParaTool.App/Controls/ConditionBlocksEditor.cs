@@ -678,6 +678,9 @@ public class ConditionBlocksEditor : UserControl
         var chip = new Border
         {
             Child = stack,
+            // Centred in its row: stretched next to a tall group chip, the wrapped params sat at the top
+            // of an oversized box.
+            VerticalAlignment = VerticalAlignment.Center,
             Background = BgFunc, CornerRadius = new CornerRadius(8),
             Padding = new Thickness(6, 3), Margin = new Thickness(2),
             ContextMenu = new ContextMenu { Items = { notToggle, delete } },

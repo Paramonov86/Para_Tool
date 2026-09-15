@@ -233,6 +233,8 @@ public class UseCostsEditor : UserControl
         // A Panel rather than a Border with a child, so the tumbler drum is not clipped.
         return new Panel
         {
+            // Centred in its row: beside a badge with tumblers a plain one would stretch to its height.
+            VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 2, 6, 2),
             ClipToBounds = false,
             Children =

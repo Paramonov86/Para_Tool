@@ -682,6 +682,8 @@ public class BoostBlocksEditor : UserControl
         };
         var wrapper = new Panel
         {
+            // Centred in its row, not stretched beside a tall IF block with params stuck to the top.
+            VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(2),
             ClipToBounds = false,
             Children = { bgBorder, new Border { Child = stack, Padding = new Thickness(8, 4), ClipToBounds = false } },
@@ -890,6 +892,7 @@ public class BoostBlocksEditor : UserControl
         return new Border
         {
             Child = stack,
+            VerticalAlignment = VerticalAlignment.Center,
             Background = BgDefault,
             BorderBrush = FgMuted,
             BorderThickness = new Thickness(1),

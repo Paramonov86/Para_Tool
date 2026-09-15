@@ -662,6 +662,10 @@ internal static class DiagMode
                 Console.WriteLine($"  inherited desc: raw markup left={desc.Contains("LSTag") || desc.Contains("&lt;")} '{desc}'");
             }
 
+            // Its target conditions put a short chip (Is Enemy) beside a tall ( ) group.
+            if (resolver.AllEntries.ContainsKey("AMP_Kyzr_Destructive_Wave_5"))
+                item.AddExistingSpell("AMP_Kyzr_Destructive_Wave_5", resolver, loca);
+
             var view = new Views.ConstructorView { DataContext = cvm };
             var root = new Avalonia.Controls.Window { Width = 1600, Height = 4000, Content = view };
             for (int pass = 0; pass < 10; pass++)
@@ -713,7 +717,8 @@ internal static class DiagMode
                     foreach (var d in Descendants(ch)) yield return d;
                 }
             }
-            foreach (var (lang, scale, width) in new[] { ("en", 1.0, 1600.0), ("en", 1.5, 1000.0), ("ru", 1.5, 1000.0) })
+            // 2600: a wide window puts a short condition chip on the same row as a tall ( ) group.
+            foreach (var (lang, scale, width) in new[] { ("en", 1.0, 2600.0), ("en", 1.5, 1000.0), ("ru", 1.5, 1000.0) })
             {
                 Localization.Loc.Instance.SetLanguage(lang);
                 ApplyFontScale(scale);
@@ -759,6 +764,11 @@ internal static class DiagMode
                     if (v is not Avalonia.Controls.Control c || !c.IsEffectivelyVisible || c.Bounds.Width <= 0) continue;
                     if (c is not (Avalonia.Controls.TextBlock or Avalonia.Controls.TextBox or Controls.TumblerChipEditor
                         or Avalonia.Controls.Button or Controls.SearchPickerChip)) continue;
+                    // A chip stretched to its row's height leaves its wrapped params stuck to the top.
+                    if (v is Avalonia.Controls.Border { Child: Avalonia.Controls.WrapPanel chipRow } chipBox && chipBox.IsEffectivelyVisible
+                        && chipBox.Bounds.Height > chipRow.DesiredSize.Height + chipBox.Padding.Top + chipBox.Padding.Bottom + 4)
+                        problems.Add($"stretched chip: '{chipRow.Children.OfType<Avalonia.Controls.TextBlock>().FirstOrDefault()?.Text}' " +
+                                     $"box={chipBox.Bounds.Height:0} content={chipRow.DesiredSize.Height:0}");
                     if (Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Avalonia.Controls.TextBox>(c) != null) continue;
                     var what = $"{c.GetType().Name} '{(c as Avalonia.Controls.TextBlock)?.Text ?? (c as Controls.TumblerChipEditor)?.Text ?? (c as Avalonia.Controls.TextBox)?.Text}'";
                     var right = Avalonia.VisualExtensions.TranslatePoint(c, new Avalonia.Point(c.Bounds.Width, 0), card)?.X ?? 0;
