@@ -751,5 +751,15 @@
   "AbCon": "ТЕЛ",
   "AbInt": "ИНТ",
   "AbWis": "МДР",
-  "AbCha": "ХАР"
+  "AbCha": "ХАР",
+  "cooldown.None": "Без перезарядки",
+  "cooldown.OncePerTurn": "Раз в ход",
+  "cooldown.OncePerCombat": "Раз за бой",
+  "cooldown.OncePerRest": "Раз за долгий отдых",
+  "cooldown.OncePerTurnNoRealtime": "Раз в ход (без реалтайма)",
+  "cooldown.OncePerShortRest": "Раз за короткий отдых",
+  "cooldown.OncePerRestPerItem": "Раз за долгий отдых (на предмет)",
+  "cooldown.OncePerShortRestPerItem": "Раз за короткий отдых (на предмет)",
+  "enum.OncePerRest": "1/Длин. отдых",
+  "enum.OncePerRestPerItem": "За отдых на предмет"
 }

@@ -749,5 +749,15 @@
   "AbCon": "건강",
   "AbInt": "지능",
   "AbWis": "지혜",
-  "AbCha": "매력"
+  "AbCha": "매력",
+  "cooldown.None": "재사용 대기 없음",
+  "cooldown.OncePerTurn": "턴당 1회",
+  "cooldown.OncePerCombat": "전투당 1회",
+  "cooldown.OncePerRest": "긴 휴식당 1회",
+  "cooldown.OncePerTurnNoRealtime": "턴당 1회 (실시간 제외)",
+  "cooldown.OncePerShortRest": "짧은 휴식당 1회",
+  "cooldown.OncePerRestPerItem": "긴 휴식당 1회 (아이템별)",
+  "cooldown.OncePerShortRestPerItem": "짧은 휴식당 1회 (아이템별)",
+  "enum.OncePerRest": "1/긴 휴식",
+  "enum.OncePerRestPerItem": "Per Rest per Item"
 }

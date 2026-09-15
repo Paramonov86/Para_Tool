@@ -751,5 +751,15 @@
   "AbCon": "СТА",
   "AbInt": "ІНТ",
   "AbWis": "МДР",
-  "AbCha": "ХАР"
+  "AbCha": "ХАР",
+  "cooldown.None": "Без перезаряджання",
+  "cooldown.OncePerTurn": "Раз на хід",
+  "cooldown.OncePerCombat": "Раз за бій",
+  "cooldown.OncePerRest": "Раз за довгий відпочинок",
+  "cooldown.OncePerTurnNoRealtime": "Раз на хід (без реального часу)",
+  "cooldown.OncePerShortRest": "Раз за короткий відпочинок",
+  "cooldown.OncePerRestPerItem": "Раз за довгий відпочинок (на предмет)",
+  "cooldown.OncePerShortRestPerItem": "Раз за короткий відпочинок (на предмет)",
+  "enum.OncePerRest": "1/Довг. відп.",
+  "enum.OncePerRestPerItem": "Per Rest per Item"
 }

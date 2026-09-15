@@ -751,5 +751,15 @@
   "AbCon": "KON",
   "AbInt": "INT",
   "AbWis": "WEI",
-  "AbCha": "CHA"
+  "AbCha": "CHA",
+  "cooldown.None": "Keine Abklingzeit",
+  "cooldown.OncePerTurn": "Einmal pro Zug",
+  "cooldown.OncePerCombat": "Einmal pro Kampf",
+  "cooldown.OncePerRest": "Einmal pro langer Rast",
+  "cooldown.OncePerTurnNoRealtime": "Einmal pro Zug (nicht in Echtzeit)",
+  "cooldown.OncePerShortRest": "Einmal pro kurzer Rast",
+  "cooldown.OncePerRestPerItem": "Einmal pro langer Rast (pro Gegenstand)",
+  "cooldown.OncePerShortRestPerItem": "Einmal pro kurzer Rast (pro Gegenstand)",
+  "enum.OncePerRest": "1/Lange Rast",
+  "enum.OncePerRestPerItem": "Per Rest per Item"
 }

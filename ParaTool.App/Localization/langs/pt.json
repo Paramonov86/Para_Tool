@@ -751,5 +751,15 @@
   "AbCon": "CON",
   "AbInt": "INT",
   "AbWis": "SAB",
-  "AbCha": "CAR"
+  "AbCha": "CAR",
+  "cooldown.None": "Sem recarga",
+  "cooldown.OncePerTurn": "Uma vez por turno",
+  "cooldown.OncePerCombat": "Uma vez por combate",
+  "cooldown.OncePerRest": "Uma vez por descanso longo",
+  "cooldown.OncePerTurnNoRealtime": "Uma vez por turno (sem tempo real)",
+  "cooldown.OncePerShortRest": "Uma vez por descanso curto",
+  "cooldown.OncePerRestPerItem": "Uma vez por descanso longo (por item)",
+  "cooldown.OncePerShortRestPerItem": "Uma vez por descanso curto (por item)",
+  "enum.OncePerRest": "1/Desc. longo",
+  "enum.OncePerRestPerItem": "Per Rest per Item"
 }

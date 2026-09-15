@@ -751,5 +751,15 @@
   "AbCon": "体质",
   "AbInt": "智力",
   "AbWis": "感知",
-  "AbCha": "魅力"
+  "AbCha": "魅力",
+  "cooldown.None": "无冷却",
+  "cooldown.OncePerTurn": "每回合一次",
+  "cooldown.OncePerCombat": "每场战斗一次",
+  "cooldown.OncePerRest": "每次长休一次",
+  "cooldown.OncePerTurnNoRealtime": "每回合一次（非实时）",
+  "cooldown.OncePerShortRest": "每次短休一次",
+  "cooldown.OncePerRestPerItem": "每次长休一次（每件物品）",
+  "cooldown.OncePerShortRestPerItem": "每次短休一次（每件物品）",
+  "enum.OncePerRest": "1/长休",
+  "enum.OncePerRestPerItem": "Per Rest per Item"
 }

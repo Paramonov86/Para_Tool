@@ -29,7 +29,16 @@ public class TumblerChipEditor : UserControl
     public static readonly StyledProperty<string[]?> ItemsProperty =
         AvaloniaProperty.Register<TumblerChipEditor, string[]?>(nameof(Items));
 
+    public static readonly StyledProperty<string> LabelPrefixProperty =
+        AvaloniaProperty.Register<TumblerChipEditor, string>(nameof(LabelPrefix), "enum.");
+
     public string? Text { get => GetValue(TextProperty); set => SetValue(TextProperty, value); }
+
+    /// <summary>
+    /// Loca key prefix for list values without DisplayItems (falls back to "enum."), so one
+    /// value can read differently here than in shared enum chips.
+    /// </summary>
+    public string LabelPrefix { get => GetValue(LabelPrefixProperty); set => SetValue(LabelPrefixProperty, value); }
     public double Step { get => GetValue(StepProperty); set => SetValue(StepProperty, value); }
     public double MinValue { get => GetValue(MinValueProperty); set => SetValue(MinValueProperty, value); }
     public double MaxValue { get => GetValue(MaxValueProperty); set => SetValue(MaxValueProperty, value); }
@@ -79,6 +88,7 @@ public class TumblerChipEditor : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
             MinWidth = 30,
         };
 
@@ -88,7 +98,6 @@ public class TumblerChipEditor : UserControl
             MinWidth = 48, Height = ChipH,
             Padding = new Thickness(10, 0),
             CornerRadius = new CornerRadius(8),
-            TextTrimming = TextTrimming.CharacterEllipsis,
             Background = ThemeBrushes.InputBg,
             BorderBrush = ThemeBrushes.BorderSubtle,
             BorderThickness = new Thickness(1),
@@ -108,7 +117,7 @@ public class TumblerChipEditor : UserControl
         PropertyChanged += (_, e) =>
         {
             if (e.Property == TextProperty) UpdateChipText();
-            if (e.Property == ItemsProperty) { UpdateMinWidthFromItems(); UpdateChipText(); }
+            if (e.Property == ItemsProperty || e.Property == LabelPrefixProperty) { UpdateMinWidthFromItems(); UpdateChipText(); }
         };
         FontScale.ScaleChanged += OnFontScaleChanged;
         DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= OnFontScaleChanged;
@@ -224,7 +233,7 @@ public class TumblerChipEditor : UserControl
     private void UpdateMinWidthFromItems()
     {
         if (Items is not { Length: > 0 }) return;
-        var displayItems = DisplayItems ?? Items;
+        var displayItems = DisplayItems ?? Items.Select(LocaLabel).ToArray();
 
         // Use 75th percentile length instead of max to avoid oversized chips
         var lengths = displayItems.Select(s => s.Length).OrderBy(l => l).ToArray();
@@ -249,9 +258,9 @@ public class TumblerChipEditor : UserControl
     {
         var w = Math.Min(_itemsMinWidth, _availableWidth);
         _chip.MinWidth = Math.Max(w, 48);
-        _valueText.MinWidth = w - 20;
+        _valueText.MinWidth = Math.Max(w - 20, 0);
         if (_upperLabels != null)
-            foreach (var l in _upperLabels) l.MinWidth = w - 20;
+            foreach (var l in _upperLabels) l.MinWidth = Math.Max(w - 20, 0);
         if (_lowerLabels != null)
             foreach (var l in _lowerLabels) l.MinWidth = Math.Max(w - 20, 0);
     }
@@ -283,13 +292,9 @@ public class TumblerChipEditor : UserControl
             var idx = Array.FindIndex(Items, i => i.Equals(val, StringComparison.OrdinalIgnoreCase));
             if (idx >= 0 && idx < DisplayItems.Length) display = DisplayItems[idx];
         }
-        // Fallback: try loca enum key
+        // Fallback: try loca label key
         if (display == val && !string.IsNullOrEmpty(val) && val != "—")
-        {
-            var locaKey = $"enum.{val}";
-            var locaVal = Localization.Loc.Instance[locaKey];
-            if (locaVal != locaKey) display = locaVal;
-        }
+            display = LocaLabel(val);
         _valueText.Text = string.IsNullOrEmpty(display) ? "—" : display;
 
         // Colour by value (if a ChipColors map is configured for this tumbler)
@@ -317,11 +322,20 @@ public class TumblerChipEditor : UserControl
         var items = Items!;
         if (idx < 0 || idx >= items.Length) return "";
         if (DisplayItems != null && idx < DisplayItems.Length) return DisplayItems[idx];
-        // Fallback: try loca enum label
-        var val = items[idx];
-        var locaKey = $"enum.{val}";
-        var locaVal = Localization.Loc.Instance[locaKey];
-        return locaVal != locaKey ? locaVal : val;
+        // Fallback: try loca label key
+        return LocaLabel(items[idx]);
+    }
+
+    /// <summary>A value's label under LabelPrefix, then under "enum.", else the value itself.</summary>
+    private string LocaLabel(string val)
+    {
+        foreach (var prefix in new[] { LabelPrefix, "enum." })
+        {
+            var locaKey = prefix + val;
+            var locaVal = Localization.Loc.Instance[locaKey];
+            if (locaVal != locaKey) return locaVal;
+        }
+        return val;
     }
 
     private string Fmt(double v) =>

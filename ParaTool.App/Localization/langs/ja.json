@@ -751,5 +751,15 @@
   "AbCon": "耐久",
   "AbInt": "知力",
   "AbWis": "判断",
-  "AbCha": "魅力"
+  "AbCha": "魅力",
+  "cooldown.None": "クールダウンなし",
+  "cooldown.OncePerTurn": "1ターンに1回",
+  "cooldown.OncePerCombat": "戦闘ごとに1回",
+  "cooldown.OncePerRest": "大休憩ごとに1回",
+  "cooldown.OncePerTurnNoRealtime": "1ターンに1回（リアルタイム外）",
+  "cooldown.OncePerShortRest": "小休憩ごとに1回",
+  "cooldown.OncePerRestPerItem": "大休憩ごとに1回（アイテムごと）",
+  "cooldown.OncePerShortRestPerItem": "小休憩ごとに1回（アイテムごと）",
+  "enum.OncePerRest": "1/大休憩",
+  "enum.OncePerRestPerItem": "Per Rest per Item"
 }

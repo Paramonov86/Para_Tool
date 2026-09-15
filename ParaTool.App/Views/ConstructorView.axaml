@@ -815,7 +815,8 @@
 
                                                             <TextBlock Grid.Row="4" Text="{Binding LblSpellCooldown, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                                             <ctrl:TumblerChipEditor Grid.Row="4" Grid.Column="1" Text="{Binding EditCooldown}"
-                                                                                   Items="{x:Static vm:SpellVM.CooldownOptions}" Margin="0,6,0,0" HorizontalAlignment="Left" />
+                                                                                   Items="{x:Static vm:SpellVM.CooldownOptions}" LabelPrefix="cooldown."
+                                                                                   Margin="0,6,0,0" HorizontalAlignment="Left" />
 
                                                             <TextBlock Grid.Row="5" Text="{Binding LblSpellRange, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                                             <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding EditTargetRadius}" Watermark="18"

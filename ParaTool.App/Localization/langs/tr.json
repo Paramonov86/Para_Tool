@@ -751,5 +751,15 @@
   "AbCon": "DAY",
   "AbInt": "ZEK",
   "AbWis": "BİL",
-  "AbCha": "KAR"
+  "AbCha": "KAR",
+  "cooldown.None": "Bekleme yok",
+  "cooldown.OncePerTurn": "Tur başına bir kez",
+  "cooldown.OncePerCombat": "Savaş başına bir kez",
+  "cooldown.OncePerRest": "Uzun mola başına bir kez",
+  "cooldown.OncePerTurnNoRealtime": "Tur başına bir kez (gerçek zamanda değil)",
+  "cooldown.OncePerShortRest": "Kısa mola başına bir kez",
+  "cooldown.OncePerRestPerItem": "Uzun mola başına bir kez (eşya başına)",
+  "cooldown.OncePerShortRestPerItem": "Kısa mola başına bir kez (eşya başına)",
+  "enum.OncePerRest": "1/Uzun Din.",
+  "enum.OncePerRestPerItem": "Per Rest per Item"
 }

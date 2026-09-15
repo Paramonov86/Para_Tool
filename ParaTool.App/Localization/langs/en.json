@@ -751,5 +751,15 @@
   "AbCon": "CON",
   "AbInt": "INT",
   "AbWis": "WIS",
-  "AbCha": "CHA"
+  "AbCha": "CHA",
+  "cooldown.None": "No cooldown",
+  "cooldown.OncePerTurn": "Once per Turn",
+  "cooldown.OncePerCombat": "Once per Combat",
+  "cooldown.OncePerRest": "Once per Long Rest",
+  "cooldown.OncePerTurnNoRealtime": "Once per Turn (no realtime)",
+  "cooldown.OncePerShortRest": "Once per Short Rest",
+  "cooldown.OncePerRestPerItem": "Once per Long Rest (per item)",
+  "cooldown.OncePerShortRestPerItem": "Once per Short Rest (per item)",
+  "enum.OncePerRest": "1/Long Rest",
+  "enum.OncePerRestPerItem": "Per Rest per Item"
 }
