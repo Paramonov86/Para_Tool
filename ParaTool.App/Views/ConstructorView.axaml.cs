@@ -75,13 +75,32 @@ public partial class ConstructorView : UserControl
                 }
             };
         }
-        // Wire up resolver/loca for passive picker when DataContext is set
+        // Spell picker — clone an existing spell into a card
+        var spellPicker = this.FindControl<SearchPickerChip>("SpellPickerChip");
+        if (spellPicker != null)
+        {
+            spellPicker.PropertyChanged += (s, e) =>
+            {
+                if (e.Property.Name != "Text" || s is not SearchPickerChip picker) return;
+                var name = picker.Text?.Trim();
+                if (string.IsNullOrEmpty(name)) return;
+                if (DataContext is ConstructorViewModel vm && vm.SelectedArtifact != null)
+                {
+                    vm.SelectedArtifact.AddExistingSpell(name, vm.StatsResolver, vm.LocaService);
+                    picker.Text = "";
+                    RebuildChips();
+                }
+            };
+        }
+        // Wire up resolver/loca for passive and spell pickers when DataContext is set
         DataContextChanged += (_, _) =>
         {
-            if (passivePicker != null && DataContext is ConstructorViewModel cvm)
+            if (DataContext is not ConstructorViewModel cvm) return;
+            foreach (var picker in new[] { passivePicker, spellPicker })
             {
-                passivePicker.Resolver = cvm.StatsResolver;
-                passivePicker.LocaService = cvm.LocaService;
+                if (picker == null) continue;
+                picker.Resolver = cvm.StatsResolver;
+                picker.LocaService = cvm.LocaService;
             }
         };
 
@@ -461,6 +480,20 @@ public partial class ConstructorView : UserControl
             && DataContext is ConstructorViewModel rmVm && rmVm.SelectedArtifact != null)
         {
             rmVm.SelectedArtifact.RemovePassive(removePvm);
+            return;
+        }
+
+        // Spell cards
+        if (btn.Name == "SpellToggleBtn" && btn.Tag is SpellVM svm)
+        {
+            svm.IsExpanded = !svm.IsExpanded;
+            return;
+        }
+        if (btn.Name == "RemoveSpellBtn" && btn.Tag is SpellVM removeSvm
+            && DataContext is ConstructorViewModel rmSpellVm && rmSpellVm.SelectedArtifact != null)
+        {
+            rmSpellVm.SelectedArtifact.RemoveSpell(removeSvm);
+            RebuildChips();
             return;
         }
 

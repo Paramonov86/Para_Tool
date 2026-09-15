@@ -533,6 +533,76 @@ public partial class ArtifactItemVM : ObservableObject
                 PassiveVMs.Add(new PassiveVM(p, this));
         }
         OnPropertyChanged(nameof(HasPassives));
+        // Spell cards load at every point passives do.
+        LoadSpellsFromArtifact();
+    }
+
+    // === Spells (cards cloned from existing spells) ===
+
+    public ObservableCollection<SpellVM> SpellVMs { get; } = [];
+
+    public void AddExistingSpell(string spellName, Core.Parsing.StatsResolver? resolver,
+        Core.Services.LocaService? locaService = null)
+    {
+        if (SpellVMs.Any(s => s.Spell.Name.Equals(spellName, StringComparison.OrdinalIgnoreCase)
+                              || (s.Spell.UsingBase?.Equals(spellName, StringComparison.OrdinalIgnoreCase) ?? false)))
+            return;
+
+        // Starts as a new spell of this item: the compiler renames it and `using`s the original,
+        // with fresh loca handles so editing the text never rewrites the original's.
+        var spell = SpellCloner.CloneFrom(spellName, resolver);
+
+        var lang = Loc.Instance.Lang;
+        foreach (var l in new[] { "en", "ru", lang }.Distinct())
+        {
+            spell.DisplayName[l] = ResolveSpellText(spell.SourceDisplayNameHandle, spellName, l, locaService, isDescription: false);
+            spell.Description[l] = ResolveSpellText(spell.SourceDescriptionHandle, spellName, l, locaService, isDescription: true);
+        }
+
+        Artifact.Spells.Add(spell);
+        SpellVMs.Add(new SpellVM(spell, this));
+
+        // A card is granted on equip by default. Going through the setter also clears a
+        // tombstone left by an earlier removal of the same spell.
+        var granted = SplitSemicolon(Artifact.SpellsOnEquip);
+        if (!granted.Contains(spellName))
+            EditSpellsOnEquip = string.IsNullOrEmpty(Artifact.SpellsOnEquip) ? spellName : Artifact.SpellsOnEquip + ";" + spellName;
+
+        RecordEdit();
+    }
+
+    private static string ResolveSpellText(string? handle, string spellName, string lang,
+        Core.Services.LocaService? locaService, bool isDescription)
+    {
+        if (!string.IsNullOrEmpty(handle) && locaService?.ResolveHandle(handle, lang) is { } text)
+            return BbCode.FromBg3Xml(text);
+        return (isDescription
+            ? Core.Services.VanillaLocaService.GetDescription(spellName, lang)
+            : Core.Services.VanillaLocaService.GetDisplayName(spellName, lang)) ?? "";
+    }
+
+    public void RemoveSpell(SpellVM svm)
+    {
+        Artifact.Spells.Remove(svm.Spell);
+        SpellVMs.Remove(svm);
+
+        // Stop granting it; the SpellsOnEquip setter leaves a tombstone so the base item's
+        // own list doesn't bring it back.
+        var names = new[] { svm.Spell.Name, svm.Spell.UsingBase ?? "" };
+        var kept = (Artifact.SpellsOnEquip ?? "")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(n => !names.Contains(n, StringComparer.OrdinalIgnoreCase));
+        EditSpellsOnEquip = string.Join(";", kept);
+
+        RecordEdit();
+    }
+
+    public void LoadSpellsFromArtifact()
+    {
+        SpellVMs.Clear();
+        foreach (var s in Artifact.Spells ?? [])
+            if (s != null)
+                SpellVMs.Add(new SpellVM(s, this));
     }
 
     // === Preview ===
@@ -791,6 +861,8 @@ public partial class ArtifactItemVM : ObservableObject
         ["AddExistingPassive"] = "JrnAddPassive",
         ["AddNewPassive"] = "JrnAddPassive",
         ["RemovePassive"] = "JrnRemovePassive",
+        ["AddExistingSpell"] = "JrnAddSpell",
+        ["RemoveSpell"] = "JrnRemoveSpell",
         ["EditProperties"] = "LblProperties",
         ["EditBoostContext"] = "LblBoosts",
         ["EditBoostConditions"] = "LblCondition",
@@ -1048,6 +1120,184 @@ public partial class PassiveVM : ObservableObject
     {
         get => Passive.Icon;
         set { Passive.Icon = value; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    private string GetLang(Dictionary<string, string> dict)
+    {
+        var lang = EditLang;
+        if (dict.TryGetValue(lang, out var v) && !string.IsNullOrEmpty(v)) return v;
+        if (dict.TryGetValue("en", out var en) && !string.IsNullOrEmpty(en)) return en;
+        return "";
+    }
+
+    private void SetLang(Dictionary<string, string> dict, string? value)
+    {
+        dict[EditLang] = value ?? "";
+    }
+}
+
+/// <summary>
+/// Wraps a single SpellDefinition card for editing. Visuals are not on the card — they stay
+/// inherited from the spell it was cloned from.
+/// </summary>
+public partial class SpellVM : ObservableObject
+{
+    public SpellDefinition Spell { get; }
+    private readonly ArtifactItemVM _parent;
+
+    private string EditLang => _parent.GetEditingLang?.Invoke() ?? Loc.Instance.Lang;
+
+    private static string[] ValueList(string name) =>
+        ParaTool.Core.Schema.StatsSchema.Instance.GetValueList(name)?.Values.ToArray() ?? [];
+
+    public static string[] SchoolOptions { get; } = ValueList("SpellSchool");
+    public static string[] CooldownOptions { get; } = ValueList("CooldownType");
+    public static string[] FlagOptions { get; } = ValueList("SpellFlagList");
+
+    public SpellVM(SpellDefinition spell, ArtifactItemVM parent)
+    {
+        Spell = spell;
+        _parent = parent;
+    }
+
+    [ObservableProperty] private bool _isExpanded;
+
+    public string Name
+    {
+        get
+        {
+            var lang = EditLang;
+            if (Spell.DisplayName.TryGetValue(lang, out var n) && !string.IsNullOrEmpty(n)) return n;
+            if (Spell.DisplayName.TryGetValue("en", out var en) && !string.IsNullOrEmpty(en)) return en;
+            return Spell.UsingBase ?? Spell.Name;
+        }
+    }
+
+    /// <summary>The spell the card was cloned from (tooltip).</summary>
+    public string StatName => Spell.UsingBase ?? Spell.Name;
+    public string SpellType => Spell.SpellType;
+
+    public bool EditOriginal
+    {
+        get => Spell.EditOriginal;
+        set
+        {
+            if (Spell.EditOriginal == value) return;
+            Spell.EditOriginal = value;
+            _parent.RecordEdit();
+            OnPropertyChanged();
+        }
+    }
+
+    public string EditDisplayName
+    {
+        get => GetLang(Spell.DisplayName);
+        set
+        {
+            if (GetLang(Spell.DisplayName) == (value ?? "")) return;
+            SetLang(Spell.DisplayName, value);
+            Spell.DisplayNameEdited = true;
+            _parent.RecordEdit();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(Name));
+        }
+    }
+
+    public string EditDescription
+    {
+        get => GetLang(Spell.Description);
+        set
+        {
+            if (GetLang(Spell.Description) == (value ?? "")) return;
+            SetLang(Spell.Description, value);
+            Spell.DescriptionEdited = true;
+            _parent.RecordEdit();
+            OnPropertyChanged();
+        }
+    }
+
+    public string EditDescriptionParams
+    {
+        get => Spell.DescriptionParams;
+        set { Spell.DescriptionParams = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditIcon
+    {
+        get => Spell.Icon ?? "";
+        set { Spell.Icon = string.IsNullOrWhiteSpace(value) ? null : value.Trim(); _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditLevel
+    {
+        get => Spell.Level ?? "";
+        set { Spell.Level = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditSpellSchool
+    {
+        get => Spell.SpellSchool ?? "";
+        set { Spell.SpellSchool = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditUseCosts
+    {
+        get => Spell.UseCosts;
+        set { Spell.UseCosts = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditCooldown
+    {
+        get => Spell.Cooldown;
+        set { Spell.Cooldown = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditTargetRadius
+    {
+        get => Spell.TargetRadius ?? "";
+        set { Spell.TargetRadius = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditAreaRadius
+    {
+        get => Spell.AreaRadius ?? "";
+        set { Spell.AreaRadius = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditSpellRoll
+    {
+        get => Spell.SpellRoll ?? "";
+        set { Spell.SpellRoll = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditSpellSuccess
+    {
+        get => Spell.SpellSuccess ?? "";
+        set { Spell.SpellSuccess = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditSpellFail
+    {
+        get => Spell.SpellFail ?? "";
+        set { Spell.SpellFail = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditSpellProperties
+    {
+        get => Spell.SpellProperties;
+        set { Spell.SpellProperties = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditTargetConditions
+    {
+        get => Spell.TargetConditions;
+        set { Spell.TargetConditions = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
+    }
+
+    public string EditSpellFlags
+    {
+        get => Spell.SpellFlags;
+        set { Spell.SpellFlags = value ?? ""; _parent.RecordEdit(); OnPropertyChanged(); }
     }
 
     private string GetLang(Dictionary<string, string> dict)
