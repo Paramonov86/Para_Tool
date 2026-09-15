@@ -555,8 +555,8 @@ public partial class ArtifactItemVM : ObservableObject
         var lang = Loc.Instance.Lang;
         foreach (var l in new[] { "en", "ru", lang }.Distinct())
         {
-            spell.DisplayName[l] = ResolveSpellText(spell.SourceDisplayNameHandle, spellName, l, locaService, isDescription: false);
-            spell.Description[l] = ResolveSpellText(spell.SourceDescriptionHandle, spellName, l, locaService, isDescription: true);
+            spell.DisplayName[l] = ResolveSpellText(spell.SourceDisplayNameHandle, spellName, l, locaService, isDescription: false, resolver);
+            spell.Description[l] = ResolveSpellText(spell.SourceDescriptionHandle, spellName, l, locaService, isDescription: true, resolver);
         }
 
         Artifact.Spells.Add(spell);
@@ -572,13 +572,21 @@ public partial class ArtifactItemVM : ObservableObject
     }
 
     private static string ResolveSpellText(string? handle, string spellName, string lang,
-        Core.Services.LocaService? locaService, bool isDescription)
+        Core.Services.LocaService? locaService, bool isDescription, Core.Parsing.StatsResolver? resolver = null)
     {
         if (!string.IsNullOrEmpty(handle) && locaService?.ResolveHandle(handle, lang) is { } text)
             return BbCode.FromBg3Xml(text);
-        return (isDescription
-            ? Core.Services.VanillaLocaService.GetDescription(spellName, lang)
-            : Core.Services.VanillaLocaService.GetDisplayName(spellName, lang)) ?? "";
+        // Vanilla text is keyed by spell name. A mod spell that inherits its text through `using`
+        // (AMP_Kyzr_Shatter_3 using Target_Shatter_3) has no row of its own, so walk up to one that does.
+        string? name = spellName;
+        for (int depth = 0; name != null && depth < 20; depth++, name = resolver?.Get(name)?.Using)
+        {
+            var found = isDescription
+                ? Core.Services.VanillaLocaService.GetDescription(name, lang)
+                : Core.Services.VanillaLocaService.GetDisplayName(name, lang);
+            if (!string.IsNullOrEmpty(found)) return found;
+        }
+        return "";
     }
 
     private static readonly System.Text.RegularExpressions.Regex UnlockSpellRegex =

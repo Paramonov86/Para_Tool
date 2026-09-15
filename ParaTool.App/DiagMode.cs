@@ -650,6 +650,16 @@ internal static class DiagMode
             }
             item.SetSpellGrantedThroughPassive(item.SpellVMs[0], true);
 
+            // A mod spell that inherits its name and description through `using` (AMP_Kyzr_Shatter_3
+            // using Target_Shatter_3) must still show its text on the card.
+            if (resolver.AllEntries.ContainsKey("AMP_Kyzr_Shatter_3"))
+            {
+                item.AddExistingSpell("AMP_Kyzr_Shatter_3", resolver, loca);
+                var inherited = art.Spells[^1];
+                Console.WriteLine($"  inherited text: en='{inherited.DisplayName.GetValueOrDefault("en")}' ru='{inherited.DisplayName.GetValueOrDefault("ru")}' " +
+                                  $"desc en={inherited.Description.GetValueOrDefault("en")?.Length ?? 0} chars, source handle={inherited.SourceDisplayNameHandle}");
+            }
+
             var view = new Views.ConstructorView { DataContext = cvm };
             var root = new Avalonia.Controls.Window { Width = 1600, Height = 4000, Content = view };
             for (int pass = 0; pass < 10; pass++)
