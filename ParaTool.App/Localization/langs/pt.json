@@ -762,5 +762,6 @@
   "cooldown.OncePerShortRestPerItem": "Uma vez por descanso curto (por item)",
   "enum.OncePerRest": "1/Desc. longo",
   "enum.OncePerRestPerItem": "Per Rest per Item",
-  "TipEditOriginal": "Desligado (padrão): o cartão é uma nova magia deste item, compilada como <ID do item>_Spell_N que herda da original; a magia original continua intacta em todo o resto.\nLigado: o cartão substitui a própria magia original (mesmo nome), então a mudança vale para todos os itens, classes e personagens que têm essa magia. O texto da original continua traduzido em todos os idiomas até você editar o nome ou a descrição."
+  "TipEditOriginal": "Desligado (padrão): o cartão é uma nova magia deste item, compilada como <ID do item>_Spell_N que herda da original; a magia original continua intacta em todo o resto.\nLigado: o cartão substitui a própria magia original (mesmo nome), então a mudança vale para todos os itens, classes e personagens que têm essa magia. O texto da original continua traduzido em todos os idiomas até você editar o nome ou a descrição.",
+  "LblSpellIcon": "Ícone"
 }

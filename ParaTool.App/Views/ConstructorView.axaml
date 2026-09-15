@@ -829,7 +829,7 @@
                                                                      FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0" Width="120" HorizontalAlignment="Left"
                                                                      Background="{StaticResource CardBgBrush}" CornerRadius="4" />
 
-                                                            <TextBlock Grid.Row="7" Text="{Binding LblIcon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                                            <TextBlock Grid.Row="7" Text="{Binding LblSpellIcon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                                                             <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding EditIcon}"
                                                                      FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0"
                                                                      Background="{StaticResource CardBgBrush}" CornerRadius="4" />

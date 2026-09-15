@@ -363,6 +363,7 @@ public partial class Loc : ObservableObject
     public string LblEditOriginal => this["LblEditOriginal"];
     public string WarnEditOriginal => this["WarnEditOriginal"];
     public string TipEditOriginal => this["TipEditOriginal"];
+    public string LblSpellIcon => this["LblSpellIcon"];
     public string TipRemoveSpell => this["TipRemoveSpell"];
     public string LblGrantViaPassive => this["LblGrantViaPassive"];
     public string TipGrantViaPassive => this["TipGrantViaPassive"];
