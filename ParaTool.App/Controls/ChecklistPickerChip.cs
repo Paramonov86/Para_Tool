@@ -45,13 +45,16 @@ public class ChecklistPickerChip : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
+            // A long selection ("HasVerbalComponent, HasSomaticComponent, …") wraps instead of
+            // being cut off on both sides of a narrow chip.
+            TextWrapping = TextWrapping.Wrap,
         };
 
         _chip = new Border
         {
             Child = _valueText,
-            MinWidth = 60, Height = 28,
-            Padding = new Thickness(8, 0),
+            MinWidth = 60, MinHeight = 28,
+            Padding = new Thickness(8, 3),
             CornerRadius = new CornerRadius(6),
             Background = ThemeBrushes.InputBg,
             BorderBrush = ThemeBrushes.BorderSubtle,

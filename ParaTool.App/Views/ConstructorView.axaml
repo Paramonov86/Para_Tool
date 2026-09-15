@@ -790,7 +790,13 @@
                                                                   ToolTip.Tip="{Binding TipGrantViaPassive, Source={x:Static loc:Loc.Instance}}"
                                                                   FontSize="{DynamicResource FontSize11}" />
 
-                                                        <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                                        <!-- Labels size their column: a fixed width cut "Description params" at a large font scale -->
+                                                        <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                                            <Grid.Styles>
+                                                                <Style Selector="Grid.spellLabels > TextBlock">
+                                                                    <Setter Property="Padding" Value="0,0,10,0" />
+                                                                </Style>
+                                                            </Grid.Styles>
                                                             <TextBlock Text="{Binding LblSpellType, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
                                                             <TextBlock Grid.Column="1" Text="{Binding SpellType}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
 
@@ -835,7 +841,12 @@
                                                         <!-- Mechanics: who it can target, the roll, and what it does -->
                                                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
                                                                 BorderBrush="#9B59B6" BorderThickness="2,0,0,0" ClipToBounds="False">
-                                                            <Grid ColumnDefinitions="90,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ClipToBounds="False">
+                                                            <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ClipToBounds="False">
+                                                                <Grid.Styles>
+                                                                    <Style Selector="Grid.spellLabels > TextBlock">
+                                                                        <Setter Property="Padding" Value="0,0,10,0" />
+                                                                    </Style>
+                                                                </Grid.Styles>
                                                                 <TextBlock Text="{Binding LblSpellTargets, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
                                                                 <ctrl:ConditionBlocksEditor Grid.Column="1" Text="{Binding EditTargetConditions}" />
 

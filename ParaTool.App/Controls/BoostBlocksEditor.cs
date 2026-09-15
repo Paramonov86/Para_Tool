@@ -336,7 +336,8 @@ public class BoostBlocksEditor : UserControl
             args = args[1..]; // shift args past the target context
         }
 
-        var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        // Params wrap onto the next line in a narrow card instead of running past it.
+        var stack = new WrapPanel { Orientation = Orientation.Horizontal };
 
         // Label
         stack.Children.Add(new TextBlock
@@ -345,6 +346,7 @@ public class BoostBlocksEditor : UserControl
             FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
             Foreground = colorBrush,
             VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
         });
 
         // Target context tumbler — always shown for functors that support it, or if data already contains one
@@ -667,6 +669,8 @@ public class BoostBlocksEditor : UserControl
         removeBtn.Tag = rawBoost;
         removeBtn.Click += OnRemoveClick;
         stack.Children.Add(removeBtn);
+        foreach (var child in stack.Children)
+            if (child.Margin == default) child.Margin = new Thickness(0, 1, 4, 1);
 
         // Use Panel so CornerRadius border doesn't clip tumbler drum overflow
         var bgBorder = new Border
@@ -859,13 +863,15 @@ public class BoostBlocksEditor : UserControl
 
     private Border CreateRawBlock(string raw)
     {
-        var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        // A long raw functor wraps inside the chip instead of running past the card.
+        var stack = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         stack.Children.Add(new TextBlock
         {
             Text = raw,
             FontSize = FontScale.Of(11),
             Foreground = FgMuted,
             VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
         });
         var removeBtn = new Button
         {
@@ -878,6 +884,7 @@ public class BoostBlocksEditor : UserControl
         };
         removeBtn.Tag = raw;
         removeBtn.Click += OnRemoveClick;
+        Grid.SetColumn(removeBtn, 1);
         stack.Children.Add(removeBtn);
 
         return new Border

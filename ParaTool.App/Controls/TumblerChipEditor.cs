@@ -88,6 +88,7 @@ public class TumblerChipEditor : UserControl
             MinWidth = 48, Height = ChipH,
             Padding = new Thickness(10, 0),
             CornerRadius = new CornerRadius(8),
+            TextTrimming = TextTrimming.CharacterEllipsis,
             Background = ThemeBrushes.InputBg,
             BorderBrush = ThemeBrushes.BorderSubtle,
             BorderThickness = new Thickness(1),
@@ -233,13 +234,36 @@ public class TumblerChipEditor : UserControl
 
         var tb = new TextBlock { Text = refText, FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold };
         tb.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var w = tb.DesiredSize.Width + 28;
+        _itemsMinWidth = tb.DesiredSize.Width + 28;
+        ApplyMinWidth();
+    }
+
+    private double _itemsMinWidth = 48;
+    private double _availableWidth = double.PositiveInfinity;
+
+    /// <summary>
+    /// Size the chip for its labels, but never wider than the row it sits in: long labels (cooldowns
+    /// in Russian at a large font scale) would otherwise push it past its card.
+    /// </summary>
+    private void ApplyMinWidth()
+    {
+        var w = Math.Min(_itemsMinWidth, _availableWidth);
         _chip.MinWidth = Math.Max(w, 48);
         _valueText.MinWidth = w - 20;
         if (_upperLabels != null)
             foreach (var l in _upperLabels) l.MinWidth = w - 20;
         if (_lowerLabels != null)
-            foreach (var l in _lowerLabels) l.MinWidth = w - 20;
+            foreach (var l in _lowerLabels) l.MinWidth = Math.Max(w - 20, 0);
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        if (availableSize.Width != _availableWidth)
+        {
+            _availableWidth = availableSize.Width;
+            ApplyMinWidth();
+        }
+        return base.MeasureOverride(availableSize);
     }
 
     /// <summary>Adaptive font size: shrink for items much longer than average.</summary>

@@ -290,7 +290,8 @@ public class ConditionBlocksEditor : UserControl
         var schema = ConditionSchema.Instance;
         schema.ByName.TryGetValue(token.FuncName, out var def);
 
-        var stack = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3 };
+        // Params wrap onto the next line in a narrow card instead of running past it.
+        var stack = new WrapPanel { Orientation = Orientation.Horizontal };
 
         // NOT toggle button
         if (token.Negated)
@@ -671,6 +672,8 @@ public class ConditionBlocksEditor : UserControl
         };
         removeBtn.Click += (_, _) => { RemoveToken(tokens, tokenIdx); SyncFromTokens(tokens); };
         stack.Children.Add(removeBtn);
+        foreach (var child in stack.Children)
+            if (child.Margin == default) child.Margin = new Thickness(0, 1, 3, 1);
 
         var chip = new Border
         {

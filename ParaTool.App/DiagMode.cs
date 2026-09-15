@@ -615,6 +615,8 @@ internal static class DiagMode
 
     private static int RunSpellUiSmoke(ScanResult result, LocaService loca)
     {
+        // Russian labels in the layout report; setting Console.OutputEncoding throws on a pipe.
+        Console.SetOut(new StreamWriter(Console.OpenStandardOutput(), new System.Text.UTF8Encoding(false)) { AutoFlush = true });
         Console.WriteLine("\n=== spell card UI smoke ===");
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PARATOOL_STORAGE_DIR")))
         {
@@ -674,6 +676,101 @@ internal static class DiagMode
             Console.WriteLine($"  realized: spell cards={Realized<ViewModels.SpellVM>()} creature rows={Realized<ViewModels.SummonVM>()} " +
                               $"passive cards={Realized<ViewModels.PassiveVM>()} (controls {controls.Count})");
             Console.WriteLine($"  spell name boxes: {string.Join(" | ", controls.OfType<Avalonia.Controls.TextBox>().Where(t => t.DataContext is ViewModels.SpellVM && t.FontWeight == Avalonia.Media.FontWeight.SemiBold).Select(t => t.Text))}");
+
+            // Max's settings: font +50% in a narrow window, English and Russian. A label wider than
+            // its grid column draws over the box next to it, and a chip row that does not wrap runs
+            // past its card — report both.
+            item.SpellVMs[0].EditSpellProperties =
+                "IF(HasStatus('BURNING')):RestoreResource(SELF,ChannelDivinity,1,0);" + item.SpellVMs[0].EditSpellProperties;
+            static void ApplyFontScale(double scale)
+            {
+                Services.FontScale.Factor = scale;
+                foreach (var bs in new[] { 10, 11, 12, 13, 14, 16, 18, 20, 22, 24 })
+                    Avalonia.Application.Current!.Resources[$"FontSize{bs}"] = Math.Round(bs * scale);
+                Services.FontScale.NotifyChanged();
+            }
+            static IEnumerable<Avalonia.Visual> Descendants(Avalonia.Visual v)
+            {
+                foreach (var ch in Avalonia.VisualTree.VisualExtensions.GetVisualChildren(v))
+                {
+                    yield return ch;
+                    foreach (var d in Descendants(ch)) yield return d;
+                }
+            }
+            foreach (var (lang, scale, width) in new[] { ("en", 1.0, 1600.0), ("en", 1.5, 1000.0), ("ru", 1.5, 1000.0) })
+            {
+                Localization.Loc.Instance.SetLanguage(lang);
+                ApplyFontScale(scale);
+                // A window that is never shown lays out at most ~1000 px wide, so the width comes
+                // from a fixed-width host inside it.
+                var probeRoot = new Avalonia.Controls.Window
+                {
+                    Width = 1000, Height = 4000,
+                    Content = new Avalonia.Controls.Border
+                    {
+                        Width = width, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left,
+                        Child = new Views.ConstructorView { DataContext = cvm },
+                    },
+                };
+                void Settle()
+                {
+                    // The window is never shown, so nothing re-arranges containers added under a panel
+                    // that was already arranged — invalidate the whole tree on every pass.
+                    for (int pass = 0; pass < 10; pass++)
+                    {
+                        foreach (var l in Descendants(probeRoot).OfType<Avalonia.Layout.Layoutable>()) l.InvalidateMeasure();
+                        probeRoot.InvalidateMeasure();
+                        probeRoot.Measure(new Avalonia.Size(1000, 4000));
+                        probeRoot.Arrange(new Avalonia.Rect(0, 0, 1000, 4000));
+                        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    }
+                }
+                Settle();
+                // Loading the view rebuilds the card VMs, so expand the ones it ended up with.
+                foreach (var s in item.SpellVMs) s.IsExpanded = true;
+                foreach (var p in item.PassiveVMs) p.IsExpanded = true;
+                Settle();
+
+                var allCards = Descendants(probeRoot).OfType<Avalonia.Controls.ItemsControl>()
+                    .SelectMany(ic => ic.GetRealizedContainers())
+                    .Where(c => c.DataContext is ViewModels.SpellVM or ViewModels.PassiveVM)
+                    .Distinct().ToList();
+                var cards = allCards.Where(c => c.Bounds.Width > 0).ToList();
+                var problems = new List<string>();
+                foreach (var card in cards)
+                foreach (var v in Descendants(card))
+                {
+                    if (v is not Avalonia.Controls.Control c || !c.IsEffectivelyVisible || c.Bounds.Width <= 0) continue;
+                    if (c is not (Avalonia.Controls.TextBlock or Avalonia.Controls.TextBox or Controls.TumblerChipEditor
+                        or Avalonia.Controls.Button or Controls.SearchPickerChip)) continue;
+                    if (Avalonia.VisualTree.VisualExtensions.FindAncestorOfType<Avalonia.Controls.TextBox>(c) != null) continue;
+                    var what = $"{c.GetType().Name} '{(c as Avalonia.Controls.TextBlock)?.Text ?? (c as Controls.TumblerChipEditor)?.Text ?? (c as Avalonia.Controls.TextBox)?.Text}'";
+                    var right = Avalonia.VisualExtensions.TranslatePoint(c, new Avalonia.Point(c.Bounds.Width, 0), card)?.X ?? 0;
+                    if (right > card.Bounds.Width + 1)
+                    {
+                        var left = Avalonia.VisualExtensions.TranslatePoint(c, new Avalonia.Point(0, 0), card)?.X ?? 0;
+                        int depth = 0;
+                        for (var a = Avalonia.VisualTree.VisualExtensions.GetVisualParent(c); a != null && a != card; a = Avalonia.VisualTree.VisualExtensions.GetVisualParent(a))
+                            if (a is Controls.BoostBlocksEditor or Controls.ConditionBlocksEditor) depth++;
+                        problems.Add($"runs out: {what} left={left:0} right={right:0} card={card.Bounds.Width:0} editors={depth}");
+                    }
+                    if (c is Avalonia.Controls.TextBlock tb && !string.IsNullOrEmpty(tb.Text)
+                        && tb.TextWrapping == Avalonia.Media.TextWrapping.NoWrap && tb.TextTrimming == Avalonia.Media.TextTrimming.None)
+                    {
+                        var needed = new Avalonia.Media.TextFormatting.TextLayout(tb.Text,
+                            new Avalonia.Media.Typeface(tb.FontFamily, tb.FontStyle, tb.FontWeight), tb.FontSize, null).Width;
+                        if (needed > tb.Bounds.Width + 1)
+                            problems.Add($"label cut: '{tb.Text}' needs {needed:0} has {tb.Bounds.Width:0}");
+                    }
+                }
+                var distinct = problems.Distinct().ToList();
+                Console.WriteLine($"  layout {lang} font x{scale} width {width}: cards={cards.Count} problems={distinct.Count}");
+                foreach (var p in distinct.Take(20)) Console.WriteLine($"    {p}");
+                probeRoot.Content = null;
+            }
+            Localization.Loc.Instance.SetLanguage("en");
+            ApplyFontScale(1.0);
+
             Console.WriteLine($"  binding errors: {sink.Errors.Count}");
             foreach (var e in sink.Errors.Distinct().Take(15)) Console.WriteLine($"    {e}");
             return 0;
