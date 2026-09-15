@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "Presságio cósmico",
   "resource.WrithingTidePoint": "Maré contorcida",
   "resource.ArcaneRecoveryPoint": "Recuperação arcana",
-  "TipAddCost": "Adicionar um recurso que a magia gasta"
+  "TipAddCost": "Adicionar um recurso que a magia gasta",
+  "TipSpellSlotsGroup": "Gasta um espaço de magia deste nível, normal ou de pacto do bruxo: o mesmo grupo de espaços que todas as magias do jogo usam."
 }

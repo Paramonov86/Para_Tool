@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "Kosmiczny omen",
   "resource.WrithingTidePoint": "Wijący się przypływ",
   "resource.ArcaneRecoveryPoint": "Arkaniczna regeneracja",
-  "TipAddCost": "Dodaj zasób, który zużywa zaklęcie"
+  "TipAddCost": "Dodaj zasób, który zużywa zaklęcie",
+  "TipSpellSlotsGroup": "Zużywa komórkę zaklęć tego kręgu, zwykłą lub komórkę paktu czarnoksiężnika: tę samą grupę komórek, której używają wszystkie zaklęcia z gry."
 }

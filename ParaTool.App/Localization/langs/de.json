@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "Kosmisches Omen",
   "resource.WrithingTidePoint": "Wogende Flut",
   "resource.ArcaneRecoveryPoint": "Arkane Erholung",
-  "TipAddCost": "Eine Ressource hinzufügen, die der Zauber verbraucht"
+  "TipAddCost": "Eine Ressource hinzufügen, die der Zauber verbraucht",
+  "TipSpellSlotsGroup": "Verbraucht einen Zauberplatz dieses Grades, einen normalen oder einen Paktplatz des Hexenmeisters: dieselbe Platzgruppe wie bei allen Vanilla-Zaubern."
 }

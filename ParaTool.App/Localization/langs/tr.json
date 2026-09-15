@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "Kozmik Kehanet",
   "resource.WrithingTidePoint": "Kıvranan Gelgit",
   "resource.ArcaneRecoveryPoint": "Arkan İyileşme",
-  "TipAddCost": "Büyünün harcadığı bir kaynak ekle"
+  "TipAddCost": "Büyünün harcadığı bir kaynak ekle",
+  "TipSpellSlotsGroup": "Bu seviyede bir büyü yuvası harcar, normal ya da Warlock pakt yuvası: oyundaki tüm büyülerin kullandığı aynı yuva grubu."
 }

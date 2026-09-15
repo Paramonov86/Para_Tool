@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "Cosmic Omen",
   "resource.WrithingTidePoint": "Writhing Tide",
   "resource.ArcaneRecoveryPoint": "Arcane Recovery",
-  "TipAddCost": "Add a resource the spell spends"
+  "TipAddCost": "Add a resource the spell spends",
+  "TipSpellSlotsGroup": "Spends a spell slot of this level, a regular or a Warlock pact slot: the same slot group every vanilla spell uses."
 }

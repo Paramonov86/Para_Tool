@@ -783,5 +783,6 @@
   "resource.CosmicOmen": "우주의 징조",
   "resource.WrithingTidePoint": "몸부림치는 파도",
   "resource.ArcaneRecoveryPoint": "비전 회복",
-  "TipAddCost": "주문이 소모하는 자원 추가"
+  "TipAddCost": "주문이 소모하는 자원 추가",
+  "TipSpellSlotsGroup": "이 레벨의 주문 슬롯(일반 또는 워락 계약 슬롯)을 소모합니다. 게임 내 모든 주문이 사용하는 것과 같은 슬롯 그룹입니다."
 }

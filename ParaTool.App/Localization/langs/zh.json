@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "宇宙预兆",
   "resource.WrithingTidePoint": "扭动潮汐",
   "resource.ArcaneRecoveryPoint": "奥术回想",
-  "TipAddCost": "添加法术消耗的资源"
+  "TipAddCost": "添加法术消耗的资源",
+  "TipSpellSlotsGroup": "消耗该环阶的一个法术位（普通法术位或邪术师契约法术位），与游戏内所有法术使用的法术位组相同。"
 }

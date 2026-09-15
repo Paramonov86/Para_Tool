@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "宇宙の予兆",
   "resource.WrithingTidePoint": "渦巻く潮流",
   "resource.ArcaneRecoveryPoint": "秘術回復",
-  "TipAddCost": "呪文が消費するリソースを追加"
+  "TipAddCost": "呪文が消費するリソースを追加",
+  "TipSpellSlotsGroup": "このレベルの呪文スロット（通常またはウォーロックの契約スロット）を消費します。ゲーム内のすべての呪文と同じスロットグループです。"
 }

@@ -194,19 +194,17 @@ public class UseCostsEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
         };
-        ToolTip.SetTip(label, seg.Raw.Trim());
+        // Vanilla spells never spend WarlockSpellSlot directly: SpellSlotsGroup is the pool of regular
+        // and pact slots, so the slot badge says so instead of offering a separate warlock resource.
+        ToolTip.SetTip(label, seg.IsSlot ? $"{Loc.Instance["TipSpellSlotsGroup"]}\n{seg.Raw.Trim()}" : seg.Raw.Trim());
         row.Children.Add(label);
 
         if (seg.IsSlot)
         {
             row.Children.Add(Caption(Loc.Instance.LblSpellLevel));
             row.Children.Add(NumberChip(seg.Level!.Value, 1, 9, v => seg.Level = v));
-            // Two or three slots at once is rare (SpellSlotsGroup:2:2:L); show the count only then.
-            if (seg.Amount != 1)
-            {
-                row.Children.Add(Caption("×"));
-                row.Children.Add(NumberChip(seg.Amount!.Value, 1, 9, v => seg.Amount = v));
-            }
+            row.Children.Add(Caption("×"));
+            row.Children.Add(NumberChip(seg.Amount!.Value, 1, 9, v => seg.Amount = v));
         }
         else if (seg.Amount != null)
             row.Children.Add(NumberChip(seg.Amount.Value, 0, 99, v => seg.Amount = v));

@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "Présage cosmique",
   "resource.WrithingTidePoint": "Marée grouillante",
   "resource.ArcaneRecoveryPoint": "Restauration arcanique",
-  "TipAddCost": "Ajouter une ressource dépensée par le sort"
+  "TipAddCost": "Ajouter une ressource dépensée par le sort",
+  "TipSpellSlotsGroup": "Dépense un emplacement de sort de ce niveau, normal ou de pacte d'occultiste : le même groupe d'emplacements que tous les sorts du jeu."
 }

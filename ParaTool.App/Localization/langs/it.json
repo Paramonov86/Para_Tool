@@ -785,5 +785,6 @@
   "resource.CosmicOmen": "Presagio cosmico",
   "resource.WrithingTidePoint": "Marea contorta",
   "resource.ArcaneRecoveryPoint": "Recupero arcano",
-  "TipAddCost": "Aggiungi una risorsa spesa dall'incantesimo"
+  "TipAddCost": "Aggiungi una risorsa spesa dall'incantesimo",
+  "TipSpellSlotsGroup": "Consuma uno slot incantesimo di questo livello, normale o del patto del warlock: lo stesso gruppo di slot usato da tutti gli incantesimi del gioco."
 }
