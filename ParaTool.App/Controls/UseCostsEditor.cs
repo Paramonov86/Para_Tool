@@ -100,9 +100,9 @@ public class UseCostsEditor : UserControl
             Cursor = new Cursor(StandardCursorType.Hand),
             VerticalAlignment = VerticalAlignment.Center,
         };
-        var menu = new MenuFlyout();
-        menu.Opening += (_, _) => FillAddMenu(menu);
-        _addBtn.Flyout = menu;
+        // Built on each click and opened like the condition editor's "+"; a MenuFlyout filled in
+        // its Opening event never showed.
+        _addBtn.Click += (_, _) => OpenAddMenu();
 
         Content = _panel;
         ClipToBounds = false;
@@ -275,9 +275,9 @@ public class UseCostsEditor : UserControl
         return chip;
     }
 
-    private void FillAddMenu(MenuFlyout menu)
+    private void OpenAddMenu()
     {
-        menu.Items.Clear();
+        var menu = new ContextMenu();
         var present = new HashSet<string>(_segments.Select(s => s.Resource), StringComparer.OrdinalIgnoreCase);
         foreach (var resource in CostResources.Where(r => !present.Contains(r)))
         {
@@ -285,6 +285,7 @@ public class UseCostsEditor : UserControl
             item.Click += (_, _) => Add(resource);
             menu.Items.Add(item);
         }
+        if (menu.Items.Count > 0) menu.Open(_addBtn);
     }
 
     private void Add(string resource)
