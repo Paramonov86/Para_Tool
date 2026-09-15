@@ -518,18 +518,27 @@ internal static class DiagMode
 
         var target = ParaTool.Core.Patching.AmpPatcher.SelectPatchTarget(result.Mods);
         Console.WriteLine($"  target: {target?.Name ?? "AMP"}");
-        if (target == null) return 0;
 
-        var targetTtBefore = PakText(ParaTool.Core.Services.PakSource.Resolve(target.PakPath), "TreasureTable.txt") ?? "";
+        // With PARATOOL_STORAGE_DIR pointing at a scratch folder, patch a throwaway ring that
+        // carries spell cards and show what reaches the written pak.
+        var spellProbe = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PARATOOL_STORAGE_DIR"))
+            ? SaveSpellProbeArtifact(result) : null;
+        if (target == null && spellProbe == null) return 0;
+
+        var targetTtBefore = target == null ? ""
+            : PakText(ParaTool.Core.Services.PakSource.Resolve(target.PakPath), "TreasureTable.txt") ?? "";
         var restated = TableBlock(targetTtBefore, "AMP_Para_14");
-        var victim = result.AmpMod.Items.FirstOrDefault(i => restated.Contains($"\"I_{i.StatId}\""));
-        if (victim == null)
+        var victim = target == null ? null : result.AmpMod.Items.FirstOrDefault(i => restated.Contains($"\"I_{i.StatId}\""));
+        if (target != null && victim == null)
         {
             Console.Error.WriteLine("  no AMP item found in the submod's AMP_Para_14");
             return 5;
         }
-        victim.Enabled = false;
-        Console.WriteLine($"  unchecked: {victim.StatId} (in submod AMP_Para_14: {restated.Length > 0})");
+        if (victim != null)
+        {
+            victim.Enabled = false;
+            Console.WriteLine($"  unchecked: {victim.StatId} (in submod AMP_Para_14: {restated.Length > 0})");
+        }
 
         var ampHash = Hash(result.AmpPakPath);
         var itemsBefore = result.Mods.Sum(m => m.Items.Count) + result.AmpMod.Items.Count;
@@ -540,19 +549,100 @@ internal static class DiagMode
         foreach (var w in patch.Warnings.Take(5)) Console.WriteLine($"    warn: {w}");
 
         Console.WriteLine($"  AMP pak unchanged: {Hash(result.AmpPakPath) == ampHash}");
-        var liveTt = PakText(target.PakPath, "TreasureTable.txt") ?? "";
-        Console.WriteLine($"  AMP_Para_14 tables in submod: {Count(liveTt, "new treasuretable \"AMP_Para_14\"")}");
-        Console.WriteLine($"  victim still in submod AMP_Para_14: {TableBlock(liveTt, "AMP_Para_14").Contains($"\"I_{victim.StatId}\"")}");
-        Console.WriteLine($"  tables in submod TT: {Count(targetTtBefore, "new treasuretable ")} -> {Count(liveTt, "new treasuretable ")}");
-        Console.WriteLine($"  marker in submod: {ParaTool.Core.Services.AmpBackupService.IsPatchedPak(target.PakPath)}; " +
-                          $"marker in AMP: {ParaTool.Core.Services.AmpBackupService.IsPatchedPak(result.AmpPakPath)}");
-        Console.WriteLine($"  scanner reads submod from backup: " +
-                          $"{ParaTool.Core.Services.PakSource.Resolve(target.PakPath) == ParaTool.Core.Services.AmpBackupService.GetBackupPath(target.PakPath)}");
+        if (target != null && victim != null)
+        {
+            var liveTt = PakText(target.PakPath, "TreasureTable.txt") ?? "";
+            Console.WriteLine($"  AMP_Para_14 tables in submod: {Count(liveTt, "new treasuretable \"AMP_Para_14\"")}");
+            Console.WriteLine($"  victim still in submod AMP_Para_14: {TableBlock(liveTt, "AMP_Para_14").Contains($"\"I_{victim.StatId}\"")}");
+            Console.WriteLine($"  tables in submod TT: {Count(targetTtBefore, "new treasuretable ")} -> {Count(liveTt, "new treasuretable ")}");
+            Console.WriteLine($"  marker in submod: {ParaTool.Core.Services.AmpBackupService.IsPatchedPak(target.PakPath)}; " +
+                              $"marker in AMP: {ParaTool.Core.Services.AmpBackupService.IsPatchedPak(result.AmpPakPath)}");
+            Console.WriteLine($"  scanner reads submod from backup: " +
+                              $"{ParaTool.Core.Services.PakSource.Resolve(target.PakPath) == ParaTool.Core.Services.AmpBackupService.GetBackupPath(target.PakPath)}");
+        }
+
+        if (spellProbe != null)
+        {
+            Console.WriteLine("\n  --- spell cards in written pak ---");
+            var written = target != null ? target.PakPath : result.AmpPakPath;
+            var entries = StatsOfPak(written);
+            foreach (var name in spellProbe)
+            {
+                var decls = entries.Where(e => e.entry.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).ToList();
+                Console.WriteLine($"  {name}: {decls.Count} declaration(s)");
+                foreach (var (file, e) in decls)
+                    Console.WriteLine($"    {file}: using={e.Using ?? "-"} " +
+                                      string.Join(" ", new[] { "SpellType", "Cooldown", "SpellSuccess", "DisplayName", "Boosts" }
+                                          .Where(e.Data.ContainsKey).Select(k => $"{k}='{e.Data[k]}'")));
+            }
+        }
 
         var rescan = await new ModScanner(vanillaDb).ScanAsync(modsPath, "en");
         var itemsAfter = rescan.Mods.Sum(m => m.Items.Count) + (rescan.AmpMod?.Items.Count ?? 0);
         Console.WriteLine($"  items scanned before/after patch: {itemsBefore} / {itemsAfter}");
         return 0;
+    }
+
+    /// <summary>Every stats entry in a pak's Stats/Generated/Data files, with its file name.</summary>
+    private static List<(string file, ParaTool.Core.Parsing.StatsEntry entry)> StatsOfPak(string pak)
+    {
+        var list = new List<(string, ParaTool.Core.Parsing.StatsEntry)>();
+        using var fs = File.OpenRead(pak);
+        var header = ParaTool.Core.PakReader.ReadHeader(fs);
+        foreach (var e in ParaTool.Core.PakReader.ReadFileList(fs, header))
+        {
+            if (!e.Path.Contains("Stats/Generated/Data/", StringComparison.OrdinalIgnoreCase)
+                || !e.Path.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)) continue;
+            var text = System.Text.Encoding.UTF8.GetString(ParaTool.Core.PakReader.ExtractFileData(fs, e));
+            foreach (var entry in ParaTool.Core.Parsing.StatsParser.Parse(text))
+                list.Add((Path.GetFileName(e.Path), entry));
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Saves a ring with three spell cards into the (scratch) artifact store: a copy of a vanilla
+    /// spell, an edited original AMP declares itself, and an edited original vanilla spell.
+    /// Returns the entry names to look for in the written pak.
+    /// </summary>
+    private static List<string>? SaveSpellProbeArtifact(ScanResult result)
+    {
+        var resolver = result.Resolver;
+        var ring = result.AmpMod!.Items.FirstOrDefault(i =>
+            i.StatType == "Armor" && resolver.Resolve(i.StatId, "Slot") == "Ring"
+            && !string.IsNullOrEmpty(resolver.Resolve(i.StatId, "RootTemplate")));
+        if (ring == null) { Console.Error.WriteLine("  spell probe: no AMP ring"); return null; }
+
+        var art = new ParaTool.Core.Artifacts.ArtifactDefinition
+        {
+            StatId = "PT_SpellProbe_Ring",
+            StatType = "Armor",
+            UsingBase = ring.StatId,
+            Slot = "Ring",
+            ParentTemplateUuid = resolver.Resolve(ring.StatId, "RootTemplate")!,
+            Rarity = "Rare",
+            LootPool = "Rings",
+            AddToLoot = false,
+        };
+        art.DisplayName["en"] = "Spell probe ring";
+
+        var copy = ParaTool.Core.Artifacts.SpellCloner.CloneFrom("Target_VampiricTouch", resolver);
+        copy.Cooldown = "OncePerShortRest";
+        copy.DisplayName["en"] = "Probe Leech";
+        var ampEdit = ParaTool.Core.Artifacts.SpellCloner.CloneFrom("Projectile_Ring32", resolver);
+        ampEdit.EditOriginal = true;
+        ampEdit.SpellSuccess = "DealDamage(4d12,Fire,Magical)";
+        var vanillaName = new[] { "Projectile_MagicMissile", "Target_Shield", "Shout_Bless" }
+            .First(n => resolver.AllEntries.ContainsKey(n));
+        var vanillaEdit = ParaTool.Core.Artifacts.SpellCloner.CloneFrom(vanillaName, resolver);
+        vanillaEdit.EditOriginal = true;
+        vanillaEdit.Cooldown = "OncePerTurn";
+
+        art.Spells.AddRange([copy, ampEdit, vanillaEdit]);
+        art.SpellsOnEquip = $"Target_VampiricTouch;Projectile_Ring32;{vanillaName}";
+        ParaTool.Core.Artifacts.ArtifactStore.Save(art);
+        Console.WriteLine($"  spell probe: saved {art.StatId} (base {ring.StatId}) to {ParaTool.Core.Artifacts.ArtifactStore.GetArtifactsDir()}");
+        return ["PT_SpellProbe_Ring", "PT_SpellProbe_Ring_Spell_1", "Projectile_Ring32", vanillaName];
     }
 
     /// <summary>

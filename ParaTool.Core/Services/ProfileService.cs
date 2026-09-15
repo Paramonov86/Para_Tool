@@ -12,6 +12,11 @@ public static class ProfileService
 
     public static string GetStorageDir()
     {
+        // Diagnostics run against throwaway artifacts, never the user's own.
+        var overrideDir = Environment.GetEnvironmentVariable("PARATOOL_STORAGE_DIR");
+        if (!string.IsNullOrWhiteSpace(overrideDir))
+            return overrideDir;
+
         string baseDir;
         if (OperatingSystem.IsWindows())
             baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);

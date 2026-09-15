@@ -597,6 +597,8 @@ public sealed class AmpPatcher
         // Item overrides re-serialized as thin self-referencing entries. A submod target does not
         // declare AMP's entries, so there they are appended instead of edited in place.
         var thinItemOverrides = new StringBuilder();
+        // Self-`using` spell/status entries from every artifact, written last (ApplySelfOverrides).
+        var selfOverrides = new List<Parsing.StatsEntry>();
         foreach (var entry in overrideParsed)
         {
             if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
@@ -662,18 +664,20 @@ public sealed class AmpPatcher
             // Append passives/statuses/spells from overrides to last stat file
             var nonItemOverrides = new StringBuilder();
             var nonItemNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var overrideSelfEntries = new List<Parsing.StatsEntry>();
             foreach (var entry in overrideParsed)
             {
                 if (entry.Type == "Armor" || entry.Type == "Weapon") continue;
+                if (IsSelfOverride(entry)) { overrideSelfEntries.Add(entry); continue; }
                 nonItemNames.Add(entry.Name);
                 nonItemOverrides.AppendLine($"new entry \"{entry.Name}\"");
                 nonItemOverrides.AppendLine($"type \"{entry.Type}\"");
-                // Skip self-referencing using (already handled by compiler)
-                if (entry.Using != null && !entry.Name.Equals(entry.Using, StringComparison.OrdinalIgnoreCase))
+                if (entry.Using != null)
                     nonItemOverrides.AppendLine($"using \"{entry.Using}\"");
                 foreach (var (k, v) in entry.Data) nonItemOverrides.AppendLine($"data \"{k}\" \"{v}\"");
                 nonItemOverrides.AppendLine();
             }
+            selfOverrides.AddRange(overrideSelfEntries);
 
             // Remove existing entries for these names first (cleanup duplicates + replace originals)
             if (nonItemNames.Count > 0)
@@ -734,12 +738,16 @@ public sealed class AmpPatcher
                     sb = new StringBuilder();
                     byFile[targetFile] = sb;
                 }
-                sb.Append(compiled.StatsText);
+                sb.Append(SplitSelfOverrides(compiled.StatsText, selfOverrides));
             }
 
             foreach (var (file, content) in byFile)
                 File.AppendAllText(file, "\n" + content);
         }
+
+        // Edited original spells and rename overrides, from new and override artifacts alike.
+        if (statFiles.Length > 0)
+            ApplySelfOverrides(statFiles, selfOverrides);
 
         // TreasureTable for new items is handled by the main TT patching step
 
@@ -783,6 +791,71 @@ public sealed class AmpPatcher
     }
 
     private sealed record ArtifactApplyResult(int Count);
+
+    /// <summary>
+    /// A non-item entry that re-declares itself (<c>using "&lt;self&gt;"</c>): an edited original
+    /// spell or a spell/status rename. It restates only what it changes.
+    /// </summary>
+    internal static bool IsSelfOverride(Parsing.StatsEntry entry) =>
+        entry.Type is not ("Armor" or "Weapon")
+        && entry.Name.Equals(entry.Using, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Removes self-overrides from compiled stats text into <paramref name="selfOverrides"/> and
+    /// returns the rest unchanged, so they can go through <see cref="ApplySelfOverrides"/>.
+    /// </summary>
+    internal static string SplitSelfOverrides(string statsText, List<Parsing.StatsEntry> selfOverrides)
+    {
+        var self = Parsing.StatsParser.Parse(statsText).Where(IsSelfOverride).ToList();
+        if (self.Count == 0) return statsText;
+        selfOverrides.AddRange(self);
+        return StatsFileEditor.RemoveEntries(statsText,
+            new HashSet<string>(self.Select(e => e.Name), StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Writes self-overrides into the pak being patched. When the pak declares the entry itself
+    /// (an AMP spell edited while patching AMP) the declaration is edited in place: AMP never
+    /// re-declares one of its own entries in the same pak, so that form is unproven, and deleting
+    /// the declaration to append a thin copy would lose everything the copy inherits. Otherwise
+    /// (a vanilla spell, or an AMP spell while patching a submod) the self-`using` entry is
+    /// appended — the form AMP and AMP Plus use across paks. The last override of a name wins.
+    /// </summary>
+    internal static void ApplySelfOverrides(string[] statFiles, IReadOnlyList<Parsing.StatsEntry> selfOverrides)
+    {
+        if (selfOverrides.Count == 0 || statFiles.Length == 0) return;
+
+        var byName = new Dictionary<string, Parsing.StatsEntry>(StringComparer.OrdinalIgnoreCase);
+        foreach (var e in selfOverrides) byName[e.Name] = e;
+
+        var edits = byName.ToDictionary(kv => kv.Key, kv => kv.Value.Data, StringComparer.OrdinalIgnoreCase);
+        var declared = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var sf in statFiles)
+        {
+            var text = File.ReadAllText(sf);
+            var (modified, found) = StatsFileEditor.ModifyEntries(text, edits);
+            if (found.Count == 0) continue;
+            File.WriteAllText(sf, modified);
+            declared.UnionWith(found);
+        }
+
+        var appended = new StringBuilder();
+        foreach (var e in byName.Values.Where(e => !declared.Contains(e.Name)))
+        {
+            appended.AppendLine($"new entry \"{e.Name}\"");
+            appended.AppendLine($"type \"{e.Type}\"");
+            foreach (var typeKey in new[] { "SpellType", "StatusType" })
+                if (e.Data.TryGetValue(typeKey, out var tv))
+                    appended.AppendLine($"data \"{typeKey}\" \"{tv}\"");
+            appended.AppendLine($"using \"{e.Name}\"");
+            foreach (var (k, v) in e.Data)
+                if (k is not ("SpellType" or "StatusType"))
+                    appended.AppendLine($"data \"{k}\" \"{v}\"");
+            appended.AppendLine();
+        }
+        if (appended.Length > 0)
+            File.AppendAllText(statFiles[^1], "\n" + appended);
+    }
 
     /// <summary>
     /// Writes localization entries into existing .loca.xml files or creates new ones.
