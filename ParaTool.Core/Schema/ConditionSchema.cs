@@ -748,7 +748,7 @@ public sealed partial class ConditionSchema
                 or "grenadenum" or "slotnum" or "maxuses"
                 or "numberofenemy" => "int",
             "distance" => "float",
-            "offhand" or "checkranged" or "mainhand" or "ispercentage"
+            "offhand" or "checkranged" or "rangedslot" or "mainhand" or "ispercentage"
                 or "result" or "checkstacks" or "spellcast" or "hasshield" => "bool",
             "resourcetype" or "resource" => "enum",
             "statusid" or "status" or "spellid" or "spell" or "passivename" or "tag" => "string",

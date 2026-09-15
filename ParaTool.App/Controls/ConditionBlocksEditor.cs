@@ -459,6 +459,14 @@ public class ConditionBlocksEditor : UserControl
             }
             else if (param?.Type == "bool" || (param?.Type != "enum" && argVal is "true" or "false"))
             {
+                // A bare true/false says nothing — IsOffHandSlotEmpty's flag picks melee vs ranged.
+                if (param != null)
+                    stack.Children.Add(new TextBlock
+                    {
+                        Text = ConditionLabels.GetParamLabel(param.Name, Localization.Loc.Instance.Lang == "ru") + ":",
+                        FontSize = FontScale.Of(9), Foreground = FgMuted,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    });
                 var boolTumbler = new TumblerChipEditor
                 {
                     Text = argVal, Items = ["true", "false"],
@@ -591,22 +599,22 @@ public class ConditionBlocksEditor : UserControl
             }
         }
 
-        // "+" button to add optional params — skip entity defaults, only offer context.Source
+        // "+" button to add the next optional param. An entity is offered as its source; once an
+        // entity is set, only typed flags follow — IsOffHandSlotEmpty(context.Source, true) needs
+        // its rangedSlot, while a bare string arg would go out as '' and break the call.
         var hasEntityArg = token.Args.Any(a => a.TrimStart('\'', '"').StartsWith("context."));
-        if (def != null && argCount < paramCount && !hasEntityArg)
+        var offeredParam = def != null && argCount < paramCount ? def.Params[argCount] : null;
+        var isEntityNext = offeredParam != null && ConditionSchema.IsEntityParam(offeredParam);
+        if (offeredParam != null
+            && (isEntityNext ? !hasEntityArg : !hasEntityArg || offeredParam.Type is "bool" or "int" or "float"))
         {
-            var nextParam = def.Params[argCount];
-            // Skip if next param is entity and default (most users don't need it)
-            var isEntityNext = nextParam.EnumValues == ConditionSchema.EntityTargetsEn;
-            // Only show +source button if explicitly useful
-            if (isEntityNext) nextParam = new ConditionParam
-            {
-                Name = "source", Type = "enum",
-                EnumValues = ConditionSchema.EntityTargetsEn
-            };
+            var nextParam = isEntityNext
+                ? new ConditionParam { Name = "source", Type = "enum", EnumValues = ConditionSchema.EntityTargetsEn }
+                : offeredParam;
+            var argLabel = ConditionLabels.GetParamLabel(nextParam.Name, Localization.Loc.Instance.Lang == "ru");
             var addArgBtn = new Button
             {
-                Content = $"+{nextParam.Name}", FontSize = FontScale.Of(9),
+                Content = $"+{argLabel}", FontSize = FontScale.Of(9),
                 Padding = new Thickness(4, 1),
                 Background = Brushes.Transparent, Foreground = FgMuted,
                 BorderThickness = new Thickness(1), BorderBrush = FgMuted,
@@ -839,7 +847,7 @@ public class ConditionBlocksEditor : UserControl
         {
             var displayName = ConditionLabels.GetLabel(def.Name, isRu);
             var paramHint = def.Params.Length > 0
-                ? $" ({string.Join(", ", def.Params.Select(p => p.Name))})"
+                ? $" ({string.Join(", ", def.Params.Select(p => ConditionLabels.GetParamLabel(p.Name, isRu)))})"
                 : "";
             var isFav = Core.Services.FavoritesStore.Load().Contains(def.Name);
 

@@ -1103,8 +1103,24 @@ public class BoostBlocksEditor : UserControl
             subMenus.Add((sub, subChildren));
         }
 
+        // Hiding the menu items that stop matching hands keyboard focus to the menu right after
+        // the first letter, and the rest of the word goes nowhere. A focus loss that lands within
+        // a moment of typing is that, not the user moving to an item — put the caret back.
+        var lastTypedAt = DateTime.MinValue;
+        searchBox.LostFocus += (_, _) =>
+        {
+            if (!menu.IsOpen || DateTime.UtcNow - lastTypedAt > TimeSpan.FromMilliseconds(400)) return;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (!menu.IsOpen || searchBox.IsFocused) return;
+                searchBox.Focus();
+                searchBox.CaretIndex = searchBox.Text?.Length ?? 0;
+            }, Avalonia.Threading.DispatcherPriority.Input);
+        };
+
         searchBox.TextChanged += (_, _) =>
         {
+            lastTypedAt = DateTime.UtcNow;
             var q = (searchBox.Text ?? "").Trim().ToLower();
             foreach (var (item, searchText) in allMenuItems)
                 item.IsVisible = string.IsNullOrEmpty(q) || searchText.Contains(q);

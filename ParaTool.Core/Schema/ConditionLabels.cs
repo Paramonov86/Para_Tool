@@ -190,7 +190,7 @@ public static class ConditionLabels
         ["HasVersatileTwoHanded"] = ("Versatile (2H)", "Универсальное (2 руки)"),
         ["HasWeapon"] = ("Has Weapon", "Есть оружие"),
         ["HasWeaponInMainHand"] = ("Weapon in Main Hand", "Оружие в основной"),
-        ["IsOffHandSlotEmpty"] = ("Off Hand Empty", "Вторая рука пуста"),
+        ["IsOffHandSlotEmpty"] = ("Off Hand Empty (melee/ranged)", "Вторая рука пуста (ближний/дальний)"),
         ["HasPactWeapon"] = ("Has Pact Weapon", "Оружие договора"),
         ["HasHexbladeWeapon"] = ("Hexblade Weapon", "Оружие Ведьмака"),
         ["HasCoatableWeapon"] = ("Coatable Weapon", "Можно покрыть оружие"),
@@ -741,6 +741,31 @@ public static class ConditionLabels
         ["AMP"] = ("AMP", "AMP"),
         ["General"] = ("General", "Общее"),
     };
+
+    // ═══════════════════════════════════════════════════════════
+    // PARAMETER LABELS — (English, Russian)
+    // Shown on "+arg" buttons, flag switches and in the picker's parameter hint
+    // ═══════════════════════════════════════════════════════════
+
+    public static readonly Dictionary<string, (string En, string Ru)> Params = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["entity"] = ("entity", "существо"),
+        ["source"] = ("source", "источник"),
+        ["target"] = ("target", "цель"),
+        ["rangedSlot"] = ("ranged slot", "дальний слот"),
+        ["offHand"] = ("off hand", "вторая рука"),
+        ["mainHand"] = ("main hand", "основная рука"),
+        ["checkRanged"] = ("ranged", "дальний бой"),
+        ["checkBothWeaponSets"] = ("both weapon sets", "оба набора оружия"),
+        ["weaponFlags"] = ("weapon flags", "свойства оружия"),
+    };
+
+    public static string GetParamLabel(string paramName, bool russian = false)
+    {
+        if (Params.TryGetValue(paramName, out var label))
+            return russian ? label.Ru : label.En;
+        return paramName;
+    }
 
     /// <summary>
     /// Get localized label for a condition function.
