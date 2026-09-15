@@ -133,9 +133,16 @@ public static class AmpBackupService
     }
 
     /// <summary>
+    /// Restores a pak only when it carries ParaTool's marker. A pak without it is either pristine
+    /// or a newer release than the backup — copying the backup over it would downgrade the mod.
+    /// </summary>
+    public static bool RestoreIfPatched(string pakPath) =>
+        File.Exists(pakPath) && IsPatchedPak(pakPath) && RestorePak(pakPath);
+
+    /// <summary>
     /// Checks if the pak contains a ParaTool marker file (patched by us).
     /// </summary>
-    private static bool IsPatchedPak(string pakPath)
+    public static bool IsPatchedPak(string pakPath)
     {
         try
         {
