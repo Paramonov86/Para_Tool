@@ -686,9 +686,15 @@ public class BoostBlocksEditor : UserControl
                 }
                 else
                 {
+                    // The quotes around a string argument ('SummonBeastStack') are syntax, not part
+                    // of the value: editing them is a way to break the call by accident, so the box
+                    // shows the bare text and puts them back on write.
+                    var quoted = value.Length >= 2 && value[0] == '\'' && value[^1] == '\''
+                                 || value.Length == 0 && param.Name == "StackId";
                     var tb = new TextBox
                     {
-                        Text = value, FontSize = FontScale.Of(11),
+                        Text = quoted ? value.Trim('\'') : value,
+                        FontSize = FontScale.Of(11),
                         Padding = new Thickness(4, 2), MinWidth = 60,
                         Background = InputBg, Foreground = Themes.ThemeBrushes.TextPrimary,
                         BorderThickness = new Thickness(0),
@@ -700,7 +706,10 @@ public class BoostBlocksEditor : UserControl
                     tb.LostFocus += (s, _) =>
                     {
                         if (s is TextBox t && t.Tag is (string rb2, int pi2))
-                            UpdateParam(rb2, pi2, t.Text ?? "");
+                        {
+                            var typed = (t.Text ?? "").Trim();
+                            UpdateParam(rb2, pi2, quoted && typed.Length > 0 ? $"'{typed.Trim('\'')}'" : typed);
+                        }
                     };
                     stack.Children.Add(tb);
                 }
