@@ -436,7 +436,72 @@ public class BoostBlocksEditor : UserControl
                 continue;
             }
 
-            if (param.Type == "int")
+            if (param.Type == "enumlist" && param.EnumValues != null)
+            {
+                // The argument is a ";"-list (BlockRegainHP(Undead;Construct)): one tumbler per
+                // value, "+" adds another and "×" drops one.
+                var values = value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                var displayItems = Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues);
+                var listPanel = new WrapPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+                var capturedIdx = paramIdx;
+                void WriteList(List<string> next) => UpdateParam(rawBoost, capturedIdx, string.Join(";", next));
+
+                for (int vi = 0; vi < values.Count; vi++)
+                {
+                    var slot = vi;
+                    var valueChip = new TumblerChipEditor
+                    {
+                        Text = values[slot],
+                        Items = param.EnumValues,
+                        DisplayItems = displayItems,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(0, 1, 2, 1),
+                    };
+                    valueChip.PropertyChanged += (s, e2) =>
+                    {
+                        if (e2.Property.Name != "Text" || s is not TumblerChipEditor tc || _updating) return;
+                        var next = new List<string>(values);
+                        next[slot] = tc.Text ?? "";
+                        WriteList(next);
+                    };
+                    listPanel.Children.Add(valueChip);
+
+                    var dropBtn = new Button
+                    {
+                        Content = "×", FontSize = FontScale.Of(10),
+                        Padding = new Thickness(2, 0), Margin = new Thickness(0, 1, 4, 1),
+                        Background = Brushes.Transparent, Foreground = FgMuted,
+                        BorderThickness = new Thickness(0),
+                        Cursor = new Cursor(StandardCursorType.Hand),
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+                    dropBtn.Click += (_, _) =>
+                    {
+                        var next = new List<string>(values);
+                        next.RemoveAt(slot);
+                        WriteList(next);
+                    };
+                    listPanel.Children.Add(dropBtn);
+                }
+
+                var unused = param.EnumValues.FirstOrDefault(v => !values.Contains(v, StringComparer.OrdinalIgnoreCase));
+                if (unused != null)
+                {
+                    var addBtn = new Button
+                    {
+                        Content = "+", FontSize = FontScale.Of(12), FontWeight = FontWeight.Bold,
+                        Padding = new Thickness(4, 0), Margin = new Thickness(0, 1, 2, 1),
+                        Background = Brushes.Transparent, Foreground = Themes.ThemeBrushes.Accent,
+                        BorderThickness = new Thickness(0),
+                        Cursor = new Cursor(StandardCursorType.Hand),
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+                    addBtn.Click += (_, _) => WriteList([..values, unused]);
+                    listPanel.Children.Add(addBtn);
+                }
+                stack.Children.Add(listPanel);
+            }
+            else if (param.Type == "int")
             {
                 // Integer tumbler chip (allow -1 for infinite duration etc.)
                 var chip = new TumblerChipEditor

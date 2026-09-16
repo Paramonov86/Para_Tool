@@ -855,6 +855,16 @@ internal static class DiagMode
             // A creature uuid in a condition argument (CanStand('…') is a Dryad) reads by name too.
             var condUuid = "42da1663-b150-4e9b-abc8-8cdc7240fd56";
             var condPickers = Descendants(probeRoot!).OfType<Controls.SearchPickerChip>().Count(c => c.Text == condUuid);
+            // A ";"-list argument keeps one tumbler per value, with "+" to add another.
+            var blockLabel = Descendants(probeRoot!).OfType<Avalonia.Controls.TextBlock>()
+                .FirstOrDefault(t => t.Text is "Block Healing" or "Блок исцеления");
+            var blockChip = Avalonia.VisualTree.VisualExtensions.GetVisualParent(blockLabel!);
+            Console.WriteLine("  BlockRegainHP: tumblers=["
+                + string.Join(", ", Descendants(blockChip!).OfType<Controls.TumblerChipEditor>().Select(t => t.Text))
+                + "] plus=" + Descendants(blockChip!).OfType<Avalonia.Controls.Button>().Count(b => (b.Content as string) == "+")
+                + " data='" + ParaTool.Core.Schema.BoostMapping.SplitBoostList(item.SpellVMs[0].EditSpellProperties)
+                    .FirstOrDefault(p => p.StartsWith("BlockRegainHP")) + "'");
+
             // The stack id shows without its quotes, while the data keeps them.
             Console.WriteLine("  stack id: box='"
                 + Descendants(probeRoot!).OfType<Avalonia.Controls.TextBox>()

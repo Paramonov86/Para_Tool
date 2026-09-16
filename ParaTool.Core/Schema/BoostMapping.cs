@@ -180,7 +180,8 @@ public static class BoostMapping
         // ── HP & Healing (#2ECC71) ──
         new("IncreaseMaxHP", "Increase Max HP", "Увеличить макс. ОЗ", "#2ECC71", [new("Amount", "Amount", "formula")]),
         new("TemporaryHP", "Temporary HP", "Врем. ОЗ", "#2ECC71", [new("Amount", "Amount", "formula")]),
-        new("BlockRegainHP", "Block Healing", "Блок исцеления", "#2ECC71", [new("Type", "Type", "enum", ResurrectTypes)]),
+        // Its argument is a ";"-list: BlockRegainHP(Undead;Construct) blocks healing for both.
+        new("BlockRegainHP", "Block Healing", "Блок исцеления", "#2ECC71", [new("Type", "Type", "enumlist", ResurrectTypes)]),
         new("MaximizeHealing", "Maximize Healing", "Максим. исцеление", "#2ECC71", [new("Dir", "Direction", "enum", HealingDirection)]),
 
         // ── Movement & Physical (#8A8494) ──

@@ -49,6 +49,16 @@ public class BoostListSplitTests
     }
 
     [Fact]
+    public void BlockRegainHP_TakesAListOfTypes()
+    {
+        var def = BoostMapping.Boosts.First(b => b.FuncName == "BlockRegainHP");
+
+        // A single enum param would collapse Undead;Construct to one value on the first edit.
+        Assert.Equal("enumlist", def.Params[0].Type);
+        Assert.Equal(["Living", "Guaranteed", "Construct", "Undead"], def.Params[0].EnumValues);
+    }
+
+    [Fact]
     public void Summon_HasItsFullSignature()
     {
         var summon = BoostMapping.Functors.First(f => f.FuncName == "Summon");
