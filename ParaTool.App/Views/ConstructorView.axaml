@@ -1246,6 +1246,33 @@
                                 </ItemsControl>
                             </Border>
 
+                            <!-- ═══ GRANTED SPELLS: what the item actually gives ═══ -->
+                            <Border Background="{DynamicResource CardBgBrush}" CornerRadius="0"
+                                    Margin="0" Padding="14,10"
+                                    IsVisible="{Binding HasGrantedSpells}">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="{Binding LblSpells, Source={x:Static loc:Loc.Instance}}"
+                                               FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1" />
+                                    <ItemsControl ItemsSource="{Binding SpellVMs}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="vm:SpellVM">
+                                                <StackPanel Margin="0,0,0,6" IsVisible="{Binding IsGranted}">
+                                                    <TextBlock Text="{Binding Name}"
+                                                               FontSize="{DynamicResource FontSize12}" FontWeight="Bold"
+                                                               Foreground="{DynamicResource AccentLightBrush}" TextWrapping="Wrap" />
+                                                    <ctrl:BbCodeTextBlock BbText="{Binding EditDescription}"
+                                                               BbParams="{Binding EditDescriptionParams}"
+                                                               FontSize="{DynamicResource FontSize12}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
                             <!-- ═══ BOOSTS: below passives, on card background ═══ -->
                             <Border Background="{DynamicResource CardBgBrush}" CornerRadius="6"
                                     Margin="8,0,8,4" Padding="12,6"

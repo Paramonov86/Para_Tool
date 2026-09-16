@@ -373,6 +373,7 @@ public partial class ArtifactItemVM : ObservableObject
             OnPropertyChanged();
             // Cards show "Granted on equip" from this list, whichever section changed it.
             foreach (var card in SpellVMs) card.NotifyGrantChanged();
+            OnPropertyChanged(nameof(HasGrantedSpells));
         }
     }
 
@@ -645,6 +646,7 @@ public partial class ArtifactItemVM : ObservableObject
         }
         RecordEdit();
         svm.NotifyGrantChanged();
+        OnPropertyChanged(nameof(HasGrantedSpells));
     }
 
     /// <summary>Listed in this item's granted spells (by the card's name or the spell it was cloned from).</summary>
@@ -741,6 +743,7 @@ public partial class ArtifactItemVM : ObservableObject
         foreach (var s in Artifact.Spells ?? [])
             if (s != null)
                 SpellVMs.Add(new SpellVM(s, this));
+        OnPropertyChanged(nameof(HasGrantedSpells));
     }
 
     // === Preview ===
@@ -753,6 +756,8 @@ public partial class ArtifactItemVM : ObservableObject
     public string PreviewDescription => GetLangValue(Artifact.Description);
     public bool HasBoosts => !string.IsNullOrWhiteSpace(Artifact.Boosts);
     public bool HasPassives => (Artifact.Passives?.Count ?? 0) > 0;
+    /// <summary>Any spell card the item grants — the preview lists those, not the workshop's drafts.</summary>
+    public bool HasGrantedSpells => SpellVMs.Any(s => s.IsGranted);
     public bool HasDescription => !string.IsNullOrWhiteSpace(PreviewDescription);
 
     public List<(string name, string description)> GetPassiveTexts()
@@ -1363,10 +1368,14 @@ public partial class SpellVM : ObservableObject
         }
     }
 
+    /// <summary>Granted by this item somehow — a card the player will actually see in game.</summary>
+    public bool IsGranted => !IsVariant && (GrantOnEquip || GrantThroughPassive);
+
     internal void NotifyGrantChanged()
     {
         OnPropertyChanged(nameof(GrantThroughPassive));
         OnPropertyChanged(nameof(GrantOnEquip));
+        OnPropertyChanged(nameof(IsGranted));
     }
 
     public bool EditOriginal
