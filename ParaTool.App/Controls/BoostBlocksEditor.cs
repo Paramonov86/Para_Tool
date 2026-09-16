@@ -1273,7 +1273,7 @@ public class BoostBlocksEditor : UserControl
     private static string[]? _creatureOptions;
 
     /// <summary>Summonable creatures as "Name (Stats) uuid", so a guid param is picked by name.</summary>
-    private static string[] CreatureOptions => _creatureOptions ??= Core.Services.SummonTemplateIndex.All
+    internal static string[] CreatureOptions => _creatureOptions ??= Core.Services.SummonTemplateIndex.All
         .Select(e => $"{Core.Services.SummonTemplateIndex.DisplayName(e, Loc.Instance.Lang, GlobalLocaService)} ({e.Stats}) {e.TemplateUuid}")
         .ToArray();
 

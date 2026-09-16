@@ -551,6 +551,32 @@ public class ConditionBlocksEditor : UserControl
                     _ => null,
                 };
 
+                // A creature template uuid (CanStand('42da1663-…') is a Dryad) means nothing to a
+                // player: pick it by name, in the editing language.
+                if (Core.Services.SummonTemplateIndex.Find(argVal.Trim().Trim('\'')) != null)
+                {
+                    var creaturePicker = new SearchPickerChip
+                    {
+                        Text = argVal.Trim().Trim('\''),
+                        Items = BoostBlocksEditor.CreatureOptions,
+                        Watermark = Localization.Loc.Instance.WmSearch,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Resolver = BoostBlocksEditor.GlobalResolver,
+                        LocaService = BoostBlocksEditor.GlobalLocaService,
+                    };
+                    creaturePicker.PropertyChanged += (s, e2) =>
+                    {
+                        if (e2.Property.Name != "Text" || s is not SearchPickerChip cp) return;
+                        // Options read "Name (Stats) uuid"; the argument takes the uuid alone.
+                        var picked = (cp.Text ?? "").Trim();
+                        var uuid = picked.Split(' ').LastOrDefault() ?? "";
+                        token.Args[paramIdx] = $"'{(Core.Services.SummonTemplateIndex.Find(uuid) != null ? uuid : picked)}'";
+                        SyncFromTokens(tokens);
+                    };
+                    stack.Children.Add(creaturePicker);
+                    continue;
+                }
+
                 var isSearchable = paramLower is "statusid" or "status" or "spellid" or "spell" or "passivename" or "passive";
                 if (isSearchable || searchItems is { Length: > 0 })
                 {

@@ -736,6 +736,8 @@ internal static class DiagMode
             item.SpellVMs[0].EditSpellProperties =
                 "AI_IGNORE:GROUND:Summon(c49e35a7-30e0-42fa-bddf-435f04c60062,-1,Projectile_AiHelper_Summon_Weak,,'SummonBeastStack',UNSUMMON_ABLE);"
                 + "BlockRegainHP(Undead;Construct);" + item.SpellVMs[0].EditSpellProperties;
+            item.SpellVMs[0].EditTargetConditions =
+                "CanStand('42da1663-b150-4e9b-abc8-8cdc7240fd56') and " + item.SpellVMs[0].EditTargetConditions;
 
             // Cost badges must not write back on load: odd vanilla spellings stay byte for byte.
             art.Spells[^1].UseCosts = "Movement:Distance*0.5; ActionPoint:1\t;SpellSlotsGroup:2:2:4;Weird:1:2";
@@ -850,6 +852,17 @@ internal static class DiagMode
                 .Where(t => t.Text is { } s && (s.Contains("Summon(") || s.Contains("BlockRegainHP(")))
                 .Select(t => t.Text!).Distinct().ToList();
             const string probeUuid = "c49e35a7-30e0-42fa-bddf-435f04c60062";
+            // A creature uuid in a condition argument (CanStand('…') is a Dryad) reads by name too.
+            var condUuid = "42da1663-b150-4e9b-abc8-8cdc7240fd56";
+            var condPickers = Descendants(probeRoot!).OfType<Controls.SearchPickerChip>().Count(c => c.Text == condUuid);
+            // The stack id shows without its quotes, while the data keeps them.
+            Console.WriteLine("  stack id: box='"
+                + Descendants(probeRoot!).OfType<Avalonia.Controls.TextBox>()
+                    .Select(t => t.Text).FirstOrDefault(t => t != null && t.Contains("SummonBeastStack"))
+                + "' data has quotes=" + item.SpellVMs[0].EditSpellProperties.Contains("'SummonBeastStack'"));
+            Console.WriteLine($"  condition creature: pickers={condPickers} raw uuid boxes=" +
+                              Descendants(probeRoot!).OfType<Avalonia.Controls.TextBox>().Count(t => (t.Text ?? "").Contains(condUuid)) +
+                              $" name='{Controls.SearchPickerChip.ResolveStatDisplayName(condUuid, "ru", resolver, loca)}'");
             var creaturePickers = Descendants(probeRoot!).OfType<Controls.SearchPickerChip>()
                 .Count(c => c.Text == probeUuid);
             var creatureNamed = $"{creaturePickers} picker(s), en='"
