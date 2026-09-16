@@ -22,10 +22,10 @@
                                 <!-- Wraps: a long variant name ("Disguise Self: Femme Strong Half-Elf") and its tag don't fit one line in a narrow card -->
                                 <WrapPanel Grid.Column="1" Orientation="Horizontal">
                                     <TextBlock Text="{Binding Name}" FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" TextWrapping="Wrap"
-                                               Foreground="#B98AE0" ToolTip.Tip="{Binding StatName}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                               Foreground="{DynamicResource AccentLightBrush}" ToolTip.Tip="{Binding StatName}" Margin="0,0,6,0" VerticalAlignment="Center" />
                                     <TextBlock Text="{Binding LblVariant, Source={x:Static loc:Loc.Instance}}" IsVisible="{Binding IsVariant}"
                                                FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
-                                    <TextBlock IsVisible="{Binding HasVariants}" FontSize="{DynamicResource FontSize10}" Foreground="#9B59B6" VerticalAlignment="Center">
+                                    <TextBlock IsVisible="{Binding HasVariants}" FontSize="{DynamicResource FontSize10}" Foreground="{DynamicResource InfoBrush}" VerticalAlignment="Center">
                                         <Run Text="{Binding LblContainer, Source={x:Static loc:Loc.Instance}}" /><Run Text=" · " /><Run Text="{Binding Variants.Count}" />
                                     </TextBlock>
                                 </WrapPanel>
@@ -42,7 +42,7 @@
                         <TextBox Text="{Binding EditDisplayName}"
                                  Watermark="{Binding WmSpellName, Source={x:Static loc:Loc.Instance}}"
                                  FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold"
-                                 Foreground="#B98AE0" Background="{StaticResource CardBgBrush}"
+                                 Foreground="{DynamicResource AccentLightBrush}" Background="{StaticResource CardBgBrush}"
                                  BorderThickness="0" CornerRadius="4" Padding="8,4" />
                         <TextBox Text="{Binding EditDescription}"
                                  Watermark="{Binding WmSpellDesc, Source={x:Static loc:Loc.Instance}}"
@@ -72,7 +72,7 @@
                         </StackPanel>
                         <TextBlock IsVisible="{Binding HasVariants}" TextWrapping="Wrap"
                                    Text="{Binding TipContainer, Source={x:Static loc:Loc.Instance}}"
-                                   FontSize="{DynamicResource FontSize10}" Foreground="#9B59B6" />
+                                   FontSize="{DynamicResource FontSize10}" Foreground="{DynamicResource InfoBrush}" />
 
                         <!-- Labels size their column: a fixed width cut "Description params" at a large font scale -->
                         <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
@@ -123,7 +123,7 @@
 
                         <!-- Mechanics: who it can target, the roll, and what it does -->
                         <Border Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
-                                BorderBrush="#9B59B6" BorderThickness="2,0,0,0" ClipToBounds="False">
+                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="2,0,0,0" ClipToBounds="False">
                             <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ClipToBounds="False">
                                 <Grid.Styles>
                                     <Style Selector="Grid.spellLabels > TextBlock">
@@ -154,8 +154,8 @@
                         <!-- Variants of a container: cards of their own, where the effects live -->
                         <StackPanel IsVisible="{Binding HasVariants}" Spacing="4" ClipToBounds="False">
                             <TextBlock Text="{Binding LblVariants, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="#9B59B6" />
-                            <Border BorderBrush="#9B59B6" BorderThickness="2,0,0,0" Padding="8,0,0,0" ClipToBounds="False">
+                                       FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{DynamicResource InfoBrush}" />
+                            <Border BorderBrush="{DynamicResource InfoBrush}" BorderThickness="2,0,0,0" Padding="8,0,0,0" ClipToBounds="False">
                                 <ItemsControl ItemsSource="{Binding ShownVariants}" ClipToBounds="False" />
                             </Border>
                         </StackPanel>
@@ -163,7 +163,7 @@
                         <!-- Creatures the spell summons -->
                         <StackPanel IsVisible="{Binding HasCreatures}" Spacing="4" ClipToBounds="False">
                             <TextBlock Text="{Binding LblCreatures, Source={x:Static loc:Loc.Instance}}"
-                                       FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="#9B59B6" />
+                                       FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
                             <ItemsControl ItemsSource="{Binding Creatures}" ClipToBounds="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="vm:SummonVM">
@@ -172,7 +172,7 @@
                                                 <Grid ColumnDefinitions="*,Auto,Auto">
                                                     <TextBlock Text="{Binding CreatureName}" ToolTip.Tip="{Binding CreatureTip}"
                                                                FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
-                                                               Foreground="#B98AE0" VerticalAlignment="Center" />
+                                                               Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center" />
                                                     <Button Grid.Column="1" Name="EditCreatureBtn" Tag="{Binding}" IsVisible="{Binding CanEdit}"
                                                             Background="{StaticResource InputBgBrush}" Foreground="{StaticResource AccentLightBrush}"
                                                             FontSize="{DynamicResource FontSize10}" Padding="8,2" CornerRadius="10" BorderThickness="0" Cursor="Hand"
@@ -195,41 +195,41 @@
                                                     <WrapPanel Orientation="Horizontal">
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding LblSpellLevel, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditLevel}" Width="46" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditLevel}" Step="1" MinValue="0" MaxValue="20" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding LblCreatureHp, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditVitality}" Width="52" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditVitality}" Step="1" MinValue="0" MaxValue="999" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding LblCreatureAc, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditArmor}" Width="46" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditArmor}" Step="1" MinValue="0" MaxValue="40" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                     </WrapPanel>
                                                     <WrapPanel Orientation="Horizontal">
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding AbStr, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditStrength}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditStrength}" Step="1" MinValue="1" MaxValue="30" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding AbDex, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditDexterity}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditDexterity}" Step="1" MinValue="1" MaxValue="30" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding AbCon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditConstitution}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditConstitution}" Step="1" MinValue="1" MaxValue="30" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding AbInt, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditIntelligence}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditIntelligence}" Step="1" MinValue="1" MaxValue="30" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding AbWis, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditWisdom}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditWisdom}" Step="1" MinValue="1" MaxValue="30" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                         <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,0,10,4">
                                                             <TextBlock Text="{Binding AbCha, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                                                            <TextBox Text="{Binding EditCharisma}" Width="42" FontSize="{DynamicResource FontSize11}" Padding="4,2" Background="{StaticResource InputBgBrush}" CornerRadius="4" />
+                                                            <ctrl:TumblerChipEditor Text="{Binding EditCharisma}" Step="1" MinValue="1" MaxValue="30" VerticalAlignment="Center" />
                                                         </StackPanel>
                                                     </WrapPanel>
                                                     <TextBlock Text="{Binding LblPassives, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize10}" Foreground="{StaticResource TextMutedBrush}" />

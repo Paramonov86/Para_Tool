@@ -842,10 +842,26 @@ internal static class DiagMode
                 Console.WriteLine($"  layout {lang} font x{scale} width {width}: cards={cards.Count} problems={distinct.Count} " +
                                   $"({layoutClock.ElapsedMilliseconds} ms for 20 layout passes)");
                 foreach (var p in distinct.Take(20)) Console.WriteLine($"    {p}");
-                probeRoot.Content = null;
             }
             Localization.Loc.Instance.SetLanguage("en");
             ApplyFontScale(1.0);
+            // Chips, not raw fallbacks: a raw block is a lone TextBlock holding the whole call.
+            var rawBlocks = Descendants(probeRoot!).OfType<Avalonia.Controls.TextBlock>()
+                .Where(t => t.Text is { } s && (s.Contains("Summon(") || s.Contains("BlockRegainHP(")))
+                .Select(t => t.Text!).Distinct().ToList();
+            const string probeUuid = "c49e35a7-30e0-42fa-bddf-435f04c60062";
+            var creaturePickers = Descendants(probeRoot!).OfType<Controls.SearchPickerChip>()
+                .Count(c => c.Text == probeUuid);
+            var creatureNamed = $"{creaturePickers} picker(s), en='"
+                + Controls.SearchPickerChip.ResolveStatDisplayName(probeUuid, "en", resolver, loca)
+                + "' ru='" + Controls.SearchPickerChip.ResolveStatDisplayName(probeUuid, "ru", resolver, loca) + "'";
+            Console.WriteLine($"  functor chips: raw fallbacks={rawBlocks.Count} creature picker={creatureNamed} " +
+                              $"props='{item.SpellVMs[0].EditSpellProperties[..Math.Min(120, item.SpellVMs[0].EditSpellProperties.Length)]}'");
+            foreach (var r in rawBlocks.Take(3)) Console.WriteLine($"    raw: {r[..Math.Min(100, r.Length)]}");
+            Console.WriteLine($"  preview granted spells: has={item.HasGrantedSpells} " +
+                              $"granted={string.Join(", ", item.SpellVMs.Where(s => s.IsGranted).Select(s => s.Name))}");
+            Console.WriteLine($"  creature stat tumblers={Descendants(probeRoot!).OfType<Controls.TumblerChipEditor>().Count(t => t.DataContext is ViewModels.SummonVM)}");
+
             var costsAfter = art.Spells.Select(s => s.UseCosts).ToList();
             Console.WriteLine($"  UseCosts untouched by layout: {costsBefore.SequenceEqual(costsAfter)} " +
                               $"[{string.Join(" | ", costsAfter.Select(c => c.Replace("\t", "\\t")))}] cost tumblers={costBadges}");
