@@ -187,7 +187,7 @@ public class BoostBlocksEditor : UserControl
         _updating = true;
         _panel.Children.Clear();
         var raw = Text ?? "";
-        var parts = raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var parts = BoostMapping.SplitBoostList(raw);
 
         foreach (var part in parts)
         {
@@ -218,7 +218,7 @@ public class BoostBlocksEditor : UserControl
         // they are (they're control-flow, not data effects).
         if (!string.IsNullOrEmpty(Text))
         {
-            var sortableParts = Text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var sortableParts = BoostMapping.SplitBoostList(Text);
             if (sortableParts.Length >= 2)
             {
                 var sortBtn = new Button
@@ -247,7 +247,7 @@ public class BoostBlocksEditor : UserControl
     private void OnSortClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(Text)) return;
-        var parts = Text.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        var parts = BoostMapping.SplitBoostList(Text).ToList();
         if (parts.Count < 2) return;
 
         var categoryOrder = IsFunctorMode
@@ -291,7 +291,9 @@ public class BoostBlocksEditor : UserControl
 
     private Control? CreateBlock(string rawBoost)
     {
-        var parsed = BoostMapping.ParseBoostCall(rawBoost);
+        // GROUND:Summon(…) and friends: the context prefix is not part of the function name.
+        var (ctxPrefix, call) = SplitFunctorPrefix(rawBoost);
+        var parsed = BoostMapping.ParseBoostCall(call);
         if (parsed == null) return CreateRawBlock(rawBoost);
 
         var (funcName, args) = parsed.Value;
@@ -299,6 +301,8 @@ public class BoostBlocksEditor : UserControl
         // Special: IF(...):Effect → yellow container block
         if (funcName.Equals("IF", StringComparison.OrdinalIgnoreCase) && args.Length > 0)
             return CreateIfBlock(rawBoost, args[0]);
+        if (ctxPrefix.Length > 0 && call.TrimStart().StartsWith("IF", StringComparison.OrdinalIgnoreCase))
+            return CreateRawBlock(rawBoost); // prefixed IF block — leave it verbatim
 
         var defs = IsFunctorMode ? BoostMapping.Functors : BoostMapping.Boosts;
         var def = defs.FirstOrDefault(d => d.FuncName.Equals(funcName, StringComparison.OrdinalIgnoreCase));
@@ -348,6 +352,27 @@ public class BoostBlocksEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
         });
+
+        // Execution-context prefix (GROUND:Summon(…), AI_IGNORE:GROUND:…) — editable, and kept
+        // verbatim on every other edit of this block.
+        if (ctxPrefix.Length > 0)
+        {
+            var prefixValues = ctxPrefix.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var prefixChip = new ChecklistPickerChip
+            {
+                Text = string.Join(";", prefixValues),
+                Options = FunctorPrefixes,
+                Labels = Localization.Loc.Instance.GetEnumDisplayLabels(FunctorPrefixes),
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            prefixChip.Tag = rawBoost;
+            prefixChip.PropertyChanged += (s, e2) =>
+            {
+                if (e2.Property.Name == "Text" && s is ChecklistPickerChip pc && pc.Tag is string rb && !_updating)
+                    UpdateFunctorPrefix(rb, pc.Text);
+            };
+            stack.Children.Add(prefixChip);
+        }
 
         // Target context tumbler — always shown for functors that support it, or if data already contains one
         var showTargetCtx = targetCtx != null || (IsFunctorMode && TargetContextFunctors.Contains(def.FuncName));
@@ -589,6 +614,32 @@ public class BoostBlocksEditor : UserControl
             }
             else
             {
+                // A creature template: pick by name, never by uuid.
+                if (param.Type == "guid")
+                {
+                    var creaturePicker = new SearchPickerChip
+                    {
+                        Text = value,
+                        Items = CreatureOptions,
+                        Watermark = Loc.Instance.WmSearch,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Resolver = GlobalResolver,
+                        LocaService = GlobalLocaService,
+                    };
+                    creaturePicker.Tag = (rawBoost, paramIdx);
+                    creaturePicker.PropertyChanged += (s, e2) =>
+                    {
+                        if (e2.Property.Name != "Text" || s is not SearchPickerChip cp
+                            || cp.Tag is not (string rb, int pi) || _updating) return;
+                        // Options read "Name (Stats) uuid"; the arg takes the uuid alone.
+                        var picked = (cp.Text ?? "").Trim();
+                        var uuid = picked.Split(' ').LastOrDefault() ?? "";
+                        UpdateParam(rb, pi, Core.Services.SummonTemplateIndex.Find(uuid) != null ? uuid : picked);
+                    };
+                    stack.Children.Add(creaturePicker);
+                    continue;
+                }
+
                 // String params: use SearchPickerChip for Status/Spell if list available
                 var isStatus = param.Name.Contains("Status", StringComparison.OrdinalIgnoreCase);
                 var isSpell = param.Name.Contains("Spell", StringComparison.OrdinalIgnoreCase)
@@ -812,7 +863,7 @@ public class BoostBlocksEditor : UserControl
     {
         if (_updating) return;
         var newIf = $"IF({newCondition}):{newEffect}";
-        var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        var parts = BoostMapping.SplitBoostList(Text).ToList();
         var idx = parts.IndexOf(oldRawBoost);
         if (idx >= 0)
             parts[idx] = newIf;
@@ -827,7 +878,7 @@ public class BoostBlocksEditor : UserControl
         while (cleanArgs.Length > 0 && string.IsNullOrEmpty(cleanArgs[^1]))
             cleanArgs = cleanArgs[..^1];
         var newBoost = cleanArgs.Length > 0 ? $"{funcName}({string.Join(",", cleanArgs)})" : funcName;
-        var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        var parts = BoostMapping.SplitBoostList(Text).ToList();
         var idx = parts.IndexOf(rawBoost);
         if (idx >= 0) { parts[idx] = newBoost; SyncText(string.Join(";", parts)); }
     }
@@ -906,7 +957,7 @@ public class BoostBlocksEditor : UserControl
     {
         if (sender is Button btn && btn.Tag is string rawBoost)
         {
-            var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            var parts = BoostMapping.SplitBoostList(Text).ToList();
             parts.Remove(rawBoost);
             SyncText(string.Join(";", parts));
         }
@@ -920,10 +971,27 @@ public class BoostBlocksEditor : UserControl
         }
     }
 
+    /// <summary>Rewrites a block's PREFIX: chain, keeping the call itself untouched.</summary>
+    private void UpdateFunctorPrefix(string rawBoost, string? selected)
+    {
+        if (_updating) return;
+        var (_, call) = SplitFunctorPrefix(rawBoost);
+        ReplaceBlock(rawBoost, JoinFunctorPrefix(selected) + call.TrimStart());
+    }
+
+    private void ReplaceBlock(string rawBoost, string newBoost)
+    {
+        var parts = BoostMapping.SplitBoostList(Text).ToList();
+        var idx = parts.IndexOf(rawBoost);
+        if (idx >= 0) parts[idx] = newBoost;
+        SyncText(string.Join(";", parts));
+    }
+
     private void UpdateParam(string rawBoost, int paramIdx, string newValue)
     {
         if (_updating) return; // prevent re-entrant updates during Rebuild
-        var parsed = BoostMapping.ParseBoostCall(rawBoost);
+        var (ctxPrefix, call) = SplitFunctorPrefix(rawBoost);
+        var parsed = BoostMapping.ParseBoostCall(call);
         if (parsed == null) return;
 
         var (funcName, args) = parsed.Value;
@@ -957,13 +1025,9 @@ public class BoostBlocksEditor : UserControl
         while (trimmedArgs.Count > 0 && string.IsNullOrEmpty(trimmedArgs[^1]))
             trimmedArgs.RemoveAt(trimmedArgs.Count - 1);
 
-        var newBoost = trimmedArgs.Count > 0 ? $"{funcName}({string.Join(",", trimmedArgs)})" : $"{funcName}()";
+        var newBoost = ctxPrefix + (trimmedArgs.Count > 0 ? $"{funcName}({string.Join(",", trimmedArgs)})" : $"{funcName}()");
 
-        var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        var idx = parts.IndexOf(rawBoost);
-        if (idx >= 0)
-            parts[idx] = newBoost;
-        SyncText(string.Join(";", parts));
+        ReplaceBlock(rawBoost, newBoost);
     }
 
     private void OnAddClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -1206,13 +1270,56 @@ public class BoostBlocksEditor : UserControl
 
     private static readonly string[] TargetContextValues = ["SELF", "SWAP", "OBSERVER_TARGET", "OBSERVER_SOURCE"];
 
+    private static string[]? _creatureOptions;
+
+    /// <summary>Summonable creatures as "Name (Stats) uuid", so a guid param is picked by name.</summary>
+    private static string[] CreatureOptions => _creatureOptions ??= Core.Services.SummonTemplateIndex.All
+        .Select(e => $"{Core.Services.SummonTemplateIndex.DisplayName(e, Loc.Instance.Lang, GlobalLocaService)} ({e.Stats}) {e.TemplateUuid}")
+        .ToArray();
+
+    /// <summary>
+    /// Execution-context prefixes a functor can carry (<c>GROUND:Summon(…)</c>), stackable
+    /// (<c>AI_IGNORE:GROUND:Summon(…)</c>). Canonical order: the AI flags come first, as vanilla writes them.
+    /// </summary>
+    private static readonly string[] FunctorPrefixes =
+        ["AI_ONLY", "AI_IGNORE", "GROUND", "TARGET", "AOE", "PROJECTILE", "CAST", "SELF"];
+
+    /// <summary>
+    /// Splits the <c>PREFIX:</c> chain off a functor call. Only known prefixes count, and never
+    /// across a parenthesis, so <c>IF(Enemy()):…</c> stays whole.
+    /// </summary>
+    internal static (string prefix, string call) SplitFunctorPrefix(string raw)
+    {
+        var rest = raw.TrimStart();
+        var taken = 0;
+        while (true)
+        {
+            var colon = rest.IndexOf(':');
+            if (colon <= 0) break;
+            var head = rest[..colon];
+            if (head.AsSpan().IndexOfAny('(', ')', ';') >= 0) break;
+            if (!FunctorPrefixes.Contains(head.Trim(), StringComparer.OrdinalIgnoreCase)) break;
+            taken += colon + 1;
+            rest = rest[(colon + 1)..];
+        }
+        return taken == 0 ? ("", raw) : (raw.TrimStart()[..taken], rest);
+    }
+
+    private static string JoinFunctorPrefix(string? selected) =>
+        string.IsNullOrWhiteSpace(selected) ? ""
+            : string.Concat(FunctorPrefixes
+                .Where(p => selected.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Contains(p, StringComparer.OrdinalIgnoreCase))
+                .Select(p => p + ":"));
+
     /// <summary>Functors that commonly use a target context prefix (SELF/SWAP/etc.).</summary>
     private static readonly HashSet<string> TargetContextFunctors = ["ApplyStatus", "DealDamage", "RegainHitPoints", "RemoveStatus", "RemoveUniqueStatus", "GainTemporaryHitPoints"];
 
     private void UpdateTargetContext(string rawBoost, string? newCtx)
     {
         if (_updating) return;
-        var parsed = BoostMapping.ParseBoostCall(rawBoost);
+        var (ctxPrefix, call) = SplitFunctorPrefix(rawBoost);
+        var parsed = BoostMapping.ParseBoostCall(call);
         if (parsed == null)
         {
             Core.Services.AppLogger.Warn($"UpdateTargetContext: failed to parse boost '{rawBoost}' — target context change ignored.");
@@ -1235,12 +1342,9 @@ public class BoostBlocksEditor : UserControl
         while (trimmed.Count > 0 && string.IsNullOrEmpty(trimmed[^1]))
             trimmed.RemoveAt(trimmed.Count - 1);
 
-        var newBoost = trimmed.Count > 0 ? $"{funcName}({string.Join(",", trimmed)})" : funcName;
+        var newBoost = ctxPrefix + (trimmed.Count > 0 ? $"{funcName}({string.Join(",", trimmed)})" : funcName);
 
-        var parts = (Text ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        var idx = parts.IndexOf(rawBoost);
-        if (idx >= 0) parts[idx] = newBoost;
-        SyncText(string.Join(";", parts));
+        ReplaceBlock(rawBoost, newBoost);
     }
 
     private void SyncText(string value)

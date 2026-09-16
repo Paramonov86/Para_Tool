@@ -731,6 +731,12 @@ internal static class DiagMode
             // past its card — report both.
             item.SpellVMs[0].EditSpellProperties =
                 "IF(HasStatus('BURNING')):RestoreResource(SELF,ChannelDivinity,1,0);" + item.SpellVMs[0].EditSpellProperties;
+            // Functor forms that used to fall back to raw text: a stacked context prefix, a creature
+            // uuid (shown by name), and an argument that is itself a ";"-list.
+            item.SpellVMs[0].EditSpellProperties =
+                "AI_IGNORE:GROUND:Summon(c49e35a7-30e0-42fa-bddf-435f04c60062,-1,Projectile_AiHelper_Summon_Weak,,'SummonBeastStack',UNSUMMON_ABLE);"
+                + "BlockRegainHP(Undead;Construct);" + item.SpellVMs[0].EditSpellProperties;
+
             // Cost badges must not write back on load: odd vanilla spellings stay byte for byte.
             art.Spells[^1].UseCosts = "Movement:Distance*0.5; ActionPoint:1\t;SpellSlotsGroup:2:2:4;Weird:1:2";
             var costsBefore = art.Spells.Select(s => s.UseCosts).ToList();
@@ -751,13 +757,14 @@ internal static class DiagMode
                 }
             }
             // 2600: a wide window puts a short condition chip on the same row as a tall ( ) group.
+            Avalonia.Controls.Window? probeRoot = null;
             foreach (var (lang, scale, width) in new[] { ("en", 1.0, 2600.0), ("en", 1.5, 1000.0), ("ru", 1.5, 1000.0) })
             {
                 Localization.Loc.Instance.SetLanguage(lang);
                 ApplyFontScale(scale);
                 // A window that is never shown lays out at most ~1000 px wide, so the width comes
                 // from a fixed-width host inside it.
-                var probeRoot = new Avalonia.Controls.Window
+                probeRoot = new Avalonia.Controls.Window
                 {
                     Width = 1000, Height = 4000,
                     Content = new Avalonia.Controls.Border

@@ -107,6 +107,11 @@ public class SearchPickerChip : UserControl
     public static string? ResolveStatDisplayName(string statId, string lang,
         Core.Parsing.StatsResolver? resolver, Core.Services.LocaService? locaSvc)
     {
+        // A creature template uuid (Summon's Template, CanStand's position…) means nothing to a
+        // player — show the creature's name in the editing language, English as fallback.
+        if (Core.Services.SummonTemplateIndex.Find(statId) is { } creature)
+            return Core.Services.SummonTemplateIndex.DisplayName(creature, lang, locaSvc ?? BoostBlocksEditor.GlobalLocaService);
+
         // 0. Check active renames from current artifact
         var spellRenames = BoostBlocksEditor.ActiveSpellRenames;
         if (spellRenames != null && spellRenames.TryGetValue(statId, out var spRn))

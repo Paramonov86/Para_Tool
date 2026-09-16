@@ -235,8 +235,7 @@ public static class ArtifactCompiler
         if (!string.IsNullOrEmpty(art.Boosts))
         {
             var removedBoosts = new HashSet<string>(art.RemovedBoosts ?? [], StringComparer.OrdinalIgnoreCase);
-            var kept = art.Boosts
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            var kept = BoostMapping.SplitBoostList(art.Boosts)
                 .Where(b => !removedBoosts.Contains(b));
             var filteredBoosts = ConditionSchema.NormalizeConditionEnums(BoostMapping.SanitizeBoosts(string.Join(";", kept)));
             if (!string.IsNullOrEmpty(filteredBoosts))

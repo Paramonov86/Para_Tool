@@ -318,8 +318,15 @@ public static class BoostMapping
         new("ResetCooldowns", "Reset Cooldowns", "Сброс перезарядок", "#9B59B6", [new("Type", "Type", "enum", SpellCooldownType)]),
 
         // ── Summon & Spawn ──
+        // Full signature (LSLibDefinitions): the tail carries the AI helper spell, the stack id and
+        // the statuses the summon gets — vanilla summons use all of it.
         new("Summon", "Summon", "Призвать", "#9B59B6",
-            [new("Template", "Template", "guid"), new("Duration", "Duration", "string")]),
+            [new("Template", "Template", "guid"), new("Duration", "Duration", "string"),
+             new("AiSpellOverride", "AI Spell", "string"), new("ExtendExistingConcentration", "Extend Concentration", "optbool"),
+             new("StackId", "Stack", "string"),
+             new("StatusToApply1", "Status 1", "string"), new("StatusToApply2", "Status 2", "string"),
+             new("StatusToApply3", "Status 3", "string"), new("StatusToApply4", "Status 4", "string"),
+             new("LateJoinPenalty", "Late Join Penalty", "optbool"), new("UseOwnerPassives", "Owner Passives", "optbool")]),
         new("SummonInInventory", "Summon in Inventory", "Призвать в инвентарь", "#9B59B6",
             [new("Template", "Template", "guid"), new("Duration", "Duration", "string"), new("Amount", "Amount", "number")]),
         new("Unsummon", "Unsummon", "Распризвать", "#9B59B6", []),
@@ -498,11 +505,39 @@ public static class BoostMapping
     ///   - strips empty trailing args for any func that lands with them
     /// Returns the fixed string (same string when no changes needed).
     /// </summary>
+    /// <summary>
+    /// Splits a ";"-separated boost or functor list. A separator inside parentheses or quotes belongs
+    /// to an argument, not to the list: <c>BlockRegainHP(Undead;Construct)</c> is one boost, and
+    /// splitting it blindly turns it into two broken ones.
+    /// </summary>
+    public static string[] SplitBoostList(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return [];
+        var parts = new List<string>();
+        int depth = 0, start = 0;
+        char quote = '\0';
+        for (int i = 0; i < raw.Length; i++)
+        {
+            var c = raw[i];
+            if (quote != '\0') { if (c == quote) quote = '\0'; continue; }
+            if (c is '\'' or '"') quote = c;
+            else if (c == '(') depth++;
+            else if (c == ')') { if (depth > 0) depth--; }
+            else if (c == ';' && depth == 0)
+            {
+                parts.Add(raw[start..i]);
+                start = i + 1;
+            }
+        }
+        parts.Add(raw[start..]);
+        return parts.Select(p => p.Trim()).Where(p => p.Length > 0).ToArray();
+    }
+
     public static string SanitizeBoosts(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return raw;
 
-        var parts = raw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var parts = SplitBoostList(raw);
         var changed = false;
         for (int i = 0; i < parts.Length; i++)
         {
@@ -1259,7 +1294,7 @@ public static class BoostMapping
     public static string FormatBoostsForPreview(string rawBoosts, Func<string, string>? translate = null)
     {
         if (string.IsNullOrWhiteSpace(rawBoosts)) return "";
-        var parts = rawBoosts.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var parts = SplitBoostList(rawBoosts);
         var lines = new List<string>();
         foreach (var part in parts)
         {
