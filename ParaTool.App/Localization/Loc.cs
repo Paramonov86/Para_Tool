@@ -401,6 +401,64 @@ public partial class Loc : ObservableObject
     public string DlgRenameTitle => this["DlgRenameTitle"];
     public string WmNewName => this["WmNewName"];
 
+    public string LblIconLibraryItem => this["LblIconLibraryItem"];
+    public string LblIconLibrarySpell => this["LblIconLibrarySpell"];
+    public string LblIconLibraryStatus => this["LblIconLibraryStatus"];
+    public string TipIconsForSpell => this["TipIconsForSpell"];
+    public string TipIconsForStatus => this["TipIconsForStatus"];
+    public string LblIconsAll => this["LblIconsAll"];
+    public string LblIconsSpells => this["LblIconsSpells"];
+    public string LblIconsStatuses => this["LblIconsStatuses"];
+    public string LblIconsItems => this["LblIconsItems"];
+    public string LblIconSourceAll => this["LblIconSourceAll"];
+    public string LblIconSource => this["LblIconSource"];
+    public string WmSearchIconLibrary => this["WmSearchIconLibrary"];
+    public string LblIconCountSuffix => this["LblIconCountSuffix"];
+    public string WarnGameNotFound => this["WarnGameNotFound"];
+    public string BtnChooseGameFolder => this["BtnChooseGameFolder"];
+    public string WarnNotGameFolder => this["WarnNotGameFolder"];
+    public string LblNoIconsFound => this["LblNoIconsFound"];
+    public string LblIconPickHint => this["LblIconPickHint"];
+    public string LblIconTooltipPicture => this["LblIconTooltipPicture"];
+    public string LblIconHotbarTile => this["LblIconHotbarTile"];
+    public string LblIconStatusBar => this["LblIconStatusBar"];
+    public string LblIconUsedBy => this["LblIconUsedBy"];
+    public string WarnIconFromMod => this["WarnIconFromMod"];
+    public string BtnChooseIcon => this["BtnChooseIcon"];
+    public string BtnInheritIcon => this["BtnInheritIcon"];
+    public string TipPickSpellIcon => this["TipPickSpellIcon"];
+    public string TipPickStatusIcon => this["TipPickStatusIcon"];
+    public string LblStatusWorkshop => this["LblStatusWorkshop"];
+    public string TipStatusWorkshop => this["TipStatusWorkshop"];
+    public string WmSearchStatusCard => this["WmSearchStatusCard"];
+    public string LblAddEmptyStatus => this["LblAddEmptyStatus"];
+    public string LblStatusNew => this["LblStatusNew"];
+    public string TipRemoveStatusCard => this["TipRemoveStatusCard"];
+    public string WmStatusName => this["WmStatusName"];
+    public string WmStatusDesc => this["WmStatusDesc"];
+    public string TipEditOriginalStatus => this["TipEditOriginalStatus"];
+    public string WarnEditOriginalStatus => this["WarnEditOriginalStatus"];
+    public string LblApplyOnEquip => this["LblApplyOnEquip"];
+    public string TipApplyOnEquip => this["TipApplyOnEquip"];
+    public string LblStatusType => this["LblStatusType"];
+    public string LblStatusStack => this["LblStatusStack"];
+    public string TipStackId => this["TipStackId"];
+    public string TipStackType => this["TipStackType"];
+    public string LblStatusTick => this["LblStatusTick"];
+    public string LblStatusFlags => this["LblStatusFlags"];
+    public string LblStatusGroups => this["LblStatusGroups"];
+    public string LblStatusRemoveOn => this["LblStatusRemoveOn"];
+    public string LblStatusWhileActive => this["LblStatusWhileActive"];
+    public string LblStatusOnApply => this["LblStatusOnApply"];
+    public string LblStatusEachTurn => this["LblStatusEachTurn"];
+    public string LblStatusOnRemove => this["LblStatusOnRemove"];
+    public string LblStatusRemoveIf => this["LblStatusRemoveIf"];
+    public string LblStatusAura => this["LblStatusAura"];
+    public string TipStatusAura => this["TipStatusAura"];
+    public string WmAuraRadius => this["WmAuraRadius"];
+    public string JrnAddStatus => this["JrnAddStatus"];
+    public string JrnRemoveStatus => this["JrnRemoveStatus"];
+
     /// <summary>Get display labels for enum values, using loca with EnumLabels fallback.</summary>
     public string[] GetEnumDisplayLabels(string[] values)
     {

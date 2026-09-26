@@ -112,7 +112,10 @@ public class SearchPickerChip : UserControl
         if (Core.Services.SummonTemplateIndex.Find(statId) is { } creature)
             return Core.Services.SummonTemplateIndex.DisplayName(creature, lang, locaSvc ?? BoostBlocksEditor.GlobalLocaService);
 
-        // 0. Check active renames from current artifact
+        // 0. A card of the item being edited, under its own name.
+        if (BoostBlocksEditor.ActiveCardName?.Invoke(statId) is { Length: > 0 } cardName) return cardName;
+
+        // 0b. Check active renames from current artifact
         var spellRenames = BoostBlocksEditor.ActiveSpellRenames;
         if (spellRenames != null && spellRenames.TryGetValue(statId, out var spRn))
         {

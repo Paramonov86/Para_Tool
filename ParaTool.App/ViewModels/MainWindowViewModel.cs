@@ -261,6 +261,13 @@ public partial class MainWindowViewModel : ObservableObject
 
         // Icon service for lazy DDS loading
         _iconService = new IconService(result.PakPaths);
+        // The icon library (game + every scanned pak) builds in the background; the Constructor
+        // picks spell, status and item icons from it.
+        var modNames = result.Mods.Concat(result.AmpMod != null ? new[] { result.AmpMod } : Array.Empty<ModInfo>())
+            .GroupBy(m => m.PakPath, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Name, StringComparer.OrdinalIgnoreCase);
+        _ = IconLibraryService.BuildAsync(
+            result.PakPaths.Select(p => (p, modNames.GetValueOrDefault(p))).ToList(), result.Resolver);
 
         // Collect all known StatIds for override detection
         _existingStatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

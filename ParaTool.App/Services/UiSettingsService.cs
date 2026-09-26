@@ -19,6 +19,9 @@ public sealed class UiSettings
 
     /// <summary>Remembered order of the Constructor editor sections (by section key).</summary>
     public List<string>? EditorSectionOrder { get; set; }
+
+    /// <summary>The game's Data folder, when the user pointed ParaTool at it (icons are read from there).</summary>
+    public string? GameDataPath { get; set; }
 }
 
 public static class UiSettingsService

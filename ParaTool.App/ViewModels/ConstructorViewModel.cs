@@ -171,7 +171,8 @@ public partial class ConstructorViewModel : ViewModelBase
 
     [ObservableProperty] private string _locaWarning = "";
 
-    public IconBrowserVM? IconBrowser { get; private set; }
+    /// <summary>The icon library window (items, spell cards, status cards).</summary>
+    public IconPickerVM IconPicker { get; } = new();
 
     public ConstructorViewModel(StatsResolver? resolver = null, LocaService? locaService = null, IconService? iconService = null)
     {
@@ -184,11 +185,9 @@ public partial class ConstructorViewModel : ViewModelBase
         Controls.BoostBlocksEditor.GlobalResolver = resolver;
         Controls.BoostBlocksEditor.GlobalLocaService = locaService;
 
-        if (iconService != null)
-        {
-            IconBrowser = new IconBrowserVM(iconService);
-            IconBrowser.IconSelected += OnIconSelected;
-        }
+        // Card pictures appear once the icon library has finished building (after the scan).
+        IconLibraryService.Changed += () => SelectedArtifact?.RefreshCardIcons();
+        IconPicker.DisplayNameOf = stat => Controls.SearchPickerChip.ResolveStatDisplayName(stat, Loc.Instance.Lang, _resolver, _locaService);
         LoadSavedArtifacts();
         SavedArtifacts.CollectionChanged += (_, _) => { OnPropertyChanged(nameof(HasSavedArtifacts)); OnPropertyChanged(nameof(ShowSavedArtifacts)); };
 
@@ -521,6 +520,8 @@ public partial class ConstructorViewModel : ViewModelBase
             Controls.BoostBlocksEditor.ActiveSpellRenames = newValue.Artifact.SpellRenames;
             Controls.BoostBlocksEditor.ActiveStatusRenames = newValue.Artifact.StatusRenames;
             Controls.BoostBlocksEditor.ActiveArtifactSpells = () => newValue.Artifact.Spells.Select(s => s.Name);
+            Controls.BoostBlocksEditor.ActiveArtifactStatuses = () => newValue.Artifact.Statuses.Select(s => s.Name);
+            Controls.BoostBlocksEditor.ActiveCardName = statId => CardName(newValue, statId);
             Controls.BoostBlocksEditor.ActiveEditingLang = EditingLang;
             // Load loca for current editing language (may differ from scan language)
             if (_resolver != null && _locaService != null)
@@ -1190,19 +1191,63 @@ public partial class ConstructorViewModel : ViewModelBase
         SelectedArtifact = vm;
     }
 
+    /// <summary>
+    /// A spell or status card of the item shows under its own name wherever the item refers to it
+    /// (chips, pickers) — a blank status has no other name, a copy may have been renamed.
+    /// </summary>
+    private string? CardName(ArtifactItemVM item, string statId)
+    {
+        var lang = EditingLang;
+        static string? Pick(Dictionary<string, string> names, string lang) =>
+            names.TryGetValue(lang, out var n) && !string.IsNullOrEmpty(n) ? n
+            : names.TryGetValue("en", out var en) && !string.IsNullOrEmpty(en) ? en : null;
+        foreach (var st in item.Artifact.Statuses)
+            if (st.Name.Equals(statId, StringComparison.OrdinalIgnoreCase) && (st.UsingBase == null || st.DisplayNameEdited))
+                return Pick(st.DisplayName, lang);
+        foreach (var sp in item.Artifact.Spells)
+            if (sp.Name.Equals(statId, StringComparison.OrdinalIgnoreCase) && sp.DisplayNameEdited)
+                return Pick(sp.DisplayName, lang);
+        return null;
+    }
+
+    /// <summary>Opens the icon library for a spell card: spells need icons with a tooltip picture.</summary>
+    public void OpenSpellIconPicker(SpellVM card)
+    {
+        var baseIcon = card.Spell.UsingBase != null ? _resolver?.Resolve(card.Spell.UsingBase, "Icon") : null;
+        IconPicker.Open(IconPickTarget.Spell, card.Spell.Icon, card.SetIcon,
+            baseIcon != null && !baseIcon.Equals(card.Spell.Icon, StringComparison.OrdinalIgnoreCase) ? () => card.SetIcon(baseIcon) : null);
+    }
+
+    /// <summary>Opens the icon library for a status card: status, spell and item icons all fit.</summary>
+    public void OpenStatusIconPicker(StatusVM card)
+    {
+        var baseIcon = card.Status.UsingBase != null ? _resolver?.Resolve(card.Status.UsingBase, "Icon") : null;
+        IconPicker.Open(IconPickTarget.Status, card.Status.Icon, card.SetIcon,
+            card.IsBlank ? (card.Status.Icon != null ? () => card.SetIcon(null) : null)
+            : baseIcon != null && !baseIcon.Equals(card.Status.Icon, StringComparison.OrdinalIgnoreCase) ? () => card.SetIcon(baseIcon) : null);
+    }
+
     [RelayCommand]
     private void OpenIconBrowser()
     {
-        var currentName = SelectedArtifact?.Artifact.AtlasIconMapKey;
-        var currentBitmap = SelectedArtifact?.IconBitmap;
-        IconBrowser?.Open(currentName, currentBitmap);
+        if (SelectedArtifact == null) return;
+        IconPicker.Open(IconPickTarget.Item, SelectedArtifact.Artifact.AtlasIconMapKey, OnIconSelected);
     }
 
     private void OnIconSelected(string iconName)
     {
-        if (SelectedArtifact == null || _iconService == null) return;
+        if (SelectedArtifact == null) return;
         // Route through VM setter so bindings refresh
         SelectedArtifact.EditAtlasIconKey = iconName;
+
+        // The library has the game's own tooltip picture when the game folder is known.
+        if (Services.IconLibraryService.Current is { } lib && lib.Find(iconName) is { } entry
+            && lib.Large(entry) is { } large)
+        {
+            SelectedArtifact.IconBitmap = large;
+            return;
+        }
+        if (_iconService == null) return;
 
         // Try AMP/mod DDS first — that's the primary source for custom icons.
         var dds = _iconService.GetIconDds(iconName);
@@ -1228,7 +1273,7 @@ public partial class ConstructorViewModel : ViewModelBase
             if (rgba != null)
             {
                 var (w, h) = vanillaAtlas.GetTileSize(vanillaEntry);
-                var bmp = IconEntryVM.RgbaToBitmapStatic(rgba, w, h);
+                var bmp = Services.IconBitmaps.FromRgba(rgba, w, h);
                 if (bmp != null) SelectedArtifact.IconBitmap = bmp;
             }
         }
@@ -1265,7 +1310,7 @@ public partial class ConstructorViewModel : ViewModelBase
                 if (rgba != null)
                 {
                     var (w, h) = _vanillaAtlas.GetTileSize(userVanilla);
-                    vm.IconBitmap = IconEntryVM.RgbaToBitmapStatic(rgba, w, h);
+                    vm.IconBitmap = Services.IconBitmaps.FromRgba(rgba, w, h);
                     if (vm.IconBitmap != null) return;
                 }
             }
@@ -1348,7 +1393,7 @@ public partial class ConstructorViewModel : ViewModelBase
                 if (rgba != null)
                 {
                     var (w, h) = _vanillaAtlas.GetTileSize(vanillaIcon);
-                    vm.IconBitmap = IconEntryVM.RgbaToBitmapStatic(rgba, w, h);
+                    vm.IconBitmap = Services.IconBitmaps.FromRgba(rgba, w, h);
                 }
             }
         }

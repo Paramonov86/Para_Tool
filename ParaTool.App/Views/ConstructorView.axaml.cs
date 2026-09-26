@@ -44,7 +44,6 @@ public partial class ConstructorView : UserControl
     private string _currentLocaLang = "en";
     private ConstructorViewModel? _subscribedVm;
 
-    private readonly Dictionary<TextBlock, System.Threading.CancellationTokenSource> _marqueeTokens = new();
 
     public ConstructorView()
     {
@@ -56,8 +55,6 @@ public partial class ConstructorView : UserControl
         AddHandler(GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
         AddHandler(Avalonia.Input.InputElement.PointerPressedEvent, OnPointerPressedTunnel, RoutingStrategies.Tunnel);
-        AddHandler(PointerEnteredEvent, OnIconPointerEntered, RoutingStrategies.Tunnel);
-        AddHandler(PointerExitedEvent, OnIconPointerExited, RoutingStrategies.Tunnel);
 
         // Passive picker — add existing passive when selected
         var passivePicker = this.FindControl<SearchPickerChip>("PassivePickerChip");
@@ -92,11 +89,28 @@ public partial class ConstructorView : UserControl
                 }
             };
         }
-        // Wire up resolver/loca for passive and spell pickers when DataContext is set
+        // Status picker — copy an existing status into a card
+        var statusPicker = this.FindControl<SearchPickerChip>("StatusPickerChip");
+        if (statusPicker != null)
+        {
+            statusPicker.PropertyChanged += (s, e) =>
+            {
+                if (e.Property.Name != "Text" || s is not SearchPickerChip picker) return;
+                var name = picker.Text?.Trim();
+                if (string.IsNullOrEmpty(name)) return;
+                if (DataContext is ConstructorViewModel vm && vm.SelectedArtifact != null)
+                {
+                    vm.SelectedArtifact.AddExistingStatus(name, vm.StatsResolver, vm.LocaService);
+                    picker.Text = "";
+                    RebuildChips();
+                }
+            };
+        }
+        // Wire up resolver/loca for passive, spell and status pickers when DataContext is set
         DataContextChanged += (_, _) =>
         {
             if (DataContext is not ConstructorViewModel cvm) return;
-            foreach (var picker in new[] { passivePicker, spellPicker })
+            foreach (var picker in new[] { passivePicker, spellPicker, statusPicker })
             {
                 if (picker == null) continue;
                 picker.Resolver = cvm.StatsResolver;
@@ -506,6 +520,33 @@ public partial class ConstructorView : UserControl
             return;
         }
 
+        // Status cards
+        if (btn.Name == "StatusToggleBtn" && btn.Tag is StatusVM stvm)
+        {
+            stvm.IsExpanded = !stvm.IsExpanded;
+            return;
+        }
+        if (DataContext is ConstructorViewModel cardVm && cardVm.SelectedArtifact != null)
+        {
+            switch (btn.Name)
+            {
+                case "RemoveStatusCardBtn" when btn.Tag is StatusVM removeStatus:
+                    cardVm.SelectedArtifact.RemoveStatusCard(removeStatus);
+                    RebuildChips();
+                    return;
+                case "AddStatusCardBtn":
+                    cardVm.SelectedArtifact.AddNewStatus();
+                    RebuildChips();
+                    return;
+                case "StatusIconBtn" when btn.Tag is StatusVM iconStatus:
+                    cardVm.OpenStatusIconPicker(iconStatus);
+                    return;
+                case "SpellIconBtn" when btn.Tag is SpellVM iconSpell:
+                    cardVm.OpenSpellIconPicker(iconSpell);
+                    return;
+            }
+        }
+
         // Add new empty passive
         if (btn.Name == "AddPassiveBtn" && DataContext is ConstructorViewModel addPVm
             && addPVm.SelectedArtifact != null)
@@ -551,13 +592,6 @@ public partial class ConstructorView : UserControl
             return;
         }
 
-        // Icon grid click — identify by Tag type (Name doesn't propagate in DataTemplates)
-        if (btn.Tag is IconEntryVM iconVm
-            && DataContext is ConstructorViewModel ctorVm && ctorVm.IconBrowser != null)
-        {
-            ctorVm.IconBrowser.SelectIcon(iconVm);
-            return;
-        }
 
         // BB-code toolbar buttons
         if (btn.Classes.Contains("BbBtn") && btn.Tag is string tag && _lastFocusedLocaBox != null)
@@ -1100,71 +1134,6 @@ public partial class ConstructorView : UserControl
             };
             btn.Click += (_, _) => { vm.ToggleThemeCommand.Execute(btn.Tag as string); RebuildChips(); };
             panel.Children.Add(btn);
-        }
-    }
-
-    // === Icon name marquee scroll on hover ===
-
-    private void OnIconPointerEntered(object? sender, PointerEventArgs e)
-    {
-        if (e.Source is not Visual v) return;
-        var btn = v.FindAncestorOfType<Button>();
-        if (btn?.Name != "IconGridBtn") return;
-
-        var tb = FindDescendant<TextBlock>(btn);
-        if (tb == null || tb.RenderTransform is not TranslateTransform tt) return;
-
-        tb.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var textWidth = tb.DesiredSize.Width;
-        var containerWidth = 100.0;
-        if (textWidth <= containerWidth) return;
-
-        var cts = new System.Threading.CancellationTokenSource();
-        _marqueeTokens[tb] = cts;
-        _ = RunMarquee(tb, tt, textWidth, containerWidth, cts.Token);
-    }
-
-    private void OnIconPointerExited(object? sender, PointerEventArgs e)
-    {
-        if (e.Source is not Visual v) return;
-        var btn = v.FindAncestorOfType<Button>();
-        if (btn?.Name != "IconGridBtn") return;
-
-        var tb = FindDescendant<TextBlock>(btn);
-        if (tb == null) return;
-
-        if (_marqueeTokens.Remove(tb, out var cts))
-            cts.Cancel();
-        if (tb.RenderTransform is TranslateTransform tt)
-            tt.X = 0;
-    }
-
-    private static async System.Threading.Tasks.Task RunMarquee(
-        TextBlock tb, TranslateTransform tt, double textWidth, double containerWidth,
-        System.Threading.CancellationToken ct)
-    {
-        var offset = textWidth - containerWidth;
-        var durationMs = (int)(offset * 20); // ~20ms per pixel
-        var steps = Math.Max(1, durationMs / 16);
-        var dx = offset / steps;
-
-        await System.Threading.Tasks.Task.Delay(300, ct); // pause before scroll
-
-        // Scroll left
-        for (int i = 0; i < steps && !ct.IsCancellationRequested; i++)
-        {
-            tt.X = -(i + 1) * dx;
-            await System.Threading.Tasks.Task.Delay(16, ct);
-        }
-
-        if (!ct.IsCancellationRequested)
-            await System.Threading.Tasks.Task.Delay(800, ct); // pause at end
-
-        // Scroll back
-        for (int i = steps - 1; i >= 0 && !ct.IsCancellationRequested; i--)
-        {
-            tt.X = -i * dx;
-            await System.Threading.Tasks.Task.Delay(16, ct);
         }
     }
 

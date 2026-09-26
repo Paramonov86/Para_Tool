@@ -352,6 +352,7 @@ public partial class ArtifactItemVM : ObservableObject
             Artifact.StatusOnEquip = value ?? "";
             MarkDirty();
             OnPropertyChanged();
+            foreach (var card in StatusVMs) card.NotifyApplyChanged();
         }
     }
 
@@ -536,8 +537,9 @@ public partial class ArtifactItemVM : ObservableObject
                 PassiveVMs.Add(new PassiveVM(p, this));
         }
         OnPropertyChanged(nameof(HasPassives));
-        // Spell cards load at every point passives do.
+        // Spell and status cards load at every point passives do.
         LoadSpellsFromArtifact();
+        LoadStatusesFromArtifact();
     }
 
     // === Spells (cards cloned from existing spells) ===
@@ -744,6 +746,96 @@ public partial class ArtifactItemVM : ObservableObject
             if (s != null)
                 SpellVMs.Add(new SpellVM(s, this));
         OnPropertyChanged(nameof(HasGrantedSpells));
+    }
+
+    // === Statuses (cards copied from existing statuses or made from scratch) ===
+
+    public ObservableCollection<StatusVM> StatusVMs { get; } = [];
+
+    public void AddExistingStatus(string statusName, Core.Parsing.StatsResolver? resolver,
+        Core.Services.LocaService? locaService = null)
+    {
+        if (StatusVMs.Any(s => s.Status.Name.Equals(statusName, StringComparison.OrdinalIgnoreCase)
+                               || (s.Status.UsingBase?.Equals(statusName, StringComparison.OrdinalIgnoreCase) ?? false)))
+            return;
+
+        // Starts as a status of this item: the compiler renames it, `using`s the original and points
+        // this item's ApplyStatus/StatusOnEquip at the copy. Text it keeps stays the original's.
+        var status = StatusCloner.CloneFrom(statusName, resolver);
+        foreach (var l in new[] { "en", "ru", Loc.Instance.Lang }.Distinct())
+        {
+            status.DisplayName[l] = ResolveSpellText(status.SourceDisplayNameHandle, statusName, l, locaService, isDescription: false, resolver);
+            status.Description[l] = ResolveSpellText(status.SourceDescriptionHandle, statusName, l, locaService, isDescription: true, resolver);
+        }
+        Artifact.Statuses.Add(status);
+        StatusVMs.Add(new StatusVM(status, this));
+        RecordEdit();
+    }
+
+    /// <summary>A status of this item made from scratch, opened for editing.</summary>
+    public void AddNewStatus()
+    {
+        var status = StatusCloner.CreateBlank(Artifact);
+        status.DisplayName["en"] = "New status";
+        status.DisplayName["ru"] = "Новый статус";
+        status.DisplayNameEdited = true;
+        Artifact.Statuses.Add(status);
+        StatusVMs.Add(new StatusVM(status, this) { IsExpanded = true });
+        RecordEdit();
+    }
+
+    public void RemoveStatusCard(StatusVM svm)
+    {
+        Artifact.Statuses.Remove(svm.Status);
+        StatusVMs.Remove(svm);
+        // Stop applying it on equip; the StatusOnEquip setter leaves a tombstone so the base item's
+        // own list doesn't bring it back (same as removing a spell card).
+        var names = new[] { svm.Status.Name };
+        if (SplitSemicolon(Artifact.StatusOnEquip).Contains(svm.Status.Name))
+            EditStatusOnEquip = string.Join(";", (Artifact.StatusOnEquip ?? "")
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(n => !names.Contains(n, StringComparer.OrdinalIgnoreCase)));
+        RecordEdit();
+    }
+
+    /// <summary>Listed in this item's StatusOnEquip (by the card's name or the status it was copied from).</summary>
+    internal bool IsStatusAppliedOnEquip(StatusDefinition status) =>
+        SplitSemicolon(Artifact.StatusOnEquip).Any(n =>
+            n.Equals(status.Name, StringComparison.OrdinalIgnoreCase)
+            || n.Equals(status.UsingBase ?? "", StringComparison.OrdinalIgnoreCase) && !status.EditOriginal && status.UsingBase != null);
+
+    public void SetStatusAppliedOnEquip(StatusVM svm, bool onEquip)
+    {
+        var status = svm.Status;
+        if (onEquip)
+        {
+            if (IsStatusAppliedOnEquip(status)) return;
+            EditStatusOnEquip = string.IsNullOrEmpty(Artifact.StatusOnEquip) ? status.Name : Artifact.StatusOnEquip + ";" + status.Name;
+        }
+        else
+        {
+            var names = new[] { status.Name, status.UsingBase ?? "" };
+            EditStatusOnEquip = string.Join(";", (Artifact.StatusOnEquip ?? "")
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(n => !names.Contains(n, StringComparer.OrdinalIgnoreCase)));
+        }
+        RecordEdit();
+        svm.NotifyApplyChanged();
+    }
+
+    public void LoadStatusesFromArtifact()
+    {
+        StatusVMs.Clear();
+        foreach (var s in Artifact.Statuses ?? [])
+            if (s != null)
+                StatusVMs.Add(new StatusVM(s, this));
+    }
+
+    /// <summary>Card pictures follow the icon library, which finishes building after the cards exist.</summary>
+    public void RefreshCardIcons()
+    {
+        foreach (var s in StatusVMs) s.RefreshIcon();
+        foreach (var s in SpellVMs.SelectMany(c => c.WithVariants())) s.RefreshIcon();
     }
 
     // === Preview ===
@@ -1008,6 +1100,11 @@ public partial class ArtifactItemVM : ObservableObject
         ["RemoveSpell"] = "JrnRemoveSpell",
         ["SetSpellGrantedThroughPassive"] = "LblGrantViaPassive",
         ["SetSpellGrantedOnEquip"] = "LblGrantOnEquip",
+        ["AddExistingStatus"] = "JrnAddStatus",
+        ["AddNewStatus"] = "JrnAddStatus",
+        ["RemoveStatusCard"] = "JrnRemoveStatus",
+        ["SetStatusAppliedOnEquip"] = "LblApplyOnEquip",
+        ["SetIcon"] = "LblSpellIcon",
         ["EditCreature"] = "BtnEditCreature",
         ["ResetCreature"] = "BtnResetCreature",
         ["EditProperties"] = "LblProperties",
@@ -1426,7 +1523,27 @@ public partial class SpellVM : ObservableObject
     public string EditIcon
     {
         get => Spell.Icon ?? "";
-        set { Spell.Icon = string.IsNullOrWhiteSpace(value) ? null : value.Trim(); _parent.RecordEdit(); OnPropertyChanged(); }
+        set { Spell.Icon = string.IsNullOrWhiteSpace(value) ? null : value.Trim(); _parent.RecordEdit(); RefreshIcon(); }
+    }
+
+    /// <summary>The icon's hotbar tile, from the icon library.</summary>
+    public Avalonia.Media.Imaging.WriteableBitmap? IconBitmap => Services.IconLibraryService.Current?.Thumb(Spell.Icon);
+    public bool HasIcon => IconBitmap != null;
+
+    internal void SetIcon(string? icon)
+    {
+        icon = string.IsNullOrWhiteSpace(icon) ? null : icon.Trim();
+        if (Spell.Icon == icon) return;
+        Spell.Icon = icon;
+        _parent.RecordEdit();
+        RefreshIcon();
+    }
+
+    internal void RefreshIcon()
+    {
+        OnPropertyChanged(nameof(EditIcon));
+        OnPropertyChanged(nameof(IconBitmap));
+        OnPropertyChanged(nameof(HasIcon));
     }
 
     public string EditLevel

@@ -1,0 +1,207 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ParaTool.App.ViewModels"
+             xmlns:loc="using:ParaTool.App.Localization"
+             x:Class="ParaTool.App.Views.IconPickerView"
+             x:DataType="vm:IconPickerVM">
+
+    <UserControl.Styles>
+        <Style Selector="Button.kindTab">
+            <Setter Property="Background" Value="{StaticResource InputBgBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSize12}" />
+        </Style>
+        <Style Selector="Button.kindTab.active">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.cell">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="3" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Width" Value="68" />
+            <Setter Property="Height" Value="68" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.cell:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource InputBgBrush}" />
+        </Style>
+        <Style Selector="Button.cell.current">
+            <Setter Property="BorderBrush" Value="{DynamicResource GoldBrush}" />
+        </Style>
+        <Style Selector="Button.cell.selected">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentLightBrush}" />
+        </Style>
+        <Style Selector="Button.cell.selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource InputBgBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Dimmed backdrop; the library is a modal over the Constructor -->
+    <Border Background="#CC000000" Name="Backdrop">
+        <Border Background="{StaticResource PanelBgBrush}" CornerRadius="14" Margin="32,20"
+                MaxWidth="1180" MaxHeight="820"
+                BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1" ClipToBounds="True">
+            <Grid RowDefinitions="Auto,Auto,Auto,*">
+
+                <!-- Title -->
+                <Border Padding="20,14,14,12" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontSize="{DynamicResource FontSize16}" FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding Hint}" IsVisible="{Binding Hint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Command="{Binding CloseCommand}" Content="✕" VerticalAlignment="Top"
+                                Background="Transparent" Foreground="{StaticResource TextSecondaryBrush}" BorderThickness="0"
+                                FontSize="{DynamicResource FontSize14}" Padding="10,4" Cursor="Hand"
+                                ToolTip.Tip="{Binding BtnClose, Source={x:Static loc:Loc.Instance}}" />
+                    </Grid>
+                </Border>
+
+                <!-- Kind tabs, source, search -->
+                <Border Grid.Row="1" Padding="16,10" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                        <ItemsControl ItemsSource="{Binding KindTabs}" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:IconKindTabVM">
+                                    <Button Classes="kindTab" Classes.active="{Binding IsActive}" Content="{Binding Label}"
+                                            Command="{Binding $parent[UserControl].((vm:IconPickerVM)DataContext).SelectKindCommand}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}"
+                                  MinWidth="130" Margin="10,0,10,0" VerticalAlignment="Center" CornerRadius="8"
+                                  FontSize="{DynamicResource FontSize11}"
+                                  ToolTip.Tip="{Binding LblIconSource, Source={x:Static loc:Loc.Instance}}" />
+                        <TextBox Grid.Column="2" Name="SearchBox" Text="{Binding SearchText}"
+                                 Watermark="{Binding WmSearchIconLibrary, Source={x:Static loc:Loc.Instance}}"
+                                 FontSize="{DynamicResource FontSize12}" Padding="10,7" CornerRadius="8"
+                                 Background="{StaticResource InputBgBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="12,0,4,0"
+                                   FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}">
+                            <Run Text="{Binding Count}" /><Run Text=" " /><Run Text="{Binding LblIconCountSuffix, Source={x:Static loc:Loc.Instance}}" />
+                        </TextBlock>
+                    </Grid>
+                </Border>
+
+                <!-- The game folder was not found: only mod and item icons are there -->
+                <Border Grid.Row="2" IsVisible="{Binding GameMissing}" Padding="16,8"
+                        Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding WarnGameNotFound, Source={x:Static loc:Loc.Instance}}" TextWrapping="Wrap"
+                                       FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource WarningBrush}" />
+                            <TextBlock Text="{Binding GameFolderError}" TextWrapping="Wrap"
+                                       IsVisible="{Binding GameFolderError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource ErrorBrush}" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Name="ChooseGameFolderBtn" Margin="12,0,0,0"
+                                Content="{Binding BtnChooseGameFolder, Source={x:Static loc:Loc.Instance}}"
+                                Background="{StaticResource InputBgBrush}" Foreground="{StaticResource AccentLightBrush}"
+                                BorderThickness="0" CornerRadius="8" Padding="12,5" Cursor="Hand" FontSize="{DynamicResource FontSize11}" />
+                    </Grid>
+                </Border>
+
+                <!-- Grid and detail -->
+                <Grid Grid.Row="3" ColumnDefinitions="*,300">
+                    <Panel>
+                        <!-- Rows of cells under a VirtualizingStackPanel: only visible rows exist -->
+                        <ScrollViewer Name="GridScroll" Padding="12,8" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding Rows}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:IconRowVM">
+                                        <ItemsControl ItemsSource="{Binding Cells}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="vm:IconCellVM">
+                                                    <Button Classes="cell" Classes.selected="{Binding IsSelected}" Classes.current="{Binding IsCurrent}"
+                                                            Tag="{Binding}" ToolTip.Tip="{Binding Tip}">
+                                                        <Image Source="{Binding Thumb}" Width="56" Height="56" Stretch="Uniform" />
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <StackPanel IsVisible="{Binding IsLoading}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                            <ProgressBar IsIndeterminate="True" Width="200" Height="4" Foreground="{StaticResource AccentBrush}" />
+                            <TextBlock Text="{Binding LblLoadingIcons, Source={x:Static loc:Loc.Instance}}" HorizontalAlignment="Center"
+                                       FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" />
+                        </StackPanel>
+                        <TextBlock IsVisible="{Binding HasNoResults}" Text="{Binding LblNoIconsFound, Source={x:Static loc:Loc.Instance}}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontSize="{DynamicResource FontSize12}" Foreground="{StaticResource TextMutedBrush}" />
+                    </Panel>
+
+                    <!-- Detail: the tooltip picture as the game shows it, the hotbar tile, who uses it -->
+                    <Border Grid.Column="1" Background="{StaticResource CardBgBrush}" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1,0,0,0">
+                        <Grid RowDefinitions="*,Auto">
+                            <ScrollViewer Padding="16,14">
+                                <StackPanel Spacing="10">
+                                    <TextBlock IsVisible="{Binding !HasSelection}" Text="{Binding LblIconPickHint, Source={x:Static loc:Loc.Instance}}"
+                                               TextWrapping="Wrap" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextMutedBrush}" />
+                                    <Border IsVisible="{Binding HasSelection}" Width="200" Height="200" HorizontalAlignment="Center"
+                                            CornerRadius="10" ClipToBounds="True" Background="{StaticResource InputBgBrush}">
+                                        <Image Source="{Binding DetailLarge}" Stretch="Uniform" />
+                                    </Border>
+                                    <StackPanel IsVisible="{Binding HasSelection}" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                        <Border Width="52" Height="52" CornerRadius="6" Background="{StaticResource InputBgBrush}" ClipToBounds="True"
+                                                ToolTip.Tip="{Binding LblIconHotbarTile, Source={x:Static loc:Loc.Instance}}">
+                                            <Image Source="{Binding DetailTile}" Width="48" Height="48" Stretch="Uniform" />
+                                        </Border>
+                                        <Border Width="28" Height="28" CornerRadius="14" Background="{StaticResource InputBgBrush}" ClipToBounds="True"
+                                                VerticalAlignment="Center" ToolTip.Tip="{Binding LblIconStatusBar, Source={x:Static loc:Loc.Instance}}">
+                                            <Image Source="{Binding DetailTile}" Width="24" Height="24" Stretch="Uniform" />
+                                        </Border>
+                                    </StackPanel>
+                                    <SelectableTextBlock IsVisible="{Binding HasSelection}" Text="{Binding DetailName}" TextWrapping="Wrap"
+                                                         FontSize="{DynamicResource FontSize12}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" />
+                                    <TextBlock IsVisible="{Binding HasSelection}" Text="{Binding DetailInfo}" TextWrapping="Wrap"
+                                               FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" />
+                                    <TextBlock IsVisible="{Binding HasDetailWarning}" Text="{Binding DetailWarning}" TextWrapping="Wrap"
+                                               FontSize="{DynamicResource FontSize11}" Foreground="{DynamicResource WarningBrush}" />
+                                    <StackPanel IsVisible="{Binding DetailUsedBy, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Spacing="3">
+                                        <TextBlock Text="{Binding LblIconUsedBy, Source={x:Static loc:Loc.Instance}}"
+                                                   FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" />
+                                        <TextBlock Text="{Binding DetailUsedBy}" TextWrapping="Wrap"
+                                                   FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                            <StackPanel Grid.Row="1" Spacing="6" Margin="16,10,16,14">
+                                <Button Command="{Binding ChooseCommand}" IsEnabled="{Binding HasSelection}" HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" Background="{StaticResource AccentBrush}" Foreground="White"
+                                        BorderThickness="0" CornerRadius="8" Padding="12,8" Cursor="Hand" FontWeight="SemiBold"
+                                        Content="{Binding BtnChooseIcon, Source={x:Static loc:Loc.Instance}}" />
+                                <Button Command="{Binding InheritCommand}" IsVisible="{Binding CanInherit}" HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" Background="{StaticResource InputBgBrush}" Foreground="{StaticResource TextSecondaryBrush}"
+                                        BorderThickness="0" CornerRadius="8" Padding="12,6" Cursor="Hand" FontSize="{DynamicResource FontSize11}"
+                                        Content="{Binding BtnInheritIcon, Source={x:Static loc:Loc.Instance}}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

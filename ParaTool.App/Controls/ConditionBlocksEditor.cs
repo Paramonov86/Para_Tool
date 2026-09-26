@@ -550,6 +550,13 @@ public class ConditionBlocksEditor : UserControl
                     "passivename" or "passive" => BoostBlocksEditor.GlobalPassiveList,
                     _ => null,
                 };
+                // The item's own status cards first.
+                if (paramLower is "statusid" or "status"
+                    && BoostBlocksEditor.ActiveArtifactStatuses?.Invoke().ToArray() is { Length: > 0 } ownStatuses)
+                {
+                    var ownSet = new HashSet<string>(ownStatuses, StringComparer.OrdinalIgnoreCase);
+                    searchItems = [..ownStatuses, ..(searchItems ?? []).Where(s => !ownSet.Contains(s))];
+                }
 
                 // A creature template uuid (CanStand('42da1663-…') is a Dryad) means nothing to a
                 // player: pick it by name, in the editing language.
