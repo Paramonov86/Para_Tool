@@ -162,10 +162,10 @@ public static class IconConverter
         {
             sb.AppendLine("\t\t\t\t<node id=\"IconUV\">");
             sb.AppendLine($"\t\t\t\t\t<attribute id=\"MapKey\" type=\"FixedString\" value=\"{entry.Name}\"/>");
-            sb.AppendLine($"\t\t\t\t\t<attribute id=\"U1\" type=\"float\" value=\"{entry.U1}\"/>");
-            sb.AppendLine($"\t\t\t\t\t<attribute id=\"U2\" type=\"float\" value=\"{entry.U2}\"/>");
-            sb.AppendLine($"\t\t\t\t\t<attribute id=\"V1\" type=\"float\" value=\"{entry.V1}\"/>");
-            sb.AppendLine($"\t\t\t\t\t<attribute id=\"V2\" type=\"float\" value=\"{entry.V2}\"/>");
+            sb.AppendLine($"\t\t\t\t\t<attribute id=\"U1\" type=\"float\" value=\"{entry.U1.ToString(System.Globalization.CultureInfo.InvariantCulture)}\"/>");
+            sb.AppendLine($"\t\t\t\t\t<attribute id=\"U2\" type=\"float\" value=\"{entry.U2.ToString(System.Globalization.CultureInfo.InvariantCulture)}\"/>");
+            sb.AppendLine($"\t\t\t\t\t<attribute id=\"V1\" type=\"float\" value=\"{entry.V1.ToString(System.Globalization.CultureInfo.InvariantCulture)}\"/>");
+            sb.AppendLine($"\t\t\t\t\t<attribute id=\"V2\" type=\"float\" value=\"{entry.V2.ToString(System.Globalization.CultureInfo.InvariantCulture)}\"/>");
             sb.AppendLine("\t\t\t\t</node>");
         }
 
