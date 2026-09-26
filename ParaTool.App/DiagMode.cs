@@ -603,7 +603,7 @@ internal static class DiagMode
                 Console.WriteLine($"  {name}: {decls.Count} declaration(s)");
                 foreach (var (file, e) in decls)
                     Console.WriteLine($"    {file}: using={e.Using ?? "-"} " +
-                                      string.Join(" ", new[] { "SpellType", "Cooldown", "SpellSuccess", "SpellProperties", "ContainerSpells", "SpellContainerID", "RootSpellID", "Vitality", "DisplayName", "Boosts" }
+                                      string.Join(" ", new[] { "SpellType", "StatusType", "Cooldown", "SpellSuccess", "SpellProperties", "ContainerSpells", "SpellContainerID", "RootSpellID", "Vitality", "DisplayName", "Boosts", "StatusOnEquip", "TickType", "TickFunctors", "StackId", "Icon" }
                                           .Where(e.Data.ContainsKey).Select(k => $"{k}='{e.Data[k]}'")));
             }
             if (_probeCreatureTemplate != null)
@@ -652,6 +652,10 @@ internal static class DiagMode
         Program.BuildAvaloniaApp().SetupWithoutStarting();
         var sink = new BindingErrorSink();
         Avalonia.Logging.Logger.Sink = sink;
+        var iconClock = System.Diagnostics.Stopwatch.StartNew();
+        Services.IconLibraryService.BuildAsync(result.PakPaths.Select(p => (p, (string?)null)).ToList(), result.Resolver).Wait();
+        var icons = Services.IconLibraryService.Current;
+        Console.WriteLine($"  icon library: {icons?.Library.All.Count} icons in {iconClock.ElapsedMilliseconds} ms, game data={icons?.Library.GameDataDir ?? "not found"}");
 
         return Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
         {
@@ -695,6 +699,21 @@ internal static class DiagMode
                 Console.WriteLine($"  container variants: {string.Join(" | ", waveCard.Variants.Select(v => $"{v.Name}: {v.EditSpellSuccess}"))}");
             // The largest vanilla container (32 variants): how long a family that size takes to lay out.
             item.AddExistingSpell("Shout_DisguiseSelf", resolver, loca);
+
+            // Status cards: a copy of a vanilla status and one made from scratch, applied on equip,
+            // with a spell icon (statuses take spell icons).
+            item.AddExistingStatus("BLESS", resolver, loca);
+            item.AddNewStatus();
+            var blank = item.StatusVMs[^1];
+            blank.EditDisplayName = "Warded";
+            blank.EditBoosts = "AC(2)";
+            blank.ApplyOnEquip = true;
+            item.StatusVMs[0].EditTickFunctors = "RegainHitPoints(1d4)";
+            if (icons?.Find("Spell_Abjuration_ArmorOfAgathys") != null) blank.SetIcon("Spell_Abjuration_ArmorOfAgathys");
+            foreach (var st in item.StatusVMs) st.IsExpanded = true;
+            var statusesBefore = System.Text.Json.JsonSerializer.Serialize(art.Statuses);
+            Console.WriteLine($"  status cards: {string.Join(", ", item.StatusVMs.Select(st => $"{st.Name}[edited={st.Status.DisplayNameEdited}/{st.Status.DescriptionEdited} src={st.Status.SourceDisplayNameHandle} {st.Status.StatusType} blank={st.IsBlank} onEquip={st.ApplyOnEquip} icon={st.EditIcon} bitmap={st.HasIcon}]"))} StatusOnEquip='{art.StatusOnEquip}'");
+            Console.WriteLine($"  spell card icons: {string.Join(", ", item.SpellVMs.Select(sp => $"{sp.EditIcon}:{sp.HasIcon}"))}");
 
             var view = new Views.ConstructorView { DataContext = cvm };
             var root = new Avalonia.Controls.Window { Width = 1600, Height = 4000, Content = view };
@@ -793,11 +812,12 @@ internal static class DiagMode
                 // Loading the view rebuilds the card VMs, so expand the ones it ended up with.
                 foreach (var s in item.SpellVMs.SelectMany(c => c.WithVariants())) s.IsExpanded = true;
                 foreach (var p in item.PassiveVMs) p.IsExpanded = true;
+                foreach (var st in item.StatusVMs) st.IsExpanded = true;
                 Settle();
 
                 var allCards = Descendants(probeRoot).OfType<Avalonia.Controls.ItemsControl>()
                     .SelectMany(ic => ic.GetRealizedContainers())
-                    .Where(c => c.DataContext is ViewModels.SpellVM or ViewModels.PassiveVM)
+                    .Where(c => c.DataContext is ViewModels.SpellVM or ViewModels.PassiveVM or ViewModels.StatusVM)
                     .Distinct().ToList();
                 var cards = allCards.Where(c => c.Bounds.Width > 0).ToList();
                 var problems = new List<string>();
@@ -888,6 +908,43 @@ internal static class DiagMode
             var costsAfter = art.Spells.Select(s => s.UseCosts).ToList();
             Console.WriteLine($"  UseCosts untouched by layout: {costsBefore.SequenceEqual(costsAfter)} " +
                               $"[{string.Join(" | ", costsAfter.Select(c => c.Replace("\t", "\\t")))}] cost tumblers={costBadges}");
+
+            if (statusesBefore != System.Text.Json.JsonSerializer.Serialize(art.Statuses))
+                Console.WriteLine($"    before: {statusesBefore}\n    after:  {System.Text.Json.JsonSerializer.Serialize(art.Statuses)}");
+            Console.WriteLine($"  status fields untouched by layout: {statusesBefore == System.Text.Json.JsonSerializer.Serialize(art.Statuses)} " +
+                              $"realized status cards={Descendants(probeRoot!).OfType<Avalonia.Controls.Presenters.ContentPresenter>().Count(c => c.DataContext is ViewModels.StatusVM)}");
+            var compiledArt = System.Text.Json.JsonSerializer.Deserialize<ParaTool.Core.Artifacts.ArtifactDefinition>(System.Text.Json.JsonSerializer.Serialize(art))!;
+            var compiled = ParaTool.Core.Artifacts.ArtifactCompiler.Compile(compiledArt, resolver: resolver);
+            foreach (var e in ParaTool.Core.Parsing.StatsParser.Parse(compiled.StatsText).Where(e => e.Type == "StatusData"))
+                Console.WriteLine($"    compiled {e.Name} using={e.Using} {string.Join(" ", e.Data.Select(kv => $"{kv.Key}='{kv.Value}'"))}");
+            Console.WriteLine($"    item StatusOnEquip='{ParaTool.Core.Parsing.StatsParser.Parse(compiled.StatsText).First(e => e.Name == art.StatId).Data["StatusOnEquip"]}' warnings={compiled.Warnings.Count}");
+
+            // The icon library window, for a status (all three kinds) and for a spell (spell icons only).
+            foreach (var (target, current) in new[] { (ViewModels.IconPickTarget.Status, "Spell_Evocation_Fireball"), (ViewModels.IconPickTarget.Spell, "Spell_Evocation_Fireball") })
+            {
+                cvm.IconPicker.Open(target, current, _ => { });
+                var pickerRoot = new Avalonia.Controls.Window { Width = 1000, Height = 800, Content = new Views.ConstructorView { DataContext = cvm } };
+                for (int pass = 0; pass < 6; pass++)
+                {
+                    pickerRoot.InvalidateMeasure();
+                    pickerRoot.Measure(new Avalonia.Size(1000, 800));
+                    pickerRoot.Arrange(new Avalonia.Rect(0, 0, 1000, 800));
+                    Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    System.Threading.Thread.Sleep(pass == 2 ? 400 : 0);
+                }
+                var pickerCells = Descendants(pickerRoot).OfType<Avalonia.Controls.Button>().Where(b => b.Tag is ViewModels.IconCellVM).ToList();
+                var kinds = cvm.IconPicker.Rows.SelectMany(r => r.Cells).GroupBy(c => c.Entry.Kind).Select(g => $"{g.Key}={g.Count()}");
+                Console.WriteLine($"  icon picker {target}: count={cvm.IconPicker.Count} rows={cvm.IconPicker.Rows.Count} realized cells={pickerCells.Count} " +
+                                  $"with picture={pickerCells.Count(b => (b.Tag as ViewModels.IconCellVM)!.Thumb != null)} tabs=[{string.Join(",", cvm.IconPicker.KindTabs.Select(t => t.Label + (t.IsActive ? "*" : "")))}] " +
+                                  $"kinds=[{string.Join(",", kinds)}] selected={cvm.IconPicker.Selected?.Name}");
+                cvm.IconPicker.SearchText = "fireball";
+                Console.WriteLine($"    search 'fireball' by name: {cvm.IconPicker.Count}");
+                System.Threading.Thread.Sleep(1500);
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                Console.WriteLine($"    search 'fireball' with spell names: {cvm.IconPicker.Count} first={string.Join(",", cvm.IconPicker.Rows.SelectMany(r => r.Cells).Take(4).Select(c => c.Name))}");
+                Console.WriteLine($"    detail: large={cvm.IconPicker.DetailLarge?.PixelSize} tile={cvm.IconPicker.DetailTile?.PixelSize} info='{cvm.IconPicker.DetailInfo.Replace("\n", " / ")}' usedBy='{cvm.IconPicker.DetailUsedBy.Split('\n').FirstOrDefault()}'");
+                cvm.IconPicker.Close();
+            }
 
             Console.WriteLine($"  binding errors: {sink.Errors.Count}");
             foreach (var e in sink.Errors.Distinct().Take(15)) Console.WriteLine($"    {e}");
@@ -984,6 +1041,24 @@ internal static class DiagMode
             var orbName = $"PT_SpellProbe_Ring_Spell_{art.Spells.Count}";
             names.AddRange([orbName, orbName + "_1", orbName + "_2"]);
         }
+        // Status cards: one from scratch applied on equip, a copy of Bless (the ring applies the
+        // copy), and an edited vanilla status.
+        var blankStatus = ParaTool.Core.Artifacts.StatusCloner.CreateBlank(art);
+        blankStatus.DisplayName["en"] = "Probe Ward";
+        blankStatus.Boosts = "AC(3)";
+        blankStatus.Icon = "Spell_Abjuration_ArmorOfAgathys";
+        art.Statuses.Add(blankStatus);
+        var blessCopy = ParaTool.Core.Artifacts.StatusCloner.CloneFrom("BLESS", resolver);
+        blessCopy.Boosts = "RollBonus(Attack,1d6)";
+        art.Statuses.Add(blessCopy);
+        var barkskin = ParaTool.Core.Artifacts.StatusCloner.CloneFrom("BARKSKIN", resolver);
+        barkskin.EditOriginal = true;
+        barkskin.TickType = "StartTurn";
+        barkskin.TickFunctors = "RegainHitPoints(1)";
+        art.Statuses.Add(barkskin);
+        art.StatusOnEquip = $"{blankStatus.Name};BLESS";
+        names.AddRange([blankStatus.Name, "PT_SpellProbe_Ring_Status_2", "BARKSKIN"]);
+
         if (resolver.Get("Shout_DestructiveWave") != null)
         {
             var wave = ParaTool.Core.Artifacts.SpellCloner.CloneWithVariants("Shout_DestructiveWave", resolver);
