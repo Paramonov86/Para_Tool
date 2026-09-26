@@ -381,7 +381,7 @@
 
                             <TextBlock Grid.Row="5" Text="{Binding LblStatusGroups, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                             <ctrl:ChecklistPickerChip Grid.Row="5" Grid.Column="1" Text="{Binding EditStatusGroups}" Margin="0,6,0,0"
-                                                      Options="{x:Static vm:StatusVM.GroupOptions}" />
+                                                      Options="{x:Static vm:StatusVM.GroupOptions}" Labels="{x:Static vm:StatusVM.GroupLabels}" />
 
                             <TextBlock Grid.Row="6" Text="{Binding LblStatusRemoveOn, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                             <ctrl:ChecklistPickerChip Grid.Row="6" Grid.Column="1" Text="{Binding EditRemoveEvents}" Margin="0,6,0,0"

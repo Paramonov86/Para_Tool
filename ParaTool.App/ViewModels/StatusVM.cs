@@ -31,11 +31,12 @@ public partial class StatusVM : ObservableObject
     public static string[] GroupOptions { get; } = ValueList("StatusGroupFlags", "SG_None");
     public static string[] RemoveEventOptions { get; } = ValueList("StatusEvent", "None", "UNUSED1");
 
-    public static string[] TypeLabels => StatusLabels.For(TypeOptions, Loc.Instance.Lang);
-    public static string[] StackTypeLabels => StatusLabels.For(StackTypeOptions, Loc.Instance.Lang);
-    public static string[] TickTypeLabels => StatusLabels.For(TickTypeOptions, Loc.Instance.Lang);
-    public static string[] FlagLabels => StatusLabels.For(FlagOptions, Loc.Instance.Lang);
-    public static string[] RemoveEventLabels => StatusLabels.For(RemoveEventOptions, Loc.Instance.Lang);
+    public static string[] TypeLabels => Loc.Instance.ValueLabels("StatusType", TypeOptions);
+    public static string[] StackTypeLabels => Loc.Instance.ValueLabels("StatusStackType", StackTypeOptions);
+    public static string[] TickTypeLabels => Loc.Instance.ValueLabels("TickType", TickTypeOptions);
+    public static string[] FlagLabels => Loc.Instance.ValueLabels("StatusPropertyFlags", FlagOptions);
+    public static string[] GroupLabels => Loc.Instance.ValueLabels("StatusGroupFlags", GroupOptions);
+    public static string[] RemoveEventLabels => Loc.Instance.ValueLabels("StatusEvent", RemoveEventOptions);
 
     public StatusVM(StatusDefinition status, ArtifactItemVM parent)
     {
@@ -62,7 +63,7 @@ public partial class StatusVM : ObservableObject
 
     /// <summary>The status the card was copied from, or the card's own name (tooltip).</summary>
     public string StatName => Status.UsingBase ?? Status.Name;
-    public string TypeLabel => StatusLabels.Get(Status.StatusType, Loc.Instance.Lang);
+    public string TypeLabel => Loc.Instance.ValueLabel("StatusType", Status.StatusType);
 
     public bool EditOriginal
     {

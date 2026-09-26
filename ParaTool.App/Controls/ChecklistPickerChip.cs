@@ -114,10 +114,13 @@ public class ChecklistPickerChip : UserControl
 
         var checkStack = new StackPanel { Spacing = 2 };
 
-        for (int i = 0; i < options.Length; i++)
+        // A value the list doesn't have (RemoveOnLongRest, None — the game's own stats use them)
+        // gets a box too, or it could never be unticked.
+        var extras = selected.Where(v => !options.Contains(v, StringComparer.OrdinalIgnoreCase)).ToArray();
+        for (int i = 0; i < options.Length + extras.Length; i++)
         {
-            var opt = options[i];
-            var label = labels != null && i < labels.Length ? labels[i] : opt;
+            var opt = i < options.Length ? options[i] : extras[i - options.Length];
+            var label = i < options.Length && labels != null && i < labels.Length ? labels[i] : opt;
             var cb = new CheckBox
             {
                 Content = label,

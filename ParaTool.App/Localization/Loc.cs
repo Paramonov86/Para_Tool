@@ -459,6 +459,20 @@ public partial class Loc : ObservableObject
     public string JrnAddStatus => this["JrnAddStatus"];
     public string JrnRemoveStatus => this["JrnRemoveStatus"];
 
+    /// <summary>
+    /// Readable name of a game value list's value (<c>vl.&lt;List&gt;.&lt;Value&gt;</c>), in every language;
+    /// a value without one is shown as the game writes it.
+    /// </summary>
+    public string ValueLabel(string list, string value)
+    {
+        var key = $"vl.{list}.{value}";
+        if (_strings.TryGetValue(key, out var val)) return val;
+        _enStrings ??= LoadRaw("en");
+        return _enStrings.TryGetValue(key, out var en) ? en : value;
+    }
+
+    public string[] ValueLabels(string list, IEnumerable<string> values) => values.Select(v => ValueLabel(list, v)).ToArray();
+
     /// <summary>Get display labels for enum values, using loca with EnumLabels fallback.</summary>
     public string[] GetEnumDisplayLabels(string[] values)
     {

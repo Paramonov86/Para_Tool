@@ -537,7 +537,7 @@ public static class FunctorLabels
         ["ChannelDivinity"] = ("Channel Divinity", "Божественный канал"),
         ["LayOnHandsCharge"] = ("Lay on Hands", "Наложение рук"),
         ["WildShape"] = ("Wild Shape", "Дикий облик"),
-        ["NaturalRecovery"] = ("Natural Recovery", "Естеств. восстановление"),
+        ["NaturalRecoveryPoint"] = ("Natural Recovery", "Естеств. восстановление"),
         ["ChannelOath"] = ("Channel Oath", "Канал клятвы"),
         ["WarlockSpellSlot"] = ("Warlock Slot", "Ячейка варлока"),
         ["ArcaneRecovery"] = ("Arcane Recovery", "Магическое восстановл."),

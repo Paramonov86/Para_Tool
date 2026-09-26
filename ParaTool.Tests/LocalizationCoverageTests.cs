@@ -39,7 +39,7 @@ public class LocalizationCoverageTests
         // Only check keys starting with "boost." — UI strings may legitimately be missing
         // from some locales during ongoing translation work.
         var en = LoadLang("en");
-        var enBoost = en.Keys.Where(k => k.StartsWith("boost.") || k.StartsWith("enum.")).ToList();
+        var enBoost = en.Keys.Where(k => k.StartsWith("boost.") || k.StartsWith("enum.") || k.StartsWith("vl.")).ToList();
 
         var missing = new List<string>();
         foreach (var lang in Languages.Where(l => l != "en"))
