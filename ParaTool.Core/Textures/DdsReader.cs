@@ -20,6 +20,7 @@ public static class DdsReader
         {
             DdsFormat.BC1 => DecodeBc1(pixelData, header.Width, header.Height),
             DdsFormat.BC3 => Bc3Decoder.Decode(pixelData, header.Width, header.Height),
+            DdsFormat.BC7 => Bc7Decoder.Decode(pixelData, header.Width, header.Height),
             DdsFormat.B8G8R8A8 => ConvertBgra(pixelData, header.Width, header.Height),
             DdsFormat.R8G8B8A8 => pixelData.Slice(0, header.Width * header.Height * 4).ToArray(),
             _ => throw new NotSupportedException($"DDS format {header.Format} decoding not yet implemented")
