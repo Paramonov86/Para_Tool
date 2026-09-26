@@ -551,8 +551,12 @@ public static class ArtifactCompiler
             Emit("RemoveEvents", status.RemoveEvents, statusHasUsing);
             Emit("AuraRadius", status.AuraRadius, statusHasUsing);
             Emit("AuraStatuses", status.AuraStatuses, statusHasUsing);
-            if (status.StatusEffect != null)
-                stats.AppendLine($"data \"StatusEffect\" \"{status.StatusEffect}\"");
+            // Appearance: a field left alone stays inherited; turned off ("") it is written empty,
+            // which is how the game's own statuses drop what their base has — nothing to drop
+            // without a base.
+            foreach (var key in StatusDefinition.AppearanceFields)
+                if (status.GetAppearance(key) is { } look && (look.Length > 0 || statusHasUsing))
+                    stats.AppendLine($"data \"{key}\" \"{look}\"");
             // Fields not on the card stay inherited — except where the base names a status this
             // item has a copy of, itself most often (PHANTASMAL_KILLER ends by RemoveStatus(PHANTASMAL_KILLER)
             // in OnTickFail). The copy restates those pointed at the copy, or it would remove, check

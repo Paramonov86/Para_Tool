@@ -369,9 +369,68 @@ public sealed class StatusDefinition
     /// <summary>Written by builds before the status cards under a name the game does not read; compiled as Passives.</summary>
     public string PassivesOnApply { get; set; } = "";
 
+    // Appearance: how the status looks and sounds. Null = inherited from the base (nothing on a
+    // status from scratch), "" = turned off — a copy can drop an effect or a groan it inherits.
+    /// <summary>Colour of the status name in tooltips and the combat log (FormatStringColor).</summary>
+    public string? FormatColor { get; set; }
+    /// <summary>Effect on the character while the status lasts (a MultiEffectInfo UUID).</summary>
     public string? StatusEffect { get; set; }
+    /// <summary>Effect played when the status is applied (a MultiEffectInfo UUID).</summary>
+    public string? ApplyEffect { get; set; }
+    public string? SoundStart { get; set; }
+    public string? SoundLoop { get; set; }
+    public string? SoundStop { get; set; }
+    /// <summary>Voice lines (SoundVocalType): the character groans, shouts, snores…</summary>
     public string? SoundVocalStart { get; set; }
+    public string? SoundVocalLoop { get; set; }
     public string? SoundVocalEnd { get; set; }
+    /// <summary>Animations, as the game writes them: <c>uuid(STAT_Dazed_Combat_01_Loop)</c>.</summary>
+    public string? AnimationStart { get; set; }
+    public string? AnimationLoop { get; set; }
+    public string? AnimationEnd { get; set; }
+    /// <summary>Idle pose (StatusAnimationType) and which pose wins when statuses meet (StillAnimPriority).</summary>
+    public string? StillAnimationType { get; set; }
+    public string? StillAnimationPriority { get; set; }
+
+    /// <summary>The appearance fields, in the order they are written.</summary>
+    public static readonly string[] AppearanceFields =
+    [
+        "FormatColor", "StatusEffect", "ApplyEffect", "SoundStart", "SoundLoop", "SoundStop",
+        "SoundVocalStart", "SoundVocalLoop", "SoundVocalEnd", "AnimationStart", "AnimationLoop", "AnimationEnd",
+        "StillAnimationType", "StillAnimationPriority",
+    ];
+
+    public string? GetAppearance(string field) => field switch
+    {
+        "FormatColor" => FormatColor, "StatusEffect" => StatusEffect, "ApplyEffect" => ApplyEffect,
+        "SoundStart" => SoundStart, "SoundLoop" => SoundLoop, "SoundStop" => SoundStop,
+        "SoundVocalStart" => SoundVocalStart, "SoundVocalLoop" => SoundVocalLoop, "SoundVocalEnd" => SoundVocalEnd,
+        "AnimationStart" => AnimationStart, "AnimationLoop" => AnimationLoop, "AnimationEnd" => AnimationEnd,
+        "StillAnimationType" => StillAnimationType, "StillAnimationPriority" => StillAnimationPriority,
+        _ => throw new ArgumentException(field),
+    };
+
+    public void SetAppearance(string field, string? value)
+    {
+        switch (field)
+        {
+            case "FormatColor": FormatColor = value; break;
+            case "StatusEffect": StatusEffect = value; break;
+            case "ApplyEffect": ApplyEffect = value; break;
+            case "SoundStart": SoundStart = value; break;
+            case "SoundLoop": SoundLoop = value; break;
+            case "SoundStop": SoundStop = value; break;
+            case "SoundVocalStart": SoundVocalStart = value; break;
+            case "SoundVocalLoop": SoundVocalLoop = value; break;
+            case "SoundVocalEnd": SoundVocalEnd = value; break;
+            case "AnimationStart": AnimationStart = value; break;
+            case "AnimationLoop": AnimationLoop = value; break;
+            case "AnimationEnd": AnimationEnd = value; break;
+            case "StillAnimationType": StillAnimationType = value; break;
+            case "StillAnimationPriority": StillAnimationPriority = value; break;
+            default: throw new ArgumentException(field);
+        }
+    }
 }
 
 /// <summary>

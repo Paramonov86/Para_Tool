@@ -180,6 +180,53 @@ public class StatusCardCompileTests
     }
 
     [Fact]
+    public void Appearance_LeftAlone_IsInherited_TurnedOff_IsWrittenEmpty()
+    {
+        // BLESS has a StatusEffect; a copy that turns it off writes it empty, as the game's own
+        // statuses do, and a copy that doesn't touch it writes nothing and keeps it.
+        var art = NewRing();
+        var off = StatusCloner.CloneFrom("BLESS", Vanilla.Value);
+        off.StatusEffect = "";
+        off.SoundVocalStart = "";
+        off.FormatColor = "Gold";
+        art.Statuses.Add(off);
+        art.Statuses.Add(StatusCloner.CloneFrom("BANE", Vanilla.Value));
+
+        var entries = StatsParser.Parse(ArtifactCompiler.Compile(art, resolver: Vanilla.Value).StatsText);
+        var blessCopy = entries.Single(e => e.Name == "TEST_Ring_Status_1");
+        Assert.Equal("", blessCopy.Data["StatusEffect"]);
+        Assert.Equal("", blessCopy.Data["SoundVocalStart"]);
+        Assert.Equal("Gold", blessCopy.Data["FormatColor"]);
+        Assert.False(blessCopy.Data.ContainsKey("ApplyEffect"));
+
+        var game = new StatsResolver();
+        game.AddEntries(Vanilla.Value.Definitions);
+        game.AddEntries(entries);
+        Assert.Equal("", game.ResolveAll("TEST_Ring_Status_1")["StatusEffect"]);
+        Assert.Equal(Vanilla.Value.ResolveAll("BANE")["StatusEffect"], game.ResolveAll("TEST_Ring_Status_2")["StatusEffect"]);
+        Assert.DoesNotContain(entries.Single(e => e.Name == "TEST_Ring_Status_2").Data.Keys, StatusDefinition.AppearanceFields.Contains);
+    }
+
+    [Fact]
+    public void Appearance_OfABlank_WritesOnlyWhatIsSet()
+    {
+        var art = NewRing();
+        var blank = StatusCloner.CreateBlank(art);
+        blank.StatusEffect = "61fe31f9-ae4b-4926-a033-e56ea67c7d92";
+        blank.ApplyEffect = "";
+        blank.AnimationLoop = "06cff5ab-1705-403a-b20f-d5c9defbece5(STAT_Dazed_Combat_01_Loop)";
+        blank.StillAnimationType = "Dazed";
+        art.Statuses.Add(blank);
+
+        var entry = StatsParser.Parse(ArtifactCompiler.Compile(art, resolver: Vanilla.Value).StatsText).Single(e => e.Name == blank.Name);
+        Assert.Equal("61fe31f9-ae4b-4926-a033-e56ea67c7d92", entry.Data["StatusEffect"]);
+        Assert.Equal("06cff5ab-1705-403a-b20f-d5c9defbece5(STAT_Dazed_Combat_01_Loop)", entry.Data["AnimationLoop"]);
+        Assert.Equal("Dazed", entry.Data["StillAnimationType"]);
+        // Nothing to turn off without a base.
+        Assert.False(entry.Data.ContainsKey("ApplyEffect"));
+    }
+
+    [Fact]
     public void CompilingTwice_ChangesNothing()
     {
         var art = NewRing();
