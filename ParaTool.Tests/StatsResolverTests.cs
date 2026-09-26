@@ -165,4 +165,104 @@ public class StatsResolverTests
         Assert.False(string.IsNullOrEmpty(db.Resolver.Resolve("Target_SoberingRealisation", "SpellProperties")));
         Assert.False(string.IsNullOrEmpty(db.Resolver.Resolve("Target_SoberingRealisation", "Icon")));
     }
+
+    // ── Names differing only in case are different entries, as in the game ──────────────
+    // AMP has the weapon WPN_Longsword_l and the status WPN_LONGSWORD_L, the passive
+    // MAG_Weapon57_StatusHeal and the status MAG_WEAPON57_STATUSHEAL; the game itself has the
+    // spells Projectile_Jump and Projectile_JUMP. No stats name repeats exactly across types.
+
+    private static StatsEntry E(string name, string type, string? usingBase = null, params (string k, string v)[] data) =>
+        new() { Name = name, Type = type, Using = usingBase, Data = data.ToDictionary(d => d.k, d => d.v) };
+
+    [Fact]
+    public void CaseVariants_OfDifferentTypes_AreBothKept()
+    {
+        var r = new StatsResolver();
+        r.AddEntries([
+            E("WPN_Longsword_l", "Weapon", null, ("Damage", "1d8")),
+            E("WPN_LONGSWORD_L", "StatusData", null, ("StatusType", "BOOST"), ("StackPriority", "4")),
+        ]);
+
+        Assert.Equal("Weapon", r.Get("WPN_Longsword_l")!.Type);
+        Assert.Equal("StatusData", r.Get("WPN_LONGSWORD_L")!.Type);
+        Assert.Equal("BOOST", r.ResolveAll("WPN_LONGSWORD_L")["StatusType"]);
+        Assert.False(r.ResolveAll("WPN_Longsword_l").ContainsKey("StatusType"));
+        Assert.Equal(2, r.AllEntries.Count);
+        Assert.Equal(2, r.Definitions.Count());
+    }
+
+    [Fact]
+    public void CaseVariants_OfTheSameType_AreBothKept()
+    {
+        var r = new StatsResolver();
+        r.AddEntries([E("Projectile_Jump", "SpellData", null, ("Level", "0")), E("Projectile_JUMP", "SpellData", null, ("Level", "1"))]);
+        Assert.Equal("0", r.Resolve("Projectile_Jump", "Level"));
+        Assert.Equal("1", r.Resolve("Projectile_JUMP", "Level"));
+    }
+
+    [Fact]
+    public void ALaterCaseVariant_IsNotALayerOfTheEarlierOne()
+    {
+        // A self-using entry extends the earlier definition of its own name — never one that
+        // only matches ignoring case.
+        var r = new StatsResolver();
+        r.AddEntries([
+            E("MAG_Weapon57_StatusHeal", "PassiveData", null, ("Boosts", "AC(1)")),
+            E("MAG_WEAPON57_STATUSHEAL", "StatusData", "MAG_WEAPON57_STATUSHEAL", ("StatusType", "BOOST")),
+        ]);
+        Assert.False(r.ResolveAll("MAG_WEAPON57_STATUSHEAL").ContainsKey("Boosts"));
+        Assert.Equal("AC(1)", r.ResolveAll("MAG_Weapon57_StatusHeal")["Boosts"]);
+    }
+
+    [Fact]
+    public void Using_ResolvesTheExactName()
+    {
+        var r = new StatsResolver();
+        r.AddEntries([
+            E("WPN_Longsword_u", "Weapon", null, ("Damage", "1d8")),
+            E("WPN_LONGSWORD_U", "StatusData", null, ("StatusType", "BOOST"), ("Boosts", "DamageBonus(1)")),
+            E("WPN_LONGSWORD_E", "StatusData", "WPN_LONGSWORD_U", ("StackPriority", "3")),
+            E("WPN_Longsword_e", "Weapon", "WPN_Longsword_u", ("Damage", "1d10")),
+        ]);
+        Assert.Equal("DamageBonus(1)", r.ResolveAll("WPN_LONGSWORD_E")["Boosts"]);
+        Assert.False(r.ResolveAll("WPN_Longsword_e").ContainsKey("Boosts"));
+    }
+
+    [Fact]
+    public void ANameInAnotherCase_StillFindsTheOnlyMatch()
+    {
+        // Names typed or read in another case (a user's StatId, an old save) find their entry
+        // when there is just one; they never pick one of two case variants at random.
+        var r = new StatsResolver();
+        r.AddEntries([E("BLESS", "StatusData", null, ("StatusType", "BOOST")),
+                      E("Foo_a", "Armor"), E("FOO_A", "StatusData")]);
+        Assert.Equal("BLESS", r.Get("bless")!.Name);
+        Assert.True(r.AllEntries.ContainsKey("Bless"));
+        Assert.Equal("BOOST", r.Resolve("Bless", "StatusType"));
+        Assert.Equal("Foo_a", r.Get("Foo_a")!.Name);
+        Assert.Equal("FOO_A", r.Get("FOO_A")!.Name);
+        Assert.Null(r.Get("foo_A"));
+    }
+
+    [Fact]
+    public void AnExactDuplicate_OfAnItem_StillLeavesTheItem()
+    {
+        var r = new StatsResolver();
+        r.AddEntries([E("ARM_Ring_A", "Armor", null, ("Slot", "Ring")), E("ARM_Ring_A", "PassiveData")]);
+        Assert.Equal("Armor", r.Get("ARM_Ring_A")!.Type);
+    }
+
+    [Fact]
+    public void GamesOwnCaseVariantSpells_StayTwoSpells()
+    {
+        // Projectile_JUMP is a ranged attack using Projectile_MainHandAttack; Projectile_Jump is the jump.
+        var db = new ParaTool.Core.Services.VanillaDatabase();
+        db.Load();
+        var attack = db.Resolver.ResolveAll("Projectile_JUMP");
+        var jump = db.Resolver.ResolveAll("Projectile_Jump");
+        Assert.Equal("Projectile_MainHandAttack", db.Resolver.Get("Projectile_JUMP")!.Using);
+        Assert.Null(db.Resolver.Get("Projectile_Jump")!.Using);
+        Assert.Equal("0.8", jump.GetValueOrDefault("TargetCeiling"));
+        Assert.NotEqual(attack.GetValueOrDefault("TargetCeiling"), jump.GetValueOrDefault("TargetCeiling"));
+    }
 }

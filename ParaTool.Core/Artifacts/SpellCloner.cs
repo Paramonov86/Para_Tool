@@ -70,8 +70,8 @@ public static class SpellCloner
         if (!string.IsNullOrEmpty(fields.GetValueOrDefault("SpellContainerID"))) return [];
         return (fields.GetValueOrDefault("ContainerSpells") ?? "")
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(v => !v.Equals(spellName, StringComparison.OrdinalIgnoreCase) && resolver.Get(v) != null)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(v => !v.Equals(spellName, StringComparison.Ordinal) && resolver.Get(v) != null)
+            .Distinct(StringComparer.Ordinal)
             .ToList();
     }
 

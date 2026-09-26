@@ -240,7 +240,7 @@ public static class ArtifactCompiler
         // Original → copy for every status copy on this item. Unlike the renames it holds on the
         // second compile of the same object too (the one the patcher writes), when nothing is left
         // to rename: text inherited from a base is compared and rewritten through this.
-        var statusCopies = new Dictionary<string, string>(statusRenames, StringComparer.OrdinalIgnoreCase);
+        var statusCopies = new Dictionary<string, string>(statusRenames, StringComparer.Ordinal);
         foreach (var st in art.Statuses)
             if (!st.EditOriginal && !string.IsNullOrEmpty(st.UsingBase) && !st.UsingBase.Equals(st.Name, StringComparison.OrdinalIgnoreCase))
                 statusCopies.TryAdd(st.UsingBase, st.Name);
@@ -297,7 +297,7 @@ public static class ArtifactCompiler
         // patching the already-rendered header by string replacement only ever matched a name
         // that filled the whole quoted field — any passive that was second in a ";"-joined list
         // kept its old name and became a dangling reference BG3 silently drops.
-        var passiveRenames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var passiveRenames = new Dictionary<string, string>(StringComparer.Ordinal);
         var passivePrefix = art.StatId + "_Passive_";
         var passiveNames = new HashSet<string>(art.Passives.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
         for (int pi = 0; pi < art.Passives.Count; pi++)
@@ -882,7 +882,7 @@ public static class ArtifactCompiler
     /// </summary>
     private static Dictionary<string, string> RenameSpellCopies(ArtifactDefinition art, Parsing.StatsResolver? resolver)
     {
-        var renames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var renames = new Dictionary<string, string>(StringComparer.Ordinal);
         var taken = new HashSet<string>(art.Spells.Select(s => s.Name), StringComparer.OrdinalIgnoreCase);
         var copyPrefix = art.StatId + "_Spell_";
 
@@ -994,7 +994,7 @@ public static class ArtifactCompiler
     /// </summary>
     internal static Dictionary<string, string> RenameStatusCopies(ArtifactDefinition art, Parsing.StatsResolver? resolver)
     {
-        var renames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var renames = new Dictionary<string, string>(StringComparer.Ordinal);
         var prefix = art.StatId + "_Status_";
         var taken = new HashSet<string>(art.Statuses.Select(s => s.Name), StringComparer.OrdinalIgnoreCase);
 
@@ -1100,8 +1100,8 @@ public static class ArtifactCompiler
     {
         if (string.IsNullOrEmpty(text) || renames.Count == 0) return text;
         var pattern = new System.Text.RegularExpressions.Regex(
-            @"(?<![A-Za-z0-9_])(" + string.Join("|", renames.Keys.OrderByDescending(k => k.Length).Select(System.Text.RegularExpressions.Regex.Escape)) + @")(?![A-Za-z0-9_])",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            // Stats names are case-sensitive: MAG_WEAPON57_STATUSHEAL (a status) is not MAG_Weapon57_StatusHeal (a passive).
+            @"(?<![A-Za-z0-9_])(" + string.Join("|", renames.Keys.OrderByDescending(k => k.Length).Select(System.Text.RegularExpressions.Regex.Escape)) + @")(?![A-Za-z0-9_])");
         return pattern.Replace(text, m => renames.TryGetValue(m.Value, out var n) && IsStatusPosition(text, m.Index, m.Length) ? n : m.Value);
     }
 

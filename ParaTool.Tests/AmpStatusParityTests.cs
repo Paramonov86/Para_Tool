@@ -39,7 +39,7 @@ public class AmpStatusParityTests
             r.AddEntries(entries);
             names.AddRange(entries.Where(e => e.Type == "StatusData").Select(e => e.Name));
         }
-        return (r, names.Distinct(StringComparer.OrdinalIgnoreCase).ToList());
+        return (r, names.Distinct(StringComparer.Ordinal).ToList());
     });
 
     private static ArtifactDefinition NewRing() => new()
@@ -96,11 +96,10 @@ public class AmpStatusParityTests
     public void EveryAmpStatus_CopiedUntouched_ResolvesToTheOriginal()
     {
         if (WithAmp.Value is not { } amp) { _output.WriteLine("AMP stats not on disk — skipped"); return; }
-        // AMP names a few statuses like its weapons but in capitals (WPN_LONGSWORD_L vs WPN_Longsword_l).
-        // The game tells them apart; the resolver, case-insensitive with items winning, does not.
-        var shadowed = amp.ampStatuses.Where(n => amp.resolver.Get(n)?.Type != "StatusData").ToList();
-        _output.WriteLine($"shadowed by an item of the same name: {string.Join(", ", shadowed)}");
-        var diffs = amp.ampStatuses.Except(shadowed).SelectMany(n => Differences(n, amp.resolver)).ToList();
+        // AMP names a few statuses like its weapons but in capitals (WPN_LONGSWORD_L vs WPN_Longsword_l):
+        // different entries, in the game and in the resolver.
+        Assert.Empty(amp.ampStatuses.Where(n => amp.resolver.Get(n)?.Type != "StatusData"));
+        var diffs = amp.ampStatuses.SelectMany(n => Differences(n, amp.resolver)).ToList();
         foreach (var d in diffs.Take(80)) _output.WriteLine(d);
         _output.WriteLine($"{amp.ampStatuses.Count} AMP statuses");
         Assert.True(diffs.Count == 0, $"{diffs.Count} fields differ across {amp.ampStatuses.Count} statuses");
@@ -120,7 +119,7 @@ public class AmpStatusParityTests
     public void EveryAmpStatus_EditedOriginalUntouched_StaysTheSame()
     {
         if (WithAmp.Value is not { } amp) { _output.WriteLine("AMP stats not on disk — skipped"); return; }
-        var names = amp.ampStatuses.Where(n => amp.resolver.Get(n)?.Type == "StatusData").ToList();
+        var names = amp.ampStatuses;
         var diffs = names.SelectMany(n => Differences(n, amp.resolver, editOriginal: true)).ToList();
         foreach (var d in diffs.Take(80)) _output.WriteLine(d);
         Assert.True(diffs.Count == 0, $"{diffs.Count} fields differ across {names.Count} statuses");
