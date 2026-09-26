@@ -312,14 +312,23 @@ public sealed class PassiveDefinition
 }
 
 /// <summary>
-/// Custom status (StatusData) definition within an artifact.
+/// A status card: a status of this artifact, copied from an existing one or made from scratch.
+/// A copy compiles under its own name (<c>{StatId}_Status_{n}</c>) <c>using</c> the original, or,
+/// with <see cref="EditOriginal"/>, as an override of the original. Fields not on the card (visuals,
+/// sounds, animations) stay inherited through <c>using</c>.
 /// </summary>
 public sealed class StatusDefinition
 {
     public string Name { get; set; } = "";
     public string? UsingBase { get; set; }
 
-    /// <summary>BOOST or EFFECT.</summary>
+    /// <summary>
+    /// Keep the original name and override the original entry — the change applies everywhere
+    /// the status is applied, not only by this item.
+    /// </summary>
+    public bool EditOriginal { get; set; }
+
+    /// <summary>BOOST, EFFECT, INCAPACITATED, INVISIBLE, … Read-only on a copy.</summary>
     public string StatusType { get; set; } = "BOOST";
 
     public Dictionary<string, string> DisplayName { get; set; } = new() { ["en"] = "", ["ru"] = "" };
@@ -329,16 +338,36 @@ public sealed class StatusDefinition
     public string DescriptionHandle { get; set; } = "";
     public string DescriptionParams { get; set; } = "";
 
+    /// <summary>Loca handles of the status the card was copied from.</summary>
+    public string? SourceDisplayNameHandle { get; set; }
+    public string? SourceDescriptionHandle { get; set; }
+
+    /// <summary>The user changed the text (see <see cref="SpellDefinition.DisplayNameEdited"/>).</summary>
+    public bool DisplayNameEdited { get; set; }
+    public bool DescriptionEdited { get; set; }
+
     public string? Icon { get; set; }
 
     public string StatusPropertyFlags { get; set; } = "";
     public string StatusGroups { get; set; } = "";
-    public string StackType { get; set; } = "Overwrite";
-    public int StackPriority { get; set; } = 0;
-
     public string Boosts { get; set; } = "";
-    public string PassivesOnApply { get; set; } = "";
     public string RemoveEvents { get; set; } = "";
+
+    // Card fields. Null = not on the card, inherited from the base (and what older .art files load as).
+    public string? StackId { get; set; }
+    public string? StackType { get; set; }
+    public int? StackPriority { get; set; }
+    public string? Passives { get; set; }
+    public string? TickType { get; set; }
+    public string? TickFunctors { get; set; }
+    public string? OnApplyFunctors { get; set; }
+    public string? OnRemoveFunctors { get; set; }
+    public string? RemoveConditions { get; set; }
+    public string? AuraRadius { get; set; }
+    public string? AuraStatuses { get; set; }
+
+    /// <summary>Written by builds before the status cards under a name the game does not read; compiled as Passives.</summary>
+    public string PassivesOnApply { get; set; } = "";
 
     public string? StatusEffect { get; set; }
     public string? SoundVocalStart { get; set; }
