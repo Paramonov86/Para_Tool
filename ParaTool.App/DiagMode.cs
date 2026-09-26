@@ -946,6 +946,28 @@ internal static class DiagMode
                 cvm.IconPicker.Close();
             }
 
+            // A drum opened and closed without turning leaves the text alone: a value not on the
+            // list (ReactionActionPoint), or none (StackType of a copy), used to become the first item.
+            {
+                var open = typeof(Controls.TumblerChipEditor).GetMethod("OpenDrum", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+                var close = typeof(Controls.TumblerChipEditor).GetMethod("CloseDrum", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+                var nudge = typeof(Controls.TumblerChipEditor).GetMethod("Nudge", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+                string Click(string[]? items, string text, int turn = 0)
+                {
+                    var t = new Controls.TumblerChipEditor { Items = items, Text = text, MinValue = 0, MaxValue = 99, Step = 1 };
+                    var host = new Avalonia.Controls.Window { Width = 300, Height = 200, Content = t };
+                    host.Measure(new Avalonia.Size(300, 200));
+                    host.Arrange(new Avalonia.Rect(0, 0, 300, 200));
+                    open.Invoke(t, null);
+                    if (turn != 0) nudge.Invoke(t, [turn]);
+                    close.Invoke(t, null);
+                    return t.Text ?? "";
+                }
+                string[] stack = ["Stack", "Overwrite", "Additive", "Ignore"];
+                Console.WriteLine($"  tumbler untouched: empty list='{Click(stack, "")}' unknown='{Click(stack, "ReactionActionPoint")}' " +
+                                  $"known='{Click(stack, "Additive")}' empty number='{Click(null, "")}' | turned: list='{Click(stack, "Additive", 1)}' number='{Click(null, "5", 1)}'");
+            }
+
             Console.WriteLine($"  binding errors: {sink.Errors.Count}");
             foreach (var e in sink.Errors.Distinct().Take(15)) Console.WriteLine($"    {e}");
             return 0;

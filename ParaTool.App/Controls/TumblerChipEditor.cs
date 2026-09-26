@@ -75,6 +75,9 @@ public class TumblerChipEditor : UserControl
     private bool _drumOpen;
     private double _currentValue;
     private int _currentIndex; // for list mode
+    /// <summary>The drum was turned since it opened. An untouched drum leaves the text as it was:
+    /// a value not on the list (or none) would otherwise become the first item just by clicking.</summary>
+    private bool _turned;
     private double _velocity, _accumulator;
     private DispatcherTimer? _inertiaTimer;
     private DateTime _lastScrollTime;
@@ -364,6 +367,7 @@ public class TumblerChipEditor : UserControl
     private void OpenDrum()
     {
         _drumOpen = true;
+        _turned = false;
         if (IsListMode)
         {
             var items = Items!;
@@ -403,7 +407,8 @@ public class TumblerChipEditor : UserControl
         if (!_drumOpen) return;
         _drumOpen = false;
         StopInertia();
-        Text = IsListMode ? Items![_currentIndex] : Fmt(_currentValue);
+        if (_turned)
+            Text = IsListMode ? Items![_currentIndex] : Fmt(_currentValue);
 
         HideDimmer();
         RestoreAncestors();
@@ -674,6 +679,7 @@ public class TumblerChipEditor : UserControl
             var next = Math.Clamp(_currentIndex + steps, 0, Items!.Length - 1);
             if (next == _currentIndex) return;
             _currentIndex = next;
+            _turned = true;
         }
         else
         {
@@ -681,7 +687,7 @@ public class TumblerChipEditor : UserControl
             if (AllowNone && IsNoneValue)
             {
                 // From "—": scroll up → go to MinValue
-                if (steps > 0) { _currentValue = MinValue; }
+                if (steps > 0) { _currentValue = MinValue; _turned = true; }
                 else return;
             }
             else
@@ -692,6 +698,7 @@ public class TumblerChipEditor : UserControl
                 if (AllowNone && next < MinValue) next = noneVal;
                 if (Math.Abs(next - _currentValue) < 1e-9) return;
                 _currentValue = next;
+                _turned = true;
             }
         }
         RefreshDrum();
