@@ -60,3 +60,40 @@ public class EnumListCoverageTests
         Assert.DoesNotContain("NaturalRecovery", BoostMapping.ActionResources);
     }
 }
+
+/// <summary>Every boost the game defines can be built from a block, found under a palette category.</summary>
+public class BoostBlockCoverageTests
+{
+    private static readonly string Definitions = LoadDefinitions();
+
+    private static string LoadDefinitions()
+    {
+        var asm = typeof(BoostMapping).Assembly;
+        var name = asm.GetManifestResourceNames().Single(n => n.EndsWith("LSLibDefinitions.xml"));
+        using var s = asm.GetManifestResourceStream(name)!;
+        return new StreamReader(s).ReadToEnd();
+    }
+
+    [Fact]
+    public void EveryGameBoost_HasABlock_InACategory()
+    {
+        var game = Regex.Matches(Definitions, "<Function Type=\"Boost\" Name=\"(\\w+)\"").Select(m => m.Groups[1].Value).ToList();
+        var blocks = BoostMapping.Boosts.Select(b => b.FuncName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Assert.Empty(game.Where(g => !blocks.Contains(g)));
+        Assert.Empty(BoostMapping.Boosts.Where(b => BoostCategories.GetCategory(b.FuncName) == BoostCategories.Unknown
+                                                    && b.FuncName != "BlockGatherAtCamp").Select(b => b.FuncName));
+    }
+
+    [Fact]
+    public void Blocks_TakeNoMoreArgumentsThanTheGame()
+    {
+        foreach (Match m in Regex.Matches(Definitions, "<Function Type=\"Boost\" Name=\"(\\w+)\" RequiredArgs=\"\\d+\"\\s*(?:/>|>(.*?)</Function>)", RegexOptions.Singleline))
+        {
+            var def = BoostMapping.Boosts.FirstOrDefault(b => b.FuncName == m.Groups[1].Value);
+            if (def == null) continue;
+            var gameArgs = Regex.Matches(m.Groups[2].Value, "<Arg ").Count;
+            Assert.True(def.Params.Count(p => p.Type is not ("hidden" or "blank")) <= gameArgs,
+                $"{def.FuncName}: {def.Params.Length} params, game has {gameArgs}");
+        }
+    }
+}

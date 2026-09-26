@@ -61,6 +61,8 @@ public static class BoostMapping
     public static readonly string[] Skills = SkillType;
     // Surveyed from the game's and AMP's stats (ActionResource*, RestoreResource, UseCosts); the game
     // spells Natural Recovery "NaturalRecoveryPoint". Per-feature interrupt charges are left out.
+    public static readonly string[] ResourceReplenishTypes = ["Never", "Default", "Combat", "Rest", "ShortRest", "FullRest", "ExhaustedRest"];
+    public static readonly string[] CannotHarmTypes = ["CannotHarmCharmer", "CannotHarmSanctuary", "CannotHarmMadness", "CannotHarmHypnotize"];
     public static readonly string[] ActionResources = ["ActionPoint", "BonusActionPoint", "ReactionActionPoint", "Movement", "SpellSlot", "WarlockSpellSlot", "KiPoint", "Rage", "SorceryPoint", "BardicInspiration", "SuperiorityDie", "ChannelDivinity", "ChannelOath", "LayOnHandsCharge", "WildShape", "NaturalRecoveryPoint", "ArcaneRecoveryPoint", "ArcaneShot", "Bladesong", "TidesOfChaos", "CosmicOmen", "LuckPoint", "WeaponActionPoint", "WarPriestActionPoint", "HitDice", "LegendaryResistanceCharge", "ShadowSpellSlot", "RitualPoint", "StarMapPoint", "WrithingTidePoint", "SpellSlotsGroup"];
 
     // ═══════════════════════════════════════════════════════════
@@ -253,6 +255,39 @@ public static class BoostMapping
         new("FactionOverride", "Faction Override", "Смена фракции", "#8A8494", [new("FactionId", "Faction", "string")]),
         new("GreatWeaponMaster", "Great Weapon Master", "Мастер двуручного", "#E06040", []),
         new("IgnoreSurfaceCover", "Ignore Surface Cover", "Игнор. поверхности", "#F1C40F", [new("SurfaceType", "Surface", "enum", SurfaceTypes)]),
+
+        // ── Boosts the game defines that had no block (LSLibDefinitions.xml; values as the game's stats write them) ──
+        new("AbilityFailedSavingThrow", "Auto-fail Saves", "Автопровал спасбросков", "#3498DB", [new("Ability", "Ability", "enum", Abilities)]),
+        new("SourceAllyAdvantageOnAttack", "Allies' Advantage vs Source", "Преим. союзников против источника", "#3498DB", []),
+        new("DodgeAttackRoll", "Dodge Attack Roll", "Уклонение от атаки", "#3498DB",
+            [new("Arg1", "Arg 1", "number"), new("Arg2", "Arg 2", "number"), new("Status", "Status", "string")]),
+        new("BlockVerbalComponent", "Block Verbal Components", "Блок вербальных компонентов", "#9B59B6", []),
+        new("BlockSomaticComponent", "Block Somatic Components", "Блок соматических компонентов", "#9B59B6", []),
+        new("AdvanceSpells", "Advance Spells", "Продвинуть заклинания", "#9B59B6", [new("SpellId", "Spell", "string"), new("Arg2", "Level", "number")]),
+        new("BlockAbilityModifierDamageBonus", "Block Ability Mod to Damage", "Без мод. характеристики к урону", "#E06040", []),
+        new("ReceivingCriticalDamageOnHit", "Takes Critical Damage", "Получает крит. урон", "#E06040", [new("Arg1", "Mult", "float")]),
+        new("ActionResourceReplenishTypeOverride", "Resource Refills On", "Ресурс восстанавливается", "#9B59B6",
+            [new("ActionResource", "Resource", "enum", ActionResources), new("ReplenishType", "When", "enum", ResourceReplenishTypes)]),
+        new("MonkWeaponAttackOverride", "Monk Weapon Attacks", "Атаки оружием монаха", "#3498DB", []),
+        new("IntrinsicSummonerProficiency", "Summoner's Proficiency", "Бонус мастерства призывателя", "#3498DB", []),
+        new("IntrinsicSourceProficiency", "Source's Proficiency", "Бонус мастерства источника", "#3498DB", []),
+        new("WeightCategory", "Weight Category", "Весовая категория", "#8A8494", [new("Category", "+/-", "number")]),
+        new("PhysicalForceRangeBonus", "Push Distance", "Дальность отталкивания", "#8A8494", [new("Arg1", "Range", "string")]),
+        new("SightRangeOverride", "Sight Range Override", "Переопредел. обзора", "#8A8494", [new("Range", "Range", "float")]),
+        new("HorizontalFOVOverride", "Field of View Override", "Переопредел. угла обзора", "#8A8494", [new("FOV", "FOV", "float")]),
+        new("CanSeeThrough", "Can See Through", "Сквозь можно видеть", "#8A8494", [new("CanSeeThrough", "Yes", "bool")]),
+        new("CanShootThrough", "Can Shoot Through", "Сквозь можно стрелять", "#8A8494", [new("CanShootThrough", "Yes", "bool")]),
+        new("CanWalkThrough", "Can Walk Through", "Сквозь можно пройти", "#8A8494", [new("CanWalkThrough", "Yes", "bool")]),
+        new("Lock", "Locked", "Заперт", "#8A8494", [new("DC", "DC", "guid")]),
+        new("LeaveTriggers", "Leaves Triggers", "Покидает триггеры", "#8A8494", []),
+        new("EnableBasicItemInteractions", "Basic Item Interactions", "Простые действия с предметами", "#8A8494", []),
+        new("SoundsBlocked", "Sounds Blocked", "Звуки заблокированы", "#8A8494", []),
+        new("NoDamageOnThrown", "No Damage When Thrown", "Без урона при броске", "#8A8494", []),
+        new("CannotHarmCauseEntity", "Cannot Harm the Cause", "Не может вредить источнику", "#E67E22", [new("Type", "Reason", "enum", CannotHarmTypes)]),
+        new("IgnoreEnterAttackRange", "No Attack of Opportunity on Approach", "Без атаки при сближении", "#E67E22", []),
+        new("DetectDisturbancesBlock", "Can't Notice Crimes", "Не замечает преступлений", "#8A8494", [new("Arg1", "Yes", "bool")]),
+        new("VoicebarkBlock", "Silences Voice Barks", "Без реплик", "#8A8494", []),
+        new("BlockGatherAtCamp", "Can't Gather at Camp", "Нельзя собрать в лагере", "#8A8494", []),
     ];
 
     // ═══════════════════════════════════════════════════════════
