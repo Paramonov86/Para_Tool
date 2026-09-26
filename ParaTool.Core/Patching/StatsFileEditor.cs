@@ -15,10 +15,15 @@ public static class StatsFileEditor
         IReadOnlyDictionary<string, Dictionary<string, string>> modifications)
     {
         if (modifications.Count == 0)
-            return (text, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            return (text, new HashSet<string>(StringComparer.Ordinal));
+
+        // Entry names are matched exactly, as the game does: WPN_Longsword_l (a weapon) and
+        // WPN_LONGSWORD_L (a status) are two entries, whatever comparer the caller's map has.
+        var byName = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+        foreach (var (key, value) in modifications) byName[key] = value;
 
         var lines = text.Split('\n').ToList();
-        var modified = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var modified = new HashSet<string>(StringComparer.Ordinal);
 
         // Find entry boundaries: (name, startLine, endLine)
         var entryRanges = new List<(string name, int start, int end)>();
@@ -42,7 +47,7 @@ public static class StatsFileEditor
         for (int e = entryRanges.Count - 1; e >= 0; e--)
         {
             var (name, start, end) = entryRanges[e];
-            if (!modifications.TryGetValue(name, out var fields)) continue;
+            if (!byName.TryGetValue(name, out var fields)) continue;
 
             var remaining = new Dictionary<string, string>(fields, StringComparer.OrdinalIgnoreCase);
 
@@ -110,6 +115,9 @@ public static class StatsFileEditor
     public static string RemoveEntries(string text, HashSet<string> names)
     {
         if (names.Count == 0) return text;
+        // Exact names only (see ModifyEntries): removing the status MAG_WEAPON57_STATUSHEAL keeps
+        // the passive MAG_Weapon57_StatusHeal.
+        var exact = new HashSet<string>(names, StringComparer.Ordinal);
 
         var lines = text.Split('\n');
         var result = new System.Text.StringBuilder();
@@ -126,7 +134,7 @@ public static class StatsFileEditor
                 if (q1 >= 0 && q2 > q1)
                 {
                     var entryName = trimmed[(q1 + 1)..q2];
-                    skipping = names.Contains(entryName);
+                    skipping = exact.Contains(entryName);
                 }
                 else
                 {

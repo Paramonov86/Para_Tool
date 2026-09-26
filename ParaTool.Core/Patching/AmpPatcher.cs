@@ -368,7 +368,7 @@ public sealed class AmpPatcher
         // in-place pass because a mod StatId can collide with one AMP already defines (submod
         // rebalances, mods that redefine AMP gear) — appending a skeleton for those would put a
         // second definition of the same entry into AMP's own pak.
-        var ampMods = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        var ampMods = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
         foreach (var item in ampItems.Concat(modItems))
         {
             var fields = StatsOverrideGenerator.ComputeFields(item);
@@ -388,7 +388,7 @@ public sealed class AmpPatcher
             .ToArray();
 
         // Step A: Modify already-defined items in-place across stat files
-        var unresolved = new HashSet<string>(ampMods.Keys, StringComparer.OrdinalIgnoreCase);
+        var unresolved = new HashSet<string>(ampMods.Keys, StringComparer.Ordinal);
 
         foreach (var filePath in statFiles)
         {
@@ -397,7 +397,7 @@ public sealed class AmpPatcher
             var text = File.ReadAllText(filePath);
 
             // Only pass entries that might be in this file
-            var relevant = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            var relevant = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
             foreach (var statId in unresolved)
             {
                 if (text.Contains(statId, StringComparison.OrdinalIgnoreCase))
@@ -629,7 +629,7 @@ public sealed class AmpPatcher
         // Apply override stats via in-place editing
         if (overrideStats.Length > 0 && statFiles.Length > 0)
         {
-            var overrideMap = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            var overrideMap = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
 
             foreach (var entry in overrideParsed)
             {
@@ -638,13 +638,13 @@ public sealed class AmpPatcher
             }
 
             var unresolved = new HashSet<string>(
-                sourceDir == null ? overrideMap.Keys.ToList() : new List<string>(), StringComparer.OrdinalIgnoreCase);
+                sourceDir == null ? overrideMap.Keys.ToList() : new List<string>(), StringComparer.Ordinal);
             Services.AppLogger.Info($"Applying {overrideMap.Count} override(s): {string.Join(", ", overrideMap.Keys)}");
             foreach (var filePath in statFiles)
             {
                 if (unresolved.Count == 0) break;
                 var text = File.ReadAllText(filePath);
-                var relevant = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+                var relevant = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
                 foreach (var statId in unresolved)
                     if (text.Contains(statId, StringComparison.OrdinalIgnoreCase))
                         relevant[statId] = overrideMap[statId];
@@ -663,7 +663,7 @@ public sealed class AmpPatcher
 
             // Append passives/statuses/spells from overrides to last stat file
             var nonItemOverrides = new StringBuilder();
-            var nonItemNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var nonItemNames = new HashSet<string>(StringComparer.Ordinal);
             var overrideSelfEntries = new List<Parsing.StatsEntry>();
             foreach (var entry in overrideParsed)
             {
@@ -701,7 +701,7 @@ public sealed class AmpPatcher
         // ONLY remove NEW artifacts — NOT overrides (overrides modify existing entries in-place)
         var artifactStatIds = new HashSet<string>(
             artifacts.Where(a => !a.StatId.Equals(a.UsingBase, StringComparison.OrdinalIgnoreCase))
-                     .Select(a => a.StatId), StringComparer.OrdinalIgnoreCase);
+                     .Select(a => a.StatId), StringComparer.Ordinal);
         if (artifactStatIds.Count > 0)
             Services.AppLogger.Info($"Cleanup: removing {artifactStatIds.Count} new artifact entries: {string.Join(", ", artifactStatIds)}");
         Services.AppLogger.Info($"Cleanup: skipping {artifacts.Count(a => a.StatId.Equals(a.UsingBase, StringComparison.OrdinalIgnoreCase))} override(s)");

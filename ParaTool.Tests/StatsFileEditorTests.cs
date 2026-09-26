@@ -136,4 +136,34 @@ public class StatsFileEditorTests
         Assert.EndsWith(skeleton, result);
         Assert.Contains("ARM_Test", result);
     }
+
+    // Stats names are case-sensitive: AMP has the weapon WPN_Longsword_l and the status
+    // WPN_LONGSWORD_L, the passive MAG_Weapon57_StatusHeal and the status MAG_WEAPON57_STATUSHEAL.
+    private const string CaseVariants =
+        "new entry \"WPN_Longsword_l\"\ntype \"Weapon\"\ndata \"Rarity\" \"Rare\"\n\n" +
+        "new entry \"WPN_LONGSWORD_L\"\ntype \"StatusData\"\ndata \"StatusType\" \"BOOST\"\n\n" +
+        "new entry \"MAG_Weapon57_StatusHeal\"\ntype \"PassiveData\"\ndata \"Boosts\" \"AC(1)\"\n\n" +
+        "new entry \"MAG_WEAPON57_STATUSHEAL\"\ntype \"StatusData\"\ndata \"StatusType\" \"BOOST\"\n";
+
+    [Fact]
+    public void ModifyEntries_LeavesACaseVariantOfAnotherType_Alone()
+    {
+        var mods = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["WPN_Longsword_l"] = new() { ["Rarity"] = "Legendary" },
+        };
+        var (text, found) = StatsFileEditor.ModifyEntries(CaseVariants, mods);
+        var status = text[text.IndexOf("new entry \"WPN_LONGSWORD_L\"")..text.IndexOf("new entry \"MAG_Weapon57")];
+        Assert.DoesNotContain("Rarity", status);
+        Assert.Contains("data \"Rarity\" \"Legendary\"", text);
+        Assert.Equal(["WPN_Longsword_l"], found);
+    }
+
+    [Fact]
+    public void RemoveEntries_RemovesOnlyTheExactName()
+    {
+        var text = StatsFileEditor.RemoveEntries(CaseVariants, new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MAG_WEAPON57_STATUSHEAL" });
+        Assert.Contains("new entry \"MAG_Weapon57_StatusHeal\"", text);
+        Assert.DoesNotContain("new entry \"MAG_WEAPON57_STATUSHEAL\"", text);
+    }
 }
