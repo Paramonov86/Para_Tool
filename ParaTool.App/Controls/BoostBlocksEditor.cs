@@ -550,6 +550,10 @@ public class BoostBlocksEditor : UserControl
                 // Advantage(Skill,…) wants a skill, Advantage(Ability,…) wants an ability.
                 // Offering both lets the user build a boost BG3 silently ignores.
                 var enumValues = VisibilityRules.NarrowEnum(def, i, args) ?? param.EnumValues;
+                // A value the list doesn't know (a mod's resource, a newer game value) stays on the
+                // drum as written — hidden, it read as the first item and could not be turned back to.
+                if (!string.IsNullOrEmpty(value) && !enumValues.Contains(value, StringComparer.OrdinalIgnoreCase))
+                    enumValues = [.. enumValues, value];
                 var items = isOptional || string.IsNullOrEmpty(value)
                     ? new[] { "—" }.Concat(enumValues).ToArray()
                     : enumValues;

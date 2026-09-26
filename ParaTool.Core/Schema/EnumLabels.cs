@@ -496,7 +496,7 @@ public static class EnumLabels
         ["ChannelDivinity"]      = ("Channel Div",  "Канал свящ."),
         ["LayOnHandsCharge"]     = ("Lay Hands",    "Нал. рук"),
         ["WildShape"]            = ("Wild Shape",   "Дикий облик"),
-        ["NaturalRecovery"]      = ("Nat. Rec.",    "Природн. восст."),
+        ["NaturalRecoveryPoint"] = ("Nat. Rec.",    "Природн. восст."),
 
         // ── SpellFlags (from ConditionSchema) ─────────────────────
         ["Spell"]                = ("Spell",        "Заклинание"),

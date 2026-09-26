@@ -209,14 +209,19 @@ public sealed partial class ConditionSchema
 
     public static readonly string[] WeaponProperties = BoostMapping.WeaponFlags;
 
+    /// <summary>Every status group of the game's StatusGroupFlags, plus SG_Sleeping_Magical, which the game's statuses use too.</summary>
     public static readonly string[] StatusGroups =
     [
         "SG_Condition", "SG_Blinded", "SG_Charmed", "SG_Cursed", "SG_Disease",
         "SG_Frightened", "SG_Invisible", "SG_Poisoned", "SG_Restrained", "SG_Stunned",
         "SG_Polymorph", "SG_Paralyzed", "SG_Petrified", "SG_Rage", "SG_Taunted",
         "SG_Dominated", "SG_Confused", "SG_Mad", "SG_HexbladeCurse", "SG_Sleeping",
-        "SG_Prone", "SG_Unconscious", "SG_Silenced", "SG_Incapacitated",
-        "SG_Drunk", "SG_Exhausted", "SG_Dazed",
+        "SG_Prone", "SG_Unconscious", "SG_Incapacitated", "SG_Drunk", "SG_Exhausted",
+        "SG_Surface", "SG_Light", "SG_Disguise", "SG_Possessed", "SG_Polymorph_BeastShape",
+        "SG_Polymorph_BeastShape_NPC", "SG_Poisoned_Story_Removable", "SG_Poisoned_Story_Nonremovable", "SG_Charmed_Subtle", "SG_Helpable_Condition",
+        "SG_Approaching", "SG_Fleeing", "SG_DetectThoughts", "SG_DifficultTerrain", "SG_ScriptedPeaceBehaviour",
+        "SG_DropForNonMutingDialog", "SG_WeaponCoating", "SG_Doppelganger", "SG_CanBePickedUp", "SG_RemoveOnRespec",
+        "SG_Ignore_AOO", "SG_Sleeping_Magical",
     ];
 
     public static readonly string[] SpellFlags =
