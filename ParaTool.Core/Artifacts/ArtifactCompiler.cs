@@ -285,6 +285,8 @@ public static class ArtifactCompiler
         // that filled the whole quoted field — any passive that was second in a ";"-joined list
         // kept its old name and became a dangling reference BG3 silently drops.
         var passiveRenames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var passivePrefix = art.StatId + "_Passive_";
+        var passiveNames = new HashSet<string>(art.Passives.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
         for (int pi = 0; pi < art.Passives.Count; pi++)
         {
             var p = art.Passives[pi];
@@ -293,7 +295,18 @@ public static class ArtifactCompiler
             // Also rename when Name == UsingBase (existing passive added via picker)
             var needsRename = !originalName.StartsWith(art.StatId, StringComparison.OrdinalIgnoreCase)
                 && (p.UsingBase == null || p.UsingBase.Equals(originalName, StringComparison.OrdinalIgnoreCase));
-            if (needsRename)
+            // A copy another artifact's compile already named (a duplicate of a compiled artifact):
+            // still a copy of its UsingBase, only under a name the other artifact declares too.
+            var foreignCopy = !needsRename && !string.IsNullOrEmpty(p.UsingBase)
+                && !p.UsingBase.Equals(originalName, StringComparison.OrdinalIgnoreCase)
+                && IsOtherArtifactsCopyName(originalName, "_Passive_", art.StatId);
+            if (foreignCopy)
+            {
+                var copyName = NextFreeName(passivePrefix, pi + 1, passiveNames);
+                passiveRenames[originalName] = copyName;
+                p.Name = copyName;
+            }
+            else if (needsRename)
             {
                 // Only chain UsingBase → originalName if originalName actually exists in
                 // BG3/mod data. Otherwise we'd emit `using "UnknownPassive"` which BG3
@@ -301,7 +314,7 @@ public static class ArtifactCompiler
                 var hasRealBase = resolver?.AllEntries.ContainsKey(originalName) == true
                                   || Services.VanillaLocaService.GetPassive(originalName) != null;
 
-                var newName = $"{art.StatId}_Passive_{pi + 1}";
+                var newName = NextFreeName(passivePrefix, pi + 1, passiveNames);
                 passiveRenames[originalName] = newName;
                 p.UsingBase = hasRealBase ? originalName : null;
                 p.Name = newName;
@@ -804,6 +817,28 @@ public static class ArtifactCompiler
         }
     }
 
+    /// <summary>
+    /// A name the compiler gives copies (<c>{StatId}{kind}{n}</c>) of an artifact other than
+    /// <paramref name="statId"/>. A mod's own entry can look the same (AMP has
+    /// <c>…_Leeching_Passive_3</c>), so callers also check that the card is a copy of something else.
+    /// </summary>
+    private static bool IsOtherArtifactsCopyName(string name, string kind, string statId)
+    {
+        var at = name.LastIndexOf(kind, StringComparison.OrdinalIgnoreCase);
+        if (at <= 0 || at + kind.Length == name.Length || !name[(at + kind.Length)..].All(char.IsAsciiDigit)) return false;
+        return !name[..at].Equals(statId, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The first <c>{prefix}{n}</c> from <paramref name="start"/> up not in <paramref name="taken"/>, which it joins.</summary>
+    private static string NextFreeName(string prefix, int start, ISet<string> taken)
+    {
+        string name;
+        int n = start;
+        do name = $"{prefix}{n++}"; while (taken.Contains(name));
+        taken.Add(name);
+        return name;
+    }
+
     private static bool SameHandle(string? a, string? b) =>
         !string.IsNullOrEmpty(a) && !string.IsNullOrEmpty(b)
         && HandleGenerator.Parse(a).handle.Equals(HandleGenerator.Parse(b).handle, StringComparison.OrdinalIgnoreCase);
@@ -827,10 +862,10 @@ public static class ArtifactCompiler
 
             if (sp.EditOriginal)
             {
-                // Switched from copy to original after a compile had already renamed it.
+                // Switched from copy to original after a compile had already renamed it (this
+                // artifact's compile, or the one of the artifact it was duplicated from).
                 if (!string.IsNullOrEmpty(sp.UsingBase)
-                    && !currentName.Equals(sp.UsingBase, StringComparison.OrdinalIgnoreCase)
-                    && currentName.StartsWith(copyPrefix, StringComparison.OrdinalIgnoreCase))
+                    && !currentName.Equals(sp.UsingBase, StringComparison.OrdinalIgnoreCase))
                 {
                     sp.Name = sp.UsingBase;
                     renames[currentName] = sp.Name;
@@ -840,6 +875,17 @@ public static class ArtifactCompiler
 
             var needsRename = !currentName.StartsWith(art.StatId, StringComparison.OrdinalIgnoreCase)
                 && (sp.UsingBase == null || sp.UsingBase.Equals(currentName, StringComparison.OrdinalIgnoreCase));
+            // A copy another artifact's compile already named (a duplicate of a compiled artifact):
+            // renamed for this artifact, still `using` the same original.
+            if (!needsRename && !string.IsNullOrEmpty(sp.UsingBase)
+                && !sp.UsingBase.Equals(currentName, StringComparison.OrdinalIgnoreCase)
+                && IsOtherArtifactsCopyName(currentName, "_Spell_", art.StatId))
+            {
+                var copyName = NextFreeName(copyPrefix, i + 1, taken);
+                renames[currentName] = copyName;
+                sp.Name = copyName;
+                continue;
+            }
             if (!needsRename) continue;
 
             // Chain `using` only to a spell that exists — `using "Unknown"` is silently dropped.
@@ -847,10 +893,7 @@ public static class ArtifactCompiler
                 ? resolver.AllEntries.ContainsKey(currentName)
                 : sp.UsingBase != null;
 
-            string newName;
-            int n = i + 1;
-            do newName = $"{copyPrefix}{n++}"; while (taken.Contains(newName));
-            taken.Add(newName);
+            var newName = NextFreeName(copyPrefix, i + 1, taken);
 
             renames[currentName] = newName;
             sp.UsingBase = hasRealBase ? currentName : null;

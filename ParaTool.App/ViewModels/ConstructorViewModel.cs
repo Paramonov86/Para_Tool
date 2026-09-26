@@ -812,55 +812,9 @@ public partial class ConstructorViewModel : ViewModelBase
     private void DuplicateArtifact(ArtifactItemVM? item)
     {
         if (item == null) return;
-        ArtifactDefinition? clone;
-        try
-        {
-            var json = System.Text.Json.JsonSerializer.Serialize(item.Artifact);
-            clone = System.Text.Json.JsonSerializer.Deserialize<ArtifactDefinition>(json);
-        }
-        catch { clone = null; }
+        var clone = ArtifactDuplicator.Duplicate(item.Artifact,
+            id => SavedArtifacts.Any(a => a.Artifact.StatId.Equals(id, StringComparison.OrdinalIgnoreCase)));
         if (clone == null) return;
-        clone.ArtifactId = Guid.NewGuid().ToString();
-        clone.TemplateUuid = Guid.NewGuid().ToString();
-        var baseStatId = clone.StatId + "_Copy";
-        clone.StatId = baseStatId;
-        int copySuffix = 2;
-        while (SavedArtifacts.Any(a => a.Artifact.StatId.Equals(clone.StatId, StringComparison.OrdinalIgnoreCase)))
-        {
-            clone.StatId = $"{baseStatId}_{copySuffix}";
-            copySuffix++;
-        }
-        clone.DisplayNameHandle = "";
-        clone.DescriptionHandle = "";
-        // A duplicate is a new item — tombstones from the original don't carry over.
-        clone.RemovedPassives = [];
-        clone.RemovedSpells = [];
-        clone.RemovedStatuses = [];
-        clone.RemovedBoosts = [];
-        // Clear loca handles on passives/statuses/spells to avoid collision with original
-        foreach (var p in clone.Passives)
-        {
-            p.DisplayNameHandle = "";
-            p.DescriptionHandle = "";
-        }
-        foreach (var s in clone.Statuses)
-        {
-            s.DisplayNameHandle = "";
-            s.DescriptionHandle = "";
-        }
-        foreach (var sp in clone.Spells.SelectMany(s => s.WithVariants()))
-        {
-            sp.DisplayNameHandle = "";
-            sp.DescriptionHandle = "";
-        }
-        // Creature copies get their own templates and stats names, or the two artifacts would
-        // overwrite each other's creature.
-        foreach (var su in clone.Summons)
-        {
-            su.TemplateUuid = Guid.NewGuid().ToString();
-            su.StatsName = "";
-            su.DisplayNameHandle = "";
-        }
         ArtifactStore.Save(clone);
         var vm = new ArtifactItemVM(clone) { IsPersisted = true, SourceStatId = clone.UsingBase, GetEditingLang = () => EditingLang };
         vm.LoadPassivesFromArtifact();
@@ -1167,17 +1121,11 @@ public partial class ConstructorViewModel : ViewModelBase
         while (SavedArtifacts.Any(a => a.Artifact.StatId.Equals(statId, StringComparison.OrdinalIgnoreCase)))
             statId = $"{baseId}_{idx++}";
 
-        // Deep clone current artifact
-        var json = System.Text.Json.JsonSerializer.Serialize(SelectedArtifact.Artifact);
-        var clone = System.Text.Json.JsonSerializer.Deserialize<ArtifactDefinition>(json);
+        // Deep clone current artifact: own templates and handles (generated on save), or the new
+        // item's creatures and card texts would overwrite the current one's.
+        var clone = ArtifactDuplicator.Clone(SelectedArtifact.Artifact, statId);
         if (clone == null) return;
-
-        clone.ArtifactId = Guid.NewGuid().ToString();
-        clone.TemplateUuid = Guid.NewGuid().ToString();
-        clone.StatId = statId;
         clone.UsingBase = SelectedArtifact.Artifact.StatId; // inherit from current
-        clone.DisplayNameHandle = ""; // new handles will be generated on save
-        clone.DescriptionHandle = "";
 
         // Set display name from human input
         clone.DisplayName[EditingLang] = humanName.Trim();
