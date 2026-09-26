@@ -1293,6 +1293,8 @@ public partial class PassiveVM : ObservableObject
                 Passive.Name = parts.Length > 0
                     ? "Passive_" + string.Join("_", parts.Select(p => char.ToUpper(p[0]) + (p.Length > 1 ? p[1..] : "")))
                     : "Passive_" + Guid.NewGuid().ToString("N")[..8];
+                // A passive deleted earlier under the same name left a tombstone; this card is back.
+                _parent.Artifact.RemovedPassives.RemoveAll(n => n.Equals(Passive.Name, StringComparison.OrdinalIgnoreCase));
             }
             OnPropertyChanged(nameof(Name));
             OnPropertyChanged(nameof(HasVisibleLoca));

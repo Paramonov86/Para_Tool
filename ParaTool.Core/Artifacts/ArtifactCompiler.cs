@@ -253,11 +253,17 @@ public static class ArtifactCompiler
         if (!string.IsNullOrEmpty(art.SpellsOnEquip))
         {
             var removedSpells = new HashSet<string>(art.RemovedSpells ?? [], StringComparer.OrdinalIgnoreCase);
+            var removedCopies = new HashSet<string>(art.Spells
+                .Where(sp => !sp.EditOriginal && !string.IsNullOrEmpty(sp.UsingBase) && removedSpells.Contains(sp.UsingBase)
+                             && sp.Name.StartsWith(art.StatId + "_Spell_", StringComparison.OrdinalIgnoreCase))
+                .Select(sp => sp.Name), StringComparer.OrdinalIgnoreCase);
             var unlocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var spell in art.SpellsOnEquip.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 if (removedSpells.Contains(spell)) continue;
                 if (spellRenames.TryGetValue(spell, out var renamedSpell) && removedSpells.Contains(renamedSpell)) continue;
+                // A copy the first pass named: its tombstone is still under the original's name.
+                if (removedCopies.Contains(spell)) continue;
                 if (unlocked.Add(spell))
                     allBoosts.Add($"UnlockSpell({spell})");
             }
@@ -348,12 +354,17 @@ public static class ArtifactCompiler
         foreach (var p in art.Passives ?? [])
             if (!string.IsNullOrEmpty(p.Name))
                 poeNames.Add(p.Name);
-        // Tombstones: drop anything the user explicitly removed
+        // Tombstones: drop anything the user explicitly removed. A passive card is always
+        // equipped, so a tombstone never hides one: deleting a card removes it from the list, and
+        // a tombstone left under a card's name is stale (a passive deleted, then made again under
+        // the same name). Ignoring it only on the first pass would differ from the second, which
+        // no longer sees the card's old name.
         foreach (var removed in art.RemovedPassives ?? [])
         {
+            if (passiveRenames.ContainsKey(removed)
+                || art.Passives.Any(p => p.Name.Equals(removed, StringComparison.OrdinalIgnoreCase)))
+                continue;
             poeNames.Remove(removed);
-            if (passiveRenames.TryGetValue(removed, out var renamedRemoved))
-                poeNames.Remove(renamedRemoved);
         }
         // Always write PassivesOnEquip to override inherited value from base
         var poeStr = string.Join(";", poeNames);
