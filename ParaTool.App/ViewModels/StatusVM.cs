@@ -46,6 +46,32 @@ public partial class StatusVM : ObservableObject
 
     [ObservableProperty] private bool _isExpanded;
 
+    /// <summary>The appearance block (colour, effects, sounds, animations) is open.</summary>
+    [ObservableProperty] private bool _isAppearanceExpanded;
+
+    private IReadOnlyList<AppearanceGroupVM>? _appearance;
+
+    /// <summary>How the status looks and sounds, in three groups.</summary>
+    public IReadOnlyList<AppearanceGroupVM> Appearance => _appearance ??=
+    [
+        new(Loc.Instance.LblStatusLook, [Field("FormatColor"), Field("StatusEffect"), Field("ApplyEffect")]),
+        new(Loc.Instance.LblStatusSound, [Field("SoundStart"), Field("SoundLoop"), Field("SoundStop"),
+                                          Field("SoundVocalStart"), Field("SoundVocalLoop"), Field("SoundVocalEnd")]),
+        new(Loc.Instance.LblStatusAnimation, [Field("AnimationStart"), Field("AnimationLoop"), Field("AnimationEnd"),
+                                              Field("StillAnimationType"), Field("StillAnimationPriority")]),
+    ];
+
+    private AppearanceFieldVM Field(string key) => new(this, key);
+
+    internal void RecordAppearanceEdit(string key) => _parent.RecordEdit("Appearance." + key);
+
+    /// <summary>What the status the card was copied from gives a field (through its whole using chain).</summary>
+    internal string? InheritedValue(string key)
+    {
+        if (IsBlank || Controls.BoostBlocksEditor.GlobalResolver is not { } resolver) return null;
+        return resolver.ResolveAll(Status.UsingBase!).GetValueOrDefault(key);
+    }
+
     /// <summary>Made from scratch — no original to inherit from or to edit.</summary>
     public bool IsBlank => Status.UsingBase == null;
     public bool IsCopy => !IsBlank;
@@ -201,5 +227,100 @@ public partial class StatusVM : ObservableObject
         if (dict.TryGetValue(lang, out var v) && !string.IsNullOrEmpty(v)) return v;
         if (dict.TryGetValue("en", out var en) && !string.IsNullOrEmpty(en)) return en;
         return "";
+    }
+}
+
+/// <summary>One group of a status card's appearance settings.</summary>
+public sealed record AppearanceGroupVM(string Title, IReadOnlyList<AppearanceFieldVM> Fields);
+
+/// <summary>
+/// One appearance field of a status card: null leaves the original's, "" turns it off, anything
+/// else sets it. Its choices depend on the field — the game's value lists, the visual effects of
+/// the game and the mods, or the sounds and animations their stats use.
+/// </summary>
+public sealed class AppearanceFieldVM : ObservableObject
+{
+    private readonly StatusVM _card;
+    public string Key { get; }
+
+    public AppearanceFieldVM(StatusVM card, string key)
+    {
+        _card = card;
+        Key = key;
+    }
+
+    public string Label => Loc.Instance["LblStatus" + Key];
+    public string Tip => Loc.Instance["TipStatus" + Key];
+    public bool AllowInherit => !_card.IsBlank;
+    public bool FreeText => Key.StartsWith("Sound", StringComparison.Ordinal) && !Key.StartsWith("SoundVocal", StringComparison.Ordinal)
+                            || Key.StartsWith("Animation", StringComparison.Ordinal);
+    public string? Inherited => _card.InheritedValue(Key);
+
+    public string? Text
+    {
+        get => _card.Status.GetAppearance(Key);
+        set
+        {
+            if (_card.Status.GetAppearance(Key) == value) return;
+            _card.Status.SetAppearance(Key, value);
+            _card.RecordAppearanceEdit(Key);
+            OnPropertyChanged();
+        }
+    }
+
+    public IReadOnlyList<Controls.PickOption> Options => AppearanceOptions.For(Key);
+}
+
+/// <summary>The choices of each appearance field, built once per language and effect library.</summary>
+public static class AppearanceOptions
+{
+    private static readonly Dictionary<string, IReadOnlyList<Controls.PickOption>> Cache = new();
+    private static string? _lang;
+    private static object? _effects;
+
+    private static readonly Dictionary<string, string> ValueListOf = new()
+    {
+        ["FormatColor"] = "FormatStringColor",
+        ["SoundVocalStart"] = "SoundVocalType", ["SoundVocalLoop"] = "SoundVocalType", ["SoundVocalEnd"] = "SoundVocalType",
+        ["StillAnimationType"] = "StatusAnimationType", ["StillAnimationPriority"] = "StillAnimPriority",
+    };
+
+    public static IReadOnlyList<Controls.PickOption> For(string key)
+    {
+        var effects = EffectLibraryService.Current;
+        if (_lang != Loc.Instance.Lang || !ReferenceEquals(_effects, effects))
+        {
+            Cache.Clear();
+            _lang = Loc.Instance.Lang;
+            _effects = effects;
+        }
+        if (Cache.TryGetValue(key, out var cached)) return cached;
+        return Cache[key] = Build(key, effects);
+    }
+
+    private static IReadOnlyList<Controls.PickOption> Build(string key, EffectLibraryService? effects)
+    {
+        if (ValueListOf.TryGetValue(key, out var list))
+            return (StatsSchema.Instance.GetValueList(list)?.Values ?? [])
+                .Where(v => v != "MAX")
+                .Select(v => new Controls.PickOption(v, Loc.Instance.ValueLabel(list, v), v)).ToList();
+
+        if (key is "StatusEffect" or "ApplyEffect")
+        {
+            if (effects == null) return [];
+            // Effects some status uses come first: those are the ones made to sit on a character.
+            return effects.Library.All
+                .OrderBy(e => effects.StatusEffects.Contains(e.Uuid) ? 0 : 1)
+                .ThenBy(e => e.Display, StringComparer.OrdinalIgnoreCase)
+                .Select(e => new Controls.PickOption(e.Uuid, e.Display,
+                    string.Join("  ·  ", new[] { e.Name, e.Source }.Concat(e.Files.Skip(1)).Distinct())))
+                .ToList();
+        }
+
+        if (effects?.UsedValues.GetValueOrDefault(key) is { } used)
+            return key.StartsWith("Animation", StringComparison.Ordinal)
+                ? used.Select(v => new Controls.PickOption(v, EffectLibraryService.AnimationName(v), v)).ToList()
+                : used.Select(v => new Controls.PickOption(v, v)).ToList();
+        return [];
     }
 }

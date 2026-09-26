@@ -107,5 +107,6 @@ public partial class IconPickerView : UserControl
         settings.GameDataPath = data;
         UiSettingsService.Save(settings);
         await IconLibraryService.RebuildAsync();
+        _ = EffectLibraryService.RebuildAsync();
     }
 }

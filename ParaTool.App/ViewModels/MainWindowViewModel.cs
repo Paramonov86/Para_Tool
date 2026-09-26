@@ -268,6 +268,9 @@ public partial class MainWindowViewModel : ObservableObject
             .ToDictionary(g => g.Key, g => g.First().Name, StringComparer.OrdinalIgnoreCase);
         _ = IconLibraryService.BuildAsync(
             result.PakPaths.Select(p => (p, modNames.GetValueOrDefault(p))).ToList(), result.Resolver);
+        // Visual effects, sounds and animations a status card can set, the same way.
+        _ = EffectLibraryService.BuildAsync(
+            result.PakPaths.Select(p => (p, modNames.GetValueOrDefault(p))).ToList(), result.Resolver);
 
         // Collect all known StatIds for override detection
         _existingStatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

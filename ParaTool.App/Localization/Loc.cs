@@ -458,6 +458,17 @@ public partial class Loc : ObservableObject
     public string WmAuraRadius => this["WmAuraRadius"];
     public string JrnAddStatus => this["JrnAddStatus"];
     public string JrnRemoveStatus => this["JrnRemoveStatus"];
+    public string LblEditOriginalStatus => this["LblEditOriginalStatus"];
+    public string LblStatusAppearance => this["LblStatusAppearance"];
+    public string TipStatusAppearance => this["TipStatusAppearance"];
+    public string LblStatusLook => this["LblStatusLook"];
+    public string LblStatusSound => this["LblStatusSound"];
+    public string LblStatusAnimation => this["LblStatusAnimation"];
+    public string ValNone => this["ValNone"];
+    public string ValOff => this["ValOff"];
+    public string ValInherited => this["ValInherited"];
+    public string ValUseTyped => this["ValUseTyped"];
+    public string SrcVanilla => this["SrcVanilla"];
 
     /// <summary>
     /// Readable name of a game value list's value (<c>vl.&lt;List&gt;.&lt;Value&gt;</c>), in every language;

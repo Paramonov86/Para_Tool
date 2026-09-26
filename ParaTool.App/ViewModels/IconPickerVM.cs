@@ -27,7 +27,7 @@ public sealed partial class IconCellVM : ObservableObject
 {
     public IconEntry Entry { get; }
     public string Name => Entry.Name;
-    public string Tip => $"{Entry.Name}\n{Entry.Source}";
+    public string Tip => $"{Entry.Name}\n{IconPickerVM.SourceName(Entry.Source)}";
 
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private bool _isCurrent;
@@ -197,6 +197,10 @@ public sealed partial class IconPickerVM : ObservableObject
     partial void OnSearchTextChanged(string value) { if (IsOpen) Refilter(); }
     partial void OnSelectedSourceChanged(string value) { if (IsOpen) Refilter(); }
 
+    /// <summary>An icon's origin as shown: the base game in the UI language, a mod by its name.</summary>
+    public static string SourceName(string source) =>
+        source.Equals("Vanilla", StringComparison.OrdinalIgnoreCase) ? Loc.Instance.SrcVanilla : source;
+
     [RelayCommand]
     private void SelectKind(IconKindTabVM? tab)
     {
@@ -240,7 +244,7 @@ public sealed partial class IconPickerVM : ObservableObject
         var candidates = svc.Library.All.Where(e => allowed.Contains(e.Kind) && (tabKind == null || e.Kind == tabKind)).ToList();
 
         // Sources present among what the tab shows, vanilla and AMP first.
-        var sources = candidates.OrderBy(SourceRank).Select(e => e.Source).Distinct(StringComparer.OrdinalIgnoreCase)
+        var sources = candidates.OrderBy(SourceRank).Select(e => SourceName(e.Source)).Distinct(StringComparer.OrdinalIgnoreCase)
             .Prepend(Loc.Instance["LblIconSourceAll"]).ToList();
         if (!sources.SequenceEqual(Sources))
         {
@@ -253,7 +257,7 @@ public sealed partial class IconPickerVM : ObservableObject
 
         var source = SelectedSource;
         if (!string.IsNullOrEmpty(source) && source != Loc.Instance["LblIconSourceAll"])
-            candidates = candidates.Where(e => e.Source.Equals(source, StringComparison.OrdinalIgnoreCase)).ToList();
+            candidates = candidates.Where(e => SourceName(e.Source).Equals(source, StringComparison.OrdinalIgnoreCase)).ToList();
 
         var query = SearchText.Trim();
         if (query.Length > 0)
@@ -338,7 +342,7 @@ public sealed partial class IconPickerVM : ObservableObject
         var sizes = new List<string>();
         if (e.HasLarge) sizes.Add(Loc.Instance["LblIconTooltipPicture"]);
         if (e.HasTile) sizes.Add(Loc.Instance["LblIconHotbarTile"]);
-        DetailInfo = $"{KindLabel(e.Kind)} · {e.Source}" + (sizes.Count > 0 ? "\n" + string.Join(" · ", sizes) : "");
+        DetailInfo = $"{KindLabel(e.Kind)} · {SourceName(e.Source)}" + (sizes.Count > 0 ? "\n" + string.Join(" · ", sizes) : "");
         DetailUsedBy = svc.UsedBy.TryGetValue(e.Name, out var users)
             ? string.Join("\n", users.Take(8).Select(u => DisplayNameOf?.Invoke(u.stat) is { Length: > 0 } dn ? $"{dn}  ({u.stat})" : u.stat))
               + (users.Count > 8 ? $"\n… +{users.Count - 8}" : "")

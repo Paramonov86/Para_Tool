@@ -322,7 +322,7 @@
                         <!-- Copy (default) or override of the original; a status from scratch has no original -->
                         <StackPanel Spacing="6" IsVisible="{Binding IsCopy}">
                             <CheckBox IsChecked="{Binding EditOriginal}" Foreground="{DynamicResource WarningBrush}"
-                                      Content="{Binding LblEditOriginal, Source={x:Static loc:Loc.Instance}}"
+                                      Content="{Binding LblEditOriginalStatus, Source={x:Static loc:Loc.Instance}}"
                                       ToolTip.Tip="{Binding TipEditOriginalStatus, Source={x:Static loc:Loc.Instance}}"
                                       FontSize="{DynamicResource FontSize11}" />
                             <TextBlock IsVisible="{Binding EditOriginal}" TextWrapping="Wrap"
@@ -429,6 +429,45 @@
                                     <ctrl:BoostBlocksEditor Text="{Binding EditAuraStatuses}" IsFunctorMode="True" />
                                 </StackPanel>
                             </Grid>
+                        </Border>
+
+                        <!-- How the status looks and sounds: each field inherited, turned off or set -->
+                        <ToggleButton IsChecked="{Binding IsAppearanceExpanded}" Background="Transparent" BorderThickness="0" Padding="0"
+                                      Cursor="Hand" HorizontalAlignment="Left"
+                                      ToolTip.Tip="{Binding TipStatusAppearance, Source={x:Static loc:Loc.Instance}}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="▸" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource AccentLightBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding LblStatusAppearance, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentLightBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ToggleButton>
+                        <Border IsVisible="{Binding IsAppearanceExpanded}" Background="{StaticResource CardBgBrush}" CornerRadius="4" Padding="8,6"
+                                BorderBrush="{StaticResource AccentLightBrush}" BorderThickness="2,0,0,0" Grid.IsSharedSizeScope="True">
+                            <ItemsControl ItemsSource="{Binding Appearance}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:AppearanceGroupVM">
+                                        <StackPanel Spacing="3" Margin="0,2,0,6">
+                                            <TextBlock Text="{Binding Title}" FontSize="{DynamicResource FontSize10}" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" />
+                                            <ItemsControl ItemsSource="{Binding Fields}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="vm:AppearanceFieldVM">
+                                                        <Grid Margin="0,1">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" SharedSizeGroup="AppearanceLabel" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Label}" ToolTip.Tip="{Binding Tip}" Padding="0,0,10,0"
+                                                                       FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                                            <ctrl:ValuePickerChip Grid.Column="1" Text="{Binding Text}" Options="{Binding Options}"
+                                                                                  Inherited="{Binding Inherited}" AllowInherit="{Binding AllowInherit}" FreeText="{Binding FreeText}" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </Border>
                     </StackPanel>
                 </StackPanel>

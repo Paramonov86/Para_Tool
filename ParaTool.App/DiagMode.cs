@@ -654,6 +654,7 @@ internal static class DiagMode
         Avalonia.Logging.Logger.Sink = sink;
         var iconClock = System.Diagnostics.Stopwatch.StartNew();
         Services.IconLibraryService.BuildAsync(result.PakPaths.Select(p => (p, (string?)null)).ToList(), result.Resolver).Wait();
+        Services.EffectLibraryService.BuildAsync(result.PakPaths.Select(p => (p, (string?)null)).ToList(), result.Resolver).Wait();
         var icons = Services.IconLibraryService.Current;
         Console.WriteLine($"  icon library: {icons?.Library.All.Count} icons in {iconClock.ElapsedMilliseconds} ms, game data={icons?.Library.GameDataDir ?? "not found"}");
 
@@ -706,11 +707,15 @@ internal static class DiagMode
             item.AddNewStatus();
             var blank = item.StatusVMs[^1];
             blank.EditDisplayName = "Warded";
-            blank.EditBoosts = "AC(2)";
+            // With boosts the chips had no block for before (DetectDisturbancesBlock, AbilityFailedSavingThrow…).
+            blank.EditBoosts = "AC(2);DetectDisturbancesBlock(true);AbilityFailedSavingThrow(Dexterity);WeightCategory(-1);CannotHarmCauseEntity(CannotHarmCharmer)";
             blank.ApplyOnEquip = true;
             item.StatusVMs[0].EditTickFunctors = "RegainHitPoints(1d4)";
             if (icons?.Find("Spell_Abjuration_ArmorOfAgathys") != null) blank.SetIcon("Spell_Abjuration_ArmorOfAgathys");
-            foreach (var st in item.StatusVMs) st.IsExpanded = true;
+            // Appearance: the blank gets BLESS's effect on the character, the copy loses its voice line.
+            blank.Appearance.SelectMany(g => g.Fields).First(f => f.Key == "StatusEffect").Text = "61fe31f9-ae4b-4926-a033-e56ea67c7d92";
+            item.StatusVMs[0].Appearance.SelectMany(g => g.Fields).First(f => f.Key == "SoundVocalStart").Text = "";
+            foreach (var st in item.StatusVMs) { st.IsExpanded = true; st.IsAppearanceExpanded = true; }
             var statusesBefore = System.Text.Json.JsonSerializer.Serialize(art.Statuses);
             Console.WriteLine($"  status cards: {string.Join(", ", item.StatusVMs.Select(st => $"{st.Name}[edited={st.Status.DisplayNameEdited}/{st.Status.DescriptionEdited} src={st.Status.SourceDisplayNameHandle} {st.Status.StatusType} blank={st.IsBlank} onEquip={st.ApplyOnEquip} icon={st.EditIcon} bitmap={st.HasIcon}]"))} StatusOnEquip='{art.StatusOnEquip}'");
             Console.WriteLine($"  spell card icons: {string.Join(", ", item.SpellVMs.Select(sp => $"{sp.EditIcon}:{sp.HasIcon}"))}");
@@ -812,7 +817,7 @@ internal static class DiagMode
                 // Loading the view rebuilds the card VMs, so expand the ones it ended up with.
                 foreach (var s in item.SpellVMs.SelectMany(c => c.WithVariants())) s.IsExpanded = true;
                 foreach (var p in item.PassiveVMs) p.IsExpanded = true;
-                foreach (var st in item.StatusVMs) st.IsExpanded = true;
+                foreach (var st in item.StatusVMs) { st.IsExpanded = true; st.IsAppearanceExpanded = true; }
                 Settle();
 
                 var allCards = Descendants(probeRoot).OfType<Avalonia.Controls.ItemsControl>()
@@ -869,7 +874,8 @@ internal static class DiagMode
             ApplyFontScale(1.0);
             // Chips, not raw fallbacks: a raw block is a lone TextBlock holding the whole call.
             var rawBlocks = Descendants(probeRoot!).OfType<Avalonia.Controls.TextBlock>()
-                .Where(t => t.Text is { } s && (s.Contains("Summon(") || s.Contains("BlockRegainHP(")))
+                .Where(t => t.Text is { } s && (s.Contains("Summon(") || s.Contains("BlockRegainHP(")
+                    || s.Contains("DetectDisturbancesBlock(") || s.Contains("AbilityFailedSavingThrow(") || s.Contains("WeightCategory(") || s.Contains("CannotHarmCauseEntity(")))
                 .Select(t => t.Text!).Distinct().ToList();
             const string probeUuid = "c49e35a7-30e0-42fa-bddf-435f04c60062";
             // A creature uuid in a condition argument (CanStand('…') is a Dryad) reads by name too.
@@ -913,6 +919,14 @@ internal static class DiagMode
                 Console.WriteLine($"    before: {statusesBefore}\n    after:  {System.Text.Json.JsonSerializer.Serialize(art.Statuses)}");
             Console.WriteLine($"  status fields untouched by layout: {statusesBefore == System.Text.Json.JsonSerializer.Serialize(art.Statuses)} " +
                               $"realized status cards={Descendants(probeRoot!).OfType<Avalonia.Controls.Presenters.ContentPresenter>().Count(c => c.DataContext is ViewModels.StatusVM)}");
+            // What the appearance chips of each status card read, and how many choices each offers.
+            foreach (var card in item.StatusVMs)
+            {
+                var chips = Descendants(probeRoot!).OfType<Controls.ValuePickerChip>()
+                    .Where(c => c.DataContext is ViewModels.AppearanceFieldVM f && card.Appearance.SelectMany(g => g.Fields).Contains(f)).ToList();
+                Console.WriteLine($"  appearance {card.Name}: {chips.Count} chips, width {chips.Select(c => c.Bounds.Width).DefaultIfEmpty().Max():0} | " +
+                                  string.Join(" | ", chips.Select(c => $"{((ViewModels.AppearanceFieldVM)c.DataContext!).Key}={c.DisplayText} ({c.Options?.Count ?? 0})")));
+            }
             var compiledArt = System.Text.Json.JsonSerializer.Deserialize<ParaTool.Core.Artifacts.ArtifactDefinition>(System.Text.Json.JsonSerializer.Serialize(art))!;
             var compiled = ParaTool.Core.Artifacts.ArtifactCompiler.Compile(compiledArt, resolver: resolver);
             foreach (var e in ParaTool.Core.Parsing.StatsParser.Parse(compiled.StatsText).Where(e => e.Type == "StatusData"))
