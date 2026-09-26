@@ -777,8 +777,8 @@ public static class ArtifactCompiler
         // ─── Item Localization (stored in RootTemplate, not Stats) ──
         // We still generate loca entries — the RootTemplate LSF will
         // reference these handles for DisplayName/Description.
-        AddLocaEntries(loca, art.DisplayName, art.DisplayNameHandle);
-        AddLocaEntries(loca, art.Description, art.DescriptionHandle);
+        AddLocaEntries(loca, art.DisplayName, art.DisplayNameHandle, fillEnglish: false);
+        AddLocaEntries(loca, art.Description, art.DescriptionHandle, fillEnglish: false);
 
         // ─── Icons ──────────────────────────────────────
         Dictionary<string, byte[]>? iconFiles = null;
@@ -1133,22 +1133,38 @@ public static class ArtifactCompiler
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Loca entries for a handle, one per language with text. The game falls back to English for a
+    /// language a handle has no text in, so a text written only in another language (a status named
+    /// in Russian alone) also goes out as the English one — or every other language would show
+    /// nothing. Not for a handle that may be the game's (the item's own name): its English exists.
+    /// </summary>
     private static void AddLocaEntries(
         Dictionary<string, List<(string, string)>> loca,
         Dictionary<string, string> texts,
-        string handle)
+        string handle,
+        bool fillEnglish = true)
     {
         if (string.IsNullOrEmpty(handle)) return;
 
         foreach (var (lang, bbcode) in texts)
         {
             if (string.IsNullOrEmpty(bbcode)) continue;
+            Add(lang, bbcode);
+        }
+        if (fillEnglish && string.IsNullOrEmpty(texts.GetValueOrDefault("en")) && EnglishFallback(texts) is { } fallback)
+            Add("en", fallback);
 
+        void Add(string lang, string bbcode)
+        {
             if (!loca.ContainsKey(lang))
                 loca[lang] = [];
-
-            var xmlText = BbCode.ToBg3Xml(bbcode);
-            loca[lang].Add((handle, xmlText));
+            loca[lang].Add((handle, BbCode.ToBg3Xml(bbcode)));
         }
     }
+
+    /// <summary>The text to show as English when there is none: Russian first, else any language's.</summary>
+    internal static string? EnglishFallback(Dictionary<string, string> texts) =>
+        !string.IsNullOrEmpty(texts.GetValueOrDefault("ru")) ? texts["ru"]
+            : texts.OrderBy(t => t.Key, StringComparer.Ordinal).Select(t => t.Value).FirstOrDefault(v => !string.IsNullOrEmpty(v));
 }

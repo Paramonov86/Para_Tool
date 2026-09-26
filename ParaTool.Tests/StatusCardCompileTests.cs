@@ -157,6 +157,29 @@ public class StatusCardCompileTests
     }
 
     [Fact]
+    public void TextWrittenOnlyInRussian_AlsoGoesOutAsEnglish()
+    {
+        // The game shows English for a language a handle has no text in; with no English either,
+        // German, Polish, Chinese… players would see nothing.
+        var art = NewRing();
+        var blank = StatusCloner.CreateBlank(art);
+        blank.DisplayName = new() { ["en"] = "", ["ru"] = "Оберег" };
+        blank.Description = new() { ["en"] = "", ["ru"] = "", ["de"] = "Schützt." };
+        art.Statuses.Add(blank);
+        art.DisplayName = new() { ["en"] = "", ["ru"] = "Кольцо" };
+        art.DisplayNameHandle = ParaTool.Core.Localization.HandleGenerator.New();
+
+        var loca = ArtifactCompiler.Compile(art, resolver: Vanilla.Value).LocalizationEntries;
+
+        Assert.Contains(loca["en"], e => e.handle == blank.DisplayNameHandle && e.xmlText == "Оберег");
+        Assert.Contains(loca["ru"], e => e.handle == blank.DisplayNameHandle && e.xmlText == "Оберег");
+        Assert.Contains(loca["en"], e => e.handle == blank.DescriptionHandle && e.xmlText == "Schützt.");
+        // The item's own name may be under the base item's handle, whose English the game has.
+        Assert.Contains(loca["ru"], e => e.handle == art.DisplayNameHandle);
+        Assert.DoesNotContain(loca["en"], e => e.handle == art.DisplayNameHandle);
+    }
+
+    [Fact]
     public void CompilingTwice_ChangesNothing()
     {
         var art = NewRing();
