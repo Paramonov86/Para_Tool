@@ -78,4 +78,54 @@ public class LocalizationCoverageTests
         Assert.True(missing.Count == 0,
             $"EngineDescriptions keys missing from en.json:\n  boost.{string.Join("\n  boost.", missing)}");
     }
+
+    [Fact]
+    public void AllLanguages_HaveEveryKey_FromEnglish()
+    {
+        var en = LoadLang("en");
+        var missing = Languages.Where(l => l != "en")
+            .SelectMany(l => { var d = LoadLang(l); return en.Keys.Where(k => !d.ContainsKey(k)).Select(k => $"{l}: {k}"); })
+            .ToList();
+        Assert.True(missing.Count == 0, string.Join("\n", missing.Take(30)));
+    }
+
+    /// <summary>Strings that are rightly the same as the English in a language (loanwords, abbreviations, names).</summary>
+    private static readonly Dictionary<string, string[]> SameAsEnglish = new()
+    {
+        ["de"] = ["BoostCat_TagsFlags", "WmAuraRadius", "boost.CreateExplosion", "boost.Initiative", "enum.Finesse", "enum.Neutral", "enum.Religion", "enum.Resistant", "enum.Sprint", "enum.SurfaceLava"],
+        ["es"] = ["PatchError", "boost.Invulnerable", "enum.Abjuration", "enum.Concentration", "enum.Evocation", "enum.Gargantuan", "enum.Investigation", "enum.Neutral", "enum.Perception", "enum.Resistant", "enum.SG_Invisible", "enum.Sprint", "enum.SurfaceAlcohol", "enum.SurfaceLava", "enum.Transmutation", "enum.Vulnerable"],
+        ["fr"] = ["condparam.source", "enum.Abjuration", "enum.Acrobatics", "enum.Concentration", "enum.Divination", "enum.Enchantment", "enum.Finesse", "enum.Force", "enum.Gargantuan", "enum.Investigation", "enum.Lance", "enum.Nature", "enum.OBSERVER_SOURCE", "enum.Permanent", "enum.Poison", "enum.Radiant", "enum.Rage", "enum.Religion", "enum.SG_Invisible", "enum.SourceDialogue", "enum.Sprint", "enum.SurfacePoison", "enum.Transmutation", "enum.Vulnerable"],
+        ["it"] = ["enum.Immune", "enum.Resistant", "enum.SurfaceLava", "enum.Versatile", "enum.Vulnerable"],
+        ["ja"] = ["JrnStatId"],
+        ["ko"] = ["JrnStatId"],
+        ["pl"] = ["JrnStatId", "enum.Sprint"],
+        ["pt"] = ["JrnStatId", "enum.Abjuration", "enum.Concentration", "enum.Cone", "enum.Conjuration", "enum.Evocation", "enum.Investigation", "enum.Resistant", "enum.SG_Incapacitated", "enum.Sprint", "enum.SurfaceLava", "enum.Transmutation", "enum.Vulnerable"],
+        ["tr"] = ["JrnStatId", "enum.BonusActionPoint", "enum.Sprint"],
+        ["uk"] = ["JrnStatId"],
+        ["zh"] = ["JrnStatId"],
+    };
+
+    [Fact]
+    public void NoLanguage_ShowsAnEnglishCopy()
+    {
+        // A string left in English reads as untranslated; one that is rightly the same goes into SameAsEnglish.
+        var en = LoadLang("en");
+        // A single word the same in both is usually the language's own (German Name, French Type, Spanish Invisible);
+        // an English phrase left as it is reads as untranslated.
+        static bool Trivial(string v)
+        {
+            var words = System.Text.RegularExpressions.Regex.Replace(v, @"\[\d+\]|\{\d+\}", "").Trim();
+            return !words.Contains(' ') || !words.Any(char.IsLetter);
+        }
+        var copies = new List<string>();
+        foreach (var lang in Languages.Where(l => l is not ("en" or "ru")))
+        {
+            var d = LoadLang(lang);
+            var allowed = SameAsEnglish.GetValueOrDefault(lang) ?? [];
+            copies.AddRange(en.Where(kv => !kv.Key.StartsWith("_") && d.TryGetValue(kv.Key, out var v) && v == kv.Value
+                                           && !Trivial(kv.Value) && !allowed.Contains(kv.Key))
+                .Select(kv => $"{lang}: {kv.Key} = '{kv.Value}'"));
+        }
+        Assert.True(copies.Count == 0, $"{copies.Count} English copies:\n" + string.Join("\n", copies.Take(40)));
+    }
 }
