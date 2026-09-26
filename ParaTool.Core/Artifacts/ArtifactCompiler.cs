@@ -237,6 +237,13 @@ public static class ArtifactCompiler
         var statusRenames = RenameStatusCopies(art, resolver);
         if (statusRenames.Count > 0)
             RewriteStatusReferences(art, statusRenames);
+        // Original → copy for every status copy on this item. Unlike the renames it holds on the
+        // second compile of the same object too (the one the patcher writes), when nothing is left
+        // to rename: text inherited from a base is compared and rewritten through this.
+        var statusCopies = new Dictionary<string, string>(statusRenames, StringComparer.OrdinalIgnoreCase);
+        foreach (var st in art.Statuses)
+            if (!st.EditOriginal && !string.IsNullOrEmpty(st.UsingBase) && !st.UsingBase.Equals(st.Name, StringComparison.OrdinalIgnoreCase))
+                statusCopies.TryAdd(st.UsingBase, st.Name);
         var ownStatuses = new HashSet<string>(art.Statuses.Select(s => s.Name), StringComparer.OrdinalIgnoreCase);
 
         // Mechanics — merge Boosts + SpellsOnEquip into single "Boosts" line
@@ -474,7 +481,7 @@ public static class ArtifactCompiler
             // The base as this artifact sees it: its mentions of renamed statuses already point at the copies.
             string? Repair(string key, string? value, Func<string, string> fix) =>
                 value == null || (statusBase != null && statusBase.TryGetValue(key, out var inherited)
-                                  && RewriteStatusText(inherited, statusRenames) == value)
+                                  && RewriteStatusText(inherited, statusCopies) == value)
                     ? value : fix(value);
             static string FixFunctors(string v) => ConditionSchema.NormalizeConditionEnums(BoostMapping.SanitizeBoosts(v));
             static string FixConditions(string v) => ConditionSchema.NormalizeConditionEnums(ConditionSchema.NormalizeTagConditions(v));
@@ -546,6 +553,15 @@ public static class ArtifactCompiler
             Emit("AuraStatuses", status.AuraStatuses, statusHasUsing);
             if (status.StatusEffect != null)
                 stats.AppendLine($"data \"StatusEffect\" \"{status.StatusEffect}\"");
+            // Fields not on the card stay inherited — except where the base names a status this
+            // item has a copy of, itself most often (PHANTASMAL_KILLER ends by RemoveStatus(PHANTASMAL_KILLER)
+            // in OnTickFail). The copy restates those pointed at the copy, or it would remove, check
+            // or apply the original instead and never end.
+            if (statusHasUsing && !selfOverride && statusBase != null)
+                foreach (var key in InheritedStatusTextFields)
+                    if (statusBase.TryGetValue(key, out var inherited)
+                        && RewriteStatusText(inherited, statusCopies) is { } pointed && pointed != inherited)
+                        stats.AppendLine($"data \"{key}\" \"{pointed}\"");
 
             stats.AppendLine();
 
@@ -574,7 +590,7 @@ public static class ArtifactCompiler
                 ? resolver.ResolveAll(spell.UsingBase) : null;
             string? Repair(string key, string? value, Func<string, string> fix) =>
                 value == null || (spellBase != null && spellBase.TryGetValue(key, out var inherited)
-                                  && RewriteStatusText(inherited, statusRenames) == value)
+                                  && RewriteStatusText(inherited, statusCopies) == value)
                     ? value : fix(value);
             static string FixFunctors(string v) => ConditionSchema.NormalizeConditionEnums(BoostMapping.SanitizeBoosts(v));
             spell.SpellProperties = Repair("SpellProperties", spell.SpellProperties ?? "", FixFunctors)!;
@@ -1007,6 +1023,18 @@ public static class ArtifactCompiler
         }
         return renames;
     }
+
+    /// <summary>
+    /// StatusData functor and condition fields that are not on the status card (Modifiers.txt, plus
+    /// Conditions and TargetConditions, which the game's and AMP's statuses use as well).
+    /// </summary>
+    private static readonly string[] InheritedStatusTextFields =
+    [
+        "OnApplyConditions", "OnApplyRoll", "OnApplySuccess", "OnApplyFail",
+        "OnTickRoll", "OnTickSuccess", "OnTickFail",
+        "OnRemoveRoll", "OnRemoveSuccess", "OnRemoveFail",
+        "OnRollsFailed", "OnSuccess", "Conditions", "TargetConditions",
+    ];
 
     /// <summary>Calls whose arguments name a status (surveyed from the game's and AMP's stats).</summary>
     private static readonly HashSet<string> StatusArgumentCalls = new(StringComparer.Ordinal)
