@@ -76,10 +76,13 @@ public class OverrideTemplateTests
             var merged = Path.Combine(rtDir, "_merged.lsf");
             WriteMerged(merged);
             var tier = Override(BaseStat + "_1");
+            tier.LookEdited = true;
+            var registry = new OverrideTemplateRegistry();
 
-            var own = AmpPatcher.PatchRootTemplates(root, [], [tier]);
+            var own = AmpPatcher.PatchRootTemplates(root, [], [tier], registry: registry);
 
             Assert.Equal(tier.TemplateUuid, own[tier.StatId]);
+            Assert.Equal(tier.TemplateUuid, registry.Find(tier.StatId)?.TemplateUuid);
             var node = ReadFirstGameObject(Path.Combine(rtDir, $"{tier.TemplateUuid}.lsf"));
             Assert.Equal(tier.StatId, node.Attributes["Stats"].Value?.ToString());
             Assert.Equal(BaseTemplate, node.Attributes["ParentTemplateId"].Value?.ToString());
@@ -88,6 +91,103 @@ public class OverrideTemplateTests
             // The base item and its other tiers keep their own lore.
             Assert.Equal("hOLD", DescriptionHandle(ReadFirstGameObject(merged)));
         });
+    }
+
+    /// <summary>
+    /// RusMage lowered a cap on a tier helmet: the item got a template of its own, his character
+    /// wore an instance of it, and once the edit was gone the item vanished from his save. A tier
+    /// whose name, lore and icon are untouched keeps the template it inherits.
+    /// </summary>
+    [Fact]
+    public void OverrideOfTier_WithItsLookUntouched_KeepsTheInheritedTemplate()
+    {
+        WithRtDir((root, rtDir) =>
+        {
+            WriteMerged(Path.Combine(rtDir, "_merged.lsf"));
+            var tier = Override(BaseStat + "_1");
+            var registry = new OverrideTemplateRegistry();
+
+            var own = AmpPatcher.PatchRootTemplates(root, [], [tier], registry: registry);
+
+            Assert.Empty(own);
+            Assert.Empty(registry.Entries);
+            Assert.Single(Directory.GetFiles(rtDir, "*.lsf"));
+        });
+    }
+
+    [Fact]
+    public void OverrideOfTier_FromAnOlderBuild_KeepsGettingItsTemplate()
+    {
+        // Version 1 cards did not track look edits, and got a template on every patch since 0.7.7:
+        // items in saves may be instances of it.
+        WithRtDir((root, rtDir) =>
+        {
+            WriteMerged(Path.Combine(rtDir, "_merged.lsf"));
+            var tier = Override(BaseStat + "_1");
+            tier.FormatVersion = 1;
+
+            var own = AmpPatcher.PatchRootTemplates(root, [], [tier], registry: new OverrideTemplateRegistry());
+
+            Assert.Equal(tier.TemplateUuid, own[tier.StatId]);
+        });
+    }
+
+    [Fact]
+    public void IssuedTemplate_IsWrittenOnEveryPatch_UnderTheUuidFirstIssued()
+    {
+        WithRtDir((root, rtDir) =>
+        {
+            WriteMerged(Path.Combine(rtDir, "_merged.lsf"));
+            const string issued = "11111111-2222-3333-4444-555555555555";
+            var registry = new OverrideTemplateRegistry();
+            registry.Register(BaseStat + "_1", "Armor", issued, BaseTemplate);
+            // The same edit made again (a reinstall made a new card), look untouched.
+            var tier = Override(BaseStat + "_1");
+
+            var own = AmpPatcher.PatchRootTemplates(root, [], [tier], registry: registry);
+
+            Assert.Equal(issued, own[tier.StatId]);
+            Assert.True(File.Exists(Path.Combine(rtDir, $"{issued}.lsf")));
+        });
+    }
+
+    [Fact]
+    public void IssuedTemplate_OfAnEditThatIsGone_IsKeptAsThePlainItem()
+    {
+        WithRtDir((root, rtDir) =>
+        {
+            var merged = Path.Combine(rtDir, "_merged.lsf");
+            WriteMerged(merged);
+            const string issued = "11111111-2222-3333-4444-555555555555";
+            var registry = new OverrideTemplateRegistry();
+            registry.Register(BaseStat + "_1", "Armor", issued, BaseTemplate);
+
+            var own = AmpPatcher.PatchRootTemplates(root, [], [], registry: registry);
+
+            // Instances in saves keep a template; nothing points new drops at it.
+            Assert.Empty(own);
+            var kept = ReadFirstGameObject(Path.Combine(rtDir, $"{issued}.lsf"));
+            Assert.Equal(BaseStat + "_1", kept.Attributes["Stats"].Value?.ToString());
+            Assert.Equal(BaseTemplate, kept.Attributes["ParentTemplateId"].Value?.ToString());
+            Assert.Equal("hOLD", DescriptionHandle(kept));
+        });
+    }
+
+    [Fact]
+    public void Registry_RoundTripsThroughItsFile()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "paratool-reg-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            var registry = new OverrideTemplateRegistry();
+            registry.Register("A_1", "Weapon", "uuid-a", "parent-a");
+            registry.Register("A_1", "Weapon", "uuid-b", "parent-b");
+            registry.Save(path);
+            var loaded = OverrideTemplateRegistry.Load(path);
+            Assert.Equal("uuid-a", Assert.Single(loaded.Entries).TemplateUuid);
+            Assert.Empty(OverrideTemplateRegistry.Load(path + ".missing").Entries);
+        }
+        finally { File.Delete(path); }
     }
 
     [Fact]
@@ -99,7 +199,7 @@ public class OverrideTemplateTests
             WriteMerged(merged);
             var baseItem = Override(BaseStat);
 
-            var own = AmpPatcher.PatchRootTemplates(root, [], [baseItem]);
+            var own = AmpPatcher.PatchRootTemplates(root, [], [baseItem], registry: new OverrideTemplateRegistry());
 
             Assert.Empty(own);
             Assert.Equal("hNEW", DescriptionHandle(ReadFirstGameObject(merged)));

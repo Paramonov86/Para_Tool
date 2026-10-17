@@ -11,8 +11,11 @@ namespace ParaTool.Core.Artifacts;
 /// </summary>
 public sealed class ArtifactDefinition
 {
-    /// <summary>Format version for forward compatibility.</summary>
-    public int FormatVersion { get; set; } = 1;
+    /// <summary>
+    /// Format version for forward compatibility. 2: <see cref="LookEdited"/> is tracked — a
+    /// version 1 card may have changed its look without saying so.
+    /// </summary>
+    public int FormatVersion { get; set; } = 2;
 
     /// <summary>When this artifact was created.</summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -152,6 +155,13 @@ public sealed class ArtifactDefinition
     /// <summary>Handle for Description (generated once).</summary>
     public string DescriptionHandle { get; set; } = "";
 
+    /// <summary>
+    /// The user changed the item's name, description or icon. An edited item without a template of
+    /// its own (an AMP tier) needs one for the change to show — and items picked up in game then
+    /// belong to it — so one is made only when this is set.
+    /// </summary>
+    public bool LookEdited { get; set; }
+
     // ─── Spell/Status Renames ──────────────────────────────
 
     /// <summary>Spell display name overrides: original StatId → new display name per language.</summary>
@@ -217,7 +227,8 @@ public sealed class ArtifactDefinition
     /// </summary>
     public void CopyFrom(ArtifactDefinition other)
     {
-        FormatVersion = other.FormatVersion;
+        // Never upward: a version 1 card restored from a fresh build keeps what version 1 implies.
+        FormatVersion = Math.Min(FormatVersion, other.FormatVersion);
         CreatedAt = other.CreatedAt;
         // Identity (ArtifactId / TemplateUuid) intentionally NOT copied — keep our own.
 
@@ -258,6 +269,7 @@ public sealed class ArtifactDefinition
         DescriptionParams = other.DescriptionParams;
         DisplayNameHandle = other.DisplayNameHandle;
         DescriptionHandle = other.DescriptionHandle;
+        LookEdited = other.LookEdited;
 
         SpellRenames = other.SpellRenames;
         StatusRenames = other.StatusRenames;

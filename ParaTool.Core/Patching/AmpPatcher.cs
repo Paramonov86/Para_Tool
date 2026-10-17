@@ -461,8 +461,12 @@ public sealed class AmpPatcher
         var artifacts = allArts.Where(a => a.PatchEnabled).ToList();
         log.AppendLine($"After filter: {artifacts.Count}, statsDir={statsDir}");
 
+        // Templates once given to edited items are written on every patch (OverrideTemplateRegistry).
+        var templateRegistry = OverrideTemplateRegistry.Load(OverrideTemplateRegistry.DefaultPath);
         if (artifacts.Count == 0 || statsDir == null)
         {
+            if (templateRegistry.Entries.Count > 0)
+                PatchRootTemplates(extractDir, [], [], warnings, sourceDir, templateRegistry);
             File.WriteAllText(logPath, log.ToString());
             return new ArtifactApplyResult(0);
         }
@@ -746,9 +750,11 @@ public sealed class AmpPatcher
         // TreasureTable for new items is handled by the main TT patching step
 
         // Generate/update RootTemplates for artifacts
-        var ownTemplates = newArtifacts.Count > 0 || overrideArtifacts.Count > 0
-            ? PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts, warnings, sourceDir)
+        var ownTemplates = newArtifacts.Count > 0 || overrideArtifacts.Count > 0 || templateRegistry.Entries.Count > 0
+            ? PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts, warnings, sourceDir, templateRegistry)
             : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try { templateRegistry.Save(OverrideTemplateRegistry.DefaultPath); }
+        catch (Exception ex) { Services.AppLogger.Warn($"Override template registry not saved: {ex.Message}"); }
 
         // A submod does not declare AMP's entries: an item override of one it does not declare
         // itself is a thin re-declaration placed behind everything the submod declares.
@@ -939,9 +945,11 @@ public sealed class AmpPatcher
         IReadOnlyList<ArtifactDefinition> newArtifacts,
         IReadOnlyList<ArtifactDefinition> overrideArtifacts,
         List<string>? warnings = null,
-        string? sourceDir = null)
+        string? sourceDir = null,
+        OverrideTemplateRegistry? registry = null)
     {
         var ownTemplates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        registry ??= new OverrideTemplateRegistry();
 
         // Find RootTemplates directory
         var rtDir = Directory.GetDirectories(extractDir, "RootTemplates", SearchOption.AllDirectories)
@@ -1005,17 +1013,33 @@ public sealed class AmpPatcher
 
                 // 3. No template carries this StatId: the item inherits its RootTemplate through
                 //    `using` (AMP tiers like AMP_EnhanceShaman_Amulet_1 share the base's template),
-                //    so there was nothing to update and a new name or lore silently never showed.
-                //    Give it a template of its own, cloned from the one it inherits.
+                //    so a new name, lore or icon has nothing to land on. Such an item gets a template
+                //    of its own, cloned from the one it inherits — but only when its look was edited:
+                //    an item picked up in game is an instance of that template and disappears from
+                //    the save once the template is gone. Cards from before the edit was tracked
+                //    (FormatVersion 1) and items that ever got one keep theirs.
                 foreach (var art in remaining.Values)
                 {
                     if (string.IsNullOrEmpty(art.ParentTemplateUuid)) continue;
-                    var lsfPath = Path.Combine(rtDir, $"{art.TemplateUuid}.lsf");
+                    var issued = registry.Find(art.StatId);
+                    if (issued == null && !art.LookEdited && art.FormatVersion >= 2) continue;
+                    var templateUuid = issued?.TemplateUuid ?? art.TemplateUuid;
+                    var lsfPath = Path.Combine(rtDir, $"{templateUuid}.lsf");
                     File.AppendAllText(rtLog, $"  Own template for override: {art.StatId} -> {lsfPath} (inherits {art.ParentTemplateUuid})\n");
-                    if (CreateTemplateLsf(lsfPath, art, ResolveEquipType(art), sourceRtDir))
-                        ownTemplates[art.StatId] = art.TemplateUuid;
+                    var withIssuedUuid = templateUuid == art.TemplateUuid ? art : CloneWithTemplate(art, templateUuid);
+                    if (CreateTemplateLsf(lsfPath, withIssuedUuid, ResolveEquipType(art), sourceRtDir))
+                    {
+                        ownTemplates[art.StatId] = templateUuid;
+                        registry.Register(art.StatId, art.StatType, templateUuid, art.ParentTemplateUuid);
+                    }
                 }
             }
+
+            // Templates issued to edits that are gone (deleted, switched off): written as plain
+            // copies of the template the item inherits, so the instances in saves keep existing and
+            // fall back to the original item. Stats are not pointed at them.
+            var handled = new HashSet<string>(overrideArtifacts.Select(a => a.StatId), StringComparer.Ordinal);
+            WriteIssuedTemplates(rtDir, sourceRtDir, registry, handled, ResolveEquipType, rtLog);
 
             // ── Summoned creature copies (new and override artifacts alike) ──
             foreach (var art in newArtifacts.Concat(overrideArtifacts))
@@ -1058,6 +1082,34 @@ public sealed class AmpPatcher
 
         return ownTemplates;
     }
+
+    /// <summary>
+    /// Writes each issued template whose edit is not in this patch as a copy of the template it was
+    /// cloned from, with that template's own name and look.
+    /// </summary>
+    internal static void WriteIssuedTemplates(string rtDir, string? sourceRtDir, OverrideTemplateRegistry registry,
+        ISet<string> handled, Func<ArtifactDefinition, object?> equipmentType, string? log = null)
+    {
+        foreach (var e in registry.Entries.Where(e => !handled.Contains(e.StatId)))
+        {
+            if (string.IsNullOrEmpty(e.ParentTemplateUuid) || string.IsNullOrEmpty(e.TemplateUuid)) continue;
+            var keeper = new ArtifactDefinition
+            {
+                StatId = e.StatId, StatType = e.StatType,
+                TemplateUuid = e.TemplateUuid, ParentTemplateUuid = e.ParentTemplateUuid,
+            };
+            var lsfPath = Path.Combine(rtDir, $"{e.TemplateUuid}.lsf");
+            if (log != null) File.AppendAllText(log, $"  Issued template kept: {e.StatId} -> {lsfPath}\n");
+            CreateTemplateLsf(lsfPath, keeper, equipmentType(keeper), sourceRtDir, keepParentLook: true);
+        }
+    }
+
+    private static ArtifactDefinition CloneWithTemplate(ArtifactDefinition art, string templateUuid) => new()
+    {
+        StatId = art.StatId, StatType = art.StatType, TemplateUuid = templateUuid,
+        ParentTemplateUuid = art.ParentTemplateUuid, DisplayNameHandle = art.DisplayNameHandle,
+        DescriptionHandle = art.DescriptionHandle, AtlasIconMapKey = art.AtlasIconMapKey,
+    };
 
     /// <summary>
     /// Try to find and update GameObjects nodes matching override artifacts in an LSF file.
@@ -1135,7 +1187,7 @@ public sealed class AmpPatcher
     /// the game has nothing to build the item from and will not spawn it.
     /// </summary>
     private static bool CreateTemplateLsf(string lsfPath, ArtifactDefinition art,
-        object? equipmentTypeId = null, string? sourceRtDir = null)
+        object? equipmentTypeId = null, string? sourceRtDir = null, bool keepParentLook = false)
     {
         // Find parent template LSF to clone from — in the pak being written, then in AMP's
         var rtDir = Path.GetDirectoryName(lsfPath)!;
@@ -1234,18 +1286,22 @@ public sealed class AmpPatcher
             { Value = art.ParentTemplateUuid };
         goNode.Attributes["Stats"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
             { Value = art.StatId };
-        goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+        // A kept issued template is the parent's copy as it is: its own name, lore and icon.
+        if (!keepParentLook)
         {
-            Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
-        };
-        goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
-        {
-            Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
-        };
-        if (!string.IsNullOrEmpty(art.AtlasIconMapKey))
-        {
-            goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
-                { Value = art.AtlasIconMapKey };
+            goNode.Attributes["DisplayName"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+            {
+                Value = new LSLib.TranslatedString { Handle = art.DisplayNameHandle, Version = 1 }
+            };
+            goNode.Attributes["Description"] = new LSLib.NodeAttribute(LSLib.AttributeType.TranslatedString)
+            {
+                Value = new LSLib.TranslatedString { Handle = art.DescriptionHandle, Version = 1 }
+            };
+            if (!string.IsNullOrEmpty(art.AtlasIconMapKey))
+            {
+                goNode.Attributes["Icon"] = new LSLib.NodeAttribute(LSLib.AttributeType.FixedString)
+                    { Value = art.AtlasIconMapKey };
+            }
         }
 
         // EquipmentTypeID is the weapon-class / equipment-class UUID (one per Greataxe /

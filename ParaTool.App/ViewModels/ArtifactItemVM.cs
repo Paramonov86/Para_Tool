@@ -170,6 +170,7 @@ public partial class ArtifactItemVM : ObservableObject
         {
             if (Artifact.AtlasIconMapKey == value) return;
             Artifact.AtlasIconMapKey = string.IsNullOrWhiteSpace(value) ? null : value;
+            Artifact.LookEdited = true;
             MarkDirty();
             OnPropertyChanged();
         }
@@ -387,13 +388,25 @@ public partial class ArtifactItemVM : ObservableObject
     public string EditDisplayName
     {
         get => GetLangValue(Artifact.DisplayName);
-        set { SetLangValue(Artifact.DisplayName, value); MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(DisplayLabel), nameof(PreviewName)); }
+        set
+        {
+            if (GetLangValue(Artifact.DisplayName) == (value ?? "")) return;
+            SetLangValue(Artifact.DisplayName, value);
+            Artifact.LookEdited = true;
+            MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(DisplayLabel), nameof(PreviewName));
+        }
     }
 
     public string EditDescription
     {
         get => GetLangValue(Artifact.Description);
-        set { SetLangValue(Artifact.Description, value); MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(PreviewDescription), nameof(HasDescription)); }
+        set
+        {
+            if (GetLangValue(Artifact.Description) == (value ?? "")) return;
+            SetLangValue(Artifact.Description, value);
+            Artifact.LookEdited = true;
+            MarkDirty(); OnPropertyChanged(); NotifyPreviewDebounced(nameof(PreviewDescription), nameof(HasDescription));
+        }
     }
 
     // === Passives (editable list) ===

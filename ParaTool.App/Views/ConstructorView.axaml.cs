@@ -639,6 +639,7 @@ public partial class ConstructorView : UserControl
             var art = vm.SelectedArtifact.Artifact;
             art.IconMainDdsBase64 = Convert.ToBase64String(iconSet.MainDds);
             art.IconConsoleDdsBase64 = Convert.ToBase64String(iconSet.ConsoleDds);
+            art.LookEdited = true;
 
             // Add 144×144 icon to persistent atlas store
             var atlasMapKey = art.StatId;
