@@ -982,6 +982,19 @@ internal static class DiagMode
                     .Where(c => c.DataContext is ViewModels.SpellVM or ViewModels.PassiveVM or ViewModels.StatusVM)
                     .Distinct().ToList();
                 var cards = allCards.Where(c => c.Bounds.Width > 0).ToList();
+                // The first spell card and the status cards as pictures, to look at.
+                foreach (var (card, n) in cards.Where(c => c.DataContext is ViewModels.SpellVM { IsVariant: false }).Take(1)
+                             .Concat(cards.Where(c => c.DataContext is ViewModels.StatusVM && c.Bounds.Height > 100).Take(2))
+                             .Select((c, n) => (c, n)))
+                {
+                    var size = new Avalonia.PixelSize((int)Math.Ceiling(card.Bounds.Width), (int)Math.Ceiling(Math.Min(card.Bounds.Height, 3000)));
+                    if (size.Width <= 0 || size.Height <= 0) continue;
+                    var shot = Path.Combine(Path.GetTempPath(), $"paratool-card-{lang}-{scale:0.0}-{n}.png".Replace(',', '.'));
+                    using var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(size, new Avalonia.Vector(96, 96));
+                    rtb.Render(card);
+                    rtb.Save(shot);
+                    Console.WriteLine($"  card picture -> {shot}");
+                }
                 var problems = new List<string>();
                 foreach (var card in cards)
                 foreach (var v in Descendants(card))

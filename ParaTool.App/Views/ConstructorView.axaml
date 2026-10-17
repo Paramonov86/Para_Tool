@@ -374,7 +374,7 @@
 
                             <TextBlock Grid.Row="2" Text="{Binding LblStatusStack, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                             <WrapPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,6,0,0">
-                                <TextBox Text="{Binding EditStackId}" Watermark="StackId" Width="170" Margin="0,0,6,0"
+                                <TextBox Text="{Binding EditStackId}" Watermark="StackId" MinWidth="110" MaxWidth="170" Margin="0,0,6,4"
                                          ToolTip.Tip="{Binding TipStackId, Source={x:Static loc:Loc.Instance}}"
                                          FontSize="{DynamicResource FontSize11}" Padding="8,4" Background="{StaticResource CardBgBrush}" CornerRadius="4" />
                                 <ctrl:TumblerChipEditor Text="{Binding EditStackType}" VerticalAlignment="Center"
