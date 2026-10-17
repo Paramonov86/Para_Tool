@@ -107,12 +107,12 @@ public class LocalizationCoverageTests
     /// <summary>Strings that are rightly the same as the English in a language (loanwords, abbreviations, names).</summary>
     private static readonly Dictionary<string, string[]> SameAsEnglish = new()
     {
-        ["de"] = ["BoostCat_TagsFlags", "WmAuraRadius", "boost.CreateExplosion", "boost.Initiative", "enum.Finesse", "enum.Neutral", "enum.Religion", "enum.Resistant", "enum.Sprint", "enum.SurfaceLava"],
+        ["de"] = ["BoostCat_TagsFlags", "WmAuraRadius", "boost.CreateExplosion", "boost.Initiative", "enum.Finesse", "enum.Neutral", "enum.Religion", "enum.Resistant", "enum.Sprint", "enum.SurfaceLava", "enum.Ring2", "cond.CharismaGreaterThan", "cond.AMP_CharismaGreaterThan"],
         ["es"] = ["PatchError", "boost.Invulnerable", "enum.Abjuration", "enum.Concentration", "enum.Evocation", "enum.Gargantuan", "enum.Investigation", "enum.Neutral", "enum.Perception", "enum.Resistant", "enum.SG_Invisible", "enum.Sprint", "enum.SurfaceAlcohol", "enum.SurfaceLava", "enum.Transmutation", "enum.Vulnerable"],
-        ["fr"] = ["condparam.source", "enum.Abjuration", "enum.Acrobatics", "enum.Concentration", "enum.Divination", "enum.Enchantment", "enum.Finesse", "enum.Force", "enum.Gargantuan", "enum.Investigation", "enum.Lance", "enum.Nature", "enum.OBSERVER_SOURCE", "enum.Permanent", "enum.Poison", "enum.Radiant", "enum.Rage", "enum.Religion", "enum.SG_Invisible", "enum.SourceDialogue", "enum.Sprint", "enum.SurfacePoison", "enum.Transmutation", "enum.Vulnerable"],
+        ["fr"] = ["condparam.source", "enum.Abjuration", "enum.Acrobatics", "enum.Concentration", "enum.Divination", "enum.Enchantment", "enum.Finesse", "enum.Force", "enum.Gargantuan", "enum.Investigation", "enum.Lance", "enum.Nature", "enum.OBSERVER_SOURCE", "enum.Permanent", "enum.Poison", "enum.Radiant", "enum.Rage", "enum.Religion", "enum.SG_Invisible", "enum.SourceDialogue", "enum.Sprint", "enum.SurfacePoison", "enum.Transmutation", "enum.Vulnerable", "cond.DistanceToGreaterThan", "cond.IntelligenceGreaterThan"],
         ["it"] = ["enum.Immune", "enum.Resistant", "enum.SurfaceLava", "enum.Versatile", "enum.Vulnerable"],
-        ["ja"] = ["JrnStatId"],
-        ["ko"] = ["JrnStatId"],
+        ["ja"] = ["JrnStatId", "cond.HasHPLessThan", "cond.HasHPMoreThan", "cond.HasHPPercentageLessThan", "cond.HasHPPercentageMoreThan", "cond.HasHPPercentageEqualOrLessThan", "cond.HasHPPercentageEqualOrMoreThan"],
+        ["ko"] = ["JrnStatId", "cond.HasHPLessThan", "cond.HasHPMoreThan", "cond.HasHPPercentageLessThan", "cond.HasHPPercentageMoreThan", "cond.HasHPPercentageEqualOrLessThan", "cond.HasHPPercentageEqualOrMoreThan"],
         ["pl"] = ["JrnStatId", "enum.Sprint"],
         ["pt"] = ["JrnStatId", "enum.Abjuration", "enum.Concentration", "enum.Cone", "enum.Conjuration", "enum.Evocation", "enum.Investigation", "enum.Resistant", "enum.SG_Incapacitated", "enum.Sprint", "enum.SurfaceLava", "enum.Transmutation", "enum.Vulnerable"],
         ["tr"] = ["JrnStatId", "enum.BonusActionPoint", "enum.Sprint"],

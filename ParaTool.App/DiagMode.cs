@@ -659,9 +659,10 @@ internal static class DiagMode
                                       + "DamageBonus(5);RollBonus(Attack,3);WeaponDamage(1d4,Fire)";
                 const string functors = "ApplyStatus(SELF,WET,100,2);DealDamage(2d6+UnarmedMeleeAbilityModifier,Cold);RegainHitPoints((DamageDone)/2)";
                 const string conditions = "IsCantrip() and SpellDamageTypeIs(DamageType.Force) and not Combat()";
-                foreach (var lang in new[] { "en", "ru" })
+                foreach (var lang in new[] { "en", "ru", "de", "ja" })
                 foreach (var typing in new[] { false, true })
                 {
+                    if (typing && lang is not ("en" or "ru")) continue;
                     Localization.Loc.Instance.SetLanguage(lang);
                     Controls.TumblerChipEditor.TypingMode = typing;
                     var boostEd = new Controls.BoostBlocksEditor { Text = boosts };
