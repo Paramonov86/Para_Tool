@@ -727,8 +727,8 @@ internal static class DiagMode
             {
                 const string boosts = "IF(IsCantrip() and (SpellDamageTypeIs(DamageType.Force))):DamageBonus(max(1,IntelligenceModifier));"
                                       + "DamageBonus(5);RollBonus(Attack,3);WeaponDamage(1d4,Fire)";
-                const string functors = "ApplyStatus(SELF,WET,100,2);DealDamage(2d6+UnarmedMeleeAbilityModifier,Cold);RegainHitPoints((DamageDone)/2)";
-                const string conditions = "IsCantrip() and SpellDamageTypeIs(DamageType.Force) and not Combat()";
+                const string functors = "ApplyStatus(SELF,WET,100,2);ApplyStatus(PRONE);DealDamage(2d6+UnarmedMeleeAbilityModifier,Cold);RegainHitPoints((DamageDone)/2)";
+                const string conditions = "IsCantrip() and SpellDamageTypeIs(DamageType.Force) and not Combat() and Tagged('SHIELD') and HasStatus('BURNING',context.Target)";
                 foreach (var lang in new[] { "en", "ru", "de", "ja" })
                 foreach (var typing in new[] { false, true })
                 {
@@ -768,6 +768,30 @@ internal static class DiagMode
                         .Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
                     Console.WriteLine($"  editor bounds: {boostEd.Bounds} {functorEd.Bounds} {condEd.Bounds}");
                     Console.WriteLine($"{lang} typing={typing}: tumblers={tumblers.Count} text boxes=[{string.Join(" | ", boxes)}] -> {shot}");
+
+                    // Typed values reach the text: fill empty slots the drums never offered.
+                    if (typing && lang == "en")
+                    {
+                        List<Avalonia.Controls.TextBox> Boxes() => Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(host)
+                            .OfType<Avalonia.Controls.TextBox>().ToList();
+                        bool Type(Func<List<Avalonia.Controls.TextBox>, Avalonia.Controls.TextBox> pick, string value)
+                        {
+                            var box = pick(Boxes());
+                            var before = functorEd.Text + condEd.Text;
+                            box.Text = value;
+                            box.RaiseEvent(new Avalonia.Input.KeyEventArgs { RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Enter });
+                            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                            return functorEd.Text + condEd.Text == before;
+                        }
+                        Type(b => b.First(t => t.Watermark == "target" && (t.Parent as Avalonia.Controls.Panel)?.Children.OfType<Avalonia.Controls.TextBox>().Any(x => x.Text == "SHIELD") == true), "Target");
+                        Type(b => b.Last(t => t.Watermark == "Duration"), "3");
+                        Type(b => b.Where(t => t.Watermark == "StatsConditions").First(), "Enemy()");
+                        var refused = Type(b => b.First(t => t.Watermark == "ignoreDeletingStatuses"), "true");
+                        Type(b => b.First(t => t.Text == "BURNING"), "WET");
+                        Console.WriteLine($"  typed functors: {functorEd.Text}");
+                        Console.WriteLine($"  typed conditions: {condEd.Text}");
+                        Console.WriteLine($"  gap before ignoreDeletingStatuses refused: {refused}");
+                    }
 
                     // The formula drum turned open on the first DamageBonus amount.
                     if (!typing)
@@ -1150,6 +1174,47 @@ internal static class DiagMode
                 string[] stack = ["Stack", "Overwrite", "Additive", "Ignore"];
                 Console.WriteLine($"  tumbler untouched: empty list='{Click(stack, "")}' unknown='{Click(stack, "ReactionActionPoint")}' " +
                                   $"known='{Click(stack, "Additive")}' empty number='{Click(null, "")}' | turned: list='{Click(stack, "Additive", 1)}' number='{Click(null, "5", 1)}'");
+            }
+
+            // The status search shows each status's icon, decoded once its row is on screen.
+            {
+                var statuses = resolver.AllEntries.Values.Where(e => e.Type == "StatusData").Select(e => e.Name)
+                    .Where(n => n.StartsWith("BURNING", StringComparison.OrdinalIgnoreCase) || n.StartsWith("BLESS", StringComparison.OrdinalIgnoreCase))
+                    .Order().Take(30).ToArray();
+                // The picker's list is virtualized, and a window never shown has no viewport to
+                // realize rows in: lay its rows out in a plain panel instead.
+                string? IconOf(string id) => resolver.Resolve(id, "Icon");
+                var rows = statuses.Take(12).Select(id => new Controls.SearchPickerChip.PickRow(IconOf)
+                {
+                    DataContext = new Controls.SearchPickerChip.PickEntry(id, $"{Controls.SearchPickerChip.ResolveStatDisplayName(id, "en", resolver, loca)}  ({id})"),
+                }).ToList();
+                var list = new Avalonia.Controls.StackPanel { Spacing = 6, Margin = new Avalonia.Thickness(16) };
+                foreach (var r in rows) list.Children.Add(r);
+                var grid = new Avalonia.Controls.Border { Background = Themes.ThemeBrushes.PanelBg, Child = list, Width = 500 };
+                var host = new Avalonia.Controls.Window { Width = 500, Height = 420, Content = grid };
+                void Layout()
+                {
+                    foreach (var l in Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(host).OfType<Avalonia.Layout.Layoutable>())
+                        l.InvalidateMeasure();
+                    host.Measure(new Avalonia.Size(500, 420));
+                    host.Arrange(new Avalonia.Rect(0, 0, 500, 420));
+                }
+                Layout();
+                using (var cts = new CancellationTokenSource(2000))
+                    Avalonia.Threading.Dispatcher.UIThread.MainLoop(cts.Token);
+                Layout();
+                var images = rows.SelectMany(r => r.Children.OfType<Avalonia.Controls.Image>()).ToList();
+                var shot = Path.Combine(Path.GetTempPath(), "paratool-search-icons.png");
+                using (var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(500, 420), new Avalonia.Vector(96, 96)))
+                {
+                    rtb.Render(grid);
+                    rtb.Save(shot);
+                }
+                // A row that moves on to another entry, or leaves the list, lets its picture go.
+                rows[0].DataContext = null;
+                list.Children.Remove(rows[1]);
+                Console.WriteLine($"  released: moved on={images[0].Source == null} left the list={images[1].Source == null}");
+                Console.WriteLine($"  status search rows: {rows.Count}, with icon {images.Skip(2).Count(i => i.Source != null)}/{images.Count - 2} (after release) -> {shot}");
             }
 
             Console.WriteLine($"  binding errors: {sink.Errors.Count}");

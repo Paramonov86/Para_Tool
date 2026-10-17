@@ -22,6 +22,19 @@
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
+        <!-- The ⌨ by Save / Reset: lit while values are typed as text -->
+        <Style Selector="ToggleButton.typingSwitch /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource InputBgBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+        </Style>
+        <Style Selector="ToggleButton.typingSwitch:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBgBrush}" />
+        </Style>
+        <Style Selector="ToggleButton.typingSwitch:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        </Style>
     </UserControl.Styles>
 
     <UserControl.DataTemplates>
@@ -887,13 +900,6 @@
                 </ScrollViewer>
 
                 <DockPanel Grid.Row="1" IsVisible="{Binding ShowFieldEditor}">
-                <!-- Chip arguments typed as text instead of turned on drums (the ⌨ in every chip editor; remembered) -->
-                <CheckBox DockPanel.Dock="Top" Margin="12,4,8,0"
-                          IsChecked="{Binding TypedChipValues}"
-                          Content="{Binding LblTypedChipValues, Source={x:Static loc:Loc.Instance}}"
-                          ToolTip.Tip="{Binding TipTypingOn, Source={x:Static loc:Loc.Instance}}"
-                          FontSize="{DynamicResource FontSize11}"
-                          Foreground="{StaticResource TextSecondaryBrush}" />
                 <ScrollViewer Margin="8,4,8,8">
                     <StackPanel Name="EditorSections" Spacing="12" DataContext="{Binding SelectedArtifact}">
                         <!-- Rarity -->
@@ -1334,10 +1340,10 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- Save / Reset -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10"
-                            HorizontalAlignment="Center" Margin="0,8,0,12"
-                            IsVisible="{Binding IsArtifactSelected}">
+                <!-- Save / Reset, and in the corner the switch that types every value as text instead of drums -->
+                <Grid Grid.Row="2" ColumnDefinitions="*,Auto,*" IsVisible="{Binding IsArtifactSelected}">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"
+                            HorizontalAlignment="Center" Margin="0,8,0,12">
                     <Button Command="{Binding SaveArtifactCommand}"
                             Background="{DynamicResource SuccessBrush}" Foreground="White"
                             FontSize="{DynamicResource FontSize14}" FontWeight="Bold"
@@ -1366,6 +1372,14 @@
                         <TextBlock Text="{Binding BtnReset, Source={x:Static loc:Loc.Instance}}" />
                     </Button>
                 </StackPanel>
+                <ToggleButton Grid.Column="2" Classes="typingSwitch" IsChecked="{Binding TypedChipValues}"
+                              HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,4"
+                              Padding="8,4" CornerRadius="8" Cursor="Hand" BorderThickness="1"
+                              FontSize="{DynamicResource FontSize14}"
+                              ToolTip.Tip="{Binding LblTypedChipValues, Source={x:Static loc:Loc.Instance}}">
+                    <TextBlock Text="⌨" />
+                </ToggleButton>
+                </Grid>
             </Grid>
         </Border>
 
@@ -1385,7 +1399,7 @@
 
                 <!-- Language selector + code/preview toggle -->
                 <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="8,0,8,6">
-                    <ctrl:TumblerChipEditor Name="LocaLangSelector" HorizontalAlignment="Left" />
+                    <ctrl:TumblerChipEditor Name="LocaLangSelector" AllowTyping="False" HorizontalAlignment="Left" />
                     <Button Grid.Column="2" Name="ToggleCodeViewBtn"
                             FontSize="{DynamicResource FontSize14}"
                             Padding="8,4" CornerRadius="6" Cursor="Hand"

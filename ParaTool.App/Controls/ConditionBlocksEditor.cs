@@ -77,6 +77,7 @@ public class ConditionBlocksEditor : UserControl
         _scaleHandler = () => { if (!_updating && IsLoaded) Rebuild(); };
         Loc.Instance.PropertyChanged += _locHandler;
         FontScale.ScaleChanged += _scaleHandler;
+        TumblerChipEditor.TypingModeChanged += _scaleHandler;
         AddHandler(KeyDownEvent, (_, e) =>
         {
             if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
@@ -325,7 +326,9 @@ public class ConditionBlocksEditor : UserControl
         // Optional params (entity target/source) only shown if explicitly provided
         var paramCount = def?.Params.Length ?? 0;
         var argCount = token.Args.Length;
-        var count = argCount;
+        // Typing mode: one text box per argument instead of drums and pickers.
+        var typed = TumblerChipEditor.TypingMode && def != null;
+        var count = typed ? 0 : argCount;
 
         // Detect if leading optional entity param was omitted:
         // If first param is optional entity AND argCount < paramCount AND first arg doesn't look like entity
@@ -338,6 +341,8 @@ public class ConditionBlocksEditor : UserControl
             if (!firstArg.StartsWith("context.", StringComparison.OrdinalIgnoreCase))
                 paramOffset = 1; // skip entity param in definition
         }
+
+        if (typed) BuildTypedArgs(stack, token, tokens, def!, paramOffset);
 
         for (int pi = 0; pi < count; pi++)
         {
@@ -642,7 +647,7 @@ public class ConditionBlocksEditor : UserControl
         var hasEntityArg = token.Args.Any(a => a.TrimStart('\'', '"').StartsWith("context."));
         var offeredParam = def != null && argCount < paramCount ? def.Params[argCount] : null;
         var isEntityNext = offeredParam != null && ConditionSchema.IsEntityParam(offeredParam);
-        if (offeredParam != null
+        if (!typed && offeredParam != null
             && (isEntityNext ? !hasEntityArg : !hasEntityArg || offeredParam.Type is "bool" or "int" or "float"))
         {
             var nextParam = isEntityNext
@@ -812,8 +817,45 @@ public class ConditionBlocksEditor : UserControl
         };
         addBtn.Click += OnAddClick;
         _panel.Children.Add(addBtn);
-        if (!IsNested && _tokens.Count > 0)
-            _panel.Children.Add(TumblerChipEditor.CreateTypingToggle(InputBg));
+    }
+
+    /// <summary>
+    /// Typing mode: every argument the function takes as a text box, the empty optional ones too,
+    /// so a target, a resource or a status no picker lists can be written. A box shows the value
+    /// without quotes; what is typed is written the way BG3 reads it (<see cref="ConditionSchema.FormatArg"/>),
+    /// and the other arguments stay exactly as they were.
+    /// </summary>
+    private void BuildTypedArgs(WrapPanel stack, CondToken token, List<CondToken> tokens, ConditionDef def, int paramOffset)
+    {
+        var ps = def.Params;
+        var slots = Math.Max(ps.Length, token.Args.Length + paramOffset);
+        var raw = new string[slots];
+        for (int s = 0; s < slots; s++)
+        {
+            var ai = s - paramOffset;
+            raw[s] = ai >= 0 && ai < token.Args.Length ? token.Args[ai].Trim() : "";
+        }
+        // A leading optional entity (IsInMeleeRange([entity])) may stay out; any other gap before a
+        // filled argument would shift the ones after it.
+        var leadingEntity = ps.Length > 0 && ps[0].IsOptional && ConditionSchema.IsEntityParam(ps[0]);
+
+        for (int s = 0; s < slots; s++)
+        {
+            var slot = s;
+            var param = slot < ps.Length ? ps[slot] : null;
+            var name = param?.Name ?? $"#{slot + 1}";
+            stack.Children.Add(TumblerChipEditor.CreateTypedBox(raw[slot].Trim('\'', '"').Trim(), name, value =>
+            {
+                var next = (string[])raw.Clone();
+                next[slot] = value.Length == 0 ? "" : ConditionSchema.FormatArg(param, value);
+                var last = Array.FindLastIndex(next, v => v.Length > 0);
+                var first = leadingEntity && next[0].Length == 0 ? 1 : 0;
+                if (next.Skip(first).Take(last + 1 - first).Any(v => v.Length == 0)) return false;
+                token.Args = next.Skip(first).Take(last + 1 - first).ToArray();
+                SyncFromTokens(tokens);
+                return true;
+            }, name));
+        }
     }
 
     /// <summary>

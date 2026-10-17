@@ -58,21 +58,22 @@ public class TumblerChipEditor : UserControl
     private bool IsNoneValue => AllowNone && _currentValue < MinValue;
 
     /// <summary>
-    /// The value may be typed instead of turned (chip editors' arguments: a formula such as
-    /// max(1,IntelligenceModifier) is on no drum). Typed only while <see cref="TypingMode"/> is on.
+    /// The value is typed instead of turned while <see cref="TypingMode"/> is on (a formula such as
+    /// max(1,IntelligenceModifier), a mod's armour type — anything the drum does not list). Off only
+    /// for drums that pick a setting of the window, not a value of the item.
     /// </summary>
     public bool AllowTyping
     {
         get => _allowTyping;
         set { _allowTyping = value; ApplyTypingMode(); }
     }
-    private bool _allowTyping;
+    private bool _allowTyping = true;
 
     private static bool? _typingMode;
 
     /// <summary>
-    /// Chip arguments are typed as text instead of turned on drums — one switch for every chip
-    /// editor, remembered between sessions.
+    /// Values are typed as text instead of turned on drums — one switch for every drum and chip
+    /// editor (the ⌨ by Save / Reset), remembered between sessions.
     /// </summary>
     public static bool TypingMode
     {
@@ -176,37 +177,6 @@ public class TumblerChipEditor : UserControl
 
     // ── Typed value ─────────────────────────────────────────────
 
-    /// <summary>
-    /// The toolbar switch of a chip editor that turns every argument drum into a text box and back
-    /// (<see cref="TypingMode"/>); lit while typing is on.
-    /// </summary>
-    public static Button CreateTypingToggle(IBrush background)
-    {
-        var btn = new Button
-        {
-            Content = "⌨",
-            FontSize = FontScale.Of(13),
-            Padding = new Thickness(8, 2),
-            Margin = new Thickness(2),
-            CornerRadius = new CornerRadius(10),
-            Background = background,
-            BorderThickness = new Thickness(1),
-            Cursor = new Cursor(StandardCursorType.Hand),
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        void Paint()
-        {
-            btn.Foreground = TypingMode ? ThemeBrushes.Accent : ThemeBrushes.TextSecondary;
-            btn.BorderBrush = TypingMode ? ThemeBrushes.Accent : ThemeBrushes.BorderSubtle;
-            ToolTip.SetTip(btn, TypingMode ? Loc.Instance.TipTypingOff : Loc.Instance.TipTypingOn);
-        }
-        btn.Click += (_, _) => TypingMode = !TypingMode;
-        btn.AttachedToVisualTree += (_, _) => { TypingModeChanged -= Paint; TypingModeChanged += Paint; Paint(); };
-        btn.DetachedFromVisualTree += (_, _) => TypingModeChanged -= Paint;
-        Paint();
-        return btn;
-    }
-
     /// <summary>The value as it is written: no drum label, and "—" (none) as an empty box.</summary>
     private string TypedText()
     {
@@ -220,29 +190,16 @@ public class TumblerChipEditor : UserControl
         if (IsTyping)
         {
             if (_drumOpen) CloseDrum();
-            _typedBox = new TextBox
+            _typedBox = CreateTypedBox(TypedText(), "—", typed =>
             {
-                Text = TypedText(),
-                Watermark = "—",
-                FontSize = FontScale.Of(11),
-                MinWidth = Math.Max(_chip.MinWidth, 48), MaxWidth = 320, Height = ChipH,
-                Padding = new Thickness(8, 0),
-                CornerRadius = new CornerRadius(8),
-                Background = ThemeBrushes.InputBg,
-                Foreground = ThemeBrushes.TextPrimary,
-                BorderBrush = ThemeBrushes.BorderSubtle,
-                BorderThickness = new Thickness(1),
-                VerticalContentAlignment = VerticalAlignment.Center,
-                ZIndex = 10,
-            };
-            ToolTip.SetTip(_typedBox, Loc.Instance.TipTypedChipValue);
-            _typedBox.KeyDown += (_, e) =>
-            {
-                if (e.Key == Key.Enter) { CommitTyped(); e.Handled = true; }
-                else if (e.Key == Key.Escape) { _typedBox.Text = TypedText(); MarkTyped(true); e.Handled = true; }
-            };
-            _typedBox.LostFocus += (_, _) => CommitTyped();
-            _typedBox.TextChanged += (_, _) => MarkTyped(Core.Schema.BoostMapping.IsSingleArgument(_typedBox.Text ?? ""));
+                // Empty means none where the chip has one; the editors read "—" as that.
+                if (typed.Length == 0 && (AllowNone || Items?.Contains("—") == true)) typed = "—";
+                if (typed != (Text?.Trim() ?? "")) Text = typed;
+                return true;
+            });
+            _typedBox.MinWidth = Math.Max(_chip.MinWidth, 48);
+            _typedBox.Height = ChipH;
+            _typedBox.ZIndex = 10;
             _chip.IsVisible = false;
             _root.Children.Add(_typedBox);
         }
@@ -254,25 +211,49 @@ public class TumblerChipEditor : UserControl
         }
     }
 
-    private void MarkTyped(bool valid)
-    {
-        if (_typedBox != null)
-            _typedBox.BorderBrush = valid ? ThemeBrushes.BorderSubtle : ThemeBrushes.Error;
-    }
-
     /// <summary>
-    /// Writes the typed value. Text that would break the call apart (an open bracket, a comma
-    /// outside brackets) stays in the box, marked, and is not written.
+    /// A text box for one typed value. Enter or leaving the box hands the text to
+    /// <paramref name="write"/>; Esc puts the last written text back. Text that would break the call
+    /// apart (an open bracket, a comma outside brackets) or that <paramref name="write"/> refuses
+    /// stays in the box with a red frame and is not written.
     /// </summary>
-    private void CommitTyped()
+    public static TextBox CreateTypedBox(string text, string watermark, Func<string, bool> write, string? name = null)
     {
-        if (_typedBox == null) return;
-        var typed = (_typedBox.Text ?? "").Trim();
-        if (!Core.Schema.BoostMapping.IsSingleArgument(typed)) { MarkTyped(false); return; }
-        MarkTyped(true);
-        // Empty means none where the chip has one; the editors read "—" as that.
-        if (typed.Length == 0 && (AllowNone || Items?.Contains("—") == true)) typed = "—";
-        if (typed != (Text?.Trim() ?? "")) Text = typed;
+        var box = new TextBox
+        {
+            Text = text,
+            Watermark = watermark,
+            FontSize = FontScale.Of(11),
+            MinWidth = 48, MaxWidth = 320, Height = 28,
+            Padding = new Thickness(8, 0),
+            CornerRadius = new CornerRadius(8),
+            Background = ThemeBrushes.InputBg,
+            Foreground = ThemeBrushes.TextPrimary,
+            BorderBrush = ThemeBrushes.BorderSubtle,
+            BorderThickness = new Thickness(1),
+            VerticalAlignment = VerticalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(1),
+        };
+        ToolTip.SetTip(box, name != null ? $"{name}\n{Loc.Instance.TipTypedChipValue}" : Loc.Instance.TipTypedChipValue);
+        var written = text;
+        void Mark(bool valid) => box.BorderBrush = valid ? ThemeBrushes.BorderSubtle : ThemeBrushes.Error;
+        void Commit()
+        {
+            var typed = (box.Text ?? "").Trim();
+            if (typed == written) { Mark(true); return; }
+            if (!Core.Schema.BoostMapping.IsSingleArgument(typed) || !write(typed)) { Mark(false); return; }
+            written = typed;
+            Mark(true);
+        }
+        box.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter) { Commit(); e.Handled = true; }
+            else if (e.Key == Key.Escape) { box.Text = written; Mark(true); e.Handled = true; }
+        };
+        box.LostFocus += (_, _) => Commit();
+        box.TextChanged += (_, _) => Mark(Core.Schema.BoostMapping.IsSingleArgument(box.Text ?? ""));
+        return box;
     }
 
     private void OnFontScaleChanged()

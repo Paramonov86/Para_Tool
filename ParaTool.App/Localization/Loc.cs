@@ -469,8 +469,6 @@ public partial class Loc : ObservableObject
     public string ValInherited => this["ValInherited"];
     public string ValUseTyped => this["ValUseTyped"];
     public string SrcVanilla => this["SrcVanilla"];
-    public string TipTypingOn => this["TipTypingOn"];
-    public string TipTypingOff => this["TipTypingOff"];
     public string TipTypedChipValue => this["TipTypedChipValue"];
     public string CtxAddNot => this["CtxAddNot"];
     public string CtxRemoveNot => this["CtxRemoveNot"];

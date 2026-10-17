@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ParaTool.App.Themes;
 using ParaTool.App.Services;
 
@@ -201,8 +202,12 @@ public class SearchPickerChip : UserControl
         {
             var displayName = ResolveStatDisplayName(id, lang, resolver, locaSvc);
             var label = displayName != null ? $"{displayName}  ({id})" : id;
-            return (Id: id, Label: label);
+            return new PickEntry(id, label);
         }).ToArray();
+        // An icon column only where the list has icons (spells, statuses, passives — not creatures).
+        var iconResolver = resolver ?? BoostBlocksEditor.GlobalResolver;
+        string? IconOf(string id) => BoostBlocksEditor.ActiveCardIcon?.Invoke(id) ?? iconResolver?.Resolve(id, "Icon");
+        var showIcons = IconLibraryService.Current != null && entries.Any(e => IconOf(e.Id) != null);
 
         // List
         var listBox = new ListBox
@@ -210,18 +215,16 @@ public class SearchPickerChip : UserControl
             MaxHeight = 400,
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
-            ItemsSource = entries.Select(e => e.Label).ToArray(),
+            ItemsSource = entries,
+            ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<PickEntry>(
+                (_, _) => new PickRow(showIcons ? IconOf : null), supportsRecycling: true),
         };
 
-        // Style list items
         listBox.SelectionChanged += (_, _) =>
         {
-            if (listBox.SelectedIndex >= 0)
+            if (listBox.SelectedItem is PickEntry picked)
             {
-                // Find original entry from filtered list
-                var selectedLabel = listBox.SelectedItem as string;
-                var match = entries.FirstOrDefault(e => e.Label == selectedLabel);
-                Text = match.Id ?? selectedLabel;
+                Text = picked.Id;
                 ClosePicker();
             }
         };
@@ -241,12 +244,12 @@ public class SearchPickerChip : UserControl
                 pickerDebounce!.Tick -= FilterTick;
                 var query = searchBox.Text?.Trim() ?? "";
                 if (string.IsNullOrEmpty(query))
-                    listBox.ItemsSource = entries.Select(e => e.Label).ToArray();
+                    listBox.ItemsSource = entries;
                 else
                     listBox.ItemsSource = entries
                         .Where(e => e.Label.Contains(query, StringComparison.OrdinalIgnoreCase)
                                  || e.Id.Contains(query, StringComparison.OrdinalIgnoreCase))
-                        .Select(e => e.Label).ToArray();
+                        .ToArray();
             }
         };
 
@@ -300,6 +303,79 @@ public class SearchPickerChip : UserControl
             if (_overlay != null) _overlay.Opacity = 1;
             searchBox.Focus();
         });
+    }
+
+    internal sealed record PickEntry(string Id, string Label);
+
+    /// <summary>
+    /// A row of the picker list. The list is virtualized, so a row is reused while scrolling: its icon
+    /// is decoded a moment after it shows a new entry (not for every row flicked past) and let go as
+    /// soon as the row moves on or the list closes, so a long list never holds every picture.
+    /// </summary>
+    internal sealed class PickRow : DockPanel
+    {
+        private readonly Func<string, string?>? _iconOf;
+        private readonly Image? _icon;
+        private readonly TextBlock _label;
+        private readonly DispatcherTimer? _delay;
+        private Avalonia.Media.Imaging.WriteableBitmap? _bitmap;
+        private PickEntry? _shown;
+
+        public PickRow(Func<string, string?>? iconOf)
+        {
+            _iconOf = iconOf;
+            _label = new TextBlock { VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+            if (iconOf != null)
+            {
+                _icon = new Image { Width = 24, Height = 24, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+                SetDock(_icon, Dock.Left);
+                Children.Add(_icon);
+                _delay = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+                _delay.Tick += (_, _) => { _delay.Stop(); LoadIcon(); };
+            }
+            Children.Add(_label);
+            DetachedFromVisualTree += (_, _) => { _delay?.Stop(); Release(); };
+        }
+
+        protected override void OnDataContextChanged(EventArgs e)
+        {
+            base.OnDataContextChanged(e);
+            _shown = DataContext as PickEntry;
+            _label.Text = _shown?.Label;
+            if (_icon == null) return;
+            Release();
+            _delay!.Stop();
+            if (_shown != null) _delay.Start();
+        }
+
+        private void LoadIcon()
+        {
+            var entry = _shown;
+            if (entry == null || IconLibraryService.Current is not { } svc || _iconOf?.Invoke(entry.Id) is not { } name
+                || svc.Find(name) is not { } icon) return;
+            Task.Run(() => svc.Library.GetThumbnail(icon, out var w, out var h) is { } rgba ? (rgba, w, h) : default)
+                .ContinueWith(t =>
+                {
+                    if (!t.IsCompletedSuccessfully || t.Result.rgba == null) return;
+                    var (rgba, w, h) = t.Result;
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (!ReferenceEquals(_shown, entry) || !IsAttachedToVisualTree()) return;
+                        Release();
+                        _bitmap = IconBitmaps.FromRgba(rgba, w, h);
+                        _icon!.Source = _bitmap;
+                    });
+                });
+        }
+
+        private bool IsAttachedToVisualTree() => this.GetVisualRoot() != null;
+
+        private void Release()
+        {
+            if (_icon != null) _icon.Source = null;
+            _bitmap?.Dispose();
+            _bitmap = null;
+        }
     }
 
     private void ClosePicker()

@@ -110,6 +110,7 @@ public class BoostBlocksEditor : UserControl
         _scaleHandler = () => { if (!_updating && IsLoaded) Rebuild(); };
         Localization.Loc.Instance.PropertyChanged += _locHandler;
         FontScale.ScaleChanged += _scaleHandler;
+        TumblerChipEditor.TypingModeChanged += _scaleHandler;
         GlobalForceRebuild += OnGlobalForceRebuild;
         // Auto-populate Status/Spell lists from ConstructorViewModel when attached
         AttachedToVisualTree += (_, _) => { TryLoadPickerLists(); if (!_updating && !_rebuilding && !string.IsNullOrEmpty(Text)) Rebuild(); };
@@ -124,6 +125,8 @@ public class BoostBlocksEditor : UserControl
     public static Func<IEnumerable<string>>? ActiveArtifactStatuses { get; set; }
     /// <summary>The name a spell or status card of the item being edited shows under, if it has its own.</summary>
     public static Func<string, string?>? ActiveCardName { get; set; }
+    /// <summary>The icon a spell or status card of the item being edited sets, if it sets one.</summary>
+    public static Func<string, string?>? ActiveCardIcon { get; set; }
     public static string[]? GlobalPassiveList { get; set; }
     /// <summary>Active spell/status renames from current artifact.</summary>
     public static Dictionary<string, Dictionary<string, string>>? ActiveSpellRenames { get; set; }
@@ -229,9 +232,6 @@ public class BoostBlocksEditor : UserControl
                 _panel.Children.Add(sortBtn);
             }
         }
-
-        if (!IsNested && !string.IsNullOrEmpty(Text))
-            _panel.Children.Add(TumblerChipEditor.CreateTypingToggle(BgDefault));
 
         _updating = false;
         _rebuilding = false;
@@ -369,7 +369,10 @@ public class BoostBlocksEditor : UserControl
 
         // Target context tumbler — always shown for functors that support it, or if data already contains one
         var showTargetCtx = targetCtx != null || (IsFunctorMode && TargetContextFunctors.Contains(def.FuncName));
-        if (showTargetCtx)
+        // Typing mode: one text box per argument instead of drums and pickers.
+        var typed = TumblerChipEditor.TypingMode;
+        if (typed) BuildTypedParams(stack, rawBoost, def, args, showTargetCtx ? targetCtx ?? "" : null);
+        if (showTargetCtx && !typed)
         {
             var ctxItems = new[] { "—" }.Concat(TargetContextValues).ToArray();
             var ctxDisplayItems = new[] { "—" }.Concat(Localization.Loc.Instance.GetEnumDisplayLabels(TargetContextValues)).ToArray();
@@ -396,7 +399,7 @@ public class BoostBlocksEditor : UserControl
         // string with no sensible default) parses back as zero-arg. Without rendering
         // its params, the chip is unfillable. Force-render every slot in that case.
         var isFreshChip = args.Length == 0 && def.Params.Length > 0;
-        for (int i = 0; i < Math.Min(def.Params.Length, Math.Max(renderCount, def.Params.Length)); i++)
+        for (int i = 0; !typed && i < Math.Min(def.Params.Length, Math.Max(renderCount, def.Params.Length)); i++)
         {
             var param = def.Params[i];
             var isOptional = i >= args.Length;
@@ -1076,6 +1079,35 @@ public class BoostBlocksEditor : UserControl
         SyncText(string.Join(";", parts));
     }
 
+    /// <summary>
+    /// Typing mode: every argument as a text box, the empty optional ones too (ApplyStatus gets its
+    /// status, turns and StatsConditions, and the target when the functor takes one), each named as
+    /// the engine names it. Values are written as typed; the chance BG3 ignores and the positional
+    /// padding stay out of sight as on the drums.
+    /// </summary>
+    private void BuildTypedParams(WrapPanel stack, string rawBoost, BoostMapping.BlockDef def, string[] args, string? targetCtx)
+    {
+        if (targetCtx != null)
+            stack.Children.Add(TumblerChipEditor.CreateTypedBox(targetCtx, "target", value =>
+            {
+                if (value.Length > 0 && !TargetContextValues.Contains(value, StringComparer.OrdinalIgnoreCase)) return false;
+                UpdateTargetContext(rawBoost, value.Length == 0 ? "—" : value.ToUpperInvariant());
+                return true;
+            }, "target: " + string.Join(", ", TargetContextValues)));
+
+        for (int i = 0; i < def.Params.Length; i++)
+        {
+            var param = def.Params[i];
+            if (param.Type is "hidden" or "blank" || VisibilityRules.IsHidden(def, i, args)) continue;
+            var paramIdx = i;
+            stack.Children.Add(TumblerChipEditor.CreateTypedBox(i < args.Length ? args[i].Trim() : "", param.Name, value =>
+            {
+                UpdateParam(rawBoost, paramIdx, value);
+                return true;
+            }, param.Name));
+        }
+    }
+
     private void UpdateParam(string rawBoost, int paramIdx, string newValue)
     {
         if (_updating) return; // prevent re-entrant updates during Rebuild
@@ -1113,6 +1145,12 @@ public class BoostBlocksEditor : UserControl
         var trimmedArgs = args.AsEnumerable().ToList();
         while (trimmedArgs.Count > 0 && string.IsNullOrEmpty(trimmedArgs[^1]))
             trimmedArgs.RemoveAt(trimmedArgs.Count - 1);
+
+        // A chance left empty before a later argument (ApplyStatus(WET,,2)) gets the 100 a new chip has.
+        if (def != null)
+            for (int ai = offset; ai < trimmedArgs.Count - 1 && ai - offset < def.Params.Length; ai++)
+                if (def.Params[ai - offset].Type == "hidden" && string.IsNullOrEmpty(trimmedArgs[ai]))
+                    trimmedArgs[ai] = "100";
 
         var newBoost = ctxPrefix + (trimmedArgs.Count > 0 ? $"{funcName}({string.Join(",", trimmedArgs)})" : $"{funcName}()");
 

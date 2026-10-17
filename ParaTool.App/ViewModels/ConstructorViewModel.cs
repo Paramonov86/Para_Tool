@@ -175,8 +175,8 @@ public partial class ConstructorViewModel : ViewModelBase
     public IconPickerVM IconPicker { get; } = new();
 
     /// <summary>
-    /// Chip arguments are typed as text instead of turned on drums — the same switch as the ⌨ in every
-    /// chip editor, remembered between sessions.
+    /// Values are typed as text instead of turned on drums (the ⌨ by Save / Reset), remembered
+    /// between sessions.
     /// </summary>
     public bool TypedChipValues
     {
@@ -533,6 +533,7 @@ public partial class ConstructorViewModel : ViewModelBase
             Controls.BoostBlocksEditor.ActiveArtifactSpells = () => newValue.Artifact.Spells.Select(s => s.Name);
             Controls.BoostBlocksEditor.ActiveArtifactStatuses = () => newValue.Artifact.Statuses.Select(s => s.Name);
             Controls.BoostBlocksEditor.ActiveCardName = statId => CardName(newValue, statId);
+            Controls.BoostBlocksEditor.ActiveCardIcon = statId => CardIcon(newValue, statId);
             Controls.BoostBlocksEditor.ActiveEditingLang = EditingLang;
             // Load loca for current editing language (may differ from scan language)
             if (_resolver != null && _locaService != null)
@@ -1170,6 +1171,16 @@ public partial class ConstructorViewModel : ViewModelBase
             if (sp.Name.Equals(statId, StringComparison.OrdinalIgnoreCase) && sp.DisplayNameEdited)
                 return Pick(sp.DisplayName, lang);
         return null;
+    }
+
+    /// <summary>The icon a card of the item shows: its own, else the one of the entry it copies.</summary>
+    private string? CardIcon(ArtifactItemVM item, string statId)
+    {
+        var status = item.Artifact.Statuses.FirstOrDefault(st => st.Name.Equals(statId, StringComparison.OrdinalIgnoreCase));
+        var spell = status == null ? item.Artifact.Spells.FirstOrDefault(sp => sp.Name.Equals(statId, StringComparison.OrdinalIgnoreCase)) : null;
+        var (icon, usingBase) = status != null ? (status.Icon, status.UsingBase) : spell != null ? (spell.Icon, spell.UsingBase) : (null, null);
+        if (!string.IsNullOrWhiteSpace(icon)) return icon;
+        return usingBase != null ? _resolver?.Resolve(usingBase, "Icon") : null;
     }
 
     /// <summary>Opens the icon library for a spell card: spells need icons with a tooltip picture.</summary>
