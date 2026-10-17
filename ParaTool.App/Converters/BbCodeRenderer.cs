@@ -173,7 +173,8 @@ public static partial class BbCodeRenderer
                 var boldMatch = BoldRegex().Match(text, pos);
                 if (boldMatch.Success && boldMatch.Index == pos)
                 {
-                    inlines.Add(new Run(boldMatch.Groups[1].Value) { FontWeight = FontWeight.Bold, Foreground = DefaultText });
+                    AddStyled(inlines, boldMatch.Groups[1].Value, new Span { FontWeight = FontWeight.Bold },
+                        new Run(boldMatch.Groups[1].Value) { FontWeight = FontWeight.Bold, Foreground = DefaultText });
                     pos = boldMatch.Index + boldMatch.Length;
                     continue;
                 }
@@ -182,7 +183,8 @@ public static partial class BbCodeRenderer
                 var italicMatch = ItalicRegex().Match(text, pos);
                 if (italicMatch.Success && italicMatch.Index == pos)
                 {
-                    inlines.Add(new Run(italicMatch.Groups[1].Value) { FontStyle = FontStyle.Italic, Foreground = DefaultText });
+                    AddStyled(inlines, italicMatch.Groups[1].Value, new Span { FontStyle = FontStyle.Italic },
+                        new Run(italicMatch.Groups[1].Value) { FontStyle = FontStyle.Italic, Foreground = DefaultText });
                     pos = italicMatch.Index + italicMatch.Length;
                     continue;
                 }
@@ -304,6 +306,21 @@ public static partial class BbCodeRenderer
                 inlines.Add(new Run(segment) { Foreground = DefaultText });
             pos = nextBracket;
         }
+    }
+
+    /// <summary>
+    /// Bold or italic text. Content with tags of its own (the game's &lt;b&gt;&lt;LSTag …&gt;…&lt;/LSTag&gt;&lt;/b&gt;,
+    /// &lt;i&gt;(… &lt;b&gt;undead&lt;/b&gt;)&lt;/i&gt;) is rendered inside the styled span, not shown as raw tags.
+    /// </summary>
+    private static void AddStyled(InlineCollection inlines, string content, Span span, Run plain)
+    {
+        if (!content.Contains('['))
+        {
+            inlines.Add(plain);
+            return;
+        }
+        ParseBbCodeInto(span.Inlines, content);
+        inlines.Add(span);
     }
 
     private static void AddColoredRun(InlineCollection inlines, string text, IBrush color, bool underline)

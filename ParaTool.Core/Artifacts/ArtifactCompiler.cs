@@ -428,11 +428,24 @@ public static class ArtifactCompiler
             if (hasUsing)
                 stats.AppendLine($"using \"{passive.UsingBase}\"");
 
+            // Text the card left alone stays the source's: its handle is translated into every
+            // language the game or the mod ships and keeps its markup exactly as written, where a
+            // copy carries only the card's languages. Edited text goes out under the card's own
+            // handles, never under the source's.
+            var keepName = !passive.DisplayNameEdited && !string.IsNullOrEmpty(passive.SourceDisplayNameHandle);
+            var keepDesc = !passive.DescriptionEdited && !string.IsNullOrEmpty(passive.SourceDescriptionHandle);
+            if (!keepName && SameHandle(passive.DisplayNameHandle, passive.SourceDisplayNameHandle))
+                passive.DisplayNameHandle = HandleGenerator.New();
+            if (!keepDesc && SameHandle(passive.DescriptionHandle, passive.SourceDescriptionHandle))
+                passive.DescriptionHandle = HandleGenerator.New();
+            var nameHandle = keepName ? passive.SourceDisplayNameHandle! : passive.DisplayNameHandle;
+            var descHandle = keepDesc ? passive.SourceDescriptionHandle! : passive.DescriptionHandle;
+
             // DisplayName/Description: only if handles exist
-            if (!string.IsNullOrEmpty(passive.DisplayNameHandle))
-                stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(passive.DisplayNameHandle)}\"");
-            if (!string.IsNullOrEmpty(passive.DescriptionHandle))
-                stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(passive.DescriptionHandle)}\"");
+            if (!string.IsNullOrEmpty(nameHandle))
+                stats.AppendLine($"data \"DisplayName\" \"{HandleGenerator.FormatWithVersion(nameHandle)}\"");
+            if (!string.IsNullOrEmpty(descHandle))
+                stats.AppendLine($"data \"Description\" \"{HandleGenerator.FormatWithVersion(descHandle)}\"");
 
             // When using a base, always write ALL fields explicitly (even empty)
             // to override inherited values. Without this, cleared fields inherit from parent.
@@ -470,8 +483,8 @@ public static class ArtifactCompiler
 
             stats.AppendLine();
 
-            AddLocaEntries(loca, passive.DisplayName, passive.DisplayNameHandle);
-            AddLocaEntries(loca, passive.Description, passive.DescriptionHandle);
+            if (!keepName) AddLocaEntries(loca, passive.DisplayName, passive.DisplayNameHandle);
+            if (!keepDesc) AddLocaEntries(loca, passive.Description, passive.DescriptionHandle);
         }
 
         // ─── Status Definitions ─────────────────────────

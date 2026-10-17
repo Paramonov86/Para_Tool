@@ -923,18 +923,21 @@ public partial class ConstructorViewModel : ViewModelBase
                     // Resolve display name: mod loca → vanilla loca (by name, then using chain)
                     if (pFields.TryGetValue("DisplayName", out var dn))
                     {
+                        // Until the text is edited the card shows the passive's own, in every language.
+                        passive.SourceDisplayNameHandle = HandleGenerator.Parse(dn).handle;
                         var t = ResolveLoca(dn, EditingLang);
-                        if (t != null) passive.DisplayName[EditingLang] = BbCode.FromBg3Xml(t);
-                        if (EditingLang != scanLang) { var st = ResolveLoca(dn, scanLang); if (st != null) passive.DisplayName[scanLang] = BbCode.FromBg3Xml(st); }
-                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dn, "en"); if (en != null) passive.DisplayName["en"] = BbCode.FromBg3Xml(en); }
+                        if (t != null) passive.DisplayName[EditingLang] = t;
+                        if (EditingLang != scanLang) { var st = ResolveLoca(dn, scanLang); if (st != null) passive.DisplayName[scanLang] = st; }
+                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dn, "en"); if (en != null) passive.DisplayName["en"] = en; }
                     }
                     // Resolve description
                     if (pFields.TryGetValue("Description", out var dd))
                     {
+                        passive.SourceDescriptionHandle = HandleGenerator.Parse(dd).handle;
                         var t = ResolveLoca(dd, EditingLang);
-                        if (t != null) passive.Description[EditingLang] = BbCode.FromBg3Xml(t);
-                        if (EditingLang != scanLang) { var st = ResolveLoca(dd, scanLang); if (st != null) passive.Description[scanLang] = BbCode.FromBg3Xml(st); }
-                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dd, "en"); if (en != null) passive.Description["en"] = BbCode.FromBg3Xml(en); }
+                        if (t != null) passive.Description[EditingLang] = t;
+                        if (EditingLang != scanLang) { var st = ResolveLoca(dd, scanLang); if (st != null) passive.Description[scanLang] = st; }
+                        if (EditingLang != "en" && scanLang != "en") { var en = ResolveLoca(dd, "en"); if (en != null) passive.Description["en"] = en; }
                     }
                     // Fallback: vanilla description
                     if (string.IsNullOrEmpty(passive.Description.GetValueOrDefault(EditingLang)))

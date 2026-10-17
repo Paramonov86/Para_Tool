@@ -441,6 +441,8 @@ public partial class ArtifactItemVM : ObservableObject
             if (fields.TryGetValue("DisplayName", out var dnHandleRaw))
             {
                 var dnHandle = Core.Localization.HandleGenerator.Parse(dnHandleRaw).handle;
+                // Until the text is edited the copy shows the source's, in every language.
+                passive.SourceDisplayNameHandle = dnHandle;
                 if (locaService != null)
                 {
                     var resolved = locaService.ResolveHandle(dnHandle, lang);
@@ -459,6 +461,7 @@ public partial class ArtifactItemVM : ObservableObject
             if (fields.TryGetValue("Description", out var descHandleRaw))
             {
                 var descHandle = Core.Localization.HandleGenerator.Parse(descHandleRaw).handle;
+                passive.SourceDescriptionHandle = descHandle;
                 if (locaService != null)
                 {
                     var resolved = locaService.ResolveHandle(descHandle, lang);
@@ -1282,7 +1285,9 @@ public partial class PassiveVM : ObservableObject
         get => GetLang(Passive.DisplayName);
         set
         {
+            if (GetLang(Passive.DisplayName) == (value ?? "")) return;
             SetLang(Passive.DisplayName, value);
+            Passive.DisplayNameEdited = true;
             _parent.RecordEdit();
             // Auto-generate StatId from human name if creating new
             if (string.IsNullOrEmpty(Passive.Name) || Passive.Name.StartsWith("Passive_New"))
@@ -1305,7 +1310,15 @@ public partial class PassiveVM : ObservableObject
     public string EditDescription
     {
         get => GetLang(Passive.Description);
-        set { SetLang(Passive.Description, value); _parent.RecordEdit(); OnPropertyChanged(nameof(HasVisibleLoca)); OnPropertyChanged(); }
+        set
+        {
+            if (GetLang(Passive.Description) == (value ?? "")) return;
+            SetLang(Passive.Description, value);
+            Passive.DescriptionEdited = true;
+            _parent.RecordEdit();
+            OnPropertyChanged(nameof(HasVisibleLoca));
+            OnPropertyChanged();
+        }
     }
 
     public string EditDescriptionParams

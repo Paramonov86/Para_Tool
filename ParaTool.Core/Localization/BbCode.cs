@@ -17,6 +17,8 @@ namespace ParaTool.Core.Localization;
 ///   [resource=KiPoint]Ki Point[/resource]       → &lt;LSTag Type="ActionResource" Tooltip="KiPoint"&gt;Ki Point&lt;/LSTag&gt;
 ///   [p1], [p2], [p3]                           → [1], [2], [3] (DescriptionParams)
 ///   [dp1], [dp2]                               → &lt;b&gt;[1]&lt;/b&gt;, &lt;b&gt;[2]&lt;/b&gt; (bold param for damage)
+///   [img=SoftWarning]                          → &lt;LSTag Type="Image" Info="SoftWarning"/&gt;
+/// Tags nest: [b][status=WET]wet[/status][/b] → &lt;b&gt;&lt;LSTag …&gt;wet&lt;/LSTag&gt;&lt;/b&gt;.
 /// </summary>
 public static partial class BbCode
 {
@@ -64,11 +66,19 @@ public static partial class BbCode
     /// </summary>
     public static string FromBg3Xml(string bg3xml)
     {
-        // First unescape XML entities
-        var text = bg3xml
-            .Replace("&lt;", "<")
-            .Replace("&gt;", ">")
-            .Replace("&amp;", "&");
+        // First unescape XML entities, in one pass so "&amp;lt;" stays a literal "&lt;". All of
+        // them: an entity left escaped (&apos; in AMP's texts) is escaped again on the way back
+        // and the game shows "&apos;".
+        var text = EntityRegex().Replace(bg3xml, m => m.Groups[1].Value switch
+        {
+            "lt" => "<",
+            "gt" => ">",
+            "amp" => "&",
+            "apos" => "'",
+            "quot" => "\"",
+            var num when num[1] is 'x' or 'X' => DecodeCodePoint(num[2..], 16, m.Value),
+            var num => DecodeCodePoint(num[1..], 10, m.Value),
+        });
 
         // Bold params must run BEFORE the generic bold regex — otherwise
         // <b>[1]</b> is rewritten to [b][1][/b] first and the param tag is lost.
@@ -179,6 +189,11 @@ public static partial class BbCode
         if (pMatch.Success && pMatch.Index == start)
             return ($"[{pMatch.Groups[1].Value}]", start + pMatch.Length);
 
+        // Inline icon: [img=SoftWarning] → <LSTag Type="Image" Info="SoftWarning"/>
+        var imgMatch = ImgTagRegex().Match(text, start);
+        if (imgMatch.Success && imgMatch.Index == start)
+            return ($"&lt;LSTag Type=\"Image\" Info=\"{imgMatch.Groups[1].Value}\"/&gt;", start + imgMatch.Length);
+
         // Paired tags
         if (TryMatchPaired(text, start, "i", null, null, out var iXml, out var iEnd))
             return (iXml, iEnd);
@@ -223,11 +238,14 @@ public static partial class BbCode
         if (!text.AsSpan(start).StartsWith(open)) return false;
 
         int contentStart = start + open.Length;
-        int closeIdx = text.IndexOf(close, contentStart, StringComparison.Ordinal);
+        int closeIdx = FindClose(text, contentStart, open, close);
         if (closeIdx < 0) return false;
 
+        // The content is BB-code too: the game nests markup (<b><LSTag …>…</LSTag></b>,
+        // <i>(… <b>undead</b>)</i>), and escaping it verbatim put the inner tags into the
+        // game's text as "[status=…]" or "[b]".
         var content = text[contentStart..closeIdx];
-        xml = $"&lt;{xmlOpen ?? tag}&gt;{EscapeXml(content)}&lt;/{xmlClose ?? tag}&gt;";
+        xml = $"&lt;{xmlOpen ?? tag}&gt;{ToBg3Xml(content)}&lt;/{xmlClose ?? tag}&gt;";
         end = closeIdx + close.Length;
         return true;
     }
@@ -250,34 +268,60 @@ public static partial class BbCode
         int contentStart = valEnd + 1;
 
         var close = $"[/{bbTag}]";
-        int closeIdx = text.IndexOf(close, contentStart, StringComparison.Ordinal);
+        int closeIdx = FindClose(text, contentStart, pattern, close);
         if (closeIdx < 0) return false;
 
-        var content = text[contentStart..closeIdx];
+        var content = ToBg3Xml(text[contentStart..closeIdx]);
 
         if (lsType != null)
-            xml = $"&lt;LSTag Type=\"{lsType}\" Tooltip=\"{tooltip}\"&gt;{EscapeXml(content)}&lt;/LSTag&gt;";
+            xml = $"&lt;LSTag Type=\"{lsType}\" Tooltip=\"{tooltip}\"&gt;{content}&lt;/LSTag&gt;";
         else if (tooltip.Contains(':'))
         {
             // Round-trip encoded type: [tip=Skills:Perception] → <LSTag Type="Skills" Tooltip="Perception">
             var colonIdx = tooltip.IndexOf(':');
             var encodedType = tooltip[..colonIdx];
             var encodedTooltip = tooltip[(colonIdx + 1)..];
-            xml = $"&lt;LSTag Type=\"{encodedType}\" Tooltip=\"{encodedTooltip}\"&gt;{EscapeXml(content)}&lt;/LSTag&gt;";
+            xml = $"&lt;LSTag Type=\"{encodedType}\" Tooltip=\"{encodedTooltip}\"&gt;{content}&lt;/LSTag&gt;";
         }
         else
-            xml = $"&lt;LSTag Tooltip=\"{tooltip}\"&gt;{EscapeXml(content)}&lt;/LSTag&gt;";
+            xml = $"&lt;LSTag Tooltip=\"{tooltip}\"&gt;{content}&lt;/LSTag&gt;";
 
         end = closeIdx + close.Length;
         return true;
     }
 
-    private static string EscapeXml(string text)
+    private static string DecodeCodePoint(string digits, int radix, string original)
     {
-        return text
-            .Replace("&", "&amp;")
-            .Replace("<", "&lt;")
-            .Replace(">", "&gt;");
+        try
+        {
+            var cp = Convert.ToInt32(digits, radix);
+            return cp is > 0 and <= 0x10FFFF and not (>= 0xD800 and <= 0xDFFF) ? char.ConvertFromUtf32(cp) : original;
+        }
+        catch (Exception e) when (e is FormatException or OverflowException)
+        {
+            return original;
+        }
+    }
+
+    /// <summary>
+    /// Index of the close tag that ends a tag whose content starts at <paramref name="from"/>,
+    /// past any pair of the same tag nested inside; -1 when it is never closed.
+    /// </summary>
+    private static int FindClose(string text, int from, string openPrefix, string close)
+    {
+        int depth = 0;
+        for (int i = from; i < text.Length; i++)
+        {
+            if (text[i] != '[') continue;
+            if (string.CompareOrdinal(text, i, close, 0, close.Length) == 0)
+            {
+                if (depth == 0) return i;
+                depth--;
+            }
+            else if (string.CompareOrdinal(text, i, openPrefix, 0, openPrefix.Length) == 0)
+                depth++;
+        }
+        return -1;
     }
 
     [GeneratedRegex(@"\[dp(\d+)\]")]
@@ -285,6 +329,12 @@ public static partial class BbCode
 
     [GeneratedRegex(@"\[p(\d+)\]")]
     private static partial Regex PTagRegex();
+
+    [GeneratedRegex(@"&(lt|gt|amp|apos|quot|#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6});")]
+    private static partial Regex EntityRegex();
+
+    [GeneratedRegex(@"\[img=([^\]\[]*)\]")]
+    private static partial Regex ImgTagRegex();
 
     [GeneratedRegex(@"<b>(.*?)</b>", RegexOptions.Singleline)]
     private static partial Regex BoldRegex();

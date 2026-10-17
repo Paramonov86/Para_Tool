@@ -297,6 +297,18 @@ public sealed class PassiveDefinition
     public string DescriptionHandle { get; set; } = "";
     public string DescriptionParams { get; set; } = "";
 
+    /// <summary>Loca handles of the passive the card was copied from (null on a passive made from scratch).</summary>
+    public string? SourceDisplayNameHandle { get; set; }
+    public string? SourceDescriptionHandle { get; set; }
+
+    /// <summary>
+    /// The user changed the text. Until then a copy keeps the source's handles, so every language
+    /// the game or the mod ships stays translated and its markup stays exactly as written; edited
+    /// text goes out under the card's own handles, in the languages the card has.
+    /// </summary>
+    public bool DisplayNameEdited { get; set; }
+    public bool DescriptionEdited { get; set; }
+
     /// <summary>Icon name (from atlas or custom).</summary>
     public string? Icon { get; set; }
 
