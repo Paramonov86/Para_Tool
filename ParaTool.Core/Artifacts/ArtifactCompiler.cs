@@ -44,8 +44,11 @@ public static class ArtifactCompiler
 
     private static readonly string[] PlaceholderTokens = ["YOURSTATUS", "YourSpell"];
 
+    // The whole name, in any case: a status copy is named TEST_Ring_Status_1, and stopping at the
+    // first lowercase letter checked "TEST_R" instead and warned it does not exist. A whole
+    // argument only — not a call or a dotted name (GetItemInEquipmentSlot(…), Target.X).
     private static readonly System.Text.RegularExpressions.Regex StatusRefRegex =
-        new(@"\b(ApplyStatus|StatusImmunity|RemoveStatus|RemoveUniqueStatus)\s*\(\s*(?:(?:SELF|SWAP|OBSERVER_TARGET|OBSERVER_SOURCE|OWNER|TARGET)\s*,\s*)?([A-Z][A-Z0-9_]+)",
+        new(@"\b(ApplyStatus|StatusImmunity|RemoveStatus|RemoveUniqueStatus)\s*\(\s*(?:(?:SELF|SWAP|OBSERVER_TARGET|OBSERVER_SOURCE|OWNER|TARGET)\s*,\s*)?([A-Za-z][A-Za-z0-9_]*)(?=\s*[,)])",
         System.Text.RegularExpressions.RegexOptions.Compiled);
 
     private static readonly System.Text.RegularExpressions.Regex AutoPassiveRegex =

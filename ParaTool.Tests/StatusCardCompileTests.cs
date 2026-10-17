@@ -66,6 +66,46 @@ public class StatusCardCompileTests
     }
 
     [Fact]
+    public void Copy_AppliedByTheItem_IsNotReportedMissing()
+    {
+        // The copy's name has lowercase letters (TEST_Ring_Status_1); the reference check stopped at
+        // the first one and reported "TEST_R" missing on every patch of an item applying its copy.
+        var art = NewRing();
+        art.Statuses.Add(StatusCloner.CloneFrom("BLESS", Vanilla.Value));
+        art.Passives.Add(new PassiveDefinition
+        {
+            Name = "TEST_Ring_Passive_1",
+            StatsFunctorContext = "OnCast",
+            StatsFunctors = "ApplyStatus(SELF,BLESS,100,1)",
+        });
+
+        // Twice on the same object, as the patcher does.
+        var first = ArtifactCompiler.Compile(art, resolver: Vanilla.Value);
+        var second = ArtifactCompiler.Compile(art, resolver: Vanilla.Value);
+
+        Assert.Equal("ApplyStatus(SELF,TEST_Ring_Status_1,100,1)",
+            EntryOf(second.StatsText, "TEST_Ring_Passive_1").Data["StatsFunctors"]);
+        Assert.DoesNotContain(first.Warnings.Concat(second.Warnings), w => w.Contains("references status"));
+    }
+
+    [Fact]
+    public void MissingStatus_IsReportedByItsWholeName()
+    {
+        var art = NewRing();
+        art.Passives.Add(new PassiveDefinition
+        {
+            Name = "TEST_Ring_Passive_1",
+            StatsFunctorContext = "OnCast",
+            StatsFunctors = "ApplyStatus(SELF,TEST_No_Such_Status,100,1);ApplyStatus(GetItemInEquipmentSlot(EquipmentSlot.Ring),BLESS,100,1)",
+        });
+
+        var warnings = ArtifactCompiler.Compile(art, resolver: Vanilla.Value).Warnings
+            .Where(w => w.Contains("references status")).ToList();
+
+        Assert.Equal("'TEST_No_Such_Status'", Assert.Single(warnings).Split(' ').Single(s => s.StartsWith('\'')));
+    }
+
+    [Fact]
     public void Copy_KeepsTheOriginalText_UntilItIsEdited()
     {
         var art = NewRing();
