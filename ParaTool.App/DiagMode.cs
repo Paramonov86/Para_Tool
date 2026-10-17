@@ -727,7 +727,7 @@ internal static class DiagMode
             {
                 const string boosts = "IF(IsCantrip() and (SpellDamageTypeIs(DamageType.Force))):DamageBonus(max(1,IntelligenceModifier));"
                                       + "DamageBonus(5);RollBonus(Attack,3);WeaponDamage(1d4,Fire)";
-                const string functors = "ApplyStatus(SELF,WET,100,2);ApplyStatus(PRONE);DealDamage(2d6+UnarmedMeleeAbilityModifier,Cold);RegainHitPoints((DamageDone)/2)";
+                const string functors = "ApplyStatus(SELF,WET,100,2);ApplyStatus(PRONE);DealDamage(2d6+UnarmedMeleeAbilityModifier,Cold);DealDamage(1d8,Fire,Magical,,,,,,,true);RegainHitPoints((DamageDone)/2)";
                 const string conditions = "IsCantrip() and SpellDamageTypeIs(DamageType.Force) and not Combat() and Tagged('SHIELD') and HasStatus('BURNING',context.Target)";
                 foreach (var lang in new[] { "en", "ru", "de", "ja" })
                 foreach (var typing in new[] { false, true })
@@ -788,6 +788,8 @@ internal static class DiagMode
                         Type(b => b.Where(t => t.Watermark == "StatsConditions").First(), "Enemy()");
                         var refused = Type(b => b.First(t => t.Watermark == "ignoreDeletingStatuses"), "true");
                         Type(b => b.First(t => t.Text == "BURNING"), "WET");
+                        Type(b => b.First(t => t.Watermark == "Nonlethal"), "Nonlethal");
+                        Type(b => b.First(t => t.Text == "1d8"), "2d8");
                         Console.WriteLine($"  typed functors: {functorEd.Text}");
                         Console.WriteLine($"  typed conditions: {condEd.Text}");
                         Console.WriteLine($"  gap before ignoreDeletingStatuses refused: {refused}");
@@ -796,6 +798,13 @@ internal static class DiagMode
                     // The formula drum turned open on the first DamageBonus amount.
                     if (!typing)
                     {
+                        if (lang == "en")
+                        {
+                            // A drum edit keeps the arguments no drum is drawn for.
+                            var amount = tumblers.First(t => t.Text == "1d8");
+                            amount.Text = "3d8";
+                            Console.WriteLine($"  drum edit keeps extra args: {functorEd.Text}");
+                        }
                         var formula = tumblers.FirstOrDefault(t => t.Items?.Length > 100);
                         if (formula != null)
                         {

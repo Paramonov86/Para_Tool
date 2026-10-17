@@ -370,9 +370,9 @@ public class BoostBlocksEditor : UserControl
         // Target context tumbler — always shown for functors that support it, or if data already contains one
         var showTargetCtx = targetCtx != null || (IsFunctorMode && TargetContextFunctors.Contains(def.FuncName));
         // Typing mode: one text box per argument instead of drums and pickers.
-        var typed = TumblerChipEditor.TypingMode;
-        if (typed) BuildTypedParams(stack, rawBoost, def, args, showTargetCtx ? targetCtx ?? "" : null);
-        if (showTargetCtx && !typed)
+        var typing = TumblerChipEditor.TypingMode;
+        if (typing) BuildTypedParams(stack, rawBoost, def, args, showTargetCtx ? targetCtx ?? "" : null);
+        if (showTargetCtx && !typing)
         {
             var ctxItems = new[] { "—" }.Concat(TargetContextValues).ToArray();
             var ctxDisplayItems = new[] { "—" }.Concat(Localization.Loc.Instance.GetEnumDisplayLabels(TargetContextValues)).ToArray();
@@ -399,7 +399,7 @@ public class BoostBlocksEditor : UserControl
         // string with no sensible default) parses back as zero-arg. Without rendering
         // its params, the chip is unfillable. Force-render every slot in that case.
         var isFreshChip = args.Length == 0 && def.Params.Length > 0;
-        for (int i = 0; !typed && i < Math.Min(def.Params.Length, Math.Max(renderCount, def.Params.Length)); i++)
+        for (int i = 0; !typing && i < Math.Min(def.Params.Length, Math.Max(renderCount, def.Params.Length)); i++)
         {
             var param = def.Params[i];
             var isOptional = i >= args.Length;
@@ -797,6 +797,16 @@ public class BoostBlocksEditor : UserControl
             }
         }
 
+        // Arguments the block draws no drum for (DealDamage(…,Magical,Nonlethal)) stay in the call:
+        // shown as text so they are not invisible, and editable.
+        if (!typing && args.Length > def.Params.Length)
+        {
+            var engine = EngineSignatures.Args(def.FuncName, IsFunctorMode);
+            var last = Array.FindLastIndex(args, a => !string.IsNullOrWhiteSpace(a));
+            for (int i = def.Params.Length; i <= last; i++)
+                stack.Children.Add(ArgBox(rawBoost, i, args[i].Trim(), ArgName(def, engine, i)));
+        }
+
         // Remove button
         var removeBtn = new Button
         {
@@ -1080,10 +1090,11 @@ public class BoostBlocksEditor : UserControl
     }
 
     /// <summary>
-    /// Typing mode: every argument as a text box, the empty optional ones too (ApplyStatus gets its
-    /// status, turns and StatsConditions, and the target when the functor takes one), each named as
-    /// the engine names it. Values are written as typed; the chance BG3 ignores and the positional
-    /// padding stay out of sight as on the drums.
+    /// Typing mode: every argument the game takes as a text box, the empty optional ones too
+    /// (ApplyStatus gets its status, turns and StatsConditions, DealDamage its Magical, Nonlethal,
+    /// IgnoreImmune…, and the target when the functor takes one), each named as the engine names it
+    /// (<see cref="EngineSignatures"/>). Values are written as typed; only the chance BG3 ignores
+    /// stays out of sight.
     /// </summary>
     private void BuildTypedParams(WrapPanel stack, string rawBoost, BoostMapping.BlockDef def, string[] args, string? targetCtx)
     {
@@ -1095,18 +1106,28 @@ public class BoostBlocksEditor : UserControl
                 return true;
             }, "target: " + string.Join(", ", TargetContextValues)));
 
-        for (int i = 0; i < def.Params.Length; i++)
+        var engine = EngineSignatures.Args(def.FuncName, IsFunctorMode);
+        var slots = Math.Max(Math.Max(def.Params.Length, engine.Length), args.Length);
+        for (int i = 0; i < slots; i++)
         {
-            var param = def.Params[i];
-            if (param.Type is "hidden" or "blank" || VisibilityRules.IsHidden(def, i, args)) continue;
-            var paramIdx = i;
-            stack.Children.Add(TumblerChipEditor.CreateTypedBox(i < args.Length ? args[i].Trim() : "", param.Name, value =>
-            {
-                UpdateParam(rawBoost, paramIdx, value);
-                return true;
-            }, param.Name));
+            var param = i < def.Params.Length ? def.Params[i] : null;
+            if (param != null && (param.Type == "hidden" || VisibilityRules.IsHidden(def, i, args))) continue;
+            stack.Children.Add(ArgBox(rawBoost, i, i < args.Length ? args[i].Trim() : "", ArgName(def, engine, i)));
         }
     }
+
+    /// <summary>The engine's name for an argument, ParaTool's where the game file has none.</summary>
+    private static string ArgName(BoostMapping.BlockDef def, string[] engine, int i) =>
+        i < engine.Length && engine[i].Length > 0 ? engine[i]
+        : i < def.Params.Length ? def.Params[i].Name
+        : $"#{i + 1}";
+
+    private TextBox ArgBox(string rawBoost, int paramIdx, string value, string name) =>
+        TumblerChipEditor.CreateTypedBox(value, name, typed =>
+        {
+            UpdateParam(rawBoost, paramIdx, typed);
+            return true;
+        }, name);
 
     private void UpdateParam(string rawBoost, int paramIdx, string newValue)
     {
