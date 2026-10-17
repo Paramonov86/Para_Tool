@@ -500,7 +500,7 @@ public static class EnumLabels
 
         // ── SpellFlags (from ConditionSchema) ─────────────────────
         ["Spell"]                = ("Spell",        "Заклинание"),
-        ["Cantrip"]              = ("Cantrip",      "Заговор"),
+        ["Cantrip"]              = ("Cantrip",      "Фокус"),
         // Melee already covered
         ["Ranged"]               = ("Ranged",       "Дальнобойн."),
         ["HasHighGroundRangeExtension"] = ("Hi Ground", "Высота +дист."),

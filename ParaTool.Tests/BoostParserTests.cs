@@ -30,6 +30,31 @@ public class BoostParserTests
     }
 
     [Fact]
+    public void FormulaValues_OfferEveryVariable_OnTop_AndDiceSlotsNone()
+    {
+        // The modifiers used to sit two hundred rows down the drum, past 10d20.
+        Assert.Equal(BoostMapping.FormulaVariables, BoostMapping.FormulaValues.Take(BoostMapping.FormulaVariables.Length));
+        Assert.Contains("max(1,IntelligenceModifier)", BoostMapping.FormulaValues);
+        Assert.DoesNotContain("IntelligenceModifier", BoostMapping.NumberAndDiceValues);
+        Assert.Contains("10d20", BoostMapping.NumberAndDiceValues);
+        Assert.All(BoostMapping.FormulaVariables, v => Assert.True(BoostMapping.IsSingleArgument(v), v));
+    }
+
+    [Theory]
+    [InlineData("max(1,IntelligenceModifier)", true)]
+    [InlineData("2d4+UnarmedMeleeAbilityModifier", true)]
+    [InlineData("(DamageDone)/2", true)]
+    [InlineData("'SOME;THING'", true)]
+    [InlineData("", true)]
+    [InlineData("1,2", false)]
+    [InlineData("1;AC(2)", false)]
+    [InlineData("max(1,IntelligenceModifier", false)]
+    [InlineData("1)", false)]
+    [InlineData("'open", false)]
+    public void IsSingleArgument_RejectsWhatWouldSplitTheCall(string text, bool expected) =>
+        Assert.Equal(expected, BoostMapping.IsSingleArgument(text));
+
+    [Fact]
     public void Simple_SingleArg()
     {
         var r = BoostMapping.ParseBoostCall("AC(1)");

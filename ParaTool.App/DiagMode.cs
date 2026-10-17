@@ -20,6 +20,12 @@ internal static class DiagMode
         var sw = System.Diagnostics.Stopwatch.StartNew();
         Console.WriteLine("ParaTool diagnostic mode");
 
+        // --diag-chips <dir>: render the chip editors (drums, typed values, an open formula drum)
+        // to PNGs, in English and Russian. Needs no scan.
+        var chipsDir = args.SkipWhile(a => !a.Equals("--diag-chips", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (chipsDir != null)
+            return RenderChipEditors(chipsDir);
+
         // Parse args
         var diagAll = args.Contains("--diag-all", StringComparer.OrdinalIgnoreCase);
         var diagStatIds = new List<string>();
@@ -637,6 +643,86 @@ internal static class DiagMode
             Errors.Add(messageTemplate);
         public void Log(Avalonia.Logging.LogEventLevel level, string area, object? source, string messageTemplate, params object?[] propertyValues) =>
             Errors.Add(messageTemplate + " | " + string.Join(", ", propertyValues));
+    }
+
+    private static int RenderChipEditors(string outDir)
+    {
+        Console.SetOut(new StreamWriter(Console.OpenStandardOutput(), new System.Text.UTF8Encoding(false)) { AutoFlush = true });
+        Directory.CreateDirectory(outDir);
+        Program.BuildAvaloniaApp().SetupWithoutStarting();
+        var typingBefore = Controls.TumblerChipEditor.TypingMode;
+        try
+        {
+            return Avalonia.Threading.Dispatcher.UIThread.Invoke(() =>
+            {
+                const string boosts = "IF(IsCantrip() and (SpellDamageTypeIs(DamageType.Force))):DamageBonus(max(1,IntelligenceModifier));"
+                                      + "DamageBonus(5);RollBonus(Attack,3);WeaponDamage(1d4,Fire)";
+                const string functors = "ApplyStatus(SELF,WET,100,2);DealDamage(2d6+UnarmedMeleeAbilityModifier,Cold);RegainHitPoints((DamageDone)/2)";
+                const string conditions = "IsCantrip() and SpellDamageTypeIs(DamageType.Force) and not Combat()";
+                foreach (var lang in new[] { "en", "ru" })
+                foreach (var typing in new[] { false, true })
+                {
+                    Localization.Loc.Instance.SetLanguage(lang);
+                    Controls.TumblerChipEditor.TypingMode = typing;
+                    var boostEd = new Controls.BoostBlocksEditor { Text = boosts };
+                    var functorEd = new Controls.BoostBlocksEditor { IsFunctorMode = true, Text = functors };
+                    var condEd = new Controls.ConditionBlocksEditor { Text = conditions };
+                    var panel = new Avalonia.Controls.StackPanel
+                    {
+                        Spacing = 12, Margin = new Avalonia.Thickness(16),
+                        Children = { boostEd, functorEd, condEd },
+                    };
+                    var host = new Avalonia.Controls.Border
+                    {
+                        Width = 900, Background = Themes.ThemeBrushes.PanelBg, Child = panel,
+                    };
+                    var window = new Avalonia.Controls.Window { Width = 900, Height = 700, Content = host };
+                    for (int pass = 0; pass < 6; pass++)
+                    {
+                        foreach (var l in Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window).OfType<Avalonia.Layout.Layoutable>())
+                            l.InvalidateMeasure();
+                        window.InvalidateMeasure();
+                        window.Measure(new Avalonia.Size(900, 700));
+                        window.Arrange(new Avalonia.Rect(0, 0, 900, 700));
+                        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    }
+                    var shot = Path.Combine(outDir, $"chips-{lang}-{(typing ? "typed" : "drums")}.png");
+                    using (var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(900, 700), new Avalonia.Vector(96, 96)))
+                    {
+                        rtb.Render(host);
+                        rtb.Save(shot);
+                    }
+                    var tumblers = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(host).OfType<Controls.TumblerChipEditor>().ToList();
+                    var boxes = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(host).OfType<Avalonia.Controls.TextBox>()
+                        .Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
+                    Console.WriteLine($"  editor bounds: {boostEd.Bounds} {functorEd.Bounds} {condEd.Bounds}");
+                    Console.WriteLine($"{lang} typing={typing}: tumblers={tumblers.Count} text boxes=[{string.Join(" | ", boxes)}] -> {shot}");
+
+                    // The formula drum turned open on the first DamageBonus amount.
+                    if (!typing)
+                    {
+                        var formula = tumblers.FirstOrDefault(t => t.Items?.Length > 100);
+                        if (formula != null)
+                        {
+                            typeof(Controls.TumblerChipEditor).GetMethod("OpenDrum", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                                .Invoke(formula, null);
+                            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                            var drumShot = Path.Combine(outDir, $"chips-{lang}-drum-open.png");
+                            using var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(900, 700), new Avalonia.Vector(96, 96));
+                            rtb.Render(host);
+                            rtb.Save(drumShot);
+                            Console.WriteLine($"  open formula drum on '{formula.Text}' -> {drumShot}");
+                        }
+                    }
+                    window.Content = null;
+                }
+                return 0;
+            });
+        }
+        finally
+        {
+            Controls.TumblerChipEditor.TypingMode = typingBefore;
+        }
     }
 
     private static int RunSpellUiSmoke(ScanResult result, LocaService loca)

@@ -33,6 +33,21 @@ public class LocalizationCoverageTests
             ?? new Dictionary<string, string>();
     }
 
+    /// <summary>Every formula variable on the drum reads as words in every language, not as its stats name.</summary>
+    [Fact]
+    public void EveryFormulaVariable_HasALabel_InEveryLanguage()
+    {
+        var missing = new List<string>();
+        foreach (var lang in Languages)
+        {
+            var dict = LoadLang(lang);
+            foreach (var v in ParaTool.Core.Schema.BoostMapping.FormulaVariables)
+                if (!dict.TryGetValue($"enum.{v}", out var label) || string.IsNullOrWhiteSpace(label) || label == v)
+                    missing.Add($"{lang}: enum.{v}");
+        }
+        Assert.Empty(missing);
+    }
+
     [Fact]
     public void AllLanguages_HaveAllBoostKeys_FromEnglish()
     {

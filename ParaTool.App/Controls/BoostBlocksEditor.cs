@@ -67,6 +67,9 @@ public class BoostBlocksEditor : UserControl
         set => SetValue(EditorContextProperty, value);
     }
 
+    /// <summary>An editor inside another one's IF block: the outer editor carries the toolbar switches.</summary>
+    public bool IsNested { get; set; }
+
     /// <summary>Fired when user requests rename of a spell/status via context menu.</summary>
     public event Action<string>? RenameRequested;
 
@@ -244,6 +247,9 @@ public class BoostBlocksEditor : UserControl
             }
         }
 
+        if (!IsNested && !string.IsNullOrEmpty(Text))
+            _panel.Children.Add(TumblerChipEditor.CreateTypingToggle(BgDefault));
+
         _updating = false;
         _rebuilding = false;
     }
@@ -418,10 +424,13 @@ public class BoostBlocksEditor : UserControl
             // gated by VisibilityRules render whenever the governing arg enables them
             // even if the dependent slot got trimmed off — otherwise switching e.g.
             // Advantage from AttackRoll → SavingThrow would not re-expose the Arg2 picker).
+            // The first missing enum argument shows as "—" so it can be picked: DamageBonus(5) had
+            // no way to get a damage type, its slot was not drawn at all.
             if (!isFreshChip
                 && !VisibilityRules.HasRule(def, i)
                 && isOptional && string.IsNullOrEmpty(value)
-                && param.Type is not "optnum" and not "optbool") continue;
+                && param.Type is not "optnum" and not "optbool"
+                && !(param.Type == "enum" && i == args.Length)) continue;
             var paramIdx = i;
 
             if (param.Type is "hidden" or "blank")
@@ -455,6 +464,7 @@ public class BoostBlocksEditor : UserControl
                     var slot = vi;
                     var valueChip = new TumblerChipEditor
                     {
+                        AllowTyping = true,
                         Text = values[slot],
                         Items = param.EnumValues,
                         DisplayItems = displayItems,
@@ -510,6 +520,7 @@ public class BoostBlocksEditor : UserControl
                 // Integer tumbler chip (allow -1 for infinite duration etc.)
                 var chip = new TumblerChipEditor
                 {
+                    AllowTyping = true,
                     Text = value,
                     Step = 1,
                     MinValue = -1,
@@ -562,6 +573,7 @@ public class BoostBlocksEditor : UserControl
                     : Localization.Loc.Instance.GetEnumDisplayLabels(enumValues);
                 var chip = new TumblerChipEditor
                 {
+                    AllowTyping = true,
                     Text = string.IsNullOrEmpty(value) ? "—" : value,
                     Items = items,
                     DisplayItems = displayItems,
@@ -607,6 +619,7 @@ public class BoostBlocksEditor : UserControl
                 // Optional number: scrollable number with "—" (none) option
                 var chip = new TumblerChipEditor
                 {
+                    AllowTyping = true,
                     Text = string.IsNullOrEmpty(value) ? "—" : value,
                     Step = 1, MinValue = 0, MaxValue = 999,
                     AllowNone = true,
@@ -624,6 +637,7 @@ public class BoostBlocksEditor : UserControl
             {
                 var chip = new TumblerChipEditor
                 {
+                    AllowTyping = true,
                     Text = value,
                     Step = param.Type == "float" ? 0.1 : 1,
                     MinValue = -999, MaxValue = 999,
@@ -641,7 +655,8 @@ public class BoostBlocksEditor : UserControl
             {
                 var chip = new TumblerChipEditor
                 {
-                    Text = value, Items = BoostMapping.FormulaValues,
+                    Text = value, Items = BoostMapping.NumberAndDiceValues,
+                    AllowTyping = true,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 chip.Tag = (rawBoost, paramIdx);
@@ -669,12 +684,13 @@ public class BoostBlocksEditor : UserControl
             }
             else if (param.Type == "formula")
             {
-                var items = BoostMapping.FormulaValues.Contains(value)
+                var items = BoostMapping.FormulaValues.Contains(value, StringComparer.OrdinalIgnoreCase)
                     ? BoostMapping.FormulaValues
                     : BoostMapping.FormulaValues.Append(value).ToArray();
                 var chip = new TumblerChipEditor
                 {
                     Text = value, Items = items,
+                    AllowTyping = true,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
                 chip.Tag = (rawBoost, paramIdx);
@@ -893,6 +909,7 @@ public class BoostBlocksEditor : UserControl
         // Row 2: Embedded condition editor (live chips)
         var condEditor = new ConditionBlocksEditor
         {
+            IsNested = true,
             Text = condition,
             Margin = new Thickness(12, 0, 0, 0),
             ClipToBounds = false,
@@ -919,6 +936,7 @@ public class BoostBlocksEditor : UserControl
         var capturedEffect = effect;
         var functorEditor = new BoostBlocksEditor
         {
+            IsNested = true,
             IsFunctorMode = IsFunctorMode,
             Margin = new Thickness(12, 0, 0, 0),
             ClipToBounds = false,

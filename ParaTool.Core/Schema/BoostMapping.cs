@@ -436,8 +436,25 @@ public static class BoostMapping
     // FORMULA / DICE VALUES (sorted by average for tumbler)
     // ═══════════════════════════════════════════════════════════
 
-    /// <summary>Numbers 1-100 + dice 1d4..10d20, sorted by average value.</summary>
-    public static readonly string[] FormulaValues =
+    /// <summary>
+    /// The variables a formula argument reads (DamageBonus(max(1,IntelligenceModifier))), spelled
+    /// as the game's and AMP's stats write them, most used first. Each has an <c>enum.</c> label.
+    /// </summary>
+    public static readonly string[] FormulaVariables =
+    [
+        "SpellCastingAbilityModifier", "max(1,SpellCastingAbilityModifier)",
+        "StrengthModifier", "DexterityModifier", "ConstitutionModifier",
+        "IntelligenceModifier", "WisdomModifier", "CharismaModifier",
+        "max(1,StrengthModifier)", "max(1,DexterityModifier)", "max(1,ConstitutionModifier)",
+        "max(1,IntelligenceModifier)", "max(1,WisdomModifier)", "max(1,CharismaModifier)",
+        "ProficiencyBonus", "Level",
+        "MainMeleeWeapon", "MainRangedWeapon", "OffhandMeleeWeapon", "OffhandRangedWeapon", "ThrownWeapon",
+        "UnarmedDamage", "UnarmedMeleeAbilityModifier", "MartialArtsUnarmedDamage", "ImprovisedWeapon",
+        "DamageDone", "MaxHP",
+    ];
+
+    /// <summary>Numbers -10…100 and dice 1d4…10d20, sorted by average value (a die slot takes no variable).</summary>
+    public static readonly string[] NumberAndDiceValues =
     [
         // Negatives first (ascending order) — penalties like Ability(Charisma,-2)
         "-10", "-9", "-8", "-7", "-6", "-5", "-4", "-3", "-2", "-1", "0",
@@ -451,12 +468,32 @@ public static class BoostMapping
         "57", "58", "9d12", "59", "60", "61", "62", "63", "6d20", "64", "10d12", "65", "66", "67", "68", "69", "70",
         "71", "72", "73", "7d20", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "8d20", "84", "85",
         "86", "87", "88", "89", "90", "91", "92", "93", "9d20", "94", "95", "96", "97", "98", "99", "100", "10d20",
-        // Variables (sorted roughly by frequency of use in vanilla)
-        "ProficiencyBonus", "Level",
-        "SpellcastingAbilityModifier",
-        "StrengthModifier", "DexterityModifier", "ConstitutionModifier",
-        "IntelligenceModifier", "WisdomModifier", "CharismaModifier",
     ];
+
+    /// <summary>
+    /// The formula drum: the variables on top (they were last, two hundred rows down, where nobody
+    /// found them), then the numbers and dice. Declared after both: static fields initialize in order.
+    /// </summary>
+    public static readonly string[] FormulaValues = [..FormulaVariables, ..NumberAndDiceValues];
+
+    /// <summary>
+    /// Whether typed text can stand as one argument of a call: brackets and quotes closed, and no
+    /// ',' or ';' outside them — those would split it into several arguments or boosts.
+    /// </summary>
+    public static bool IsSingleArgument(string text)
+    {
+        int depth = 0;
+        char quote = '\0';
+        foreach (var c in text)
+        {
+            if (quote != '\0') { if (c == quote) quote = '\0'; continue; }
+            if (c is '\'' or '"') quote = c;
+            else if (c == '(') depth++;
+            else if (c == ')') { if (--depth < 0) return false; }
+            else if (c is ',' or ';' && depth == 0) return false;
+        }
+        return depth == 0 && quote == '\0';
+    }
 
     // ═══════════════════════════════════════════════════════════
     // TRIGGER EVENTS (StatsFunctorContext)
@@ -522,7 +559,7 @@ public static class BoostMapping
         ["IsMiss()"] = "Miss / Промах",
         ["IsCriticalMiss()"] = "Critical Miss / Крит. промах",
         ["IsSpell()"] = "Is Spell / Заклинание",
-        ["IsCantrip()"] = "Is Cantrip / Заговор",
+        ["IsCantrip()"] = "Is Cantrip / Фокус",
         ["HasShieldEquipped()"] = "Has Shield / Есть щит",
         ["not Dead()"] = "Not Dead / Не мёртв",
         ["HasStatus('X')"] = "Has Status / Есть статус",

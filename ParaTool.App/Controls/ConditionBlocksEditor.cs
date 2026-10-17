@@ -25,6 +25,9 @@ public class ConditionBlocksEditor : UserControl
 
     public string? Text { get => GetValue(TextProperty); set => SetValue(TextProperty, value); }
 
+    /// <summary>An editor inside a group or an IF block: the outer editor carries the toolbar switches.</summary>
+    public bool IsNested { get; set; }
+
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;
     private List<CondToken> _tokens = [];
@@ -392,15 +395,14 @@ public class ConditionBlocksEditor : UserControl
                 if (isEntity && argVal == "")
                     continue;
 
-                // Complex expressions like GetAttackWeapon(Source) → read-only text
+                // Complex expressions like GetAttackWeapon(context.Source) are on no drum: typed as text.
                 if (isComplexExpr)
                 {
-                    stack.Children.Add(new TextBlock
+                    stack.Children.Add(BuildExpressionBox(token.Args[paramIdx].Trim(), typed =>
                     {
-                        Text = argVal, FontSize = FontScale.Of(10),
-                        Foreground = FgMuted, VerticalAlignment = VerticalAlignment.Center,
-                        Background = InputBg, Padding = new Thickness(4, 1),
-                    });
+                        token.Args[paramIdx] = typed;
+                        SyncFromTokens(tokens);
+                    }));
                     continue;
                 }
 
@@ -422,6 +424,7 @@ public class ConditionBlocksEditor : UserControl
                 var capturedPrefix = enumPrefix;
                 var enumTumbler = new TumblerChipEditor
                 {
+                    AllowTyping = !isEntity,
                     Text = displayVal, Items = tumblerItems,
                     DisplayItems = tumblerDisplayItems,
                     VerticalAlignment = VerticalAlignment.Center,
@@ -445,6 +448,7 @@ public class ConditionBlocksEditor : UserControl
             {
                 var tumbler = new TumblerChipEditor
                 {
+                    AllowTyping = true,
                     Text = argVal, Step = 1, MinValue = 0, MaxValue = 999,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
@@ -487,25 +491,17 @@ public class ConditionBlocksEditor : UserControl
             {
                 // Formula DC such as ManeuverSaveDC()+2 — editable text, a number drum
                 // would silently overwrite it with 0 on the first scroll.
-                var exprBox = new TextBox
+                stack.Children.Add(BuildExpressionBox(argVal, typed =>
                 {
-                    Text = argVal, FontSize = FontScale.Of(10),
-                    Padding = new Thickness(4, 2), MinWidth = 90,
-                    Background = InputBg, Foreground = Themes.ThemeBrushes.TextPrimary,
-                    BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(4),
-                    VerticalAlignment = VerticalAlignment.Center,
-                    VerticalContentAlignment = VerticalAlignment.Center,
-                };
-                exprBox.LostFocus += (s, _) =>
-                {
-                    if (s is TextBox t) { token.Args[paramIdx] = (t.Text ?? "").Trim(); SyncFromTokens(tokens); }
-                };
-                stack.Children.Add(exprBox);
+                    token.Args[paramIdx] = typed;
+                    SyncFromTokens(tokens);
+                }));
             }
             else if (param?.Type == "float")
             {
                 var tumbler = new TumblerChipEditor
                 {
+                    AllowTyping = true,
                     Text = argVal, Step = 0.5, MinValue = 0, MaxValue = 9999,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
@@ -687,10 +683,10 @@ public class ConditionBlocksEditor : UserControl
         }
 
         // Context menu: NOT toggle + delete
-        var notToggle = new MenuItem { Header = token.Negated ? "Remove NOT" : "Add NOT" };
+        var notToggle = new MenuItem { Header = token.Negated ? Localization.Loc.Instance.CtxRemoveNot : Localization.Loc.Instance.CtxAddNot };
         notToggle.Click += (_, _) => { token.Negated = !token.Negated; SyncFromTokens(tokens); };
 
-        var delete = new MenuItem { Header = "Delete" };
+        var delete = new MenuItem { Header = Localization.Loc.Instance.NavDelete };
         delete.Click += (_, _) => { RemoveToken(tokens, tokenIdx); SyncFromTokens(tokens); };
 
         // × remove button
@@ -749,6 +745,7 @@ public class ConditionBlocksEditor : UserControl
         // Embedded condition editor for group content
         var innerEditor = new ConditionBlocksEditor
         {
+            IsNested = true,
             Text = innerText,
             Margin = new Thickness(4, 2, 4, 0),
             ClipToBounds = false,
@@ -808,6 +805,38 @@ public class ConditionBlocksEditor : UserControl
         };
         addBtn.Click += OnAddClick;
         _panel.Children.Add(addBtn);
+        if (!IsNested && _tokens.Count > 0)
+            _panel.Children.Add(TumblerChipEditor.CreateTypingToggle(InputBg));
+    }
+
+    /// <summary>
+    /// A text box for an argument no drum can hold (a formula DC such as ManeuverSaveDC()+2, a call such
+    /// as GetAttackWeapon(context.Source)). Text that would split the call apart is marked and not written.
+    /// </summary>
+    private static TextBox BuildExpressionBox(string value, Action<string> write)
+    {
+        var box = new TextBox
+        {
+            Text = value, FontSize = FontScale.Of(10),
+            Padding = new Thickness(4, 2), MinWidth = 90,
+            Background = InputBg, Foreground = Themes.ThemeBrushes.TextPrimary,
+            BorderThickness = new Thickness(1), BorderBrush = Themes.ThemeBrushes.BorderSubtle,
+            CornerRadius = new CornerRadius(4),
+            VerticalAlignment = VerticalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center,
+        };
+        ToolTip.SetTip(box, Localization.Loc.Instance.TipTypedChipValue);
+        bool Valid() => BoostMapping.IsSingleArgument(box.Text ?? "");
+        box.TextChanged += (_, _) => box.BorderBrush = Valid() ? Themes.ThemeBrushes.BorderSubtle : Themes.ThemeBrushes.Error;
+        void Commit()
+        {
+            var typed = (box.Text ?? "").Trim();
+            if (typed.Length == 0 || !Valid() || typed == value) return;
+            write(typed);
+        }
+        box.LostFocus += (_, _) => Commit();
+        box.KeyDown += (_, e) => { if (e.Key == Key.Enter) { Commit(); e.Handled = true; } };
+        return box;
     }
 
     private void OnAddClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -816,7 +845,7 @@ public class ConditionBlocksEditor : UserControl
         var menu = new ContextMenu();
 
         // Group (parentheses) option at top
-        var groupItem = new MenuItem { Header = "( ) Group / Скобки", FontWeight = FontWeight.SemiBold };
+        var groupItem = new MenuItem { Header = $"( ) {Localization.Loc.Instance.CondGroup}", FontWeight = FontWeight.SemiBold };
         groupItem.Click += (_, _) =>
         {
             var current = Text ?? "";

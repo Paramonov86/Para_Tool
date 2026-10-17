@@ -57,6 +57,42 @@ public class TumblerChipEditor : UserControl
 
     private bool IsNoneValue => AllowNone && _currentValue < MinValue;
 
+    /// <summary>
+    /// The value may be typed instead of turned (chip editors' arguments: a formula such as
+    /// max(1,IntelligenceModifier) is on no drum). Typed only while <see cref="TypingMode"/> is on.
+    /// </summary>
+    public bool AllowTyping
+    {
+        get => _allowTyping;
+        set { _allowTyping = value; ApplyTypingMode(); }
+    }
+    private bool _allowTyping;
+
+    private static bool? _typingMode;
+
+    /// <summary>
+    /// Chip arguments are typed as text instead of turned on drums — one switch for every chip
+    /// editor, remembered between sessions.
+    /// </summary>
+    public static bool TypingMode
+    {
+        get => _typingMode ??= UiSettingsService.Load().TypedChipValues;
+        set
+        {
+            if (TypingMode == value) return;
+            _typingMode = value;
+            var settings = UiSettingsService.Load();
+            settings.TypedChipValues = value;
+            UiSettingsService.Save(settings);
+            TypingModeChanged?.Invoke();
+        }
+    }
+
+    public static event Action? TypingModeChanged;
+
+    private TextBox? _typedBox;
+    private bool IsTyping => AllowTyping && TypingMode;
+
     private bool IsListMode => Items is { Length: > 0 };
 
     private const int SidesCount = 3;
@@ -119,13 +155,124 @@ public class TumblerChipEditor : UserControl
 
         PropertyChanged += (_, e) =>
         {
-            if (e.Property == TextProperty) UpdateChipText();
+            if (e.Property == TextProperty) { UpdateChipText(); if (_typedBox != null) _typedBox.Text = TypedText(); }
             if (e.Property == ItemsProperty || e.Property == LabelPrefixProperty) { UpdateMinWidthFromItems(); UpdateChipText(); }
         };
         FontScale.ScaleChanged += OnFontScaleChanged;
-        DetachedFromVisualTree += (_, _) => FontScale.ScaleChanged -= OnFontScaleChanged;
-        AttachedToVisualTree += (_, _) => UpdateChipText();
+        DetachedFromVisualTree += (_, _) =>
+        {
+            FontScale.ScaleChanged -= OnFontScaleChanged;
+            TypingModeChanged -= ApplyTypingMode;
+        };
+        AttachedToVisualTree += (_, _) =>
+        {
+            UpdateChipText();
+            TypingModeChanged -= ApplyTypingMode;
+            TypingModeChanged += ApplyTypingMode;
+            ApplyTypingMode();
+        };
         UpdateChipText();
+    }
+
+    // ── Typed value ─────────────────────────────────────────────
+
+    /// <summary>
+    /// The toolbar switch of a chip editor that turns every argument drum into a text box and back
+    /// (<see cref="TypingMode"/>); lit while typing is on.
+    /// </summary>
+    public static Button CreateTypingToggle(IBrush background)
+    {
+        var btn = new Button
+        {
+            Content = "⌨",
+            FontSize = FontScale.Of(13),
+            Padding = new Thickness(8, 2),
+            Margin = new Thickness(2),
+            CornerRadius = new CornerRadius(10),
+            Background = background,
+            BorderThickness = new Thickness(1),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        void Paint()
+        {
+            btn.Foreground = TypingMode ? ThemeBrushes.Accent : ThemeBrushes.TextSecondary;
+            btn.BorderBrush = TypingMode ? ThemeBrushes.Accent : ThemeBrushes.BorderSubtle;
+            ToolTip.SetTip(btn, TypingMode ? Loc.Instance.TipTypingOff : Loc.Instance.TipTypingOn);
+        }
+        btn.Click += (_, _) => TypingMode = !TypingMode;
+        btn.AttachedToVisualTree += (_, _) => { TypingModeChanged -= Paint; TypingModeChanged += Paint; Paint(); };
+        btn.DetachedFromVisualTree += (_, _) => TypingModeChanged -= Paint;
+        Paint();
+        return btn;
+    }
+
+    /// <summary>The value as it is written: no drum label, and "—" (none) as an empty box.</summary>
+    private string TypedText()
+    {
+        var val = Text?.Trim() ?? "";
+        return val == "—" ? "" : val;
+    }
+
+    private void ApplyTypingMode()
+    {
+        if (IsTyping == (_typedBox != null)) return;
+        if (IsTyping)
+        {
+            if (_drumOpen) CloseDrum();
+            _typedBox = new TextBox
+            {
+                Text = TypedText(),
+                Watermark = "—",
+                FontSize = FontScale.Of(11),
+                MinWidth = Math.Max(_chip.MinWidth, 48), MaxWidth = 320, Height = ChipH,
+                Padding = new Thickness(8, 0),
+                CornerRadius = new CornerRadius(8),
+                Background = ThemeBrushes.InputBg,
+                Foreground = ThemeBrushes.TextPrimary,
+                BorderBrush = ThemeBrushes.BorderSubtle,
+                BorderThickness = new Thickness(1),
+                VerticalContentAlignment = VerticalAlignment.Center,
+                ZIndex = 10,
+            };
+            ToolTip.SetTip(_typedBox, Loc.Instance.TipTypedChipValue);
+            _typedBox.KeyDown += (_, e) =>
+            {
+                if (e.Key == Key.Enter) { CommitTyped(); e.Handled = true; }
+                else if (e.Key == Key.Escape) { _typedBox.Text = TypedText(); MarkTyped(true); e.Handled = true; }
+            };
+            _typedBox.LostFocus += (_, _) => CommitTyped();
+            _typedBox.TextChanged += (_, _) => MarkTyped(Core.Schema.BoostMapping.IsSingleArgument(_typedBox.Text ?? ""));
+            _chip.IsVisible = false;
+            _root.Children.Add(_typedBox);
+        }
+        else
+        {
+            _root.Children.Remove(_typedBox!);
+            _typedBox = null;
+            _chip.IsVisible = true;
+        }
+    }
+
+    private void MarkTyped(bool valid)
+    {
+        if (_typedBox != null)
+            _typedBox.BorderBrush = valid ? ThemeBrushes.BorderSubtle : ThemeBrushes.Error;
+    }
+
+    /// <summary>
+    /// Writes the typed value. Text that would break the call apart (an open bracket, a comma
+    /// outside brackets) stays in the box, marked, and is not written.
+    /// </summary>
+    private void CommitTyped()
+    {
+        if (_typedBox == null) return;
+        var typed = (_typedBox.Text ?? "").Trim();
+        if (!Core.Schema.BoostMapping.IsSingleArgument(typed)) { MarkTyped(false); return; }
+        MarkTyped(true);
+        // Empty means none where the chip has one; the editors read "—" as that.
+        if (typed.Length == 0 && (AllowNone || Items?.Contains("—") == true)) typed = "—";
+        if (typed != (Text?.Trim() ?? "")) Text = typed;
     }
 
     private void OnFontScaleChanged()

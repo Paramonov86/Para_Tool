@@ -28,6 +28,7 @@ public static class ThemeBrushes
     public static SolidColorBrush AccentLight => Get("AccentLightBrush");
     public static SolidColorBrush BorderSubtle => Get("BorderSubtleBrush");
     public static SolidColorBrush BorderPanel => Get("BorderPanelBrush");
+    public static SolidColorBrush Error => Get("ErrorBrush");
 
     public static SolidColorBrush GetRarity(string rarity) => rarity switch
     {

@@ -72,7 +72,7 @@ public static class LsTagDatabase
 
         // Spell-related
         new() { Tooltip = "SpellSlot", Label = "Spell Slot", LabelRu = "Ячейка заклинания", Category = "Spells" },
-        new() { Tooltip = "Cantrip", Label = "Cantrip", LabelRu = "Заговор", Category = "Spells" },
+        new() { Tooltip = "Cantrip", Label = "Cantrip", LabelRu = "Фокус", Category = "Spells" },
         new() { Tooltip = "SpellDifficultyClass", Label = "Spell DC", LabelRu = "Сл. заклинания", Category = "Spells" },
 
         // Equipment

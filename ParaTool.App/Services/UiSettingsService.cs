@@ -22,6 +22,9 @@ public sealed class UiSettings
 
     /// <summary>The game's Data folder, when the user pointed ParaTool at it (icons are read from there).</summary>
     public string? GameDataPath { get; set; }
+
+    /// <summary>Chip arguments are typed as text instead of turned on drums.</summary>
+    public bool TypedChipValues { get; set; }
 }
 
 public static class UiSettingsService
