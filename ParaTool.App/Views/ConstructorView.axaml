@@ -875,7 +875,15 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowFieldEditor}" Margin="8,4,8,8">
+                <DockPanel Grid.Row="1" IsVisible="{Binding ShowFieldEditor}">
+                <!-- Chip arguments typed as text instead of turned on drums (the ⌨ in every chip editor; remembered) -->
+                <CheckBox DockPanel.Dock="Top" Margin="12,4,8,0"
+                          IsChecked="{Binding TypedChipValues}"
+                          Content="{Binding LblTypedChipValues, Source={x:Static loc:Loc.Instance}}"
+                          ToolTip.Tip="{Binding TipTypingOn, Source={x:Static loc:Loc.Instance}}"
+                          FontSize="{DynamicResource FontSize11}"
+                          Foreground="{StaticResource TextSecondaryBrush}" />
+                <ScrollViewer Margin="8,4,8,8">
                     <StackPanel Name="EditorSections" Spacing="12" DataContext="{Binding SelectedArtifact}">
                         <!-- Rarity -->
                         <Border Tag="Rarity" Background="{StaticResource CardBgBrush}" CornerRadius="8" Padding="14,12" BorderBrush="{DynamicResource BorderPanelBrush}" BorderThickness="1">
@@ -1277,6 +1285,7 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
+                </DockPanel>
 
                 <!-- Journal (unified action log) -->
                 <ScrollViewer Grid.Row="1" IsVisible="{Binding ShowJournalView}" Margin="8,4,8,8">

@@ -1153,6 +1153,8 @@
   "CtxAddNot": "Aggiungi NON",
   "CtxRemoveNot": "Rimuovi NON",
   "CondGroup": "Gruppo",
+  "LblPatchWarnings": "Avvisi",
+  "LblTypedChipValues": "Inserire i valori come testo invece dei rulli",
   "enum.SpellCastingAbilityModifier": "Mod. da incantatore",
   "enum.max(1,SpellCastingAbilityModifier)": "Mod. da incantatore (min. 1)",
   "enum.StrengthModifier": "Mod. FOR",

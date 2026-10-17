@@ -1153,6 +1153,8 @@
   "CtxAddNot": "Добавить НЕ",
   "CtxRemoveNot": "Убрать НЕ",
   "CondGroup": "Скобки",
+  "LblPatchWarnings": "Предупреждения",
+  "LblTypedChipValues": "Вводить значения текстом вместо барабанов",
   "enum.SpellCastingAbilityModifier": "Мод. заклинаний",
   "enum.max(1,SpellCastingAbilityModifier)": "Мод. заклинаний (мин. 1)",
   "enum.StrengthModifier": "Мод. СИЛ",

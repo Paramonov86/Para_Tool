@@ -1153,6 +1153,8 @@
   "CtxAddNot": "Додати НЕ",
   "CtxRemoveNot": "Прибрати НЕ",
   "CondGroup": "Дужки",
+  "LblPatchWarnings": "Попередження",
+  "LblTypedChipValues": "Вводити значення текстом замість барабанів",
   "enum.SpellCastingAbilityModifier": "Мод. заклять",
   "enum.max(1,SpellCastingAbilityModifier)": "Мод. заклять (мін. 1)",
   "enum.StrengthModifier": "Мод. СИЛ",

@@ -563,7 +563,7 @@
                             MaxWidth="640"
                             HorizontalAlignment="Right">
                         <StackPanel Orientation="Vertical" Spacing="4">
-                            <TextBlock Text="&#x26A0; Warnings"
+                            <TextBlock Text="{Binding LblPatchWarnings, Source={x:Static loc:Loc.Instance}, StringFormat='&#x26A0; {0}'}"
                                        Foreground="#F1C40F"
                                        FontSize="{DynamicResource FontSize13}"
                                        FontWeight="SemiBold" />

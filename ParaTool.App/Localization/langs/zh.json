@@ -1153,6 +1153,8 @@
   "CtxAddNot": "添加“非”",
   "CtxRemoveNot": "移除“非”",
   "CondGroup": "分组",
+  "LblPatchWarnings": "警告",
+  "LblTypedChipValues": "以文本输入数值，而非滚轮",
   "enum.SpellCastingAbilityModifier": "施法属性调整值",
   "enum.max(1,SpellCastingAbilityModifier)": "施法属性调整值（至少1）",
   "enum.StrengthModifier": "力量调整值",

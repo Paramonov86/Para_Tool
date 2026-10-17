@@ -1153,6 +1153,8 @@
   "CtxAddNot": "DEĞİL ekle",
   "CtxRemoveNot": "DEĞİL'i kaldır",
   "CondGroup": "Grup",
+  "LblPatchWarnings": "Uyarılar",
+  "LblTypedChipValues": "Tambur yerine değerleri metin olarak yaz",
   "enum.SpellCastingAbilityModifier": "Büyü yeteneği değ.",
   "enum.max(1,SpellCastingAbilityModifier)": "Büyü yeteneği değ. (en az 1)",
   "enum.StrengthModifier": "KUV değ.",

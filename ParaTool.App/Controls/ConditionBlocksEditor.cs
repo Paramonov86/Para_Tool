@@ -406,11 +406,14 @@ public class ConditionBlocksEditor : UserControl
                     continue;
                 }
 
-                // Strip enum prefix (e.g. "DamageType.Fire" → "Fire")
+                // Strip enum prefix (e.g. "DamageType.Fire" → "Fire") — unless the list's values carry
+                // it themselves (SpellType.Throw): stripped, the value was not on the drum, and turning
+                // it wrote SpellType.SpellType.Target.
                 var enumPrefix = "";
                 var cleanVal = argVal;
                 var dotIdx = argVal.IndexOf('.');
-                if (dotIdx > 0 && !argVal.StartsWith("context."))
+                if (dotIdx > 0 && !argVal.StartsWith("context.")
+                    && !param.EnumValues.Contains(argVal, StringComparer.OrdinalIgnoreCase))
                 {
                     enumPrefix = argVal[..(dotIdx + 1)]; // "DamageType."
                     cleanVal = argVal[(dotIdx + 1)..];   // "Fire"
@@ -419,8 +422,12 @@ public class ConditionBlocksEditor : UserControl
                 var lang = Localization.Loc.Instance.Lang;
                 var displayVal = isEntity ? ConditionSchema.EntityFromRaw(argVal, isRuParam) : cleanVal;
                 var tumblerItems = isEntity ? ConditionSchema.GetEntityTargets(isRuParam) : param.EnumValues;
+                // A value the list doesn't know stays on the drum as written instead of reading as the first item.
+                if (!isEntity && cleanVal.Length > 0 && !tumblerItems.Contains(cleanVal, StringComparer.OrdinalIgnoreCase))
+                    tumblerItems = [.. tumblerItems, cleanVal];
                 var tumblerDisplayItems = isEntity ? null
-                    : param.DisplayValues ?? (param.EnumValues != null ? Localization.Loc.Instance.GetEnumDisplayLabels(param.EnumValues) : null);
+                    : param.DisplayValues is { } shown && shown.Length == tumblerItems.Length ? shown
+                    : Localization.Loc.Instance.GetEnumDisplayLabels(tumblerItems);
                 var capturedPrefix = enumPrefix;
                 var enumTumbler = new TumblerChipEditor
                 {

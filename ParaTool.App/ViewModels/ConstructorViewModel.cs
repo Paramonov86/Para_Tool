@@ -174,8 +174,19 @@ public partial class ConstructorViewModel : ViewModelBase
     /// <summary>The icon library window (items, spell cards, status cards).</summary>
     public IconPickerVM IconPicker { get; } = new();
 
+    /// <summary>
+    /// Chip arguments are typed as text instead of turned on drums — the same switch as the ⌨ in every
+    /// chip editor, remembered between sessions.
+    /// </summary>
+    public bool TypedChipValues
+    {
+        get => Controls.TumblerChipEditor.TypingMode;
+        set => Controls.TumblerChipEditor.TypingMode = value;
+    }
+
     public ConstructorViewModel(StatsResolver? resolver = null, LocaService? locaService = null, IconService? iconService = null)
     {
+        Controls.TumblerChipEditor.TypingModeChanged += () => OnPropertyChanged(nameof(TypedChipValues));
         _resolver = resolver;
         _locaService = locaService;
         _locaResolver = resolver != null ? new LocaResolver(resolver, locaService) : null;

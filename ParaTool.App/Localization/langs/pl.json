@@ -1153,6 +1153,8 @@
   "CtxAddNot": "Dodaj NIE",
   "CtxRemoveNot": "Usuń NIE",
   "CondGroup": "Grupa",
+  "LblPatchWarnings": "Ostrzeżenia",
+  "LblTypedChipValues": "Wpisuj wartości zamiast bębnów",
   "enum.SpellCastingAbilityModifier": "Mod. rzucania czarów",
   "enum.max(1,SpellCastingAbilityModifier)": "Mod. rzucania czarów (min. 1)",
   "enum.StrengthModifier": "Mod. SIŁ",

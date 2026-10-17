@@ -1153,6 +1153,8 @@
   "CtxAddNot": "아님 추가",
   "CtxRemoveNot": "아님 제거",
   "CondGroup": "그룹",
+  "LblPatchWarnings": "경고",
+  "LblTypedChipValues": "드럼 대신 값을 텍스트로 입력",
   "enum.SpellCastingAbilityModifier": "주문 시전 능력 수정치",
   "enum.max(1,SpellCastingAbilityModifier)": "주문 시전 능력 수정치 (최소 1)",
   "enum.StrengthModifier": "근력 수정치",

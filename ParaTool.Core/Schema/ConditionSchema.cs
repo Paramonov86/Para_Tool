@@ -240,11 +240,12 @@ public sealed partial class ConditionSchema
         "SpellCategory.IntentBuff", "SpellCategory.IntentDebuff", "SpellCategory.IntentUtility",
     ];
 
+    /// <summary>The spell types the game's spells are written with (Damage/Healing are not among them).</summary>
     public static readonly string[] SpellTypes =
     [
-        "SpellType.Damage", "SpellType.Healing", "SpellType.Rush", "SpellType.Shout",
-        "SpellType.Zone", "SpellType.Throw", "SpellType.Wall", "SpellType.Teleportation",
-        "SpellType.MultiStrike",
+        "SpellType.Target", "SpellType.Projectile", "SpellType.Shout", "SpellType.Zone",
+        "SpellType.Rush", "SpellType.Throw", "SpellType.Wall", "SpellType.Teleportation",
+        "SpellType.ProjectileStrike",
     ];
 
     public static readonly string[] InstrumentTypes =
@@ -279,21 +280,14 @@ public sealed partial class ConditionSchema
         _ => raw.Replace("context.", "")
     };
 
+    /// <summary>
+    /// InSurface('SurfaceX'): every surface of the game's "Surface Type" list, plus the spellings the
+    /// game's conditions use for deep and running water and the black rain no list names.
+    /// </summary>
     public static readonly string[] InSurfaceValues =
     [
-        "SurfaceNone", "SurfaceWater", "SurfaceWaterElectrified", "SurfaceWaterFrozen",
-        "SurfaceBlood", "SurfaceBloodElectrified", "SurfaceBloodFrozen",
-        "SurfacePoison", "SurfaceOil", "SurfaceLava", "SurfaceGrease",
-        "SurfaceWeb", "SurfaceDeepwater", "SurfaceFire", "SurfaceAcid",
-        "SurfaceMud", "SurfaceAlcohol", "SurfaceHellfire", "SurfaceAsh",
-        "SurfaceSpikeGrowth", "SurfaceHolyFire", "SurfaceBlackTentacles",
-        "SurfaceOvergrowth", "SurfaceWaterCloud", "SurfaceWaterCloudElectrified",
-        "SurfacePoisonCloud", "SurfaceCloudkillCloud", "SurfaceDarknessCloud",
-        "SurfaceFogCloud", "SurfaceIceCloud", "SurfaceSentinel",
-        "SurfaceBladeBarrier", "SurfaceCausticBrine",
-        "SurfaceWaterDeepRunning", "SurfaceWaterRunning",
-        "SurfaceSurfaceDeepWater", "SurfaceSurfaceDeepWaterRunning",
-        "SurfaceWaterElectrified", "SurfaceSurfaceWaterElectrified",
+        ..BoostMapping.SurfaceTypes.Where(t => t != "Deepwater").Select(t => "Surface" + t),
+        "SurfaceDeepWater", "SurfaceDeepWaterRunning", "SurfaceBlackrain",
     ];
 
     /// <summary>Short display labels for InSurfaceValues (strip "Surface" prefix).</summary>

@@ -1153,6 +1153,8 @@
   "CtxAddNot": "Add NOT",
   "CtxRemoveNot": "Remove NOT",
   "CondGroup": "Group",
+  "LblPatchWarnings": "Warnings",
+  "LblTypedChipValues": "Type values as text instead of drums",
   "enum.SpellCastingAbilityModifier": "Spellcasting mod",
   "enum.max(1,SpellCastingAbilityModifier)": "Spellcasting mod (min 1)",
   "enum.StrengthModifier": "STR mod",

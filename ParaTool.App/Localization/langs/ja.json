@@ -1153,6 +1153,8 @@
   "CtxAddNot": "否定を追加",
   "CtxRemoveNot": "否定を外す",
   "CondGroup": "グループ",
+  "LblPatchWarnings": "警告",
+  "LblTypedChipValues": "ドラムの代わりに値をテキストで入力",
   "enum.SpellCastingAbilityModifier": "呪文発動能力修正値",
   "enum.max(1,SpellCastingAbilityModifier)": "呪文発動能力修正値（最低1）",
   "enum.StrengthModifier": "筋力修正値",

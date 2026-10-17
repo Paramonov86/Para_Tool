@@ -475,6 +475,8 @@ public partial class Loc : ObservableObject
     public string CtxAddNot => this["CtxAddNot"];
     public string CtxRemoveNot => this["CtxRemoveNot"];
     public string CondGroup => this["CondGroup"];
+    public string LblPatchWarnings => this["LblPatchWarnings"];
+    public string LblTypedChipValues => this["LblTypedChipValues"];
 
     /// <summary>
     /// Readable name of a game value list's value (<c>vl.&lt;List&gt;.&lt;Value&gt;</c>), in every language;

@@ -1153,6 +1153,8 @@
   "CtxAddNot": "Añadir NO",
   "CtxRemoveNot": "Quitar NO",
   "CondGroup": "Grupo",
+  "LblPatchWarnings": "Advertencias",
+  "LblTypedChipValues": "Escribir los valores en lugar de usar tambores",
   "enum.SpellCastingAbilityModifier": "Mod. de lanzamiento",
   "enum.max(1,SpellCastingAbilityModifier)": "Mod. de lanzamiento (mín. 1)",
   "enum.StrengthModifier": "Mod. FUE",

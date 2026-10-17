@@ -1153,6 +1153,8 @@
   "CtxAddNot": "NICHT hinzufügen",
   "CtxRemoveNot": "NICHT entfernen",
   "CondGroup": "Gruppe",
+  "LblPatchWarnings": "Warnungen",
+  "LblTypedChipValues": "Werte als Text statt mit Walzen eingeben",
   "enum.SpellCastingAbilityModifier": "Zauberattribut-Mod.",
   "enum.max(1,SpellCastingAbilityModifier)": "Zauberattribut-Mod. (min. 1)",
   "enum.StrengthModifier": "STR-Mod.",
