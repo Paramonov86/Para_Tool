@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "Disattivato (predefinito): la scheda è uno stato di questo oggetto, compilato come <ID oggetto>_Status_N sulla base dell'originale; l'originale resta invariato altrove, e incantesimi, passive e potenziamenti di questo oggetto che applicavano l'originale applicano la copia.\nAttivato: la scheda riscrive lo stato originale stesso (stesso nome), quindi la modifica raggiunge ogni incantesimo, oggetto e personaggio che lo applica. Il testo che non tocchi resta tradotto in tutte le lingue.",
   "WarnEditOriginalStatus": "Le modifiche valgono ovunque questo stato venga applicato, non solo da questo oggetto.",
   "LblApplyOnEquip": "Attivo finché è equipaggiato",
+  "LblStatusCombatOnly": "Solo in combattimento",
+  "TipStatusCombatOnly": "Viene rimosso a fine combattimento e non resta fuori dal combattimento (come fa il gioco: rimozione a fine combattimento + non Combat()). Uno stato applicato all'equipaggiamento sparisce dopo il primo scontro: per limitare un'abilità al combattimento, imposta invece l'incantesimo su «Utilizzabile: solo in combattimento».",
   "TipApplyOnEquip": "Aggiunge lo stato a StatusOnEquip dell'oggetto: chi lo indossa lo ha finché non lo toglie.",
   "LblStatusType": "Tipo",
   "LblStatusStack": "Cumulo",

@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "Desactivado (por defecto): la tarjeta es un estado de este objeto, compilado como <ID del objeto>_Status_N sobre el original; el original no cambia en ningún otro sitio, y los conjuros, pasivas y mejoras de este objeto que aplicaban el original aplican la copia.\nActivado: la tarjeta reescribe el propio estado original (mismo nombre), así que el cambio llega a todos los conjuros, objetos y personajes que lo aplican. El texto que no toques sigue traducido en todos los idiomas.",
   "WarnEditOriginalStatus": "Los cambios se aplican en todas partes donde se aplica este estado, no solo por este objeto.",
   "LblApplyOnEquip": "Activo mientras está equipado",
+  "LblStatusCombatOnly": "Solo en combate",
+  "TipStatusCombatOnly": "Se quita al terminar el combate y no se mantiene fuera de él (como hace el juego: quitar al fin del combate + no Combat()). Un estado aplicado al equipar desaparece tras el primer combate; para limitar una habilidad al combate, pon en el conjuro «Utilizable: solo en combate».",
   "TipApplyOnEquip": "Añade el estado a StatusOnEquip del objeto: quien lo lleve lo tendrá hasta quitárselo.",
   "LblStatusType": "Tipo",
   "LblStatusStack": "Acumulación",

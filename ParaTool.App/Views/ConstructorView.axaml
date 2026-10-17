@@ -340,6 +340,10 @@
                                   Content="{Binding LblApplyOnEquip, Source={x:Static loc:Loc.Instance}}"
                                   ToolTip.Tip="{Binding TipApplyOnEquip, Source={x:Static loc:Loc.Instance}}"
                                   FontSize="{DynamicResource FontSize11}" />
+                        <CheckBox IsChecked="{Binding CombatOnly}" Foreground="{StaticResource AccentLightBrush}"
+                                  Content="{Binding LblStatusCombatOnly, Source={x:Static loc:Loc.Instance}}"
+                                  ToolTip.Tip="{Binding TipStatusCombatOnly, Source={x:Static loc:Loc.Instance}}"
+                                  FontSize="{DynamicResource FontSize11}" />
 
                         <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                             <Grid.Styles>

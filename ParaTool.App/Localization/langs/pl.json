@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "Wył. (domyślnie): karta to status tego przedmiotu, kompilowany jako <ID przedmiotu>_Status_N na bazie oryginału; oryginał pozostaje nietknięty w innych miejscach, a zaklęcia, pasywki i bonusy tego przedmiotu, które nakładały oryginał, nakładają kopię.\nWł.: karta nadpisuje sam oryginalny status (ta sama nazwa), więc zmiana dotyczy każdego zaklęcia, przedmiotu i postaci, które go nakładają. Tekst, którego nie ruszasz, pozostaje przetłumaczony na wszystkie języki.",
   "WarnEditOriginalStatus": "Zmiany obowiązują wszędzie, gdzie ten status jest nakładany, nie tylko przez ten przedmiot.",
   "LblApplyOnEquip": "Działa, gdy przedmiot jest założony",
+  "LblStatusCombatOnly": "Tylko w walce",
+  "TipStatusCombatOnly": "Zdejmowany po zakończeniu walki i nie utrzymuje się poza nią (jak w samej grze: usunięcie na koniec walki + nie Combat()). Stan nakładany przy założeniu zniknie po pierwszej walce — by ograniczyć zdolność do walki, ustaw raczej w czarze „Użycie: tylko w walce”.",
   "TipApplyOnEquip": "Dodaje status do StatusOnEquip przedmiotu: kto go nosi, ma status, dopóki go nie zdejmie.",
   "LblStatusType": "Typ",
   "LblStatusStack": "Stos",

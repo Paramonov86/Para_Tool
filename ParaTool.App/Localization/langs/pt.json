@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "Desligado (padrão): o cartão é um status deste item, compilado como <ID do item>_Status_N a partir do original; o original continua intacto em todos os outros lugares, e as magias, passivas e bônus deste item que aplicavam o original aplicam a cópia.\nLigado: o cartão reescreve o próprio status original (mesmo nome), então a mudança chega a toda magia, item e personagem que o aplica. O texto que você não mexer continua traduzido em todos os idiomas.",
   "WarnEditOriginalStatus": "As mudanças valem em todo lugar onde este status é aplicado, não só por este item.",
   "LblApplyOnEquip": "Ativo enquanto equipado",
+  "LblStatusCombatOnly": "Só em combate",
+  "TipStatusCombatOnly": "Removido quando o combate termina e não se mantém fora dele (como o próprio jogo: remover no fim do combate + não Combat()). Um status aplicado ao equipar some após a primeira luta — para limitar uma habilidade ao combate, defina na magia «Utilizável: só em combate».",
   "TipApplyOnEquip": "Adiciona o status ao StatusOnEquip do item: quem o usar terá o status até tirá-lo.",
   "LblStatusType": "Tipo",
   "LblStatusStack": "Acúmulo",

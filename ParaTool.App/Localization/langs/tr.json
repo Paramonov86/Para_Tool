@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "Kapalı (varsayılan): kart bu eşyanın bir durumudur, orijinal temel alınarak <eşya kimliği>_Status_N olarak derlenir; orijinal başka her yerde olduğu gibi kalır ve bu eşyanın orijinali uygulayan büyüleri, pasifleri ve güçlendirmeleri kopyayı uygular.\nAçık: kart orijinal durumun kendisini (aynı adla) yeniden yazar; değişiklik onu uygulayan her büyüye, eşyaya ve karaktere ulaşır. Dokunmadığınız metin tüm dillerde çevrili kalır.",
   "WarnEditOriginalStatus": "Değişiklikler yalnızca bu eşyada değil, bu durumun uygulandığı her yerde geçerli olur.",
   "LblApplyOnEquip": "Kuşanıldığı sürece etkin",
+  "LblStatusCombatOnly": "Yalnızca savaşta",
+  "TipStatusCombatOnly": "Savaş bitince kaldırılır ve savaş dışında kalmaz (oyunun kendi yöntemi: savaş sonunda kaldır + Combat() değil). Kuşanınca uygulanan bir durum ilk savaştan sonra kaybolur — bir yeteneği savaşla sınırlamak için büyüde «Kullanım: yalnızca savaşta» seçin.",
   "TipApplyOnEquip": "Durumu eşyanın StatusOnEquip listesine ekler: eşyayı taşıyan kişi çıkarana kadar bu duruma sahip olur.",
   "LblStatusType": "Tür",
   "LblStatusStack": "Yığın",

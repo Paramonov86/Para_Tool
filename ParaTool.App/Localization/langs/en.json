@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "Off (default): the card is a status of this item, compiled as <item ID>_Status_N on top of the original; the original status stays untouched everywhere else, and this item's spells, passives and boosts that apply the original apply the copy.\nOn: the card rewrites the original status itself (same name), so the change reaches every spell, item and character that applies it. Text you leave alone stays translated in every language.",
   "WarnEditOriginalStatus": "Changes apply everywhere this status is applied, not only by this item.",
   "LblApplyOnEquip": "Applied while equipped",
+  "LblStatusCombatOnly": "In combat only",
+  "TipStatusCombatOnly": "Removed when combat ends and does not hold outside it (the game's own pattern: Remove when combat ends + not Combat()). For a status applied on equip this means it is gone after the first fight — to limit an ability to battle, set the spell's Usable to In combat only instead.",
   "TipApplyOnEquip": "Adds the status to the item's StatusOnEquip: whoever wears the item has it until they take it off.",
   "LblStatusType": "Type",
   "LblStatusStack": "Stack",

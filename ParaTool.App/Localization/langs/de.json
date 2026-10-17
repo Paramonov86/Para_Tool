@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "Aus (Standard): Die Karte ist ein Status dieses Gegenstands, kompiliert als <Gegenstands-ID>_Status_N auf Basis des Originals; das Original bleibt überall sonst unberührt, und Zauber, passive Fähigkeiten und Boosts dieses Gegenstands, die das Original anwenden, wenden die Kopie an.\nAn: Die Karte überschreibt den Originalstatus selbst (gleicher Name), die Änderung erreicht also jeden Zauber, Gegenstand und Charakter, der ihn anwendet. Unveränderter Text bleibt in allen Sprachen übersetzt.",
   "WarnEditOriginalStatus": "Änderungen gelten überall, wo dieser Status angewendet wird, nicht nur durch diesen Gegenstand.",
   "LblApplyOnEquip": "Aktiv, solange ausgerüstet",
+  "LblStatusCombatOnly": "Nur im Kampf",
+  "TipStatusCombatOnly": "Wird entfernt, wenn der Kampf endet, und hält außerhalb nicht (wie im Spiel: Entfernen bei Kampfende + nicht Kampf()). Ein beim Ausrüsten angewendeter Status ist nach dem ersten Kampf weg – um eine Fähigkeit auf Kämpfe zu beschränken, beim Zauber „Einsetzbar: Nur im Kampf“ wählen.",
   "TipApplyOnEquip": "Fügt den Status dem StatusOnEquip des Gegenstands hinzu: Wer ihn trägt, hat den Status, bis er ihn ablegt.",
   "LblStatusType": "Typ",
   "LblStatusStack": "Stapel",

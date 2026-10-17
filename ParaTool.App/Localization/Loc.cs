@@ -479,6 +479,8 @@ public partial class Loc : ObservableObject
     public string LblTypedChipValues => this["LblTypedChipValues"];
     public string LblSpellRequirements => this["LblSpellRequirements"];
     public string TipSpellRequirements => this["TipSpellRequirements"];
+    public string LblStatusCombatOnly => this["LblStatusCombatOnly"];
+    public string TipStatusCombatOnly => this["TipStatusCombatOnly"];
 
     /// <summary>
     /// Readable name of a game value list's value (<c>vl.&lt;List&gt;.&lt;Value&gt;</c>), in every language;

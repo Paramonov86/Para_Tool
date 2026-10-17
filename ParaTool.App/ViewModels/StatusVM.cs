@@ -116,6 +116,44 @@ public partial class StatusVM : ObservableObject
 
     internal void NotifyApplyChanged() => OnPropertyChanged(nameof(ApplyOnEquip));
 
+    private const string CombatEndEvent = "OnCombatEnded";
+    private const string OutOfCombat = "not Combat()";
+
+    /// <summary>
+    /// The status holds in battle only, the way the game writes it (BLIGHT_SPONTANEOUSGROWTH): it is
+    /// removed when combat ends, and a "not Combat()" removal condition keeps it from lasting when
+    /// applied outside one.
+    /// </summary>
+    public bool CombatOnly
+    {
+        get => Status.RemoveEvents.Split(';', StringSplitOptions.TrimEntries).Contains(CombatEndEvent)
+               && (Status.RemoveConditions ?? "").Contains(OutOfCombat, StringComparison.Ordinal);
+        set
+        {
+            if (CombatOnly == value) return;
+            var events = Status.RemoveEvents.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(e => e != CombatEndEvent).ToList();
+            var conditions = (Status.RemoveConditions ?? "").Trim();
+            if (value)
+            {
+                events.Add(CombatEndEvent);
+                if (!conditions.Contains(OutOfCombat, StringComparison.Ordinal))
+                    conditions = conditions.Length == 0 ? OutOfCombat : $"{conditions} or {OutOfCombat}";
+            }
+            else
+            {
+                conditions = conditions.Replace($" or {OutOfCombat}", "").Replace($"{OutOfCombat} or ", "");
+                if (conditions == OutOfCombat) conditions = "";
+            }
+            Status.RemoveEvents = string.Join(";", events);
+            Status.RemoveConditions = conditions;
+            _parent.RecordEdit();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(EditRemoveEvents));
+            OnPropertyChanged(nameof(EditRemoveConditions));
+        }
+    }
+
     public string EditDisplayName
     {
         get => GetLang(Status.DisplayName);

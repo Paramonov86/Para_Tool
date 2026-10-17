@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "关（默认）：卡片是此物品的状态，基于原版编译为 <物品ID>_Status_N；原版状态在其他地方保持不变，此物品中施加原版的法术、被动和增益改为施加副本。\n开：卡片直接改写原版状态本身（同名），因此所有施加它的法术、物品和角色都会受到影响。未改动的文本在所有语言中保持翻译。",
   "WarnEditOriginalStatus": "更改会作用于施加此状态的所有地方，而不只是此物品。",
   "LblApplyOnEquip": "装备时生效",
+  "LblStatusCombatOnly": "仅限战斗中",
+  "TipStatusCombatOnly": "战斗结束时移除，且在战斗外不会保持（与游戏本身相同：战斗结束时移除 + 非 Combat()）。装备时施加的状态会在第一场战斗后消失——若要让能力仅限战斗中使用，请将法术的“使用条件”设为“仅限战斗中”。",
   "TipApplyOnEquip": "将状态加入物品的 StatusOnEquip：穿戴者在卸下之前一直拥有该状态。",
   "LblStatusType": "类型",
   "LblStatusStack": "叠加",

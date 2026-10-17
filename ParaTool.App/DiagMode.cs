@@ -128,6 +128,20 @@ internal static class DiagMode
         if (args.Contains("--diag-spell-ui", StringComparer.OrdinalIgnoreCase))
             return RunSpellUiSmoke(result, locaService);
 
+        // --diag-patch-store: PATCH as the button does it — every item's themes synced, nothing else
+        // in the list changed — with the artifacts of PARATOOL_STORAGE_DIR, into a copy of the mods
+        // (--diag-mods required). Reports warnings and the entries the written pak declares twice.
+        if (args.Contains("--diag-patch-store", StringComparer.OrdinalIgnoreCase))
+        {
+            if (!args.Contains("--diag-mods", StringComparer.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PARATOOL_STORAGE_DIR")))
+            {
+                Console.Error.WriteLine("  --diag-patch-store needs --diag-mods <copy> and PARATOOL_STORAGE_DIR");
+                return 6;
+            }
+            return await RunStorePatchAsync(result);
+        }
+
         // --diag-patch: uncheck one AMP item that the last submod's own TreasureTable restates,
         // run the real patcher and check the result lands in exactly one pak. Destructive for
         // the scanned folder — only use it with --diag-mods pointing at a copy.
@@ -522,6 +536,62 @@ internal static class DiagMode
             Console.WriteLine($"    mod {m.Name,-40} {m.Items.Count,6} items");
 
         RunVisualTreePerf(vm);
+    }
+
+    private static async Task<int> RunStorePatchAsync(ScanResult result)
+    {
+        Console.WriteLine("\n=== store patch ===");
+        if (result.AmpPakPath == null || result.AmpMod == null) { Console.Error.WriteLine("  AMP not found"); return 4; }
+        var arts = ArtifactStore.LoadAll();
+        Console.WriteLine($"  artifacts: {string.Join(", ", arts.Select(a => $"{a.StatId}{(a.StatId == a.UsingBase ? "(override)" : "")}"))}");
+        // The PATCH button copies every item's shown themes into its user themes first.
+        foreach (var item in result.Mods.SelectMany(m => m.Items).Concat(result.AmpMod.Items))
+            item.UserThemes = new List<string>(item.UserThemes.Count > 0 ? item.UserThemes : item.DetectedThemes);
+        var modified = result.Mods.SelectMany(m => m.Items).Concat(result.AmpMod.Items).Count(i => i.IsModified);
+        Console.WriteLine($"  items counted as modified: {modified}");
+
+        var patch = await new ParaTool.Core.Patching.AmpPatcher().PatchAsync(result.AmpPakPath, result.Mods, result.AmpMod);
+        Console.WriteLine($"  success={patch.Success} error={patch.Error} target={patch.TargetName ?? "AMP"} items={patch.ItemsPatched}");
+        foreach (var w in patch.Warnings) Console.WriteLine($"  WARNING {w}");
+        if (!patch.Success) return 5;
+
+        var targetPak = patch.TargetName == null ? result.AmpPakPath
+            : result.Mods.First(m => m.Name == patch.TargetName).PakPath!;
+        using var fs = File.OpenRead(targetPak);
+        var header = ParaTool.Core.PakReader.ReadHeader(fs);
+        var declared = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var entries = new Dictionary<string, ParaTool.Core.Parsing.StatsEntry>(StringComparer.Ordinal);
+        foreach (var e in ParaTool.Core.PakReader.ReadFileList(fs, header)
+                     .Where(e => e.Path.Contains("/Stats/Generated/Data/") && e.Path.EndsWith(".txt")))
+        {
+            var text = System.Text.Encoding.UTF8.GetString(ParaTool.Core.PakReader.ExtractFileData(fs, e));
+            foreach (var entry in ParaTool.Core.Parsing.StatsParser.Parse(text))
+            {
+                if (!declared.TryGetValue(entry.Name, out var files)) declared[entry.Name] = files = [];
+                files.Add(Path.GetFileName(e.Path));
+                entries[entry.Name] = entry;
+            }
+        }
+        var twice = declared.Where(kv => kv.Value.Count > 1).ToList();
+        Console.WriteLine($"  entries declared more than once in {Path.GetFileName(targetPak)}: {twice.Count}");
+        foreach (var (name, files) in twice.Take(15)) Console.WriteLine($"    {name}: {string.Join(", ", files)}");
+        foreach (var art in arts)
+        {
+            if (!entries.TryGetValue(art.StatId, out var item)) { Console.WriteLine($"  {art.StatId}: not in the written pak"); continue; }
+            Console.WriteLine($"  {art.StatId}: using={item.Using} RootTemplate={item.Data.GetValueOrDefault("RootTemplate") ?? "(inherited)"} " +
+                              $"Boosts={item.Data.GetValueOrDefault("Boosts")} PassivesOnEquip={item.Data.GetValueOrDefault("PassivesOnEquip")}");
+            foreach (var name in (item.Data.GetValueOrDefault("PassivesOnEquip") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries))
+                if (entries.TryGetValue(name, out var passive))
+                    Console.WriteLine($"    passive {name}: using={passive.Using} DisplayName={passive.Data.GetValueOrDefault("DisplayName")} " +
+                                      $"Description={passive.Data.GetValueOrDefault("Description")} Boosts={passive.Data.GetValueOrDefault("Boosts")}");
+            foreach (var sp in art.Spells)
+                if (entries.TryGetValue(sp.Name, out var spell))
+                    Console.WriteLine($"    spell {sp.Name}: using={spell.Using} RootSpellID={(spell.Data.TryGetValue("RootSpellID", out var r) ? $"'{r}'" : "(inherited)")} " +
+                                      $"Requirements={spell.Data.GetValueOrDefault("Requirements")} UseCosts={spell.Data.GetValueOrDefault("UseCosts")}");
+        }
+        var registry = ParaTool.Core.Patching.OverrideTemplateRegistry.Load(ParaTool.Core.Patching.OverrideTemplateRegistry.DefaultPath);
+        Console.WriteLine($"  issued templates: {string.Join(", ", registry.Entries.Select(e => $"{e.StatId}->{e.TemplateUuid}"))}");
+        return 0;
     }
 
     private static async Task<int> RunPatchProbeAsync(ScanResult result, VanillaDatabase vanillaDb, string modsPath)

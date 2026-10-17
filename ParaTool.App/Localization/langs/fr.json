@@ -839,6 +839,8 @@
   "TipEditOriginalStatus": "Désactivé (par défaut) : la carte est un état de cet objet, compilé en <ID de l'objet>_Status_N à partir de l'original ; l'original reste intact partout ailleurs, et les sorts, passives et bonus de cet objet qui appliquaient l'original appliquent la copie.\nActivé : la carte réécrit l'état original lui-même (même nom), le changement touche donc tous les sorts, objets et personnages qui l'appliquent. Le texte que vous ne modifiez pas reste traduit dans toutes les langues.",
   "WarnEditOriginalStatus": "Les changements s'appliquent partout où cet état est appliqué, pas seulement par cet objet.",
   "LblApplyOnEquip": "Actif tant que l'objet est équipé",
+  "LblStatusCombatOnly": "En combat uniquement",
+  "TipStatusCombatOnly": "Retiré à la fin du combat et ne tient pas hors combat (comme le jeu : retrait en fin de combat + pas Combat()). Un statut appliqué à l'équipement disparaît après le premier combat — pour limiter une capacité au combat, réglez plutôt le sort sur « Utilisable : en combat uniquement ».",
   "TipApplyOnEquip": "Ajoute l'état au StatusOnEquip de l'objet : celui qui le porte l'a jusqu'à ce qu'il le retire.",
   "LblStatusType": "Type",
   "LblStatusStack": "Cumul",
