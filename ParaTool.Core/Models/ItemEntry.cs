@@ -38,6 +38,13 @@ public sealed class ItemEntry
     // AMP item flag (native AMP items from AMP pak)
     public bool IsAmpItem { get; set; }
 
+    /// <summary>
+    /// An item of an AMP submod (AMP Plus): the submod places it in loot through its own
+    /// TreasureTable — boss rewards stay boss rewards — so like AMP's own items it is left where
+    /// it is unless the patcher list changes it.
+    /// </summary>
+    public bool HasOwnLoot { get; set; }
+
     // Item is already integrated into AMP loot tables (patched previously)
     public bool IsIntegrated { get; set; }
 
@@ -51,8 +58,17 @@ public sealed class ItemEntry
     public string EffectiveRarity => UserRarity ?? DetectedRarity ?? "Uncommon";
     public List<string> EffectiveThemes => UserThemes.Count > 0 ? UserThemes : DetectedThemes;
 
+    /// <summary>
+    /// True when the patcher list changes the item. A user value equal to the detected one is no
+    /// change: PATCH copies every item's themes into <see cref="UserThemes"/> (and saved sessions
+    /// bring them back), which used to rewrite the loot placement and price of every item that
+    /// has a theme.
+    /// </summary>
     public bool IsModified =>
-        UserPool != null || UserRarity != null || UserThemes.Count > 0 || !Enabled;
+        (UserPool != null && UserPool != DetectedPool)
+        || (UserRarity != null && UserRarity != DetectedRarity)
+        || (UserThemes.Count > 0 && !UserThemes.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(DetectedThemes))
+        || !Enabled;
 
     /// <summary>
     /// True when a saved artifact overrides this item's stats via the Constructor.

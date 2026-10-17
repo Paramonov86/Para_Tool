@@ -73,6 +73,31 @@ public class TreasureTablePatcherTests
     }
 
     [Fact]
+    public void Patch_SubmodItem_StaysWhereItsOwnTablesPutIt_UntilChanged()
+    {
+        // AMP Plus places its items itself — a boss's katana is a boss reward. Adding it to the
+        // computed REL pools and paragon chests on every patch put boss rewards into chests.
+        var original = string.Join("\n",
+            MakePoolTable("REL_Epic_Weapons_1H"),
+            MakePoolTable("REL_Epic_Weapons"),
+            MakePoolTable("REL_All_Epic"),
+            MakeParagonTable("AMP_Para_10"),
+            MakeParagonTable("AMP_Para_11"));
+        var katana = new ItemEntry
+        {
+            StatId = "AMP_Undying_Katana", StatType = "Weapon",
+            DetectedPool = "Weapons_1H", DetectedRarity = "VeryRare", HasOwnLoot = true,
+        };
+
+        Assert.Equal(original, TreasureTablePatcher.Patch(original, [katana]));
+
+        katana.UserRarity = "Legendary";
+        Assert.True(katana.IsModified);
+        var moved = TreasureTablePatcher.Patch(original, [katana]);
+        Assert.DoesNotContain("I_AMP_Undying_Katana", moved.Split("REL_Epic_Weapons_1H")[1].Split("new treasuretable")[0]);
+    }
+
+    [Fact]
     public void Patch_VeryRareItem_UsesEpicInTableName()
     {
         var original = string.Join("\n",
@@ -269,18 +294,18 @@ public class TreasureTablePatcherTests
                 StatId = "AMP_Gloves_A",
                 StatType = "Armor",
                 DetectedPool = "Gloves",
-                DetectedRarity = "Rare",
+                DetectedRarity = "Uncommon",
                 IsAmpItem = true,
-                UserRarity = "Rare" // UserRarity set → IsModified = true
+                UserRarity = "Rare" // a different UserRarity → IsModified = true
             },
             new()
             {
                 StatId = "AMP_Gloves_B",
                 StatType = "Armor",
                 DetectedPool = "Gloves",
-                DetectedRarity = "Rare",
+                DetectedRarity = "Uncommon",
                 IsAmpItem = true,
-                UserRarity = "Rare" // UserRarity set → IsModified = true
+                UserRarity = "Rare" // a different UserRarity → IsModified = true
             }
         };
 
@@ -457,5 +482,27 @@ public class TreasureTablePatcherTests
         Assert.Equal(1, CountTables(result, "REL_Rare_Rings"));
         Assert.DoesNotContain("I_Sub_Unchecked", result);
         Assert.DoesNotContain("I_AMP_Version", result);
+    }
+
+    [Fact]
+    public void PatchIntoTarget_ThemesSyncedOnPatch_LeaveCuratedPlacementsAlone()
+    {
+        // PATCH copies every item's themes into UserThemes. That alone used to count as an edit:
+        // each themed AMP item was pulled out of every table and put back only where ParaTool's
+        // own detection puts it, so a versatile sword the submod lists among two-handers left them.
+        var target = string.Join("\n",
+            MakePoolTable("REL_Epic_Weapons_2H", "I_AMP_Versatile_Sword"),
+            MakePoolTable("REL_Epic_Weapons_1H", "I_AMP_Versatile_Sword"));
+        var item = new ItemEntry
+        {
+            StatId = "AMP_Versatile_Sword", StatType = "Weapon", IsAmpItem = true,
+            DetectedPool = "Weapons_1H", DetectedRarity = "VeryRare", DetectedThemes = ["War", "Primal"],
+        };
+        item.UserThemes = ["Primal", "War"];
+
+        var result = TreasureTablePatcher.PatchIntoTarget([""], target, [item]);
+
+        Assert.False(item.IsModified);
+        Assert.Equal(target, result);
     }
 }

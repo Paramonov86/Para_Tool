@@ -755,6 +755,7 @@ public sealed class ModScanner
 
                 var item = ResolveItem(entry, resolver);
                 if (item == null) continue;
+                item.HasOwnLoot = modInfo.IsAmpSubmod;
 
                 // If item is already in AMP loot tables, apply current AMP integration state
                 if (ampWhitelist != null && ampWhitelist.Contains(entry.Name))

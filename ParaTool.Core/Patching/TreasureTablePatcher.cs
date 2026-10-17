@@ -40,7 +40,8 @@ public static class TreasureTablePatcher
         {
             if (!item.Enabled) continue;
             if (item.EffectiveRarity == "Common") continue; // No REL_Common_* tables in AMP
-            if (item.IsAmpItem && !item.IsModified) continue; // Unmodified AMP items stay in place
+            // Unmodified AMP and AMP-submod items stay where their own tables put them.
+            if ((item.IsAmpItem || item.HasOwnLoot) && !item.IsModified) continue;
 
             var pool = item.EffectivePool;
             var rarity = item.EffectiveRarity;

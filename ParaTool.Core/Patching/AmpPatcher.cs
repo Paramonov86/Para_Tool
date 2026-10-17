@@ -270,16 +270,16 @@ public sealed class AmpPatcher
             await File.WriteAllTextAsync(ttPath, patchedTt, ct);
         }
 
-        // Stats: AMP's entries are not in this pak, so every override goes in as a thin
-        // re-declaration behind everything the submod declares itself.
+        // Stats: edited where the submod declares the item, a thin re-declaration otherwise. The
+        // submod's own items are already in its loot at their own rarity and price, so like AMP's
+        // they are only written when the patcher list changes them.
         progress?.Report(new PatchProgress { Stage = "Applying stat overrides...", Percent = 50 });
         var statsDir = FindDirectory(extractDir, Path.Combine("Stats", "Generated", "Data"))
             ?? Path.Combine(generatedDir, "Data");
         Directory.CreateDirectory(statsDir);
         DeleteOldOverrideFiles(statsDir);
-        var itemOverrides = BuildSubmodOverrideText(modifiedAmpItems, enabledModItems, submodItems, "");
-        if (!string.IsNullOrWhiteSpace(itemOverrides))
-            File.AppendAllText(LastStatFile(statsDir), "\n" + itemOverrides);
+        WriteSubmodStatOverrides(statsDir,
+            modifiedAmpItems.Concat(enabledModItems).Concat(submodItems.Where(i => i.IsModified)));
 
         progress?.Report(new PatchProgress { Stage = "Applying artifacts...", Percent = 58 });
         var artifactCount = await Task.Run(
@@ -594,21 +594,10 @@ public sealed class AmpPatcher
             ? StatsParser.Parse(overrideStats.ToString())
             : [];
 
-        // Item overrides re-serialized as thin self-referencing entries. A submod target does not
-        // declare AMP's entries, so there they are appended instead of edited in place.
-        var thinItemOverrides = new StringBuilder();
         // Self-`using` spell/status entries from every artifact, written last (ApplySelfOverrides).
         var selfOverrides = new List<Parsing.StatsEntry>();
-        foreach (var entry in overrideParsed)
-        {
-            if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
-            thinItemOverrides.AppendLine($"new entry \"{entry.Name}\"");
-            thinItemOverrides.AppendLine($"type \"{entry.Type}\"");
-            thinItemOverrides.AppendLine($"using \"{entry.Using ?? entry.Name}\"");
-            foreach (var (key, value) in entry.Data)
-                thinItemOverrides.AppendLine($"data \"{key}\" \"{value}\"");
-            thinItemOverrides.AppendLine();
-        }
+        // Item overrides of entries a submod target declares itself; those are edited in place.
+        var declaredInTarget = new HashSet<string>(StringComparer.Ordinal);
 
         var statFiles = Directory.GetFiles(statsDir, "*.txt")
             .Where(f =>
@@ -636,6 +625,11 @@ public sealed class AmpPatcher
                 if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
                 overrideMap[entry.Name] = entry.Data;
             }
+
+            // A submod target is edited wherever it declares the item itself (see
+            // WriteSubmodStatOverrides); the rest is re-declared behind it further down.
+            if (sourceDir != null)
+                declaredInTarget = EditDeclarations(statFiles, overrideMap);
 
             var unresolved = new HashSet<string>(
                 sourceDir == null ? overrideMap.Keys.ToList() : new List<string>(), StringComparer.Ordinal);
@@ -756,6 +750,23 @@ public sealed class AmpPatcher
             ? PatchRootTemplates(extractDir, newArtifacts, overrideArtifacts, warnings, sourceDir)
             : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        // A submod does not declare AMP's entries: an item override of one it does not declare
+        // itself is a thin re-declaration placed behind everything the submod declares.
+        var thinItemOverrides = new StringBuilder();
+        if (sourceDir != null)
+        {
+            foreach (var entry in overrideParsed)
+            {
+                if (entry.Type != "Armor" && entry.Type != "Weapon") continue;
+                if (declaredInTarget.Contains(entry.Name)) continue;
+                thinItemOverrides.AppendLine($"new entry \"{entry.Name}\"");
+                thinItemOverrides.AppendLine($"type \"{entry.Type}\"");
+                thinItemOverrides.AppendLine($"using \"{entry.Using ?? entry.Name}\"");
+                foreach (var (key, value) in entry.Data)
+                    thinItemOverrides.AppendLine($"data \"{key}\" \"{value}\"");
+                thinItemOverrides.AppendLine();
+            }
+        }
         // An override that just got a template of its own only uses it once its stat entry points
         // there. Every declaration in the written pak is edited — AMP restates some entries in
         // more than one file.
@@ -774,8 +785,6 @@ public sealed class AmpPatcher
             thinOverrideText = StatsFileEditor.ModifyEntries(thinOverrideText, rootTemplateEdits).text;
         }
 
-        // A submod does not declare AMP's entries: its item overrides are re-declarations placed
-        // behind everything the submod declares itself.
         if (sourceDir != null && statFiles.Length > 0 && !string.IsNullOrWhiteSpace(thinOverrideText))
             File.AppendAllText(statFiles[^1], "\n" + thinOverrideText);
 
@@ -1484,26 +1493,53 @@ public sealed class AmpPatcher
     }
 
     /// <summary>
-    /// Builds the override block appended to the AMP submod a patch is written into: rarity/price skeletons
-    /// for the selected items, followed by the Constructor's item overrides. Later entries win,
-    /// so an artifact override lands after (and beats) the skeleton for the same StatId.
+    /// Writes rarity/price overrides into the AMP submod a patch goes into. An entry the submod
+    /// declares itself — one of its own items, or an AMP item it rebalances — is edited where it
+    /// is declared. A second declaration of a name inside one pak does not build on the first:
+    /// a thin <c>using "&lt;self&gt;"</c> copy there drops the submod's own fields of an AMP
+    /// item, and leaves one of the submod's own items inheriting from nothing, so it no longer
+    /// spawns. Only entries the submod does not declare get the thin re-declaration, behind
+    /// everything the submod declares; that is the form AMP Plus itself uses across paks.
     /// </summary>
-    public static string BuildSubmodOverrideText(
-        IReadOnlyList<ItemEntry> ampItems,
-        IReadOnlyList<ItemEntry> modItems,
-        IReadOnlyList<ItemEntry> submodItems,
-        string artifactOverrides)
+    internal static void WriteSubmodStatOverrides(string statsDir, IEnumerable<ItemEntry> items)
     {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var items = new List<ItemEntry>();
-        foreach (var item in ampItems.Concat(modItems).Concat(submodItems))
-            if (seen.Add(item.StatId))
-                items.Add(item);
+        var selected = new List<ItemEntry>();
+        var edits = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+        foreach (var item in items)
+        {
+            if (edits.ContainsKey(item.StatId)) continue;
+            if (StatsOverrideGenerator.ComputeFields(item) is not { } fields) continue;
+            edits[item.StatId] = fields;
+            selected.Add(item);
+        }
+        if (edits.Count == 0) return;
 
-        var sb = new StringBuilder();
-        sb.Append(StatsOverrideGenerator.GenerateSkeletonEntries(items));
-        sb.Append(artifactOverrides);
-        return sb.ToString();
+        var statFiles = Directory.GetFiles(statsDir, "*.txt")
+            .Where(f => !Path.GetFileName(f).EndsWith("ParaTool_Overrides.txt", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        var declared = EditDeclarations(statFiles, edits);
+        var skeletons = StatsOverrideGenerator.GenerateSkeletonEntries(
+            selected.Where(i => !declared.Contains(i.StatId)).ToList());
+        if (!string.IsNullOrWhiteSpace(skeletons))
+            File.AppendAllText(LastStatFile(statsDir), "\n" + skeletons);
+    }
+
+    /// <summary>
+    /// Edits every declaration of the named entries across the stat files (a pak can declare an
+    /// entry in more than one file, and the last one counts). Returns the names found.
+    /// </summary>
+    private static HashSet<string> EditDeclarations(
+        IEnumerable<string> statFiles, IReadOnlyDictionary<string, Dictionary<string, string>> edits)
+    {
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var sf in statFiles)
+        {
+            var (modified, names) = StatsFileEditor.ModifyEntries(File.ReadAllText(sf), edits);
+            if (names.Count == 0) continue;
+            File.WriteAllText(sf, modified);
+            found.UnionWith(names);
+        }
+        return found;
     }
 
     private static string? FindFile(string dir, string fileName)
