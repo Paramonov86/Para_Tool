@@ -40,6 +40,7 @@ public static class SpellCloner
         spell.SpellRoll = Get("SpellRoll");
         spell.SpellSuccess = Get("SpellSuccess");
         spell.SpellFail = Get("SpellFail");
+        spell.Requirements = Get("Requirements");
 
         if (Get("DisplayName") is { Length: > 0 } dn) spell.SourceDisplayNameHandle = HandleGenerator.Parse(dn).handle;
         if (Get("Description") is { Length: > 0 } dd) spell.SourceDescriptionHandle = HandleGenerator.Parse(dd).handle;
@@ -80,5 +81,6 @@ public static class SpellCloner
     [
         "DescriptionParams", "Icon", "Level", "SpellSchool", "UseCosts", "Cooldown", "TargetRadius",
         "AreaRadius", "SpellRoll", "SpellSuccess", "SpellFail", "SpellProperties", "TargetConditions", "SpellFlags",
+        "Requirements",
     ];
 }

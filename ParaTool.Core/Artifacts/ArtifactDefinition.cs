@@ -500,6 +500,9 @@ public sealed class SpellDefinition
     public string? SpellRoll { get; set; }
     public string? SpellSuccess { get; set; }
     public string? SpellFail { get; set; }
+    /// <summary>When the spell can be cast: "Combat" (in battle only, as AMP's Still Mantle ward),
+    /// "!Combat" (outside battle only), "!Immobile", or empty for any time.</summary>
+    public string? Requirements { get; set; }
 
     /// <summary>Raw extra data fields (key → value) for uncommon properties.</summary>
     public Dictionary<string, string> ExtraData { get; set; } = [];

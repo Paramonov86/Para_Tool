@@ -313,7 +313,7 @@ public class ConditionBlocksEditor : UserControl
 
         // Function label
         var isRu = Localization.Loc.Instance.Lang == "ru";
-        var label = ConditionLabels.GetLabel(token.FuncName, isRu);
+        var label = Localization.Loc.Instance.ConditionLabel(token.FuncName);
         stack.Children.Add(new TextBlock
         {
             Text = label, FontSize = FontScale.Of(11), FontWeight = FontWeight.SemiBold,
@@ -902,10 +902,10 @@ public class ConditionBlocksEditor : UserControl
 
             var currentFavs = Core.Services.FavoritesStore.Load();
             int insertIdx = favSeparatorIdx;
-            foreach (var favName in currentFavs.OrderBy(n => ConditionLabels.GetLabel(n, isRu)))
+            foreach (var favName in currentFavs.OrderBy(n => Localization.Loc.Instance.ConditionLabel(n)))
             {
                 if (!schema.ByName.TryGetValue(favName, out var fDef)) continue;
-                var dName = ConditionLabels.GetLabel(favName, isRu);
+                var dName = Localization.Loc.Instance.ConditionLabel(favName);
                 var fItem = new MenuItem { Header = $"★ {dName}", Tag = fDef };
                 fItem.Click += (_, _) => AddCondition(fDef);
                 menu.Items.Insert(insertIdx++, fItem);
@@ -920,7 +920,7 @@ public class ConditionBlocksEditor : UserControl
         // Reused for both the category submenus and the flat search-results list.
         MenuItem MakeCondItem(ConditionDef def)
         {
-            var displayName = ConditionLabels.GetLabel(def.Name, isRu);
+            var displayName = Localization.Loc.Instance.ConditionLabel(def.Name);
             var paramHint = def.Params.Length > 0
                 ? $" ({string.Join(", ", def.Params.Select(p => Localization.Loc.Instance.ConditionParamLabel(p.Name)))})"
                 : "";
@@ -955,12 +955,12 @@ public class ConditionBlocksEditor : UserControl
         var categoryMenus = new List<MenuItem>();
         foreach (var group in groups)
         {
-            var catLabel = ConditionLabels.GetCategoryLabel(group.Key, isRu);
+            var catLabel = Localization.Loc.Instance.ConditionCategoryLabel(group.Key);
             var sub = new MenuItem { Header = catLabel };
-            foreach (var def in group.OrderBy(d => ConditionLabels.GetLabel(d.Name, isRu)))
+            foreach (var def in group.OrderBy(d => Localization.Loc.Instance.ConditionLabel(d.Name)))
             {
                 sub.Items.Add(MakeCondItem(def));
-                allConds.Add((def, $"{ConditionLabels.GetLabel(def.Name, isRu)} {def.Name} {catLabel}".ToLower()));
+                allConds.Add((def, $"{Localization.Loc.Instance.ConditionLabel(def.Name)} {def.Name} {catLabel}".ToLower()));
             }
             categoryMenus.Add(sub);
             menu.Items.Add(sub);

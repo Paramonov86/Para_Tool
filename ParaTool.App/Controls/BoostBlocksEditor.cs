@@ -90,25 +90,8 @@ public class BoostBlocksEditor : UserControl
     private readonly WrapPanel _panel = new() { Orientation = Orientation.Horizontal, ClipToBounds = false };
     private bool _updating;
 
-    private static string GetBlockLabel(ParaTool.Core.Schema.BoostMapping.BlockDef def)
-    {
-        var locaKey = $"boost.{def.FuncName}";
-        var locaVal = Localization.Loc.Instance[locaKey];
-        // boost.* JSON entries are engine-description templates ("Immune to [1].")
-        // used for in-game-style preview rendering, NOT chip labels. If the value
-        // contains an [N] placeholder, fall through to the dedicated short label
-        // from BoostMapping (e.g. "Невосприимч. к статусу"); otherwise the chip
-        // would render with a literal "[1]" next to its parameter picker.
-        if (locaVal != locaKey && !ContainsBoostPlaceholder(locaVal)) return locaVal;
-        return Localization.Loc.Instance.Lang == "ru" ? def.LabelRu : def.Label;
-    }
-
-    private static bool ContainsBoostPlaceholder(string text)
-    {
-        for (int i = 0; i < text.Length - 1; i++)
-            if (text[i] == '[' && char.IsDigit(text[i + 1])) return true;
-        return false;
-    }
+    private static string GetBlockLabel(ParaTool.Core.Schema.BoostMapping.BlockDef def) =>
+        Localization.Loc.Instance.BlockLabel(def);
 
     private static SolidColorBrush BgDefault => Themes.ThemeBrushes.InputBg;
     private static SolidColorBrush FgMuted => Themes.ThemeBrushes.TextMuted;

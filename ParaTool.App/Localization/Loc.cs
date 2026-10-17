@@ -477,6 +477,8 @@ public partial class Loc : ObservableObject
     public string CondGroup => this["CondGroup"];
     public string LblPatchWarnings => this["LblPatchWarnings"];
     public string LblTypedChipValues => this["LblTypedChipValues"];
+    public string LblSpellRequirements => this["LblSpellRequirements"];
+    public string TipSpellRequirements => this["TipSpellRequirements"];
 
     /// <summary>
     /// Readable name of a game value list's value (<c>vl.&lt;List&gt;.&lt;Value&gt;</c>), in every language;
@@ -491,6 +493,40 @@ public partial class Loc : ObservableObject
     }
 
     public string[] ValueLabels(string list, IEnumerable<string> values) => values.Select(v => ValueLabel(list, v)).ToArray();
+
+    private Dictionary<string, string>? _labelStrings;
+    private string? _labelLang;
+
+    /// <summary>
+    /// The current language's chip labels looked up ignoring case — a function name in stats text
+    /// can be cased otherwise than the label's key (<c>IsCantrip</c> / <c>isCantrip</c>).
+    /// </summary>
+    private string? ChipLabel(string key)
+    {
+        if (_labelStrings == null || _labelLang != _lang)
+        {
+            var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (k, v) in _strings)
+                if (k.StartsWith("blk.", StringComparison.Ordinal) || k.StartsWith("cond.", StringComparison.Ordinal)
+                    || k.StartsWith("condcat.", StringComparison.Ordinal))
+                    labels.TryAdd(k, v);
+            _labelStrings = labels;
+            _labelLang = _lang;
+        }
+        return _labelStrings.TryGetValue(key, out var label) ? label : null;
+    }
+
+    /// <summary>Title of a boost or functor chip in the current language.</summary>
+    public string BlockLabel(ParaTool.Core.Schema.BoostMapping.BlockDef def) =>
+        ChipLabel($"blk.{def.FuncName}") ?? (_lang == "ru" ? def.LabelRu : def.Label);
+
+    /// <summary>Title of a condition chip in the current language; an unknown function shows its own name.</summary>
+    public string ConditionLabel(string funcName) =>
+        ChipLabel($"cond.{funcName}") ?? ParaTool.Core.Schema.ConditionLabels.GetLabel(funcName, _lang == "ru");
+
+    /// <summary>A category of the condition picker in the current language.</summary>
+    public string ConditionCategoryLabel(string category) =>
+        ChipLabel($"condcat.{category}") ?? ParaTool.Core.Schema.ConditionLabels.GetCategoryLabel(category, _lang == "ru");
 
     /// <summary>Get display labels for enum values, using loca with EnumLabels fallback.</summary>
     public string[] GetEnumDisplayLabels(string[] values)

@@ -95,7 +95,7 @@
                                    FontSize="{DynamicResource FontSize10}" Foreground="{DynamicResource InfoBrush}" />
 
                         <!-- Labels size their column: a fixed width cut "Description params" at a large font scale -->
-                        <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                        <Grid Classes="spellLabels" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                             <Grid.Styles>
                                 <Style Selector="Grid.spellLabels > TextBlock">
                                     <Setter Property="Padding" Value="0,0,10,0" />
@@ -120,19 +120,26 @@
                                                    Items="{x:Static vm:SpellVM.CooldownOptions}" LabelPrefix="cooldown."
                                                    Margin="0,6,0,0" HorizontalAlignment="Left" />
 
-                            <TextBlock Grid.Row="5" Text="{Binding LblSpellRange, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding EditTargetRadius}" Watermark="18"
+                            <!-- When it can be cast: any time, only in battle (AMP's Still Mantle ward), only outside it -->
+                            <TextBlock Grid.Row="5" Text="{Binding LblSpellRequirements, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <ctrl:TumblerChipEditor Grid.Row="5" Grid.Column="1" Text="{Binding EditRequirements}"
+                                                   Items="{Binding RequirementItems}" LabelPrefix="req."
+                                                   ToolTip.Tip="{Binding TipSpellRequirements, Source={x:Static loc:Loc.Instance}}"
+                                                   Margin="0,6,0,0" HorizontalAlignment="Left" />
+
+                            <TextBlock Grid.Row="6" Text="{Binding LblSpellRange, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding EditTargetRadius}" Watermark="18"
                                      FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0" Width="120" HorizontalAlignment="Left"
                                      Background="{StaticResource CardBgBrush}" CornerRadius="4" />
 
-                            <TextBlock Grid.Row="6" Text="{Binding LblSpellArea, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                            <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding EditAreaRadius}" Watermark="3"
+                            <TextBlock Grid.Row="7" Text="{Binding LblSpellArea, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding EditAreaRadius}" Watermark="3"
                                      FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0" Width="120" HorizontalAlignment="Left"
                                      Background="{StaticResource CardBgBrush}" CornerRadius="4" />
 
-                            <TextBlock Grid.Row="7" Text="{Binding LblSpellIcon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBlock Grid.Row="8" Text="{Binding LblSpellIcon, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
                             <!-- Opens the icon library: spells take only icons that have a tooltip picture -->
-                            <Button Grid.Row="7" Grid.Column="1" Name="SpellIconBtn" Tag="{Binding}" Classes="iconPick iconField" Margin="0,6,0,0"
+                            <Button Grid.Row="8" Grid.Column="1" Name="SpellIconBtn" Tag="{Binding}" Classes="iconPick iconField" Margin="0,6,0,0"
                                     ToolTip.Tip="{Binding TipPickSpellIcon, Source={x:Static loc:Loc.Instance}}">
                                 <Grid ColumnDefinitions="Auto,*">
                                     <Border Width="36" Height="36" CornerRadius="4" ClipToBounds="True" Background="{StaticResource InputBgBrush}">
@@ -144,8 +151,8 @@
                                 </Grid>
                             </Button>
 
-                            <TextBlock Grid.Row="8" Text="{Binding LblSpellDescParams, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
-                            <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding EditDescriptionParams}"
+                            <TextBlock Grid.Row="9" Text="{Binding LblSpellDescParams, Source={x:Static loc:Loc.Instance}}" FontSize="{DynamicResource FontSize11}" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                            <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding EditDescriptionParams}"
                                      FontSize="{DynamicResource FontSize11}" Padding="8,4" Margin="0,6,0,0"
                                      Background="{StaticResource CardBgBrush}" CornerRadius="4" />
                         </Grid>

@@ -53,6 +53,25 @@ public class SpellCardCompileTests
     }
 
     [Fact]
+    public void Requirements_MakeACopyCombatOnly_AndAreLeftAloneOtherwise()
+    {
+        // A ring ability that can't be spammed out of battle: AMP's Still Mantle ward writes
+        // Requirements "Combat"; the card sets it on a copy of a spell that has none.
+        var art = NewRing();
+        var bless = SpellCloner.CloneFrom("Target_Bless", Vanilla.Value);
+        Assert.Null(bless.Requirements);
+        bless.Requirements = "Combat";
+        art.Spells.Add(bless);
+        // Rage is combat-only in the game; a copy left alone restates nothing about it.
+        art.Spells.Add(SpellCloner.CloneFrom("Shout_Rage", Vanilla.Value));
+        var text = ArtifactCompiler.Compile(art, resolver: Vanilla.Value).StatsText;
+
+        Assert.Equal("Combat", EntryOf(text, "TEST_Ring_Spell_1").Data["Requirements"]);
+        var rage = EntryOf(text, "TEST_Ring_Spell_2");
+        Assert.Equal(Vanilla.Value.ResolveAll("Shout_Rage")["Requirements"], rage.Data["Requirements"]);
+    }
+
+    [Fact]
     public void Copy_NeverWritesItsTextUnderTheOriginalHandle()
     {
         var art = NewRing();

@@ -1611,6 +1611,35 @@ public partial class SpellVM : ObservableObject
         }
     }
 
+    /// <summary>The casting requirements the drum offers; "—" is any time.</summary>
+    public static readonly string[] RequirementOptions = ["—", "Combat", "!Combat", "!Immobile"];
+
+    /// <summary>The options, plus the card's own value when the drum has no row for it.</summary>
+    public string[] RequirementItems =>
+        RequirementOptions.Contains(EditRequirements) ? RequirementOptions : [.. RequirementOptions, EditRequirements];
+
+    /// <summary>
+    /// When the spell can be cast. Shown trimmed (AMP writes "Combat " as often as "Combat"); left
+    /// alone, the field compiles exactly as inherited.
+    /// </summary>
+    public string EditRequirements
+    {
+        get => string.IsNullOrWhiteSpace(Spell.Requirements) ? "—" : Spell.Requirements.Trim();
+        set
+        {
+            value = value is null or "—" ? "" : value.Trim();
+            if ((Spell.Requirements ?? "").Trim() == value) return;
+            foreach (var v in Variants.Where(v => (v.Spell.Requirements ?? "").Trim() == (Spell.Requirements ?? "").Trim()))
+            {
+                v.Spell.Requirements = value;
+                v.OnPropertyChanged(nameof(EditRequirements));
+            }
+            Spell.Requirements = value;
+            _parent.RecordEdit();
+            OnPropertyChanged();
+        }
+    }
+
     public string EditTargetRadius
     {
         get => Spell.TargetRadius ?? "";

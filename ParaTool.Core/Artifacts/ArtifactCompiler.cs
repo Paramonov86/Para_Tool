@@ -684,6 +684,7 @@ public static class ArtifactCompiler
             Emit("SpellSchool", spell.SpellSchool, spellHasUsing);
             Emit("UseCosts", spell.UseCosts, spellHasUsing);
             Emit("Cooldown", spell.Cooldown, spellHasUsing);
+            Emit("Requirements", spell.Requirements, spellHasUsing);
             Emit("TargetRadius", spell.TargetRadius, spellHasUsing);
             Emit("AreaRadius", spell.AreaRadius, spellHasUsing);
             Emit("SpellRoll", spell.SpellRoll, spellHasUsing);
