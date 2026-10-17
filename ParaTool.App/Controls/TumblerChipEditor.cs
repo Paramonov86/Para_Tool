@@ -248,7 +248,13 @@ public class TumblerChipEditor : UserControl
         }
         box.KeyDown += (_, e) =>
         {
-            if (e.Key == Key.Enter) { Commit(); e.Handled = true; }
+            if (e.Key == Key.Enter)
+            {
+                Commit();
+                // Written: leave the box like any other field, so Ctrl+Z undoes the item's edit.
+                if (box.BorderBrush != ThemeBrushes.Error) TopLevel.GetTopLevel(box)?.FocusManager?.ClearFocus();
+                e.Handled = true;
+            }
             else if (e.Key == Key.Escape) { box.Text = written; Mark(true); e.Handled = true; }
         };
         box.LostFocus += (_, _) => Commit();

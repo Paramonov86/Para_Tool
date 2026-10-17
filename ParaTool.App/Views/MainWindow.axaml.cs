@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using ParaTool.App.Services;
 using ParaTool.App.Themes;
 using ParaTool.App.ViewModels;
@@ -41,6 +42,24 @@ public partial class MainWindow : Window
         RestoreUiSettings(themeSelector, fontSelector);
 
         KeyDown += OnWindowKeyDown;
+        AddHandler(PointerPressedEvent, OnWindowPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+    }
+
+    /// <summary>
+    /// A click outside the text box being edited that nothing else takes focus from (empty space, a
+    /// label, a chip) leaves the box: Avalonia keeps it focused otherwise, so the value is not written
+    /// and Ctrl+Z keeps undoing typing inside the box instead of the item's edits. Checked after the
+    /// click is handled, so a button or another field that takes focus is left alone.
+    /// </summary>
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (FocusManager?.GetFocusedElement() is not TextBox focused) return;
+        for (var v = e.Source as Visual; v != null; v = v.GetVisualParent())
+            if (v == focused) return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (FocusManager?.GetFocusedElement() == focused) FocusManager.ClearFocus();
+        });
     }
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
