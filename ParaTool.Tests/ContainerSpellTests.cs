@@ -160,6 +160,32 @@ public class ContainerSpellTests
     }
 
     /// <summary>
+    /// A copy of an upcast variant made free on an item must not join the original's upcasts: those
+    /// are found by RootSpellID, so every wizard knowing Scorching Ray got the free copy as well.
+    /// </summary>
+    [Fact]
+    public void CopiedUpcastVariant_LeavesTheOriginalsUpcasts()
+    {
+        var art = NewRing();
+        var ray = SpellCloner.CloneWithVariants("Projectile_ScorchingRay_3", Vanilla.Value);
+        ray.UseCosts = "ActionPoint:1";
+        art.Spells.Add(ray);
+        art.SpellsOnEquip = ray.Name;
+        var text = ArtifactCompiler.Compile(art, resolver: Vanilla.Value).StatsText;
+
+        var copy = EntryOf(text, "TEST_Ring_Spell_1");
+        Assert.Equal("Projectile_ScorchingRay_3", copy.Using);
+        Assert.Equal("", copy.Data["RootSpellID"]);
+        // Edited as the original, it stays the vanilla upcast it is.
+        var original = NewRing();
+        var edited = SpellCloner.CloneWithVariants("Projectile_ScorchingRay_3", Vanilla.Value);
+        edited.EditOriginal = true;
+        original.Spells.Add(edited);
+        var editedText = ArtifactCompiler.Compile(original, resolver: Vanilla.Value).StatsText;
+        Assert.False(EntryOf(editedText, "Projectile_ScorchingRay_3").Data.ContainsKey("RootSpellID"));
+    }
+
+    /// <summary>
     /// Every vanilla container copied untouched: each variant restates its card fields exactly and
     /// the family links to itself.
     /// </summary>

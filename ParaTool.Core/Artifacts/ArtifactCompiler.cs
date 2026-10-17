@@ -697,9 +697,10 @@ public static class ArtifactCompiler
                     Emit("SpellContainerID", "", true);
                     if (Inherited("ContainerSpells") != null) Emit("ContainerSpells", "", true);
                 }
-                // An upcast copy would otherwise group under the original spell it was cast up from.
-                if ((container != null || spell.Variants.Count > 0 || Inherited("SpellContainerID") != null)
-                    && Inherited("RootSpellID") != null)
+                // A copy of an upcast variant (Projectile_ScorchingRay_3) inherits the RootSpellID that
+                // makes it one: the game would list it among the original's upcasts for everyone who
+                // knows the original, free costs and all, with or without the item.
+                if (Inherited("RootSpellID") != null)
                     Emit("RootSpellID", "", true);
             }
 
